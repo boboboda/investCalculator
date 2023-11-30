@@ -181,13 +181,13 @@ fun WonMainScreen(wonViewModel: WonViewModel, routeAction: WonRouteAction, share
             ) {
                 
                 Spacer(modifier = Modifier.height(8.dp))
-                InverstCheckBox(title = "매수",
+                InvestCheckBox(title = "매수",
                     1, selectedCheckId = selectedCheckBoxId.value,
                     selectCheckBoxAction = {
                         wonViewModel.selectedCheckBoxId.value = it
                     })
 
-                InverstCheckBox(title = "매도",
+                InvestCheckBox(title = "매도",
                     2, selectedCheckId = selectedCheckBoxId.value,
                     selectCheckBoxAction = {
                         wonViewModel.selectedCheckBoxId.value = it

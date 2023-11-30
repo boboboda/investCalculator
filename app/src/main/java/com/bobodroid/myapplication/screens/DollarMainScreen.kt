@@ -63,6 +63,8 @@ import java.time.format.DateTimeFormatter
 import java.util.*
 import kotlin.collections.ArrayList
 import kotlin.math.absoluteValue
+import com.bobodroid.myapplication.lists.BuyRecordBox
+import com.bobodroid.myapplication.lists.SellRecordBox
 
 const val TAG = "메인"
 
@@ -100,125 +102,93 @@ fun DollarMainScreen
     val total = dollarViewModel.total.collectAsState("")
 
 
-    Column(modifier = Modifier.fillMaxSize())
+    Column(modifier = Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally)
     {
 
         Row(modifier = Modifier.fillMaxWidth()) {
             TopTitleButton(sharedViewModel)
         }
 
-        Row(
+        Column(
             modifier = Modifier
-                .background(Color.White)
-                .fillMaxWidth()
-                .height(120.dp),
-            horizontalArrangement = Arrangement.Center,
-            verticalAlignment = Alignment.CenterVertically
+                .fillMaxWidth(0.9f)
+//                .border(width = 1.dp, color = Color.Black, shape = RoundedCornerShape(1.dp))
+                .height(120.dp)
+                .padding(top = 10.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
         ) {
+            // 환율업데이트 버튼 구현
+            Row(
+                Modifier
+                    .fillMaxWidth()
+                    .height(35.dp),
+                horizontalArrangement = Arrangement.Center,
+                verticalAlignment = Alignment.CenterVertically
+            ){
+                Text(text = "환율 업데이트 횟수 3 회", fontSize = 18.sp)
 
-            Column(
-                modifier = Modifier
-                    .width(250.dp)
-                    .height(110.dp)
-                    .background(Color.White),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
+                Spacer(modifier = Modifier.width(20.dp))
 
+                CardButton(
+                    label = "횟수 추가",
+                    onClicked = { },
+                    buttonColor = TopButtonColor,
+                    fontColor = Color.Black,
+                    modifier = Modifier.width(80.dp),
+                    fontSize = 18
+                )
+                Spacer(modifier = Modifier.width(15.dp))
 
-                Card(
-                    modifier = Modifier
-                        .width(200.dp)
-                        .height(40.dp)
-                        .background(Color.White),
-                    border = BorderStroke(1.dp, Color.Black),
-                    colors = CardDefaults.cardColors(
-                        contentColor = Color.Black,
-                        containerColor = Color.White
-                    ),
-                    onClick = {
-                        isDialogOpen.value = !isDialogOpen.value
-
-                    }) {
-
-                    Text(
-                        text = "$date",
-                        color = Color.Black,
-                        fontSize = 18.sp,
-                        textAlign = TextAlign.Center,
-                        modifier = Modifier
-                            .width(160.dp)
-                            .height(40.dp)
-                            .padding(start = 35.dp, top = 8.dp))
-
-                    if (isDialogOpen.value) {
-                        MyDatePickerDialog(onDateSelected = { date, seleceted ->
-                            selectedDate.value = date
-                            dollarViewModel.dateFlow.value = date.toString()
-                            dollarViewModel.changeDateAction.value = seleceted!!
-                        }, onDismissRequest = {
-                            isDialogOpen.value = false
-                        }, id = 1,
-                            dollarViewModel
-                        )
-                    }
-                }
-                Spacer(modifier = Modifier.height(5.dp))
-
-                Row {
-                    DateButtonView(
-                        mainText = "모두",
-                        id = 2,
-                        selectedId = dateSelected.value,
-                        selectAction = {
-                            dollarViewModel.changeDateAction.value = it
-                        })
-
-                    Spacer(modifier = Modifier.width(18.dp))
-
-                    DateButtonView(
-                        mainText = "한달",
-                        id = 3,
-                        selectedId = dateSelected.value,
-                        selectAction = {
-                            dollarViewModel.changeDateAction.value = it
-                        })
-
-                    Spacer(modifier = Modifier.width(18.dp))
-
-                    DateButtonView(
-                        mainText = "일년",
-                        id = 4,
-                        selectedId = dateSelected.value,
-                        selectAction = {
-                            dollarViewModel.changeDateAction.value = it
-                        })
-                }
-
-
-            }
-
-            Column(
-                modifier = Modifier
-                    .width(110.dp)
-                    .height(110.dp)
-                    .background(Color.White)
-            ) {
-
-                Spacer(modifier = Modifier.height(8.dp))
-                InverstCheckBox(title = "매수",
-                    1, selectedCheckId = selectedCheckBoxId.value,
-                    selectCheckBoxAction = {
-                        dollarViewModel.selectedCheckBoxId.value = it
-                    })
-
-                InverstCheckBox(title = "매도",
-                    2, selectedCheckId = selectedCheckBoxId.value,
-                    selectCheckBoxAction = {
-                        dollarViewModel.selectedCheckBoxId.value = it
-                    }
+                CardIconButton(
+                    label = "새로고침",
+                    onClicked = { },
+                    buttonColor = TopButtonColor,
+                    fontColor = Color.Black,
+                    modifier = Modifier.width(90.dp),
+                    fontSize = 18
                 )
             }
+            // 최신환율 정보
+            Row(modifier = Modifier.weight(1f),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Center){
+                //업데이트 날짜 값
+                Column(modifier = Modifier.fillMaxHeight().weight(0.6f).padding(vertical = 10.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center) {
+                    Text(text = "현재 최신 환율: 2023-12-01 13:23")
+                    Text(text = "업데이트된 환율: 2023-12-01 14:15")
+                }
+                // 달러 현재 환율 값
+                Column(modifier = Modifier.fillMaxHeight().weight(0.3f).padding(end = 30.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center) {
+                    Text(text = "달러: 1,230", fontSize = 20.sp)
+                }
+
+            }
+
         }
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.End
+        ) {
+            Spacer(modifier = Modifier.height(8.dp))
+            InvestCheckBox(title = "매수",
+                1, selectedCheckId = selectedCheckBoxId.value,
+                selectCheckBoxAction = {
+                    dollarViewModel.selectedCheckBoxId.value = it
+                })
+
+            InvestCheckBox(title = "매도",
+                2, selectedCheckId = selectedCheckBoxId.value,
+                selectCheckBoxAction = {
+                    dollarViewModel.selectedCheckBoxId.value = it
+                }
+            )
+        }
+
         Column(
             horizontalAlignment = Alignment.End
         ) {
@@ -227,13 +197,15 @@ fun DollarMainScreen
                     .weight(1f)
             ) {
                 if (selectedCheckBoxId.value == 1)
-                    com.bobodroid.myapplication.lists.BuyRecordBox(dollarViewModel = dollarViewModel)
-                else com.bobodroid.myapplication.lists.SellRecordBox(dollarViewModel = dollarViewModel)
+                {
+                    BuyRecordBox(dollarViewModel = dollarViewModel)
+                } else {
+                    SellRecordBox(dollarViewModel = dollarViewModel)}
             }
 
             Row(
                 modifier = Modifier
-                    .height(100.dp)
+                    .height(120.dp)
                     .fillMaxWidth()
                     .padding(start = 20.dp, bottom = 10.dp),
                 horizontalArrangement = Arrangement.End,
@@ -241,16 +213,96 @@ fun DollarMainScreen
 
             ) {
 
-                Row(modifier = Modifier.weight(1f)
+//                Row(modifier = Modifier.weight(1f)
+//                ) {
+//                    if (selectedCheckBoxId.value == 2) GetMoneyView(
+//                        title = "총 수익",
+//                        getMoney = "${total.value}",
+//                        onClicked = { Log.d(TAG, "") },
+//                        dollarViewModel
+//                    )
+//                    else
+//                        null
+//                }
+
+
+                Column(
+                    modifier = Modifier
+                        .height(100.dp)
+                        .weight(1f),
+                    horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    if (selectedCheckBoxId.value == 2) GetMoneyView(
-                        title = "총 수익",
-                        getMoney = "${total.value}",
-                        onClicked = { Log.d(TAG, "") },
-                        dollarViewModel
-                    )
-                    else
-                        null
+
+
+                    Card(
+                        modifier = Modifier
+                            .width(200.dp)
+                            .height(40.dp),
+                        border = BorderStroke(1.dp, Color.Black),
+                        colors = CardDefaults.cardColors(
+                            contentColor = Color.Black,
+                            containerColor = Color.White
+                        ),
+                        onClick = {
+                            isDialogOpen.value = !isDialogOpen.value
+
+                        }) {
+
+                        Text(
+                            text = "$date",
+                            color = Color.Black,
+                            fontSize = 18.sp,
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier
+                                .width(160.dp)
+                                .height(40.dp)
+                                .padding(start = 35.dp, top = 8.dp))
+
+                        if (isDialogOpen.value) {
+                            MyDatePickerDialog(onDateSelected = { date, seleceted ->
+                                selectedDate.value = date
+                                dollarViewModel.dateFlow.value = date.toString()
+                                dollarViewModel.changeDateAction.value = seleceted!!
+                            }, onDismissRequest = {
+                                isDialogOpen.value = false
+                            }, id = 1,
+                                dollarViewModel
+                            )
+                        }
+                    }
+                    Spacer(modifier = Modifier.height(5.dp))
+
+                    Row {
+                        DateButtonView(
+                            mainText = "모두",
+                            id = 2,
+                            selectedId = dateSelected.value,
+                            selectAction = {
+                                dollarViewModel.changeDateAction.value = it
+                            })
+
+                        Spacer(modifier = Modifier.width(18.dp))
+
+                        DateButtonView(
+                            mainText = "한달",
+                            id = 3,
+                            selectedId = dateSelected.value,
+                            selectAction = {
+                                dollarViewModel.changeDateAction.value = it
+                            })
+
+                        Spacer(modifier = Modifier.width(18.dp))
+
+                        DateButtonView(
+                            mainText = "일년",
+                            id = 4,
+                            selectedId = dateSelected.value,
+                            selectAction = {
+                                dollarViewModel.changeDateAction.value = it
+                            })
+                    }
+
+
                 }
 
                 Spacer(modifier = Modifier.width(30.dp))

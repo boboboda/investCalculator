@@ -1,17 +1,12 @@
 package com.bobodroid.myapplication.components
 
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.ExperimentalTextApi
-import androidx.compose.ui.text.PlatformTextStyle
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.LineHeightStyle
 import androidx.compose.ui.text.style.TextAlign
@@ -34,12 +29,13 @@ fun RecordTextView(recordText: String,
             .padding(0.dp),
         contentAlignment = Alignment.Center
             ) {
-        AutoSizeText(value = "$recordText",
+        AutoSizeText(
+            value = "$recordText",
             fontSize = recordFontSize.sp,
             modifier = Modifier
                 .padding(bottom = bottonPpaing),
             color = color,
-            maxLines = 1,
+            maxLines = 2,
             minFontSize = 10.sp)
     }
 }

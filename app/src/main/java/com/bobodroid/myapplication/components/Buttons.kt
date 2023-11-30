@@ -2,20 +2,25 @@
 
 package com.bobodroid.myapplication.components
 
+import android.graphics.drawable.Icon
 import android.util.Log
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.ExperimentalMaterialApi
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Add
+import androidx.compose.material.icons.rounded.Refresh
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.PlatformTextStyle
-import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.style.LineHeightStyle
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
 import com.bobodroid.myapplication.MainActivity
 import com.bobodroid.myapplication.ui.theme.TopButtonColor
@@ -115,3 +120,83 @@ fun MoneyChButtonView(mainText: String,
             }
         }
     }
+
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun CardButton(label: String,
+               onClicked: () -> Unit,
+               fontSize: Int,
+               modifier: Modifier,
+               fontColor: Color,
+               buttonColor: Color,
+) {
+    Card(colors = CardDefaults.cardColors(buttonColor),
+        elevation = CardDefaults.cardElevation(8.dp),
+        modifier = modifier,
+        shape = RoundedCornerShape(2.dp),
+        onClick = {
+            Log.d(MainActivity.TAG, "클릭되었습니다.")
+            onClicked.invoke()
+        }) {
+        Row(Modifier.fillMaxSize(), horizontalArrangement = Arrangement.Center,
+            verticalAlignment = Alignment.CenterVertically) {
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
+            ) {
+                AutoSizeText(
+                    value = "$label",
+                    modifier = Modifier,
+                    fontSize = fontSize.sp,
+                    maxLines = 1,
+                    minFontSize = 10.sp,
+                    color = fontColor)
+            }
+
+        }
+
+    }
+}
+
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun CardIconButton(label: String,
+               onClicked: () -> Unit,
+               fontSize: Int,
+               modifier: Modifier,
+               fontColor: Color,
+               buttonColor: Color,
+) {
+    Card(colors = CardDefaults.cardColors( buttonColor),
+        elevation = CardDefaults.cardElevation(8.dp),
+        shape = RoundedCornerShape(2.dp),
+        modifier = modifier,
+        onClick = {
+            Log.d(MainActivity.TAG, "클릭되었습니다.")
+            onClicked.invoke()
+        }) {
+        Row(Modifier.fillMaxSize(), horizontalArrangement = Arrangement.Center,
+            verticalAlignment = Alignment.CenterVertically) {
+
+            Icon(
+                imageVector = Icons.Rounded.Refresh,
+                contentDescription = "",
+                tint = Color.Black)
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
+            ) {
+                AutoSizeText(
+                    value = "$label",
+                    modifier = Modifier,
+                    fontSize = fontSize.sp,
+                    maxLines = 1,
+                    minFontSize = 10.sp,
+                    color = fontColor)
+            }
+        }
+
+    }
+}

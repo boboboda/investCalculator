@@ -53,21 +53,22 @@ fun BuyRecordBox(dollarViewModel: DollarViewModel) {
     var selectedId by remember { mutableStateOf(UUID.randomUUID()) }
 
 
+
+
     Row(modifier = Modifier
-        .background(Color.White)
         .fillMaxWidth()
-        .height(80.dp),
+        .height(55.dp),
         horizontalArrangement = Arrangement.Center,
         verticalAlignment = Alignment.CenterVertically
     ) {
 
         RecordTextView(recordText = "날짜", 45.dp, 16, 2.5f, 0.dp, color = Color.Black)
         Spacer(modifier = Modifier.width(1.dp))
-        RecordTextView(recordText = "매수금", 45.dp, 16, 2.5f,  0.dp, color = Color.Black)
+        RecordTextView(recordText = "매수달러\n" + "(매수금)", 45.dp, 16, 2.5f,  0.dp, color = Color.Black)
         Spacer(modifier = Modifier.width(1.dp))
         RecordTextView(recordText = "매수환율", 45.dp, 16, 2.5f,  0.dp, color = Color.Black)
         Spacer(modifier = Modifier.width(1.dp))
-        RecordTextView(recordText = "매수달러", 45.dp, 16, 2.5f,  0.dp ,color = Color.Black)
+        RecordTextView(recordText = "예상수익", 45.dp, 16, 2.5f,  0.dp ,color = Color.Black)
 
     }
 
@@ -77,6 +78,7 @@ fun BuyRecordBox(dollarViewModel: DollarViewModel) {
             .fillMaxWidth()
             .background(Color.Gray)
             .height(2.dp))
+
 
 
         LazyColumn(
@@ -188,7 +190,7 @@ fun SellRecordBox(dollarViewModel: DollarViewModel) {
     Row(modifier = Modifier
         .background(Color.White)
         .fillMaxWidth()
-        .height(80.dp),
+        .height(55.dp),
         horizontalArrangement = Arrangement.Center,
         verticalAlignment = Alignment.CenterVertically
     ) {

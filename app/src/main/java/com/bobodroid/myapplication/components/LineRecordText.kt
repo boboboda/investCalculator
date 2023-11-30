@@ -29,8 +29,8 @@ import java.util.*
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LineRecordText(
-    date: DrBuyRecord,
-    sellAction: Boolean = date.recordColor,
+    data: DrBuyRecord,
+    sellAction: Boolean = data.recordColor,
     sellActed: (DrBuyRecord) -> Unit,
     onClicked: ((DrBuyRecord)-> Unit)?,
     dollarViewModel: DollarViewModel) {
@@ -46,7 +46,7 @@ fun LineRecordText(
         colors = CardDefaults.cardColors(containerColor = if(sellAction) SelectedColor else Color.White , contentColor = Color.Black),
         onClick = {
             if(openDialog.value == false) openDialog.value = !openDialog.value else null
-            onClicked?.invoke(date)
+            onClicked?.invoke(data)
         }
     ) {
         Row(
@@ -56,7 +56,7 @@ fun LineRecordText(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.Center) {
             RecordTextView(
-                recordText = "${date.date}",
+                recordText = "${data.date}",
                 TextHeight = 50.dp,
                 13,
                 2.5f,
@@ -66,7 +66,7 @@ fun LineRecordText(
             Spacer(modifier = Modifier.width(1.dp))
 
             RecordTextView(
-                recordText = "${date.money.toLong().toLongWon()}",
+                recordText = "${data.exchangeMoney.toDecUs()}\n (${data.money.toLong().toLongWon()})",
                 TextHeight = 50.dp,
                 13,
                 2.5f,
@@ -76,7 +76,7 @@ fun LineRecordText(
             Spacer(modifier = Modifier.width(1.dp))
 
             RecordTextView(
-                recordText = "${date.rate}",
+                recordText = "${data.rate}",
                 TextHeight = 50.dp,
                 13,
                 2.5f,
@@ -86,7 +86,7 @@ fun LineRecordText(
             Spacer(modifier = Modifier.width(1.dp))
 
             RecordTextView(
-                recordText = "${date.exchangeMoney.toDecUs()}",
+                recordText = "",
                 TextHeight = 50.dp,
                 13,
                 2.5f,
@@ -97,7 +97,7 @@ fun LineRecordText(
     }
     if (openDialog.value) {
        SellDialog(
-           sellAction = { sellActed(date)},
+           sellAction = { sellActed(data)},
            onDismissRequest = { openDialog.value = it},
            onClicked = {openDialog.value = it},
            dollarViewModel = dollarViewModel,)

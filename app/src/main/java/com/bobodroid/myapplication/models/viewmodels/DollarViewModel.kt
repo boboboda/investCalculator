@@ -8,7 +8,12 @@ import com.bobodroid.myapplication.MainActivity.Companion.TAG
 import com.bobodroid.myapplication.extensions.toWon
 import com.bobodroid.myapplication.models.datamodels.DrBuyRecord
 import com.bobodroid.myapplication.models.datamodels.DrSellRecord
+import com.bobodroid.myapplication.models.datamodels.ExchangeRate
 import com.bobodroid.myapplication.models.datamodels.InvestRepository
+import com.google.firebase.Firebase
+import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.Query
+import com.google.firebase.firestore.firestore
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.*
@@ -22,7 +27,6 @@ import kotlin.math.roundToInt
 
 @HiltViewModel
 class DollarViewModel @Inject constructor(private val investRepository: InvestRepository): ViewModel() {
-
 
     private val _buyRecordFlow = MutableStateFlow<List<DrBuyRecord>>(emptyList())
     val buyRecordFlow = _buyRecordFlow.asStateFlow()
@@ -51,6 +55,8 @@ class DollarViewModel @Inject constructor(private val investRepository: InvestRe
                     }
                 }
         }
+
+
     }
 
     //사용자 기록
@@ -288,29 +294,3 @@ class DollarViewModel @Inject constructor(private val investRepository: InvestRe
 }
 
 
-//    fun handleViewEvent(viewEvent: DollarRecordViewEvent) {
-//        when(viewEvent) {
-//
-//            is DollarRecordViewEvent.buyUpdateItem -> {
-//                val buyRecordState = _buyRecordFlow.value
-//                val items = buyRecordState.toMutableList().apply{
-//                    remove(viewEvent.drbuyrecord)
-//                }.toList()
-//                _buyRecordFlow.value = items
-//            }
-//            is DollarRecordViewEvent.sellRemoveItem -> {
-//                val buyRecordState = sellrecordFlow.value
-//                val items = buyRecordState.toMutableList().apply{
-//                    remove(viewEvent.recordBox)
-//                }.toList()
-//                sellrecordFlow.value = items
-//
-//            }
-//
-//            }
-//        }
-//
-//
-//
-//sealed class DollarRecordViewEvent{
-//    data class buyUpdateItem(val drbuyrecord: DrBuyRecord): DollarRecordViewEvent()

@@ -23,6 +23,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.bobodroid.myapplication.components.BannerAd
 import com.bobodroid.myapplication.components.MainTopBar
+import com.bobodroid.myapplication.models.viewmodels.AllViewModel
 import com.bobodroid.myapplication.models.viewmodels.DollarViewModel
 import com.bobodroid.myapplication.models.viewmodels.SharedViewModel
 import com.bobodroid.myapplication.models.viewmodels.WonViewModel
@@ -31,6 +32,9 @@ import com.bobodroid.myapplication.routes.*
 import com.bobodroid.myapplication.screens.*
 import com.bobodroid.myapplication.ui.theme.InverstCalculatorTheme
 import com.google.android.gms.ads.MobileAds
+import com.google.firebase.Firebase
+import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.firestore
 //import com.google.android.gms.ads.MobileAds
 import dagger.hilt.android.AndroidEntryPoint
 import java.util.*
@@ -40,7 +44,7 @@ import java.util.*
 class MainActivity : ComponentActivity() {
 
     companion object {
-        const val TAG = "클릭"
+        const val TAG = "메인"
     }
 
     private val dollarViewModel: DollarViewModel by viewModels()
@@ -51,6 +55,8 @@ class MainActivity : ComponentActivity() {
 
     private val wonViewModel: WonViewModel by viewModels()
 
+    private val allViewModel: AllViewModel by viewModels()
+
 
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -58,10 +64,11 @@ class MainActivity : ComponentActivity() {
         MobileAds.initialize(this)
         setContent {
                 MainScreen(
-                    dollarViewModel = dollarViewModel,
-                    yenViewModel = yenViewModel,
-                    wonViewModel = wonViewModel,
-                    sharedViewModel = sharedViewModel)
+                    dollarViewModel,
+                    yenViewModel,
+                    wonViewModel,
+                    sharedViewModel,
+                    allViewModel)
 
         }
     }
@@ -74,7 +81,8 @@ fun MainScreen(
     dollarViewModel: DollarViewModel,
     yenViewModel: YenViewModel,
     wonViewModel: WonViewModel,
-    sharedViewModel: SharedViewModel
+    sharedViewModel: SharedViewModel,
+    allViewModel: AllViewModel
 ) {
     Column(
         modifier = Modifier
@@ -84,7 +92,7 @@ fun MainScreen(
 
         Column(modifier = Modifier.weight(1f),
             verticalArrangement = Arrangement.Bottom) {
-            InverstAppScreen(dollarViewModel, yenViewModel, wonViewModel ,sharedViewModel)
+            InverstAppScreen(dollarViewModel, yenViewModel, wonViewModel ,sharedViewModel, allViewModel)
         }
         Column(
             modifier = Modifier
@@ -105,7 +113,8 @@ fun InverstAppScreen(
     dollarViewModel: DollarViewModel,
     yenViewModel: YenViewModel,
     wonViewModel: WonViewModel,
-    sharedViewModel: SharedViewModel) {
+    sharedViewModel: SharedViewModel,
+    allViewModel: AllViewModel) {
 
 
     val changeMoney: State<Int> = sharedViewModel.changeMoney.collectAsState()
@@ -137,13 +146,15 @@ fun InverstAppScreen(
             dollarNavController = dollarNavController,
             dollarViewModel = dollarViewModel,
             routeAction = dollarRouteAction,
-            sharedViewModel = sharedViewModel)
+            sharedViewModel = sharedViewModel,
+            allViewModel = allViewModel)
         }
         2 -> { YenNavHost(
             yenNavController = yenNavController ,
             yenViewModel = yenViewModel,
             routeAction = yenRouteAction,
-            sharedViewModel = sharedViewModel)
+            sharedViewModel = sharedViewModel,
+            allViewModel = allViewModel)
         }
         3 -> { WonNavHost(
             wonNavController = wonNavController,
@@ -164,11 +175,12 @@ fun DollarNavHost(
     startRouter: DollarRoute = DollarRoute.BUYRECORD,
     dollarViewModel: DollarViewModel,
     routeAction: DollarRouteAction,
-    sharedViewModel: SharedViewModel
+    sharedViewModel: SharedViewModel,
+    allViewModel: AllViewModel
 ) {
    NavHost(navController = dollarNavController, startDestination = startRouter.routeName) {
        composable(DollarRoute.BUYRECORD.routeName) {
-           DollarMainScreen(dollarViewModel, routeAction, sharedViewModel)
+           DollarMainScreen(dollarViewModel, routeAction, sharedViewModel, allViewModel)
        }
        composable(DollarRoute.BUY.routeName) {
            DollarInvestScreen(dollarViewModel, routeAction)
@@ -183,11 +195,12 @@ fun YenNavHost(
     startRouter: YenRoute = YenRoute.BUYRECORD,
     yenViewModel: YenViewModel,
     routeAction: YenRouteAction,
-    sharedViewModel: SharedViewModel
+    sharedViewModel: SharedViewModel,
+    allViewModel: AllViewModel
 ) {
     NavHost(navController = yenNavController, startDestination = startRouter.routeName) {
         composable(YenRoute.BUYRECORD.routeName) {
-            YenMainScreen(yenViewModel, routeAction, sharedViewModel)
+            YenMainScreen(yenViewModel, routeAction, sharedViewModel, allViewModel)
         }
         composable(YenRoute.BUY.routeName) {
             YenInvestScreen(yenViewModel, routeAction)

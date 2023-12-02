@@ -1,36 +1,26 @@
 {
   "project_info": {
-    "project_number": "531796709252",
-    "project_id": "my-admob-3e441",
-    "storage_bucket": "my-admob-3e441.appspot.com"
+    "project_number": "458388461923",
+    "project_id": "firebase-exchange-service",
+    "storage_bucket": "firebase-exchange-service.appspot.com"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:531796709252:android:00ac295589585217e757d1",
+        "mobilesdk_app_id": "1:458388461923:android:f6fc50bdfb72b20339db56",
         "android_client_info": {
           "package_name": "com.bobodroid.myapplication"
         }
       },
-      "oauth_client": [
-        {
-          "client_id": "531796709252-ej4n4uj207kobruhhj4j2rjom7ndkmml.apps.googleusercontent.com",
-          "client_type": 3
-        }
-      ],
+      "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyChLRefd-roiPKev__50md18pdMJtP10SA"
+          "current_key": "AIzaSyCPiNibvpcYBdAZM6PemAgGgWEqx-sRAvk"
         }
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": [
-            {
-              "client_id": "531796709252-ej4n4uj207kobruhhj4j2rjom7ndkmml.apps.googleusercontent.com",
-              "client_type": 3
-            }
-          ]
+          "other_platform_oauth_client": []
         }
       }
     }

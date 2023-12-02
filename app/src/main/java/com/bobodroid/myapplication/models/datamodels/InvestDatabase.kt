@@ -12,7 +12,7 @@ import com.bobodroid.myapplication.models.datamodels.DrBuyRecord
     YenSellRecord::class,
     WonBuyRecord::class,
     WonSellRecord::class
-                     ], version = 5, exportSchema = false)
+                     ], version = 5, exportSchema = true)
 abstract class InvestDatabase: RoomDatabase() {
 
     abstract fun DrBuyDao() : DollarBuyDatabaseDao

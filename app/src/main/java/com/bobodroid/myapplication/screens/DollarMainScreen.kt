@@ -65,6 +65,7 @@ import kotlin.collections.ArrayList
 import kotlin.math.absoluteValue
 import com.bobodroid.myapplication.lists.BuyRecordBox
 import com.bobodroid.myapplication.lists.SellRecordBox
+import com.bobodroid.myapplication.models.viewmodels.AllViewModel
 
 const val TAG = "메인"
 
@@ -75,7 +76,8 @@ const val TAG = "메인"
 fun DollarMainScreen
             (dollarViewModel: DollarViewModel,
              routeAction: DollarRouteAction,
-             sharedViewModel: SharedViewModel) {
+             sharedViewModel: SharedViewModel,
+             allViewModel: AllViewModel) {
 
 
     var selectedCheckBoxId = dollarViewModel.selectedCheckBoxId.collectAsState()
@@ -101,6 +103,8 @@ fun DollarMainScreen
 
     val total = dollarViewModel.total.collectAsState("")
 
+    val resentExchangeRate = allViewModel.exchangeRateFlow.collectAsState()
+
 
     Column(modifier = Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally)
     {
@@ -119,61 +123,97 @@ fun DollarMainScreen
             verticalArrangement = Arrangement.Center
         ) {
             // 환율업데이트 버튼 구현
-            Row(
-                Modifier
-                    .fillMaxWidth()
-                    .height(35.dp),
-                horizontalArrangement = Arrangement.Center,
-                verticalAlignment = Alignment.CenterVertically
-            ){
-                Text(text = "환율 업데이트 횟수 3 회", fontSize = 18.sp)
-
-                Spacer(modifier = Modifier.width(20.dp))
-
-                CardButton(
-                    label = "횟수 추가",
-                    onClicked = { },
-                    buttonColor = TopButtonColor,
-                    fontColor = Color.Black,
-                    modifier = Modifier.width(80.dp),
-                    fontSize = 18
-                )
-                Spacer(modifier = Modifier.width(15.dp))
-
-                CardIconButton(
-                    label = "새로고침",
-                    onClicked = { },
-                    buttonColor = TopButtonColor,
-                    fontColor = Color.Black,
-                    modifier = Modifier.width(90.dp),
-                    fontSize = 18
-                )
-            }
+//            Row(
+//                Modifier
+//                    .fillMaxWidth()
+//                    .height(35.dp),
+//                horizontalArrangement = Arrangement.Center,
+//                verticalAlignment = Alignment.CenterVertically
+//            ){
+//                Text(text = "환율 업데이트 횟수: 3(0) 회", fontSize = 18.sp)
+//
+//                Spacer(modifier = Modifier.width(20.dp))
+//
+//                CardButton(
+//                    label = "횟수 추가",
+//                    onClicked = {
+//
+//                    },
+//                    buttonColor = TopButtonColor,
+//                    fontColor = Color.Black,
+//                    modifier = Modifier.width(60.dp),
+//                    fontSize = 15
+//                )
+//                Spacer(modifier = Modifier.width(15.dp))
+//
+//            }
             // 최신환율 정보
             Row(modifier = Modifier.weight(1f),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.Center){
                 //업데이트 날짜 값
-                Column(modifier = Modifier.fillMaxHeight().weight(0.6f).padding(vertical = 10.dp),
+                Column(modifier = Modifier
+                    .fillMaxHeight()
+                    .weight(0.6f),
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.Center) {
-                    Text(text = "현재 최신 환율: 2023-12-01 13:23")
-                    Text(text = "업데이트된 환율: 2023-12-01 14:15")
+                    Row(modifier = Modifier
+                        .wrapContentSize(),
+                        horizontalArrangement = Arrangement.Center,
+                        verticalAlignment = Alignment.CenterVertically) {
+
+                        Text(text = "USD: ${resentExchangeRate.value.exchangeRates?.usd}", fontSize = 20.sp)
+                        Spacer(modifier = Modifier.width(5.dp))
+//                        CardIconButton(
+//                            label = "새로고침",
+//                            onClicked = {
+//
+//                            },
+//                            buttonColor = TopButtonColor,
+//                            fontColor = Color.Black,
+//                            modifier = Modifier
+//                                .width(80.dp)
+//                                .height(30.dp),
+//                            fontSize = 15
+//                        )
+                    }
+                    Spacer(modifier = Modifier.height(5.dp))
+                    Text(text = "업데이트된 환율: ${resentExchangeRate.value.createAt}")
+                    // 최신환율 업데이트 환율 같을 시 업데이트 통제
                 }
                 // 달러 현재 환율 값
-                Column(modifier = Modifier.fillMaxHeight().weight(0.3f).padding(end = 30.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.Center) {
-                    Text(text = "달러: 1,230", fontSize = 20.sp)
-                }
+//                Row(modifier = Modifier
+//                    .fillMaxHeight()
+//                    .weight(0.4f)
+//                    .padding(end = 30.dp),
+//                    horizontalArrangement = Arrangement.Center,
+//                    verticalAlignment = Alignment.CenterVertically) {
+//
+//                    Text(text = "스프레드: 1", fontSize = 15.sp)
+//
+//                    Spacer(modifier = Modifier.width(10.dp))
+//                    CardButton(
+//                        label = "설정",
+//                        onClicked = { /*TODO*/ },
+//                        fontSize = 15,
+//                        modifier = Modifier
+//                            .width(50.dp)
+//                            .height(35.dp),
+//                        fontColor = Color.Black,
+//                        buttonColor = TopButtonColor
+//                    )
+//                }
 
             }
 
         }
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.End
+            horizontalArrangement = Arrangement.End,
+            verticalAlignment = Alignment.CenterVertically
         ) {
+
+
             Spacer(modifier = Modifier.height(8.dp))
             InvestCheckBox(title = "매수",
                 1, selectedCheckId = selectedCheckBoxId.value,
@@ -365,87 +405,87 @@ fun GetMoneyView(title: String,
 
     androidx.compose.material
         .Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(85.dp),
-        onClick = onClicked
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(85.dp),
+            onClick = onClicked
         ) {
-        Row {
-            Column(
-                modifier = Modifier
-                    .padding(top = 8.dp)) {
-
-                Card(
+            Row {
+                Column(
                     modifier = Modifier
-                        .width(150.dp)
-                        .height(30.dp)
-                        .background(Color.White),
-                    border = BorderStroke(1.dp, Color.Black),
-                    colors = CardDefaults.cardColors(
-                        contentColor = Color.Black,
-                        containerColor = Color.White),
-                    onClick = { isFirstDialogOpen.value = !isFirstDialogOpen.value
+                        .padding(top = 8.dp)) {
 
-                    }) {
-                    Text(text = "시작: $firstDate", color = Color.Black, fontSize = 14.sp , textAlign = TextAlign.Center, modifier = Modifier
-                        .width(160.dp)
-                        .height(30.dp)
-                        .padding(start = 0.dp, top = 4.dp))
-
-                    if(isFirstDialogOpen.value) {
-                        SellFirstDatePickerDialog(onDateSelected = null,
-                            onDismissRequest = {
-                                isFirstDialogOpen.value = false
-                        }, id = 1,
-                            dollarViewModel
-                        )
-                    }
-                }
-                Spacer(modifier = Modifier.height(10.dp))
-
-                Card(
-                    modifier = Modifier
-                        .width(150.dp)
-                        .height(30.dp)
-                        .background(Color.White),
-                    border = BorderStroke(1.dp, Color.Black),
-                    colors = CardDefaults.cardColors(contentColor = Color.Black, containerColor = Color.White),
-                    onClick = { isSecondDialogOpen.value = !isSecondDialogOpen.value
-
-                    }) {
-                    Text(
-                        text = "종료: $secondDate",
-                        color = Color.Black,
-                        fontSize = 14.sp ,
-                        textAlign = TextAlign.Center,
+                    Card(
                         modifier = Modifier
+                            .width(150.dp)
+                            .height(30.dp)
+                            .background(Color.White),
+                        border = BorderStroke(1.dp, Color.Black),
+                        colors = CardDefaults.cardColors(
+                            contentColor = Color.Black,
+                            containerColor = Color.White),
+                        onClick = { isFirstDialogOpen.value = !isFirstDialogOpen.value
+
+                        }) {
+                        Text(text = "시작: $firstDate", color = Color.Black, fontSize = 14.sp , textAlign = TextAlign.Center, modifier = Modifier
                             .width(160.dp)
                             .height(30.dp)
                             .padding(start = 0.dp, top = 4.dp))
 
-                    if(isSecondDialogOpen.value) {
-                        SellEndDatePickerDialog(onDateSelected = null,
-                            onDismissRequest = {
-                                isSecondDialogOpen.value = false
-                        }, id = 1,
-                            dollarViewModel
-                        )
+                        if(isFirstDialogOpen.value) {
+                            SellFirstDatePickerDialog(onDateSelected = null,
+                                onDismissRequest = {
+                                    isFirstDialogOpen.value = false
+                                }, id = 1,
+                                dollarViewModel
+                            )
+                        }
                     }
+                    Spacer(modifier = Modifier.height(10.dp))
+
+                    Card(
+                        modifier = Modifier
+                            .width(150.dp)
+                            .height(30.dp)
+                            .background(Color.White),
+                        border = BorderStroke(1.dp, Color.Black),
+                        colors = CardDefaults.cardColors(contentColor = Color.Black, containerColor = Color.White),
+                        onClick = { isSecondDialogOpen.value = !isSecondDialogOpen.value
+
+                        }) {
+                        Text(
+                            text = "종료: $secondDate",
+                            color = Color.Black,
+                            fontSize = 14.sp ,
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier
+                                .width(160.dp)
+                                .height(30.dp)
+                                .padding(start = 0.dp, top = 4.dp))
+
+                        if(isSecondDialogOpen.value) {
+                            SellEndDatePickerDialog(onDateSelected = null,
+                                onDismissRequest = {
+                                    isSecondDialogOpen.value = false
+                                }, id = 1,
+                                dollarViewModel
+                            )
+                        }
+                    }
+
                 }
+                Column(modifier = Modifier
+                    .fillMaxSize()
+                    .padding(top = 10.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text(text = title)
 
+                    Spacer(modifier = Modifier.height(15.dp))
+                    Text(text = getMoney, color = Color.Red)
+                }
             }
-            Column(modifier = Modifier
-                .fillMaxSize()
-                .padding(top = 10.dp),
-                horizontalAlignment = Alignment.CenterHorizontally) {
-                Text(text = title)
-                
-                Spacer(modifier = Modifier.height(15.dp))
-                Text(text = getMoney, color = Color.Red)
-            }
+
         }
-
-    }
 }
 
 

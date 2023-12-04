@@ -33,7 +33,7 @@ import java.util.UUID
 @OptIn(ExperimentalMaterialApi::class)
 @SuppressLint("StateFlowValueCalledInComposition")
 @Composable
-fun BuyRecordBox(wonViewModel: WonViewModel) {
+fun BuyRecordBox(wonViewModel: WonViewModel, snackbarHostState: SnackbarHostState) {
 
     val dateChangeIn = wonViewModel.changeDateAction.collectAsState()
 
@@ -51,6 +51,8 @@ fun BuyRecordBox(wonViewModel: WonViewModel) {
 
 
     var selectedId by remember { mutableStateOf(UUID.randomUUID()) }
+
+
 
 
     Row(modifier = Modifier
@@ -159,7 +161,8 @@ fun BuyRecordBox(wonViewModel: WonViewModel) {
 
                                             }
                                 ,
-                                wonViewModel)
+                                wonViewModel,
+                                snackbarHostState = snackbarHostState)
 
                         }
                     }

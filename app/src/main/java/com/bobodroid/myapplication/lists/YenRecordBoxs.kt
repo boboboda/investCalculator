@@ -32,7 +32,7 @@ import java.util.UUID
 @OptIn(ExperimentalMaterialApi::class)
 @SuppressLint("StateFlowValueCalledInComposition")
 @Composable
-fun BuyRecordBox(yenViewModel: YenViewModel) {
+fun BuyRecordBox(yenViewModel: YenViewModel, snackbarHostState: SnackbarHostState) {
 
     val dateChangeIn = yenViewModel.changeDateAction.collectAsState()
 
@@ -151,7 +151,8 @@ fun BuyRecordBox(yenViewModel: YenViewModel) {
                                     yenViewModel.dateFlow.value = recordbox.date
                                     yenViewModel.haveMoney.value = recordbox.exchangeMoney.toInt()
                                     yenViewModel.recordInputMoney.value = recordbox.money.toInt() },
-                                yenViewModel)
+                                yenViewModel,
+                                snackbarHostState = snackbarHostState)
 
                         }
                     }

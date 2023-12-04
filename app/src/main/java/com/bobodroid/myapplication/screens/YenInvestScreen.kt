@@ -2,11 +2,8 @@
 
 package com.bobodroid.myapplication.screens
 
-import android.app.DatePickerDialog
-import android.content.Context
 import android.util.Log
 import android.widget.CalendarView
-import android.widget.DatePicker
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -16,20 +13,14 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
-import androidx.navigation.NavHostController
 import com.bobodroid.myapplication.components.*
-import com.bobodroid.myapplication.models.viewmodels.DollarViewModel
 import com.bobodroid.myapplication.models.viewmodels.YenViewModel
-import com.bobodroid.myapplication.routes.DollarRoute
-import com.bobodroid.myapplication.routes.DollarRouteAction
 import com.bobodroid.myapplication.routes.YenRoute
 import com.bobodroid.myapplication.routes.YenRouteAction
 import com.bobodroid.myapplication.ui.theme.*
@@ -37,6 +28,7 @@ import java.text.SimpleDateFormat
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.util.*
+import androidx.compose.material.SnackbarHostState
 
 @OptIn(ExperimentalMaterial3Api::class)
 
@@ -59,7 +51,7 @@ fun YenInvestScreen(yenViewModel: YenViewModel, routeAction: YenRouteAction) {
     var date = if(today == "") "$today" else {dateRecord.value}
 
 
-
+    val snackBarHostState = remember { SnackbarHostState() }
 
 
     Column(
@@ -106,9 +98,9 @@ fun YenInvestScreen(yenViewModel: YenViewModel, routeAction: YenRouteAction) {
                 fontSize = 18.sp,
                 textAlign = TextAlign.Center,
                 modifier = Modifier
-                .width(160.dp)
-                .height(40.dp)
-                .padding(start = 12.dp, top = 8.dp))
+                    .width(160.dp)
+                    .height(40.dp)
+                    .padding(start = 12.dp, top = 8.dp))
         }
 
 
@@ -120,9 +112,8 @@ fun YenInvestScreen(yenViewModel: YenViewModel, routeAction: YenRouteAction) {
 
         NumberField("매수금(원)을 입력해주세요", onClicked = {
              yenViewModel.moneyInputFlow.value = it
-
-
-        })
+        },
+            snackBarHostState)
 
         Spacer(modifier = Modifier
             .fillMaxWidth()

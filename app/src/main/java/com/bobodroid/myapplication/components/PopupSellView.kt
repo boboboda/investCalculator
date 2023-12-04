@@ -27,6 +27,7 @@ import com.bobodroid.myapplication.screens.TAG
 import com.bobodroid.myapplication.ui.theme.SellButtonColor
 import com.bobodroid.myapplication.ui.theme.SellPopColor
 import java.time.LocalDate
+import androidx.compose.material.SnackbarHostState
 import java.time.format.DateTimeFormatter
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -35,7 +36,8 @@ fun SellDialog(
     onDismissRequest: (Boolean) -> Unit,
     onClicked: ((Boolean) -> Unit)?,
     sellAction: () -> Unit,
-    dollarViewModel: DollarViewModel) {
+    dollarViewModel: DollarViewModel,
+    snackbarHostState: SnackbarHostState) {
 
     val isDialogOpen = remember { mutableStateOf(false) }
 
@@ -164,7 +166,8 @@ fun YenSellDialog(
     onDismissRequest: (Boolean) -> Unit,
     onClicked: ((Boolean) -> Unit)?,
     sellAction: () -> Unit,
-    yenViewModel: YenViewModel) {
+    yenViewModel: YenViewModel,
+    snackbarHostState: SnackbarHostState) {
 
     val isDialogOpen = remember { mutableStateOf(false) }
 
@@ -289,7 +292,8 @@ fun WonSellDialog(
     onDismissRequest: (Boolean) -> Unit,
     onClicked: ((Boolean) -> Unit)?,
     sellAction: () -> Unit,
-    wonViewModel: WonViewModel) {
+    wonViewModel: WonViewModel,
+    snackbarHostState: SnackbarHostState) {
 
     val isDialogOpen = remember { mutableStateOf(false) }
 

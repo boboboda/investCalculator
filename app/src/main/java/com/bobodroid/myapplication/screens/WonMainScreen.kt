@@ -12,6 +12,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
+import androidx.compose.material.SnackbarHostState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.rounded.Add
@@ -84,6 +85,8 @@ fun WonMainScreen(wonViewModel: WonViewModel, routeAction: WonRouteAction, share
     val dollartotal = wonViewModel.dollartotal.collectAsState("")
 
     val yentotal = wonViewModel.yentotal.collectAsState("")
+
+    val snackbarHostState = remember { SnackbarHostState() }
 
     Column(modifier = Modifier
         .fillMaxSize()
@@ -201,7 +204,7 @@ fun WonMainScreen(wonViewModel: WonViewModel, routeAction: WonRouteAction, share
                 modifier = Modifier
                     .weight(1f)) {
                 if (selectedCheckBoxId.value == 1)
-                    BuyRecordBox(wonViewModel)
+                    BuyRecordBox(wonViewModel, snackbarHostState = snackbarHostState)
                 else SellRecordBox(wonViewModel)
             }
 

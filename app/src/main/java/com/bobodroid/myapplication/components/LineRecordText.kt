@@ -24,6 +24,7 @@ import com.bobodroid.myapplication.ui.theme.SelectedColor
 import com.bobodroid.myapplication.ui.theme.SellPopColor
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
+import androidx.compose.material.SnackbarHostState
 import java.util.*
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -33,7 +34,8 @@ fun LineRecordText(
     sellAction: Boolean = data.recordColor,
     sellActed: (DrBuyRecord) -> Unit,
     onClicked: ((DrBuyRecord)-> Unit)?,
-    dollarViewModel: DollarViewModel) {
+    dollarViewModel: DollarViewModel,
+    snackbarHostState: SnackbarHostState) {
 
     val openDialog = remember { mutableStateOf(false) }
 
@@ -100,7 +102,8 @@ fun LineRecordText(
            sellAction = { sellActed(data)},
            onDismissRequest = { openDialog.value = it},
            onClicked = {openDialog.value = it},
-           dollarViewModel = dollarViewModel,)
+           dollarViewModel = dollarViewModel,
+           snackbarHostState = snackbarHostState)
     }
 }
 
@@ -151,7 +154,8 @@ fun LineRecordText(
     sellAction: Boolean = date.recordColor,
     sellActed: (YenBuyRecord) -> Unit,
     onClicked: ((YenBuyRecord)-> Unit)?,
-    yenViewModel: YenViewModel) {
+    yenViewModel: YenViewModel,
+    snackbarHostState: SnackbarHostState) {
 
     val openDialog = remember { mutableStateOf(false) }
 
@@ -195,7 +199,8 @@ fun LineRecordText(
             sellAction = { sellActed(date)},
             onDismissRequest = { openDialog.value = it},
             onClicked = {openDialog.value = it},
-            yenViewModel = yenViewModel)
+            yenViewModel = yenViewModel,
+            snackbarHostState = snackbarHostState)
     }
 }
 
@@ -249,7 +254,8 @@ fun WonLineRecordText(
     sellAction: Boolean = date.recordColor,
     sellActed: (WonBuyRecord) -> Unit,
     onClicked: ((WonBuyRecord)-> Unit)?,
-    wonViewModel: WonViewModel) {
+    wonViewModel: WonViewModel,
+    snackbarHostState: SnackbarHostState) {
 
     var openDialog = remember { mutableStateOf(false) }
 
@@ -295,7 +301,8 @@ fun WonLineRecordText(
             onDismissRequest = { openDialog.value = it},
             onClicked = {openDialog.value = it},
             wonViewModel = wonViewModel,
-            sellAction = { sellActed(date) })
+            sellAction = { sellActed(date) },
+            snackbarHostState = snackbarHostState)
     }
 }
 

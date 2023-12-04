@@ -2,11 +2,16 @@
 
 package com.bobodroid.myapplication.components
 
+import android.util.Log
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.SnackbarDuration
+import androidx.compose.material.SnackbarHost
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -24,11 +29,19 @@ import com.bobodroid.myapplication.models.datamodels.CalculateAction
 import com.bobodroid.myapplication.ui.theme.ActionButtonBgColor
 import com.bobodroid.myapplication.ui.theme.DollarColor
 import java.text.NumberFormat
+import androidx.compose.material.SnackbarHostState
+import com.bobodroid.myapplication.screens.TAG
+import com.google.android.material.snackbar.Snackbar
+import kotlinx.coroutines.launch
 import java.util.*
 
 
 @Composable
-fun PopupNumberView(onClicked: ((String) -> Unit)?) {
+fun PopupNumberView(
+    onClicked: ((String) -> Unit)?,
+    snackbarHostState: SnackbarHostState
+
+) {
 
 
     val buttons: List<String> = listOf(
@@ -44,12 +57,65 @@ fun PopupNumberView(onClicked: ((String) -> Unit)?) {
     var inputMoney = if(UserInput == "") "" else "${UserInput.toLong().toLongWon()}"
 
 
+    val snackBarHostState = remember { SnackbarHostState() }
+    val scope = rememberCoroutineScope()
 
 
     Card(modifier = Modifier
         .padding(15.dp),
         colors = CardDefaults.cardColors(containerColor = DollarColor)
     ) {
+
+        Row(modifier = Modifier
+            .fillMaxWidth()
+            .wrapContentHeight()) {
+            SnackbarHost(
+                hostState = snackBarHostState, modifier = Modifier,
+                snackbar = { snackbarData ->
+
+
+                    androidx.compose.material.Card(
+                        shape = RoundedCornerShape(8.dp),
+                        border = BorderStroke(2.dp, Color.Black),
+                        modifier = Modifier
+                            .padding(10.dp)
+                            .fillMaxWidth()
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(8.dp)
+                                .padding(start = 10.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.Start
+                        ) {
+
+                            Text(
+                                text = snackbarData.message,
+                                fontSize = 15.sp,
+                                lineHeight = 20.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+
+                            Spacer(modifier = Modifier.weight(1f))
+
+                            Card(
+                                modifier = Modifier.wrapContentSize(),
+                                onClick = {
+                                    snackBarHostState.currentSnackbarData?.dismiss()
+                                }) {
+                                androidx.compose.material.Text(
+                                    modifier = Modifier.padding(8.dp),
+                                    text = "닫기"
+                                )
+                            }
+                        }
+                    }
+                })
+        }
+
+
+
         LazyVerticalGrid(
             modifier = Modifier.padding(15.dp),
             columns = GridCells.Fixed(5),
@@ -108,7 +174,23 @@ fun PopupNumberView(onClicked: ((String) -> Unit)?) {
 
                 items(buttons) { aButtons ->
                     NumberButton(aButtons, onClicked = {
-                        if(UserInput == "0") UserInput = aButtons.toString() else UserInput += aButtons
+
+
+                        scope.launch {
+                            if(UserInput.length >= 12) {
+
+                                if(snackBarHostState.currentSnackbarData == null) {
+                                    snackBarHostState.showSnackbar(
+                                        "너무 큰 수를 입력하셨습니다.\n 열두자리 이하 숫자까지만 가능합니다.",
+                                        actionLabel = "닫기", SnackbarDuration.Short
+                                    )
+                                } else {
+                                    return@launch
+                                }
+                            } else {
+                                if(UserInput == "0") UserInput = aButtons.toString() else UserInput += aButtons
+                            }
+                        }
                     }) //숫자 버튼
                 }
 
@@ -116,7 +198,25 @@ fun PopupNumberView(onClicked: ((String) -> Unit)?) {
                     GridItemSpan(1)
                 }) {
                     NumberButtonBottom(number = "99", onClicked = {
-                        UserInput += "99"
+
+                        scope.launch {
+                            if(UserInput.length >= 12) {
+
+                                if(snackBarHostState.currentSnackbarData == null) {
+                                    snackBarHostState.showSnackbar(
+                                        "너무 큰 수를 입력하셨습니다.\n 열두자리 이하 숫자까지만 가능합니다.",
+                                        actionLabel = "닫기", SnackbarDuration.Short
+                                    )
+                                } else {
+                                    return@launch
+                                }
+                            } else {
+                                UserInput += "99"
+                            }
+                        }
+
+
+
                     }, 20)
                 }
 
@@ -124,7 +224,22 @@ fun PopupNumberView(onClicked: ((String) -> Unit)?) {
                     GridItemSpan(1)
                 }) {
                     NumberButtonBottom(number = "00", onClicked = {
-                        UserInput += "00"
+
+                        scope.launch {
+                            if(UserInput.length >= 12) {
+
+                                if(snackBarHostState.currentSnackbarData == null) {
+                                    snackBarHostState.showSnackbar(
+                                        "너무 큰 수를 입력하셨습니다.\n 열두자리 이하 숫자까지만 가능합니다.",
+                                        actionLabel = "닫기", SnackbarDuration.Short
+                                    )
+                                } else {
+                                    return@launch
+                                }
+                            } else {
+                                UserInput += "00"
+                            }
+                        }
                     }, 20)
                 }
 
@@ -132,7 +247,24 @@ fun PopupNumberView(onClicked: ((String) -> Unit)?) {
                     GridItemSpan(3)
                 }) {
                     NumberButtonBottom(number = "000", onClicked = {
-                        UserInput += "000"
+
+                        scope.launch {
+                            if(UserInput.length >= 12) {
+
+                                if(snackBarHostState.currentSnackbarData == null) {
+                                    snackBarHostState.showSnackbar(
+                                        "너무 큰 수를 입력하셨습니다.\n 열두자리 이하 숫자까지만 가능합니다.",
+                                        actionLabel = "닫기", SnackbarDuration.Short
+                                    )
+                                } else {
+                                    return@launch
+                                }
+                            } else {
+                                UserInput += "000"
+                            }
+                        }
+
+
                     }, 20)
                 }
 
@@ -151,7 +283,6 @@ fun PopupNumberView(onClicked: ((String) -> Unit)?) {
 @Composable
 fun ActionButton(action: CalculateAction, onClicked: (() -> Unit)? = null)  {
     Card(
-        elevation = CardDefaults.cardElevation(8.dp),
         colors = CardDefaults.cardColors(
             containerColor = ActionButtonBgColor
         ),
@@ -175,10 +306,10 @@ fun ActionButton(action: CalculateAction, onClicked: (() -> Unit)? = null)  {
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun NumberButton(number: String, onClicked: () -> Unit) {
     Card(
-        elevation = CardDefaults.cardElevation(8.dp) ,
         onClick = onClicked
     ) {
         Box(modifier = Modifier.fillMaxSize(),
@@ -199,7 +330,6 @@ fun NumberButton(number: String, onClicked: () -> Unit) {
 @Composable
 fun NumberButtonBottom(number: String, onClicked: () -> Unit, fontSize: Int) {
     Card(
-        elevation = CardDefaults.cardElevation(8.dp) ,
         onClick = onClicked
     ) {
         Box(
@@ -234,13 +364,13 @@ fun FloatPopupNumberView(onClicked: ((String) -> Unit)?) {
         "6", "7", "8", "9", "0"
     )
 
-
-
+    val snackBarHostState = remember { SnackbarHostState() }
+    val scope = rememberCoroutineScope()
 
     //매수금 입력
     var UserInput: String by remember { mutableStateOf("") }
 
-    var inputMoney = if(UserInput == "") "" else "${UserInput}"
+    var inputMoney = if(UserInput == "") "" else "${UserInput.toLong().toLongWon()}"
 
 
 
@@ -250,6 +380,54 @@ fun FloatPopupNumberView(onClicked: ((String) -> Unit)?) {
         .padding(15.dp),
         colors = CardDefaults.cardColors(containerColor = DollarColor)
     ) {
+        Row(modifier = Modifier
+            .fillMaxWidth()
+            .wrapContentHeight()) {
+            SnackbarHost(
+                hostState = snackBarHostState, modifier = Modifier,
+                snackbar = { snackbarData ->
+
+
+                    androidx.compose.material.Card(
+                        shape = RoundedCornerShape(8.dp),
+                        border = BorderStroke(2.dp, Color.Black),
+                        modifier = Modifier
+                            .padding(10.dp)
+                            .fillMaxWidth()
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(8.dp)
+                                .padding(start = 10.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.Start
+                        ) {
+
+                            Text(
+                                text = snackbarData.message,
+                                fontSize = 15.sp,
+                                lineHeight = 20.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+
+                            Spacer(modifier = Modifier.weight(1f))
+
+                            Card(
+                                modifier = Modifier.wrapContentSize(),
+                                onClick = {
+                                    snackBarHostState.currentSnackbarData?.dismiss()
+                                }) {
+                                androidx.compose.material.Text(
+                                    modifier = Modifier.padding(8.dp),
+                                    text = "닫기"
+                                )
+                            }
+                        }
+                    }
+                })
+        }
+
         LazyVerticalGrid(modifier = Modifier.padding(15.dp),
             columns = GridCells.Fixed(4),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -257,9 +435,12 @@ fun FloatPopupNumberView(onClicked: ((String) -> Unit)?) {
             content = {
 
                 item(span = { GridItemSpan(maxLineSpan) }) {
+
+
                     Row(
                         verticalAlignment = Alignment.Bottom,
                         horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End)) {
+
                         Text(
                             text = "$inputMoney",
                             fontSize = 40.sp,
@@ -307,10 +488,28 @@ fun FloatPopupNumberView(onClicked: ((String) -> Unit)?) {
                     )
                 }
 
-
                 items(buttons) { aButtons ->
                     FloatNumberButton(aButtons, onClicked = {
-                        if(UserInput == "0") UserInput = aButtons else UserInput += aButtons
+
+                        scope.launch {
+                            if(UserInput.length >= 10) {
+
+                               if(snackBarHostState.currentSnackbarData == null) {
+                                   snackBarHostState.showSnackbar(
+                                       "너무 큰 수를 입력하셨습니다.\n 열자리 이하 숫자까지만 가능합니다.",
+                                       actionLabel = "닫기", SnackbarDuration.Short
+                                   )
+                               } else {
+                                   return@launch
+                               }
+                            } else {
+                                if(UserInput == "0") UserInput = aButtons else UserInput += aButtons
+                            }
+                        }
+
+
+
+
                     }) //숫자 버튼
                 }
 
@@ -318,7 +517,21 @@ fun FloatPopupNumberView(onClicked: ((String) -> Unit)?) {
                     GridItemSpan(1)
                 }) {
                     NumberButtonBottom(number = "00", onClicked = {
-                        UserInput += "00"
+
+                        scope.launch {
+                            if(UserInput.length >= 10) {
+                                if(snackBarHostState.currentSnackbarData == null) {
+                                    snackBarHostState.showSnackbar(
+                                        "너무 큰 수를 입력하셨습니다.\n 열자리 이하 숫자까지만 가능합니다.",
+                                        actionLabel = "닫기", SnackbarDuration.Short
+                                    )
+                                } else {
+                                    return@launch
+                                }
+                            } else {
+                                UserInput += "00"
+                            }
+                        }
                     }, 30)
                 }
 
@@ -326,7 +539,23 @@ fun FloatPopupNumberView(onClicked: ((String) -> Unit)?) {
                     GridItemSpan(1)
                 }) {
                     FloatActionButton(action = CalculateAction.DOT,
-                        onClicked = {UserInput += "."})
+                        onClicked = {
+
+                            scope.launch {
+                                if(UserInput.length >= 10) {
+                                    if(snackBarHostState.currentSnackbarData == null) {
+                                        snackBarHostState.showSnackbar(
+                                            "너무 큰 수를 입력하셨습니다.\n 열자리 이하 숫자까지만 가능합니다.",
+                                            actionLabel = "닫기", SnackbarDuration.Short
+                                        )
+                                    } else {
+                                        return@launch
+                                    }
+                                } else {
+                                    UserInput += "."
+                                }
+                            }
+                            })
 
                 }
 
@@ -339,13 +568,15 @@ fun FloatPopupNumberView(onClicked: ((String) -> Unit)?) {
                 }
 
 
-            } )}
+            } )
+
+
+    }
 }
 
 @Composable
 fun FloatActionButton(action: CalculateAction, onClicked: (() -> Unit)? = null)  {
     Card(
-        elevation = CardDefaults.cardElevation(8.dp),
         colors = CardDefaults.cardColors(
             containerColor = ActionButtonBgColor
         ),
@@ -374,7 +605,6 @@ fun FloatActionButton(action: CalculateAction, onClicked: (() -> Unit)? = null) 
 @Composable
 fun FloatNumberButton(number: String, onClicked: () -> Unit) {
     Card(
-        elevation = CardDefaults.cardElevation(8.dp) ,
         onClick = onClicked
     ) {
         Box(

@@ -15,6 +15,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
+import androidx.compose.material.SnackbarHostState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.rounded.Add
@@ -94,6 +95,8 @@ fun YenMainScreen
     val total = yenViewModel.total.collectAsState("")
 
     val resentExchangeRate = allViewModel.exchangeRateFlow.collectAsState()
+
+    val snackbarHostState = remember { SnackbarHostState() }
 
     Column(
         modifier = Modifier
@@ -205,7 +208,7 @@ fun YenMainScreen
             ) {
 
                 if (selectedCheckBoxId.value == 1) {
-                    BuyRecordBox(yenViewModel)
+                    BuyRecordBox(yenViewModel, snackbarHostState = snackbarHostState)
                 } else {
                     SellRecordBox(yenViewModel)
                 }

@@ -11,21 +11,20 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Popup
-import androidx.compose.ui.window.PopupProperties
 import com.bobodroid.myapplication.extensions.toUs
 import com.bobodroid.myapplication.extensions.toYen
 import com.bobodroid.myapplication.models.viewmodels.WonViewModel
 import java.text.NumberFormat
 import java.util.*
+import androidx.compose.material.SnackbarHostState
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun NumberField(title: String, onClicked: ((String) -> Unit)?) {
+fun NumberField(title: String, onClicked: ((String) -> Unit)?, snackBarHostState: SnackbarHostState) {
     var won = NumberFormat.getInstance(Locale.KOREA)
     var openDialog = remember { mutableStateOf(false) }
     var userInput by remember { mutableStateOf(0) }
@@ -60,14 +59,16 @@ fun NumberField(title: String, onClicked: ((String) -> Unit)?) {
             offset = IntOffset(0, 1100)
         ) {
             Box(){
-                PopupNumberView(onClicked = {
+                PopupNumberView(
+                    onClicked = {
                     openDialog.value = false
                     userInput = it.toInt()
                     onClicked?.invoke(userInput.toString())
-                })
+                },
+                    snackBarHostState)
             }
         }
-    } else {}
+    }
 }
 
 
@@ -113,8 +114,8 @@ fun RateNumberField(title: String, onClicked: ((String) -> Unit)?) {
                 FloatPopupNumberView(onClicked = {
                     openDialog.value = false
                     userInput = it
-                    onClicked?.invoke(userInput.toString())
-                })
+                    onClicked?.invoke(userInput.toString())},
+                )
             }
         }
     } else {}
@@ -125,7 +126,7 @@ fun RateNumberField(title: String, onClicked: ((String) -> Unit)?) {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun WonNumberField(title: String, onClicked: ((String) -> Unit)?, wonViewModel: WonViewModel) {
+fun WonNumberField(title: String, onClicked: ((String) -> Unit)?, wonViewModel: WonViewModel, snackbarHostState: SnackbarHostState) {
     var won = NumberFormat.getInstance(Locale.KOREA)
     var openDialog = remember { mutableStateOf(false) }
     var userInput by remember { mutableStateOf(0) }
@@ -168,12 +169,14 @@ fun WonNumberField(title: String, onClicked: ((String) -> Unit)?, wonViewModel: 
             offset = IntOffset(0, 1100)
         ) {
             Box(){
-                PopupNumberView(onClicked = {
+                PopupNumberView(
+                    onClicked = {
                     openDialog.value = false
                     userInput = it.toInt()
                     onClicked?.invoke(userInput.toString())
-                })
+                },
+                    snackbarHostState )
             }
         }
-    } else {}
+    }
 }

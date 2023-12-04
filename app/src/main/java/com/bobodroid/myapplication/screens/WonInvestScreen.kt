@@ -13,6 +13,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.ExperimentalMaterialApi
+import androidx.compose.material.SnackbarHostState
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -61,6 +62,8 @@ fun WonInvestScreen(wonViewModel: WonViewModel, routeAction: WonRouteAction) {
     var date = if(today == "") "$today" else {dateRecord.value}
 
     val moneyCgBtnSelected = wonViewModel.moneyCgBtnSelected.collectAsState()
+
+    val snackbarHostState = remember { SnackbarHostState() }
 
 
     Column(
@@ -147,7 +150,8 @@ fun WonInvestScreen(wonViewModel: WonViewModel, routeAction: WonRouteAction) {
              wonViewModel.moneyInputFlow.value = it
 
 
-        },wonViewModel)
+        },wonViewModel,
+            snackbarHostState = snackbarHostState)
 
         Spacer(modifier = Modifier
             .fillMaxWidth()

@@ -370,7 +370,7 @@ fun FloatPopupNumberView(onClicked: ((String) -> Unit)?) {
     //매수금 입력
     var UserInput: String by remember { mutableStateOf("") }
 
-    var inputMoney = if(UserInput == "") "" else "${UserInput.toLong().toLongWon()}"
+    var inputMoney = if(UserInput == "") "" else "${UserInput}"
 
 
 

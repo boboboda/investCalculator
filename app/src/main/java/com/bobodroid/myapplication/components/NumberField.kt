@@ -29,7 +29,7 @@ fun NumberField(title: String, onClicked: ((String) -> Unit)?, snackBarHostState
     var openDialog = remember { mutableStateOf(false) }
     var userInput by remember { mutableStateOf(0) }
 
-    var inputMoney = if(userInput == 0) "$title" else "${won.format(userInput.toInt())}"
+    var inputMoney = if(userInput == 0) "$title" else "${userInput}"
 
     Card(
         modifier = Modifier

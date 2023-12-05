@@ -52,7 +52,6 @@ fun BuyRecordBox(yenViewModel: YenViewModel, snackbarHostState: SnackbarHostStat
 
 
     Row(modifier = Modifier
-        .background(Color.White)
         .fillMaxWidth()
         .height(80.dp),
         horizontalArrangement = Arrangement.Center,
@@ -185,7 +184,6 @@ fun SellRecordBox(yenViewModel: YenViewModel) {
     val sellSortRecord = sellRecordHistory.value.sortedBy { it.date }
 
     Row(modifier = Modifier
-        .background(Color.White)
         .fillMaxWidth()
         .height(80.dp),
         horizontalArrangement = Arrangement.Center,

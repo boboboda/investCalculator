@@ -21,6 +21,7 @@ import com.bobodroid.myapplication.models.viewmodels.WonViewModel
 import java.text.NumberFormat
 import java.util.*
 import androidx.compose.material.SnackbarHostState
+import com.bobodroid.myapplication.extensions.toLongWon
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -29,7 +30,7 @@ fun NumberField(title: String, onClicked: ((String) -> Unit)?, snackBarHostState
     var openDialog = remember { mutableStateOf(false) }
     var userInput by remember { mutableStateOf(0) }
 
-    var inputMoney = if(userInput == 0) "$title" else "${userInput}"
+    var inputMoney = if(userInput == 0) "$title" else "${userInput.toLong().toLongWon()}"
 
     Card(
         modifier = Modifier
@@ -127,7 +128,6 @@ fun RateNumberField(title: String, onClicked: ((String) -> Unit)?) {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun WonNumberField(title: String, onClicked: ((String) -> Unit)?, wonViewModel: WonViewModel, snackbarHostState: SnackbarHostState) {
-    var won = NumberFormat.getInstance(Locale.KOREA)
     var openDialog = remember { mutableStateOf(false) }
     var userInput by remember { mutableStateOf(0) }
 

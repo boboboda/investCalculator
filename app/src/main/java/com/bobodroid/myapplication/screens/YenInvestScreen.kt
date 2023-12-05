@@ -29,11 +29,14 @@ import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.util.*
 import androidx.compose.material.SnackbarHostState
+import com.bobodroid.myapplication.models.viewmodels.SharedViewModel
+import com.bobodroid.myapplication.routes.InvestRoute
+import com.bobodroid.myapplication.routes.InvestRouteAction
 
 @OptIn(ExperimentalMaterial3Api::class)
 
 @Composable
-fun YenInvestScreen(yenViewModel: YenViewModel, routeAction: YenRouteAction) {
+fun YenInvestScreen(yenViewModel: YenViewModel, routeAction: InvestRouteAction, sharedViewModel: SharedViewModel) {
 
 
 
@@ -146,7 +149,8 @@ fun YenInvestScreen(yenViewModel: YenViewModel, routeAction: YenRouteAction) {
                 onClicked = {
                     yenViewModel.buyAddRecord()
                     yenViewModel.selectedCheckBoxId.value = 1
-                    routeAction.navTo(YenRoute.BUYRECORD)
+                    routeAction.navTo(InvestRoute.MAIN)
+                    sharedViewModel.changeMoney.value = 2
 
                 }
                 , color = BuyColor
@@ -161,7 +165,8 @@ fun YenInvestScreen(yenViewModel: YenViewModel, routeAction: YenRouteAction) {
 
             Buttons( "닫기", onClicked = {
                 yenViewModel.selectedCheckBoxId.value = 1
-                routeAction.navTo(YenRoute.BUYRECORD)
+                routeAction.navTo(InvestRoute.MAIN)
+                sharedViewModel.changeMoney.value = 2
             }
                 , color = BuyColor
                 , fontColor = Color.Black

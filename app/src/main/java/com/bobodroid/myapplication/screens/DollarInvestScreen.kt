@@ -19,20 +19,22 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.bobodroid.myapplication.components.*
 import com.bobodroid.myapplication.models.viewmodels.DollarViewModel
-import com.bobodroid.myapplication.routes.DollarRoute
-import com.bobodroid.myapplication.routes.DollarRouteAction
 import com.bobodroid.myapplication.ui.theme.*
 import java.text.SimpleDateFormat
 import java.util.*
 import androidx.compose.material.SnackbarDuration
 import androidx.compose.material.SnackbarHost
 import androidx.compose.material.SnackbarHostState
+import com.bobodroid.myapplication.models.viewmodels.SharedViewModel
+import com.bobodroid.myapplication.routes.InvestRoute
+import com.bobodroid.myapplication.routes.InvestRouteAction
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterialApi::class)
 
 @Composable
 fun DollarInvestScreen(dollarViewModel: DollarViewModel,
-                       routeAction: DollarRouteAction) {
+                       routeAction: InvestRouteAction,
+                       sharedViewModel: SharedViewModel) {
 
 
 
@@ -152,7 +154,9 @@ fun DollarInvestScreen(dollarViewModel: DollarViewModel,
                     onClicked = {
                         dollarViewModel.buyDollarAdd()
                         dollarViewModel.selectedCheckBoxId.value = 1
-                        routeAction.navTo(DollarRoute.BUYRECORD)
+                        routeAction.navTo(InvestRoute.MAIN)
+                        sharedViewModel.changeMoney.value = 1
+
                     }
                     , color = BuyColor
                     , fontColor = Color.Black
@@ -167,7 +171,8 @@ fun DollarInvestScreen(dollarViewModel: DollarViewModel,
                 Buttons( "닫기",
                     onClicked = {
                         dollarViewModel.selectedCheckBoxId.value = 1
-                        routeAction.navTo(DollarRoute.BUYRECORD) },
+                        routeAction.navTo(InvestRoute.MAIN)
+                        sharedViewModel.changeMoney.value = 1 },
                     color = BuyColor,
                     fontColor = Color.Black,
                     modifier = Modifier

@@ -31,6 +31,7 @@ import androidx.navigation.NavHostController
 import com.bobodroid.myapplication.components.*
 import com.bobodroid.myapplication.components.Caldenders.WonMyDatePickerDialog
 import com.bobodroid.myapplication.models.viewmodels.DollarViewModel
+import com.bobodroid.myapplication.models.viewmodels.SharedViewModel
 import com.bobodroid.myapplication.models.viewmodels.WonViewModel
 import com.bobodroid.myapplication.models.viewmodels.YenViewModel
 import com.bobodroid.myapplication.routes.*
@@ -44,7 +45,7 @@ import java.util.*
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterialApi::class)
 
 @Composable
-fun WonInvestScreen(wonViewModel: WonViewModel, routeAction: WonRouteAction) {
+fun WonInvestScreen(wonViewModel: WonViewModel, routeAction: InvestRouteAction, sharedViewModel: SharedViewModel) {
 
 
 
@@ -184,7 +185,8 @@ fun WonInvestScreen(wonViewModel: WonViewModel, routeAction: WonRouteAction) {
                 onClicked = {
                     wonViewModel.buyAddRecord()
                     wonViewModel.selectedCheckBoxId.value = 1
-                    routeAction.navTo(WonRoute.BUYRECORD)
+                    routeAction.navTo(InvestRoute.MAIN)
+                    sharedViewModel.changeMoney.value = 3
                     Log.d(TAG, "${wonViewModel.exchangeMoney.value}")
 
                 }
@@ -200,7 +202,8 @@ fun WonInvestScreen(wonViewModel: WonViewModel, routeAction: WonRouteAction) {
 
             Buttons( "닫기", onClicked = {
                 wonViewModel.selectedCheckBoxId.value = 1
-                routeAction.navTo(WonRoute.BUYRECORD)
+                routeAction.navTo(InvestRoute.MAIN)
+                sharedViewModel.changeMoney.value = 3
             }
                 , color = BuyColor
                 , fontColor = Color.Black

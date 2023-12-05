@@ -59,9 +59,8 @@ import kotlin.collections.ArrayList
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalUnitApi::class, ExperimentalMaterialApi::class)
 @Composable
-fun WonMainScreen(wonViewModel: WonViewModel, routeAction: WonRouteAction, sharedViewModel: SharedViewModel) {
+fun WonMainScreen(wonViewModel: WonViewModel, routeAction: InvestRouteAction) {
 
-    val changeMoney = sharedViewModel.changeMoney.collectAsState()
 
     var selectedCheckBoxId = wonViewModel.selectedCheckBoxId.collectAsState()
 
@@ -89,15 +88,9 @@ fun WonMainScreen(wonViewModel: WonViewModel, routeAction: WonRouteAction, share
     val snackbarHostState = remember { SnackbarHostState() }
 
     Column(modifier = Modifier
-        .fillMaxSize()
-        .background(Color.White)) {
-        Row(modifier = Modifier.fillMaxWidth()) {
-            TopTitleButton(sharedViewModel)
-        }
-
+        .fillMaxSize()) {
         Row(
             modifier = Modifier
-                .background(Color.White)
                 .fillMaxWidth()
                 .height(120.dp),
             horizontalArrangement = Arrangement.Center,
@@ -107,8 +100,7 @@ fun WonMainScreen(wonViewModel: WonViewModel, routeAction: WonRouteAction, share
             Column(
                 modifier = Modifier
                     .width(250.dp)
-                    .height(110.dp)
-                    .background(Color.White),
+                    .height(110.dp),
                 horizontalAlignment = Alignment.CenterHorizontally) {
 
 
@@ -232,7 +224,7 @@ fun WonMainScreen(wonViewModel: WonViewModel, routeAction: WonRouteAction, share
                 Spacer(modifier = Modifier.width(30.dp))
 
                 LargeFloatingActionButton(
-                    onClick = { routeAction.navTo(WonRoute.BUY)},
+                    onClick = { routeAction.navTo(InvestRoute.WON_BUY)},
                     containerColor = androidx.compose.material.MaterialTheme.colors.secondary,
                     shape = RoundedCornerShape(16.dp),
                     modifier = Modifier

@@ -22,6 +22,8 @@ import androidx.compose.material.SnackbarHostState
 import androidx.compose.material.TextFieldColors
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material3.*
 import androidx.compose.material3.Button
@@ -48,8 +50,6 @@ import com.bobodroid.myapplication.components.*
 import com.bobodroid.myapplication.extensions.toWon
 import com.bobodroid.myapplication.models.viewmodels.DollarViewModel
 import com.bobodroid.myapplication.models.viewmodels.SharedViewModel
-import com.bobodroid.myapplication.routes.DollarRoute
-import com.bobodroid.myapplication.routes.DollarRouteAction
 import com.bobodroid.myapplication.ui.theme.InverstCalculatorTheme
 import com.bobodroid.myapplication.ui.theme.TopButtonColor
 import com.bobodroid.myapplication.ui.theme.TopButtonInColor
@@ -67,16 +67,14 @@ import kotlin.math.absoluteValue
 import com.bobodroid.myapplication.lists.BuyRecordBox
 import com.bobodroid.myapplication.lists.SellRecordBox
 import com.bobodroid.myapplication.models.viewmodels.AllViewModel
-
-const val TAG = "메인"
-
-
+import com.bobodroid.myapplication.routes.InvestRoute
+import com.bobodroid.myapplication.routes.InvestRouteAction
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalUnitApi::class, ExperimentalMaterialApi::class)
 @Composable
 fun DollarMainScreen
             (dollarViewModel: DollarViewModel,
-             routeAction: DollarRouteAction,
+             routeAction: InvestRouteAction,
              sharedViewModel: SharedViewModel,
              allViewModel: AllViewModel) {
 
@@ -112,10 +110,6 @@ fun DollarMainScreen
     Column(modifier = Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally)
     {
 
-        Row(modifier = Modifier.fillMaxWidth()) {
-            TopTitleButton(sharedViewModel)
-        }
-
         Column(
             modifier = Modifier
                 .fillMaxWidth(0.9f)
@@ -126,30 +120,30 @@ fun DollarMainScreen
             verticalArrangement = Arrangement.Center
         ) {
             // 환율업데이트 버튼 구현
-//            Row(
-//                Modifier
-//                    .fillMaxWidth()
-//                    .height(35.dp),
-//                horizontalArrangement = Arrangement.Center,
-//                verticalAlignment = Alignment.CenterVertically
-//            ){
-//                Text(text = "환율 업데이트 횟수: 3(0) 회", fontSize = 18.sp)
-//
-//                Spacer(modifier = Modifier.width(20.dp))
-//
-//                CardButton(
-//                    label = "횟수 추가",
-//                    onClicked = {
-//
-//                    },
-//                    buttonColor = TopButtonColor,
-//                    fontColor = Color.Black,
-//                    modifier = Modifier.width(60.dp),
-//                    fontSize = 15
-//                )
-//                Spacer(modifier = Modifier.width(15.dp))
-//
-//            }
+            Row(
+                Modifier
+                    .fillMaxWidth()
+                    .height(35.dp),
+                horizontalArrangement = Arrangement.Center,
+                verticalAlignment = Alignment.CenterVertically
+            ){
+                Text(text = "환율 업데이트 횟수: 3(0) 회", fontSize = 18.sp)
+
+                Spacer(modifier = Modifier.width(20.dp))
+
+                CardButton(
+                    label = "횟수 추가",
+                    onClicked = {
+
+                    },
+                    buttonColor = TopButtonColor,
+                    fontColor = Color.Black,
+                    modifier = Modifier.width(60.dp),
+                    fontSize = 15
+                )
+                Spacer(modifier = Modifier.width(15.dp))
+
+            }
             // 최신환율 정보
             Row(modifier = Modifier.weight(1f),
                 verticalAlignment = Alignment.CenterVertically,
@@ -167,45 +161,45 @@ fun DollarMainScreen
 
                         Text(text = "USD: ${resentExchangeRate.value.exchangeRates?.usd}", fontSize = 20.sp)
                         Spacer(modifier = Modifier.width(5.dp))
-//                        CardIconButton(
-//                            label = "새로고침",
-//                            onClicked = {
-//
-//                            },
-//                            buttonColor = TopButtonColor,
-//                            fontColor = Color.Black,
-//                            modifier = Modifier
-//                                .width(80.dp)
-//                                .height(30.dp),
-//                            fontSize = 15
-//                        )
+                        CardTextIconButton(
+                            label = "새로고침",
+                            onClicked = {
+
+                            },
+                            buttonColor = TopButtonColor,
+                            fontColor = Color.Black,
+                            modifier = Modifier
+                                .width(80.dp)
+                                .height(30.dp),
+                            fontSize = 15
+                        )
                     }
                     Spacer(modifier = Modifier.height(5.dp))
                     Text(text = "업데이트된 환율: ${resentExchangeRate.value.createAt}")
                     // 최신환율 업데이트 환율 같을 시 업데이트 통제
                 }
-                // 달러 현재 환율 값
-//                Row(modifier = Modifier
-//                    .fillMaxHeight()
-//                    .weight(0.4f)
-//                    .padding(end = 30.dp),
-//                    horizontalArrangement = Arrangement.Center,
-//                    verticalAlignment = Alignment.CenterVertically) {
-//
-//                    Text(text = "스프레드: 1", fontSize = 15.sp)
-//
-//                    Spacer(modifier = Modifier.width(10.dp))
-//                    CardButton(
-//                        label = "설정",
-//                        onClicked = { /*TODO*/ },
-//                        fontSize = 15,
-//                        modifier = Modifier
-//                            .width(50.dp)
-//                            .height(35.dp),
-//                        fontColor = Color.Black,
-//                        buttonColor = TopButtonColor
-//                    )
-//                }
+//                 달러 현재 환율 값
+                Row(modifier = Modifier
+                    .fillMaxHeight()
+                    .weight(0.4f)
+                    .padding(end = 30.dp),
+                    horizontalArrangement = Arrangement.Center,
+                    verticalAlignment = Alignment.CenterVertically) {
+
+                    Text(text = "스프레드: 1", fontSize = 15.sp)
+
+                    Spacer(modifier = Modifier.width(10.dp))
+                    CardButton(
+                        label = "설정",
+                        onClicked = { /*TODO*/ },
+                        fontSize = 15,
+                        modifier = Modifier
+                            .width(50.dp)
+                            .height(35.dp),
+                        fontColor = Color.Black,
+                        buttonColor = TopButtonColor
+                    )
+                }
 
             }
 
@@ -351,7 +345,7 @@ fun DollarMainScreen
                 Spacer(modifier = Modifier.width(30.dp))
 
                 FloatingActionButton(
-                    onClick = { routeAction.navTo(DollarRoute.BUY) },
+                    onClick = { routeAction.navTo(InvestRoute.DOLLAR_BUY) },
                     containerColor = MaterialTheme.colors.secondary,
                     shape = RoundedCornerShape(16.dp),
                     modifier = Modifier

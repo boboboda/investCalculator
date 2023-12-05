@@ -46,8 +46,8 @@ import com.bobodroid.myapplication.components.Caldenders.YenTopPickerDialog
 import com.bobodroid.myapplication.lists.BuyRecordBox
 import com.bobodroid.myapplication.lists.SellRecordBox
 import com.bobodroid.myapplication.models.viewmodels.*
-import com.bobodroid.myapplication.routes.DollarRoute
-import com.bobodroid.myapplication.routes.DollarRouteAction
+import com.bobodroid.myapplication.routes.InvestRoute
+import com.bobodroid.myapplication.routes.InvestRouteAction
 import com.bobodroid.myapplication.routes.YenRoute
 import com.bobodroid.myapplication.routes.YenRouteAction
 import com.bobodroid.myapplication.ui.theme.InverstCalculatorTheme
@@ -67,11 +67,9 @@ import kotlin.collections.ArrayList
 @Composable
 fun YenMainScreen
             (yenViewModel: YenViewModel,
-             routeAction: YenRouteAction,
-             sharedViewModel: SharedViewModel,
+             routeAction: InvestRouteAction,
              allViewModel: AllViewModel) {
 
-    val changeMoney = sharedViewModel.changeMoney.collectAsState()
 
     var selectedCheckBoxId = yenViewModel.selectedCheckBoxId.collectAsState()
 
@@ -101,18 +99,10 @@ fun YenMainScreen
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color.White)
     ) {
-
-        Row(modifier = Modifier.fillMaxWidth()) {
-            TopTitleButton(sharedViewModel)
-        }
-
-
 
         Row(
             modifier = Modifier
-                .background(Color.White)
                 .fillMaxWidth()
                 .height(120.dp),
             horizontalArrangement = Arrangement.Center,
@@ -134,45 +124,45 @@ fun YenMainScreen
 
                         Text(text = "JPY: ${resentExchangeRate.value.exchangeRates?.jpy}", fontSize = 20.sp)
                         Spacer(modifier = Modifier.width(5.dp))
-//                        CardIconButton(
-//                            label = "새로고침",
-//                            onClicked = {
-//
-//                            },
-//                            buttonColor = TopButtonColor,
-//                            fontColor = Color.Black,
-//                            modifier = Modifier
-//                                .width(80.dp)
-//                                .height(30.dp),
-//                            fontSize = 15
-//                        )
+                        CardTextIconButton(
+                            label = "새로고침",
+                            onClicked = {
+
+                            },
+                            buttonColor = TopButtonColor,
+                            fontColor = Color.Black,
+                            modifier = Modifier
+                                .width(80.dp)
+                                .height(30.dp),
+                            fontSize = 15,
+                        )
                     }
                     Spacer(modifier = Modifier.height(5.dp))
                     Text(text = "업데이트된 환율: ${resentExchangeRate.value.createAt}")
                     // 최신환율 업데이트 환율 같을 시 업데이트 통제
                 }
-                // 달러 현재 환율 값
-//                Row(modifier = Modifier
-//                    .fillMaxHeight()
-//                    .weight(0.4f)
-//                    .padding(end = 30.dp),
-//                    horizontalArrangement = Arrangement.Center,
-//                    verticalAlignment = Alignment.CenterVertically) {
-//
-//                    Text(text = "스프레드: 1", fontSize = 15.sp)
-//
-//                    Spacer(modifier = Modifier.width(10.dp))
-//                    CardButton(
-//                        label = "설정",
-//                        onClicked = { /*TODO*/ },
-//                        fontSize = 15,
-//                        modifier = Modifier
-//                            .width(50.dp)
-//                            .height(35.dp),
-//                        fontColor = Color.Black,
-//                        buttonColor = TopButtonColor
-//                    )
-//                }
+//                 달러 현재 환율 값
+                Row(modifier = Modifier
+                    .fillMaxHeight()
+                    .weight(0.4f)
+                    .padding(end = 30.dp),
+                    horizontalArrangement = Arrangement.Center,
+                    verticalAlignment = Alignment.CenterVertically) {
+
+                    Text(text = "스프레드: 1", fontSize = 15.sp)
+
+                    Spacer(modifier = Modifier.width(10.dp))
+                    CardButton(
+                        label = "설정",
+                        onClicked = { /*TODO*/ },
+                        fontSize = 15,
+                        modifier = Modifier
+                            .width(50.dp)
+                            .height(35.dp),
+                        fontColor = Color.Black,
+                        buttonColor = TopButtonColor
+                    )
+                }
 
             }
 
@@ -318,7 +308,7 @@ fun YenMainScreen
                 Spacer(modifier = Modifier.width(30.dp))
 
                 FloatingActionButton(
-                    onClick = { routeAction.navTo(YenRoute.BUY) },
+                    onClick = { routeAction.navTo(InvestRoute.YEN_BUY) },
                     containerColor = androidx.compose.material.MaterialTheme.colors.secondary,
                     shape = RoundedCornerShape(16.dp),
                     modifier = Modifier

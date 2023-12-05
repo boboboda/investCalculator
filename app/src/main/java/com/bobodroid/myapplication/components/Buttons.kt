@@ -6,6 +6,7 @@ import android.graphics.drawable.Icon
 import android.util.Log
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.ExperimentalMaterialApi
@@ -18,10 +19,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.graphics.drawable.IconCompat.IconType
 import com.bobodroid.myapplication.MainActivity
 import com.bobodroid.myapplication.ui.theme.TopButtonColor
 import com.bobodroid.myapplication.ui.theme.TopButtonInColor
@@ -162,7 +165,7 @@ fun CardButton(label: String,
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun CardIconButton(label: String,
+fun CardTextIconButton(label: String,
                onClicked: () -> Unit,
                fontSize: Int,
                modifier: Modifier,
@@ -200,3 +203,49 @@ fun CardIconButton(label: String,
 
     }
 }
+
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun CardIconButton(imageVector: ImageVector,
+                   onClicked: () -> Unit,
+                   modifier: Modifier,
+                   buttonColor: Color,
+) {
+    Card(colors = CardDefaults.cardColors( buttonColor ),
+        elevation = CardDefaults.cardElevation(8.dp),
+        shape = RoundedCornerShape(2.dp),
+        modifier = modifier,
+        onClick = {
+            Log.d(MainActivity.TAG, "클릭되었습니다.")
+            onClicked.invoke()
+        }) {
+        Row(Modifier.wrapContentSize(), horizontalArrangement = Arrangement.Center,
+            verticalAlignment = Alignment.CenterVertically) {
+            Icon(
+                imageVector = imageVector,
+                contentDescription = "",
+                tint = Color.Black)
+        }
+
+    }
+}
+
+@Composable
+fun IconButton(imageVector: ImageVector,
+                   onClicked: () -> Unit,
+               modifier: Modifier,
+) {
+    Row(modifier.wrapContentSize(), horizontalArrangement = Arrangement.Center,
+        verticalAlignment = Alignment.CenterVertically) {
+        Icon(
+            imageVector = imageVector,
+            modifier = Modifier.clickable {
+                onClicked.invoke()
+            },
+            contentDescription = "",
+            tint = Color.Black)
+    }
+
+}
+

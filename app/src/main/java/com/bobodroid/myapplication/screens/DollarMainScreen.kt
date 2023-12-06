@@ -49,6 +49,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.bobodroid.myapplication.MainActivity
 import com.bobodroid.myapplication.R
 import com.bobodroid.myapplication.components.*
+import com.bobodroid.myapplication.components.Caldenders.rangeDateDialog
 import com.bobodroid.myapplication.extensions.toWon
 import com.bobodroid.myapplication.models.viewmodels.DollarViewModel
 import com.bobodroid.myapplication.models.viewmodels.SharedViewModel
@@ -71,6 +72,8 @@ import com.bobodroid.myapplication.lists.SellRecordBox
 import com.bobodroid.myapplication.models.viewmodels.AllViewModel
 import com.bobodroid.myapplication.routes.InvestRoute
 import com.bobodroid.myapplication.routes.InvestRouteAction
+import java.time.Instant
+import java.time.ZoneId
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalUnitApi::class, ExperimentalMaterialApi::class)
 @Composable
@@ -83,7 +86,7 @@ fun DollarMainScreen
 
     var selectedCheckBoxId = dollarViewModel.selectedCheckBoxId.collectAsState()
 
-    val isDialogOpen = remember { mutableStateOf(false) }
+    val showOpenDialog = remember { mutableStateOf(false) }
 
     val time = Calendar.getInstance().time
 
@@ -107,6 +110,12 @@ fun DollarMainScreen
     val resentExchangeRate = allViewModel.exchangeRateFlow.collectAsState()
 
     val snackbarHostState = remember { SnackbarHostState() }
+
+    val callStartDate = dollarViewModel.startDateFlow.collectAsState()
+
+    var callEndDate = dollarViewModel.endDateFlow.collectAsState()
+
+    val scope = rememberCoroutineScope()
 
 
     Column(modifier = Modifier
@@ -218,89 +227,9 @@ fun DollarMainScreen
 //                }
 
 
-//                Column(
-//                    modifier = Modifier
-//                        .height(100.dp)
-//                        .weight(1f),
-//                    horizontalAlignment = Alignment.CenterHorizontally
-//                ) {
-//
-//
-//                    Card(
-//                        modifier = Modifier
-//                            .width(200.dp)
-//                            .height(40.dp),
-//                        border = BorderStroke(1.dp, Color.Black),
-//                        colors = CardDefaults.cardColors(
-//                            contentColor = Color.Black,
-//                            containerColor = Color.White
-//                        ),
-//                        onClick = {
-//                            isDialogOpen.value = !isDialogOpen.value
-//
-//                        }) {
-//
-//                        Text(
-//                            text = "$date",
-//                            color = Color.Black,
-//                            fontSize = 18.sp,
-//                            textAlign = TextAlign.Center,
-//                            modifier = Modifier
-//                                .width(160.dp)
-//                                .height(40.dp)
-//                                .padding(start = 35.dp, top = 8.dp))
-//
-//                        if (isDialogOpen.value) {
-//                            MyDatePickerDialog(onDateSelected = { date, seleceted ->
-//                                selectedDate.value = date
-//                                dollarViewModel.dateFlow.value = date.toString()
-//                                dollarViewModel.changeDateAction.value = seleceted!!
-//                            }, onDismissRequest = {
-//                                isDialogOpen.value = false
-//                            }, id = 1,
-//                                dollarViewModel
-//                            )
-//                        }
-//                    }
-//                    Spacer(modifier = Modifier.height(5.dp))
-//
-//                    Row {
-//                        DateButtonView(
-//                            mainText = "모두",
-//                            id = 2,
-//                            selectedId = dateSelected.value,
-//                            selectAction = {
-//                                dollarViewModel.changeDateAction.value = it
-//                            })
-//
-//                        Spacer(modifier = Modifier.width(18.dp))
-//
-//                        DateButtonView(
-//                            mainText = "한달",
-//                            id = 3,
-//                            selectedId = dateSelected.value,
-//                            selectAction = {
-//                                dollarViewModel.changeDateAction.value = it
-//                            })
-//
-//                        Spacer(modifier = Modifier.width(18.dp))
-//
-//                        DateButtonView(
-//                            mainText = "일년",
-//                            id = 4,
-//                            selectedId = dateSelected.value,
-//                            selectAction = {
-//                                dollarViewModel.changeDateAction.value = it
-//                            })
-//                    }
-//
-//
-//                }
-
-
                 FloatingActionButton(
                     onClick = {
-                        isDialogOpen.value = true
+                        showOpenDialog.value = true
                     },
                     containerColor = MaterialTheme.colors.secondary,
                     shape = RoundedCornerShape(16.dp),
@@ -332,10 +261,34 @@ fun DollarMainScreen
                     )
                 }
 
-                if(isDialogOpen.value){
-
-
-
+                if(showOpenDialog.value) {
+                    rangeDateDialog(
+                        onDismissRequest = {
+                            showOpenDialog.value = it
+                        },
+                        callStartDate.value,
+                        callEndDate.value,
+                        selectedStartDate = {
+                            dollarViewModel.startDateFlow.value = Instant.ofEpochMilli(it).atZone(
+                                ZoneId.systemDefault()).toLocalDate().toString()
+                        },
+                        selectedEndDate = {
+                            dollarViewModel.endDateFlow.value = Instant.ofEpochMilli(it).atZone(ZoneId.systemDefault()).toLocalDate().toString()
+                        },
+                        onClicked = {
+//                            scope.launch {
+//
+//                                val rangeDate = BigDataDate(startDate = dataViewModel.startDateFlow.value, endDate = dataViewModel.endDateFlow.value )
+//
+//
+//                                val addList = dataViewModel.allNumberDateRangeFlow.value.toMutableList().apply {
+//                                    add(dateData)
+//                                }
+//
+//                                dataViewModel.allNumberDateRangeFlow.emit(addList)
+//                            }
+                        }
+                    )
                 }
             }
 

@@ -30,3 +30,7 @@ val DeleteColor = Color(0xFFF5EA5A)
 
 val TopBarColor = Color(0xFFD7BBD9)
 val BackgroundColor = Color(0xFFF6F7C1)
+
+val DialogBackgroundColor = Color(0xFFF5F5DC)
+val WelcomeScreenRegisterButtonColor = Color(0xFFFDFCED)
+val WelcomeScreenBackgroundColor = Color(0xFFCAE8F5)

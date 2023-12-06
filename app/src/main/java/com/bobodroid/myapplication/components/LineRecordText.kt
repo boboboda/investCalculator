@@ -31,7 +31,7 @@ import java.util.*
 @Composable
 fun LineRecordText(
     data: DrBuyRecord,
-    sellAction: Boolean = data.recordColor,
+    sellAction: Boolean = data.recordColor!!,
     sellActed: (DrBuyRecord) -> Unit,
     onClicked: ((DrBuyRecord)-> Unit)?,
     dollarViewModel: DollarViewModel,
@@ -68,7 +68,7 @@ fun LineRecordText(
             Spacer(modifier = Modifier.width(1.dp))
 
             RecordTextView(
-                recordText = "${data.exchangeMoney.toDecUs()}\n (${data.money.toLong().toLongWon()})",
+                recordText = "${data.exchangeMoney!!.toDecUs()}\n (${data.money!!.toLong().toLongWon()})",
                 TextHeight = 50.dp,
                 13,
                 2.5f,

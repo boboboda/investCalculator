@@ -117,12 +117,40 @@ class DollarViewModel @Inject constructor(private val investRepository: InvestRe
     }
 
     val buyMonthFilterRecordFlow : Flow<List<DrBuyRecord>> = buyRecordFlow.combine(oneMonthFlow.filterNot { it.isEmpty() }) { buyRecordList, selectedDate ->
-        buyRecordList.filter {it.date >= selectedDate}
+        buyRecordList.filter {it.date!! >= selectedDate}
     }
 
     val buyYearFilterRecordFlow : Flow<List<DrBuyRecord>> = buyRecordFlow.combine(oneYearFlow.filterNot { it.isEmpty() }) { buyRecordList, selectedDate ->
-        buyRecordList.filter {it.date >= selectedDate}
+        buyRecordList.filter {it.date!! >= selectedDate}
     }
+
+
+    val startDateFlow = MutableStateFlow("${LocalDate.now()}")
+
+    val endDateFlow = MutableStateFlow("${LocalDate.now()}")
+
+    val startFilterBuyRecordFlow = buyRecordFlow.combine(startDateFlow.filterNot { it.isEmpty() }) { recordList, startDate ->
+        recordList.filter { it.date!! >= startDate } }
+
+    var endFilterBuyRecordFlow = startFilterBuyRecordFlow.combine(endDateFlow) { sellRecordList, endDate ->
+        sellRecordList.filter { it.date!! <= endDate }
+    }
+
+
+//    val cgStateValue = MutableStateFlow<DrBuyRecord>(
+////        DrBuyRecord()
+//    )
+//
+//    val cgValue = cgStateValue.replayCache
+//
+//    val drBuyDateRangeStateFlow = endFilterBuyRecordFlow.stateIn(viewModelScope, SharingStarted.Eagerly, cgValue)
+
+
+
+
+
+
+
 
 
     val sellDayFilteredRecordFlow : Flow<List<DrSellRecord>> = sellRecordFlow.combine(dateFlow.filterNot { it.isEmpty() }) { buyRecordList, selectedDate ->

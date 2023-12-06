@@ -143,7 +143,7 @@ fun BuyRecordBox(dollarViewModel: DollarViewModel,
                         ) {
                             LineRecordText(
                                 Buy,
-                                sellAction = Buy.recordColor
+                                sellAction = Buy.recordColor!!
                                 ,
                                 sellActed = { buyRecord ->
                                     selectedId = buyRecord.id
@@ -153,9 +153,9 @@ fun BuyRecordBox(dollarViewModel: DollarViewModel,
                                 },
                                 onClicked = { recordbox ->
                                     selectedId = recordbox.id
-                                    dollarViewModel.dateFlow.value = recordbox.date
-                                    dollarViewModel.haveMoneyDollar.value = recordbox.exchangeMoney
-                                    dollarViewModel.recordInputMoney.value = recordbox.money.toInt() },
+                                    dollarViewModel.dateFlow.value = recordbox.date!!
+                                    dollarViewModel.haveMoneyDollar.value = recordbox.exchangeMoney!!
+                                    dollarViewModel.recordInputMoney.value = recordbox.money!!.toInt() },
                                  dollarViewModel,
                                 snackbarHostState = snackbarHostState)
 

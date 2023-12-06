@@ -1,5 +1,6 @@
 package com.bobodroid.myapplication.models.datamodels
 
+import androidx.room.AutoMigration
 import androidx.room.Database
 import androidx.room.RoomDatabase
 import com.bobodroid.myapplication.models.datamodels.DrBuyRecord
@@ -12,7 +13,11 @@ import com.bobodroid.myapplication.models.datamodels.DrBuyRecord
     YenSellRecord::class,
     WonBuyRecord::class,
     WonSellRecord::class
-                     ], version = 5, exportSchema = true)
+                     ],
+//    autoMigrations = [
+//        AutoMigration(from = 5, to = 6)
+//                                         ],
+    version = 5, exportSchema = true)
 abstract class InvestDatabase: RoomDatabase() {
 
     abstract fun DrBuyDao() : DollarBuyDatabaseDao

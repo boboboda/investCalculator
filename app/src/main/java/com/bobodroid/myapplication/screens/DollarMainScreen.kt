@@ -1,6 +1,7 @@
 package com.bobodroid.myapplication.screens
 
 import android.annotation.SuppressLint
+import android.app.DatePickerDialog
 import android.util.Log
 import androidx.activity.viewModels
 import androidx.compose.animation.animateColorAsState
@@ -25,6 +26,7 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material.icons.rounded.Add
+import androidx.compose.material.icons.rounded.DateRange
 import androidx.compose.material3.*
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -107,50 +109,25 @@ fun DollarMainScreen
     val snackbarHostState = remember { SnackbarHostState() }
 
 
-    Column(modifier = Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally)
+    Column(modifier = Modifier
+        .fillMaxSize(),
+        horizontalAlignment = Alignment.CenterHorizontally)
     {
 
         Column(
             modifier = Modifier
                 .fillMaxWidth(0.9f)
-//                .border(width = 1.dp, color = Color.Black, shape = RoundedCornerShape(1.dp))
-                .height(120.dp)
-                .padding(top = 10.dp),
+                .height(100.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
-            // 환율업데이트 버튼 구현
-            Row(
-                Modifier
-                    .fillMaxWidth()
-                    .height(35.dp),
-                horizontalArrangement = Arrangement.Center,
-                verticalAlignment = Alignment.CenterVertically
-            ){
-                Text(text = "환율 업데이트 횟수: 3(0) 회", fontSize = 18.sp)
-
-                Spacer(modifier = Modifier.width(20.dp))
-
-                CardButton(
-                    label = "횟수 추가",
-                    onClicked = {
-
-                    },
-                    buttonColor = TopButtonColor,
-                    fontColor = Color.Black,
-                    modifier = Modifier.width(60.dp),
-                    fontSize = 15
-                )
-                Spacer(modifier = Modifier.width(15.dp))
-
-            }
-            // 최신환율 정보
-            Row(modifier = Modifier.weight(1f),
+            Row(modifier = Modifier
+                .weight(1f),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.Center){
                 //업데이트 날짜 값
                 Column(modifier = Modifier
-                    .fillMaxHeight()
+                    .wrapContentHeight()
                     .weight(0.6f),
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.Center) {
@@ -160,7 +137,7 @@ fun DollarMainScreen
                         verticalAlignment = Alignment.CenterVertically) {
 
                         Text(text = "USD: ${resentExchangeRate.value.exchangeRates?.usd}", fontSize = 20.sp)
-                        Spacer(modifier = Modifier.width(5.dp))
+                        Spacer(modifier = Modifier.width(10.dp))
                         CardTextIconButton(
                             label = "새로고침",
                             onClicked = {
@@ -174,31 +151,9 @@ fun DollarMainScreen
                             fontSize = 15
                         )
                     }
-                    Spacer(modifier = Modifier.height(5.dp))
+                    Spacer(modifier = Modifier.height(15.dp))
                     Text(text = "업데이트된 환율: ${resentExchangeRate.value.createAt}")
                     // 최신환율 업데이트 환율 같을 시 업데이트 통제
-                }
-//                 달러 현재 환율 값
-                Row(modifier = Modifier
-                    .fillMaxHeight()
-                    .weight(0.4f)
-                    .padding(end = 30.dp),
-                    horizontalArrangement = Arrangement.Center,
-                    verticalAlignment = Alignment.CenterVertically) {
-
-                    Text(text = "스프레드: 1", fontSize = 15.sp)
-
-                    Spacer(modifier = Modifier.width(10.dp))
-                    CardButton(
-                        label = "설정",
-                        onClicked = { /*TODO*/ },
-                        fontSize = 15,
-                        modifier = Modifier
-                            .width(50.dp)
-                            .height(35.dp),
-                        fontColor = Color.Black,
-                        buttonColor = TopButtonColor
-                    )
                 }
 
             }
@@ -210,8 +165,8 @@ fun DollarMainScreen
             verticalAlignment = Alignment.CenterVertically
         ) {
 
+            Spacer(modifier = Modifier.weight(1f))
 
-            Spacer(modifier = Modifier.height(8.dp))
             InvestCheckBox(title = "매수",
                 1, selectedCheckId = selectedCheckBoxId.value,
                 selectCheckBoxAction = {
@@ -263,86 +218,104 @@ fun DollarMainScreen
 //                }
 
 
-                Column(
+//                Column(
+//                    modifier = Modifier
+//                        .height(100.dp)
+//                        .weight(1f),
+//                    horizontalAlignment = Alignment.CenterHorizontally
+//                ) {
+//
+//
+//                    Card(
+//                        modifier = Modifier
+//                            .width(200.dp)
+//                            .height(40.dp),
+//                        border = BorderStroke(1.dp, Color.Black),
+//                        colors = CardDefaults.cardColors(
+//                            contentColor = Color.Black,
+//                            containerColor = Color.White
+//                        ),
+//                        onClick = {
+//                            isDialogOpen.value = !isDialogOpen.value
+//
+//                        }) {
+//
+//                        Text(
+//                            text = "$date",
+//                            color = Color.Black,
+//                            fontSize = 18.sp,
+//                            textAlign = TextAlign.Center,
+//                            modifier = Modifier
+//                                .width(160.dp)
+//                                .height(40.dp)
+//                                .padding(start = 35.dp, top = 8.dp))
+//
+//                        if (isDialogOpen.value) {
+//                            MyDatePickerDialog(onDateSelected = { date, seleceted ->
+//                                selectedDate.value = date
+//                                dollarViewModel.dateFlow.value = date.toString()
+//                                dollarViewModel.changeDateAction.value = seleceted!!
+//                            }, onDismissRequest = {
+//                                isDialogOpen.value = false
+//                            }, id = 1,
+//                                dollarViewModel
+//                            )
+//                        }
+//                    }
+//                    Spacer(modifier = Modifier.height(5.dp))
+//
+//                    Row {
+//                        DateButtonView(
+//                            mainText = "모두",
+//                            id = 2,
+//                            selectedId = dateSelected.value,
+//                            selectAction = {
+//                                dollarViewModel.changeDateAction.value = it
+//                            })
+//
+//                        Spacer(modifier = Modifier.width(18.dp))
+//
+//                        DateButtonView(
+//                            mainText = "한달",
+//                            id = 3,
+//                            selectedId = dateSelected.value,
+//                            selectAction = {
+//                                dollarViewModel.changeDateAction.value = it
+//                            })
+//
+//                        Spacer(modifier = Modifier.width(18.dp))
+//
+//                        DateButtonView(
+//                            mainText = "일년",
+//                            id = 4,
+//                            selectedId = dateSelected.value,
+//                            selectAction = {
+//                                dollarViewModel.changeDateAction.value = it
+//                            })
+//                    }
+//
+//
+//                }
+
+
+                FloatingActionButton(
+                    onClick = {
+                        isDialogOpen.value = true
+                    },
+                    containerColor = MaterialTheme.colors.secondary,
+                    shape = RoundedCornerShape(16.dp),
                     modifier = Modifier
-                        .height(100.dp)
-                        .weight(1f),
-                    horizontalAlignment = Alignment.CenterHorizontally
+                        .padding(bottom = 10.dp, end = 20.dp)
+                        .size(60.dp),
                 ) {
-
-
-                    Card(
-                        modifier = Modifier
-                            .width(200.dp)
-                            .height(40.dp),
-                        border = BorderStroke(1.dp, Color.Black),
-                        colors = CardDefaults.cardColors(
-                            contentColor = Color.Black,
-                            containerColor = Color.White
-                        ),
-                        onClick = {
-                            isDialogOpen.value = !isDialogOpen.value
-
-                        }) {
-
-                        Text(
-                            text = "$date",
-                            color = Color.Black,
-                            fontSize = 18.sp,
-                            textAlign = TextAlign.Center,
-                            modifier = Modifier
-                                .width(160.dp)
-                                .height(40.dp)
-                                .padding(start = 35.dp, top = 8.dp))
-
-                        if (isDialogOpen.value) {
-                            MyDatePickerDialog(onDateSelected = { date, seleceted ->
-                                selectedDate.value = date
-                                dollarViewModel.dateFlow.value = date.toString()
-                                dollarViewModel.changeDateAction.value = seleceted!!
-                            }, onDismissRequest = {
-                                isDialogOpen.value = false
-                            }, id = 1,
-                                dollarViewModel
-                            )
-                        }
-                    }
-                    Spacer(modifier = Modifier.height(5.dp))
-
-                    Row {
-                        DateButtonView(
-                            mainText = "모두",
-                            id = 2,
-                            selectedId = dateSelected.value,
-                            selectAction = {
-                                dollarViewModel.changeDateAction.value = it
-                            })
-
-                        Spacer(modifier = Modifier.width(18.dp))
-
-                        DateButtonView(
-                            mainText = "한달",
-                            id = 3,
-                            selectedId = dateSelected.value,
-                            selectAction = {
-                                dollarViewModel.changeDateAction.value = it
-                            })
-
-                        Spacer(modifier = Modifier.width(18.dp))
-
-                        DateButtonView(
-                            mainText = "일년",
-                            id = 4,
-                            selectedId = dateSelected.value,
-                            selectAction = {
-                                dollarViewModel.changeDateAction.value = it
-                            })
-                    }
-
-
+                    androidx.compose.material3.Icon(
+                        imageVector = Icons.Rounded.DateRange,
+                        contentDescription = "날짜 범위 지정",
+                        tint = Color.White
+                    )
                 }
 
-                Spacer(modifier = Modifier.width(30.dp))
+                Spacer(modifier = Modifier.width(15.dp))
 
                 FloatingActionButton(
                     onClick = { routeAction.navTo(InvestRoute.DOLLAR_BUY) },
@@ -357,6 +330,12 @@ fun DollarMainScreen
                         contentDescription = "매수화면 가기",
                         tint = Color.White
                     )
+                }
+
+                if(isDialogOpen.value){
+
+
+
                 }
             }
 
@@ -407,6 +386,10 @@ fun GetMoneyView(title: String,
                 .height(85.dp),
             onClick = onClicked
         ) {
+
+
+//            androidx.compose.material3
+//            DatePicker
             Row {
                 Column(
                     modifier = Modifier

@@ -17,6 +17,7 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
+import androidx.compose.material.DrawerValue
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.SnackbarHostState
 import androidx.compose.material.TextFieldColors
@@ -34,10 +35,16 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Outline
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.PlatformTextStyle
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.LineHeightStyle
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
@@ -70,6 +77,8 @@ import com.bobodroid.myapplication.models.viewmodels.AllViewModel
 import com.bobodroid.myapplication.models.viewmodels.WonViewModel
 import com.bobodroid.myapplication.models.viewmodels.YenViewModel
 import com.bobodroid.myapplication.routes.InvestRouteAction
+import com.google.firebase.ktx.Firebase
+import org.checkerframework.checker.units.qual.A
 
 const val TAG = "메인"
 
@@ -80,9 +89,9 @@ const val TAG = "메인"
 fun MainScreen(dollarViewModel: DollarViewModel,
                yenViewModel: YenViewModel,
                wonViewModel: WonViewModel,
-             routeAction: InvestRouteAction,
-             sharedViewModel: SharedViewModel,
-             allViewModel: AllViewModel) {
+               routeAction: InvestRouteAction,
+               sharedViewModel: SharedViewModel,
+               allViewModel: AllViewModel) {
 
 
     var selectedCheckBoxId = dollarViewModel.selectedCheckBoxId.collectAsState()
@@ -114,45 +123,63 @@ fun MainScreen(dollarViewModel: DollarViewModel,
 
     val rowViewController = sharedViewModel.changeMoney.collectAsState()
 
+    val drawerState = rememberDrawerState(DrawerValue.Closed)
 
-    Column(modifier = Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally)
-    {
+    val scope = rememberCoroutineScope()
 
-        Row(modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically) {
-            TopTitleButton(sharedViewModel)
+    ModalDrawer(
+        drawerState = drawerState,
+        drawerShape = NavShape(widthOffset = 0.dp, scale = 0.6f),
+        drawerContent = {
+            DrawerCustom(allViewModel = allViewModel)
+        },
+    ) {
+        Column(modifier = Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally)
+        {
 
-            Spacer(modifier = Modifier.weight(1f))
+            Row(modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically) {
+                TopTitleButton(sharedViewModel)
 
-            IconButton(imageVector = Icons.Outlined.Settings, onClicked = { /*TODO*/ }, modifier = Modifier.padding(end = 10.dp))
+                Spacer(modifier = Modifier.weight(1f))
+
+                IconButton(
+                    imageVector = Icons.Outlined.Settings,
+                    onClicked = {
+                        scope.launch {
+                            drawerState.open()
+                        }
+
+                    }, modifier = Modifier.padding(end = 10.dp))
+            }
+
+            when(rowViewController.value) {
+                1-> {
+                    DollarMainScreen(
+                        dollarViewModel = dollarViewModel,
+                        routeAction = routeAction,
+                        sharedViewModel = sharedViewModel,
+                        allViewModel = allViewModel
+                    )
+                }
+
+                2-> {
+                    YenMainScreen(
+                        yenViewModel = yenViewModel,
+                        routeAction = routeAction,
+                        allViewModel = allViewModel,
+                    )
+                }
+
+                3-> {
+                    WonMainScreen(wonViewModel = wonViewModel,
+                        routeAction = routeAction)
+                }
+            }
+
+
+
         }
-
-        when(rowViewController.value) {
-            1-> {
-                DollarMainScreen(
-                    dollarViewModel = dollarViewModel,
-                    routeAction = routeAction,
-                    sharedViewModel = sharedViewModel,
-                    allViewModel = allViewModel
-                )
-            }
-
-            2-> {
-                YenMainScreen(
-                    yenViewModel = yenViewModel,
-                    routeAction = routeAction,
-                    allViewModel = allViewModel,
-                )
-            }
-
-            3-> {
-                WonMainScreen(wonViewModel = wonViewModel,
-                    routeAction = routeAction)
-            }
-        }
-
-
-
     }
 }
 
@@ -165,5 +192,133 @@ fun MainScreen(dollarViewModel: DollarViewModel,
 
 
 
+
+
+
+//class CustomShape : Shape {
+//    override fun createOutline(
+//        size: Size,
+//        layoutDirection: LayoutDirection,
+//        density: Density
+//    ): Outline {
+//        return Outline.Rectangle(
+//            Rect(
+//                left = 0f,
+//                top = 0f,
+//                right = size.width * 2.3f / 3,
+//                bottom = size.height
+//            )
+//        )
+//    }
+//}
+
+
+
+@Composable
+fun DrawerCustom(
+    allViewModel: AllViewModel) {
+
+    val scope = rememberCoroutineScope()
+
+    val resentRateDate = allViewModel.exchangeRateFlow.collectAsState()
+
+    Column(
+        modifier = Modifier
+            .fillMaxHeight()
+            .requiredWidth(200.dp)
+            .padding(start = 10.dp)
+    ) {
+
+        Spacer(
+            modifier = Modifier
+                .height(10.dp)
+        )
+
+
+        Text(text = "디바이스 ID: {}")
+
+        Divider(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = 10.dp)
+        )
+
+        Spacer(
+            modifier = Modifier
+                .height(20.dp)
+        )
+
+        Text(text = "현재 최신 환율: ${resentRateDate.value.createAt}",
+            textAlign = TextAlign.Center)
+
+        Spacer(
+            modifier = Modifier
+                .height(15.dp)
+        )
+
+        Row(modifier = Modifier
+            .fillMaxWidth()
+            .padding(start = 10.dp),
+            horizontalArrangement = Arrangement.Start) {
+            Text(text = "환율업데이트 횟수: 3(0)회")
+
+            Spacer(modifier = Modifier.width(10.dp))
+            CardButton(
+                label = "충전",
+                onClicked = {
+
+                },
+                buttonColor = TopButtonColor,
+                fontColor = Color.Black,
+                modifier = Modifier
+                    .height(20.dp)
+                    .width(40.dp),
+                fontSize = 15
+            )
+        }
+
+        Spacer(
+            modifier = Modifier
+                .height(10.dp)
+        )
+
+        Row(modifier = Modifier
+            .fillMaxWidth()
+            .padding(start = 10.dp),
+            horizontalArrangement = Arrangement.Start) {
+            Text(text = "스프레드: {}")
+
+            Spacer(modifier = Modifier.width(10.dp))
+            CardButton(
+                label = "설정",
+                onClicked = {
+
+                },
+                buttonColor = TopButtonColor,
+                fontColor = Color.Black,
+                modifier = Modifier
+                    .height(20.dp)
+                    .width(40.dp),
+                fontSize = 15
+            )
+        }
+
+        androidx.compose.material.Divider(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = 10.dp)
+        )
+
+
+
+
+        Spacer(modifier = Modifier.weight(1f))
+
+        androidx.compose.material.Text(text = "고객센터")
+        androidx.compose.material.Text("개발자 이메일: kju9038@gmail.com")
+        androidx.compose.material.Text("개발자 유튜브: ")
+        androidx.compose.material.Text("문의: 000-0000-0000")
+    }
+}
 
 

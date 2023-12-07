@@ -28,9 +28,9 @@ import com.bobodroid.myapplication.extensions.toLongWon
 fun NumberField(title: String, onClicked: ((String) -> Unit)?, snackBarHostState: SnackbarHostState) {
     var won = NumberFormat.getInstance(Locale.KOREA)
     var openDialog = remember { mutableStateOf(false) }
-    var userInput by remember { mutableStateOf(0) }
+    var userInput by remember { mutableStateOf(0L) }
 
-    var inputMoney = if(userInput == 0) "$title" else "${userInput.toLong().toLongWon()}"
+    var inputMoney = if(userInput == 0L) "$title" else "${userInput.toLongWon()}"
 
     Card(
         modifier = Modifier
@@ -63,7 +63,7 @@ fun NumberField(title: String, onClicked: ((String) -> Unit)?, snackBarHostState
                 PopupNumberView(
                     onClicked = {
                     openDialog.value = false
-                    userInput = it.toInt()
+                    userInput = it.toLong()
                     onClicked?.invoke(userInput.toString())
                 },
                     snackBarHostState)

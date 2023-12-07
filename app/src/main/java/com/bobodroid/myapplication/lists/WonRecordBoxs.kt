@@ -35,17 +35,7 @@ import java.util.UUID
 @Composable
 fun BuyRecordBox(wonViewModel: WonViewModel, snackbarHostState: SnackbarHostState) {
 
-    val dateChangeIn = wonViewModel.changeDateAction.collectAsState()
-
-    val buyRecordHistory : State<List<WonBuyRecord>> =
-        when(dateChangeIn.value) {
-            1 -> { wonViewModel.buyDayFilteredRecordFlow.collectAsState(initial = emptyList())}
-            2 -> { wonViewModel.buyRecordFlow.collectAsState()}
-            3 -> { wonViewModel.buyMonthFilterRecordFlow.collectAsState(initial = emptyList())}
-            4 -> { wonViewModel.buyYearFilterRecordFlow.collectAsState(initial = emptyList())}
-
-            else -> { wonViewModel.buyRecordFlow.collectAsState()}
-        }
+    val buyRecordHistory : State<List<WonBuyRecord>> = wonViewModel.filterBuyRecordFlow.collectAsState()
 
     val buySortRecord = buyRecordHistory.value.sortedBy { it.date }
 
@@ -180,17 +170,7 @@ fun BuyRecordBox(wonViewModel: WonViewModel, snackbarHostState: SnackbarHostStat
 @Composable
 fun SellRecordBox(wonViewModel: WonViewModel) {
 
-    val dateChangeIn = wonViewModel.changeDateAction.collectAsState()
-
-    val sellRecordHistory : State<List<WonSellRecord>> =
-        when(dateChangeIn.value) {
-            1 -> { wonViewModel.sellDayFilteredRecordFlow.collectAsState(initial = emptyList())}
-            2 -> { wonViewModel.sellRecordFlow.collectAsState() }
-            3 -> { wonViewModel.sellMonthFilterRecordFlow.collectAsState(initial = emptyList())}
-            4 -> { wonViewModel.sellYearFilterRecordFlow.collectAsState(initial = emptyList())}
-
-            else -> { wonViewModel.sellRecordFlow.collectAsState()}
-        }
+    val sellRecordHistory : State<List<WonSellRecord>> = wonViewModel.filterSellRecordFlow.collectAsState()
 
 
     val sellSortRecord = sellRecordHistory.value.sortedBy { it.date }

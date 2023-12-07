@@ -37,6 +37,12 @@ class WonViewModel @Inject constructor(private val investRepository: InvestRepos
     private val _sellRecordFlow = MutableStateFlow<List<WonSellRecord>>(emptyList())
     val sellRecordFlow = _sellRecordFlow.asStateFlow()
 
+    private val _filterBuyRecordFlow = MutableStateFlow<List<WonBuyRecord>>(emptyList())
+    val filterBuyRecordFlow = _filterBuyRecordFlow.asStateFlow()
+
+    private val _filterSellRecordFlow = MutableStateFlow<List<WonSellRecord>>(emptyList())
+    val filterSellRecordFlow = _filterSellRecordFlow.asStateFlow()
+
     init{
         viewModelScope.launch(Dispatchers.IO) {
             investRepository.getAllWonBuyRecords().distinctUntilChanged()
@@ -45,6 +51,7 @@ class WonViewModel @Inject constructor(private val investRepository: InvestRepos
                         Log.d(MainActivity.TAG, "Empty buy list")
                     } else {
                         _buyRecordFlow.value = listOfRecord
+                        _filterBuyRecordFlow.value = listOfRecord
                     }
                 }
         }
@@ -55,6 +62,7 @@ class WonViewModel @Inject constructor(private val investRepository: InvestRepos
                         Log.d(MainActivity.TAG, "Empty sell list")
                     } else {
                         _sellRecordFlow.value = listOfRecord
+                        _filterSellRecordFlow.value = listOfRecord
                     }
                 }
         }
@@ -81,130 +89,90 @@ class WonViewModel @Inject constructor(private val investRepository: InvestRepos
 
     val today = formatter.format(time)
 
-    val oneMonth = dateMonth(1)
-
-    val onYear = dateYear(1)
-
-    fun dateMonth(month: Int): String? {
-        val c: Calendar = GregorianCalendar()
-        c.add(Calendar.MONTH, - month)
-        val sdfr = SimpleDateFormat("yyyy-MM-dd")
-        return sdfr.format(c.time).toString()
-    }
-
-    fun dateYear(year: Int): String? {
-        val c: Calendar = GregorianCalendar()
-        c.add(Calendar.YEAR, - year)
-        val sdfr = SimpleDateFormat("yyyy-MM-dd")
-        return sdfr.format(c.time).toString()
-    }
-
-
-
-    val oneMonthFlow = MutableStateFlow("$oneMonth")
-
-    val oneYearFlow = MutableStateFlow("$onYear")
 
     // 선택된 날짜
     val dateFlow = MutableStateFlow("${LocalDate.now()}")
 
     val sellDateFlow = MutableStateFlow("${LocalDate.now()}")
 
-    val changeDateAction = MutableStateFlow(2)
+
+    // 날짜 범위
 
 
-    // 날짜 선택이 되어도 발생
-    // 리스트 변경이 되어도 발생
-    val buyDayFilteredRecordFlow : Flow<List<WonBuyRecord>> = buyRecordFlow.combine(dateFlow.filterNot { it.isEmpty() }) { buyRecordList, selectedDate ->
-        buyRecordList.filter { it.date == selectedDate }
+    enum class WonAction {
+        Buy, Sell
     }
 
-    val buyMonthFilterRecordFlow : Flow<List<WonBuyRecord>> = buyRecordFlow.combine(oneMonthFlow.filterNot { it.isEmpty() }) { buyRecordList, selectedDate ->
-        buyRecordList.filter {it.date >= selectedDate}
-    }
+    fun dateRangeInvoke(
+        action: WonAction = WonAction.Buy,
+        startDate: String,
+        endDate: String) {
 
 
-    val buyYearFilterRecordFlow : Flow<List<WonBuyRecord>> = buyRecordFlow.combine(oneYearFlow.filterNot { it.isEmpty() }) { buyRecordList, selectedDate ->
-        buyRecordList.filter {it.date >= selectedDate}
-    }
+        when(action) {
+            WonAction.Buy -> {
+                val startFilterBuyRecord= buyRecordFlow.value.filter { it.date >= startDate}
+
+                var endFilterBuyRecord = startFilterBuyRecord.filter { it.date <= endDate}
 
 
-
-
-    val sellDayFilteredRecordFlow : Flow<List<WonSellRecord>> = sellRecordFlow.combine(dateFlow.filterNot { it.isEmpty() }) { buyRecordList, selectedDate ->
-        buyRecordList.filter { it.date == selectedDate }
-    }
-
-
-    val sellMonthFilterRecordFlow : Flow<List<WonSellRecord>> = sellRecordFlow.combine(oneMonthFlow.filterNot { it.isEmpty() }) { buyRecordList, selectedDate ->
-        buyRecordList.filter {it.date >= selectedDate}
-    }
-
-    val sellYearFilterRecordFlow : Flow<List<WonSellRecord>> = sellRecordFlow.combine(oneYearFlow.filterNot { it.isEmpty() }) { buyRecordList, selectedDate ->
-        buyRecordList.filter {it.date >= selectedDate}
-    }
-
-
-    val sellStartDateFlow = MutableStateFlow("${LocalDate.now()}")
-
-
-
-    val sellEndDateFlow = MutableStateFlow("${LocalDate.now()}")
-
-    val startFilterRecordFlow = sellRecordFlow.combine(sellStartDateFlow.filterNot { it.isEmpty() }) { sellRecordList, startDate ->
-        sellRecordList.filter { it.date >= startDate } }
-
-    val endFilterRecordFlow = startFilterRecordFlow.combine(sellEndDateFlow.filterNot { it.isEmpty() }) { sellRecordList, endDate ->
-        sellRecordList.filter { it.date <= endDate }
-    }
-
-    val dollarsellGetMoney =  endFilterRecordFlow.map { list ->
-        val result = list.filterNot { it.moneyType == 2 }
-            return@map result
-    }
-
-    val dollarCgValue = dollarsellGetMoney.filterNot { it.isEmpty() }.map { list ->
-        val result = list
-            .map{ it.exchangeMoney }
-            .reduce{first, end ->
-                first + end
+                viewModelScope.launch {
+                    _filterBuyRecordFlow.emit(endFilterBuyRecord)
+                }
             }
-        return@map result
+
+            WonAction.Sell -> {
+
+                val startFilterSellRecord= sellRecordFlow.value.filter { it.date >= startDate}
+
+                var endFilterSellRecord = startFilterSellRecord.filter { it.date <= endDate}
+
+
+                viewModelScope.launch {
+                    _filterSellRecordFlow.emit(endFilterSellRecord)
+                }
+            }
+        }
+
     }
 
-    val dollartotal = dollarCgValue.map { it.toDecUs() }
+
+
+//    val dollarCgValue = dollarsellGetMoney.filterNot { it.isEmpty() }.map { list ->
+//        val result = list
+//            .map{ it.exchangeMoney }
+//            .reduce{first, end ->
+//                first + end
+//            }
+//        return@map result
+//    }
+//
+//    val dollartotal = dollarCgValue.map { it.toDecUs() }
 
 
 
 
 
-    val yensellGetMoney =  endFilterRecordFlow.map { list ->
-        val result = list.filterNot { it.moneyType == 1 }
-        return@map result
-    }
+//    val yensellGetMoney =  endFilterRecordFlow.map { list ->
+//        val result = list.filterNot { it.moneyType == 1 }
+//        return@map result
+//    }
+//
+//
+//    val yenCgValue = yensellGetMoney.filterNot { it.isEmpty() }.map { list ->
+//        val result = list
+//            .map{ it.exchangeMoney }
+//            .reduce{first, end ->
+//                first + end
+//            }.apply { this.toYen() }
+//        return@map result
+//    }
+//
+//    val yentotal = yenCgValue.map { it.toYen() }
 
 
-    val yenCgValue = yensellGetMoney.filterNot { it.isEmpty() }.map { list ->
-        val result = list
-            .map{ it.exchangeMoney }
-            .reduce{first, end ->
-                first + end
-            }.apply { this.toYen() }
-        return@map result
-    }
-
-    val yentotal = yenCgValue.map { it.toYen() }
 
 
-
-
-    // 캘린더에서 날짜 선택 +
-    // 선택된 날짜의 리스트만 가져와야 한다
-//    val buyDateRecord: Flow<List<RecordBox>> = buyrecordFlow.map { Item ->
-//        Item.filter { dateFlow.value == it.date } }
-    // buyDateRecord에서 제가 원하는 날짜의 리스트만 추출해서 뿌려주고 싶습니다.
-
-    var changeMoney = MutableStateFlow(1)
 
     // 리스트 매도 값
 

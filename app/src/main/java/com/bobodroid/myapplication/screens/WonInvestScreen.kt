@@ -3,15 +3,10 @@
 package com.bobodroid.myapplication.screens
 
 import android.annotation.SuppressLint
-import android.app.DatePickerDialog
-import android.content.Context
 import android.util.Log
-import android.widget.CalendarView
-import android.widget.DatePicker
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.SnackbarHostState
 import androidx.compose.material3.*
@@ -19,33 +14,23 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.viewinterop.AndroidView
-import androidx.compose.ui.window.Dialog
-import androidx.compose.ui.window.DialogProperties
-import androidx.navigation.NavHostController
 import com.bobodroid.myapplication.components.*
 import com.bobodroid.myapplication.components.Caldenders.WonMyDatePickerDialog
-import com.bobodroid.myapplication.models.viewmodels.DollarViewModel
-import com.bobodroid.myapplication.models.viewmodels.SharedViewModel
+import com.bobodroid.myapplication.models.viewmodels.AllViewModel
 import com.bobodroid.myapplication.models.viewmodels.WonViewModel
-import com.bobodroid.myapplication.models.viewmodels.YenViewModel
 import com.bobodroid.myapplication.routes.*
 import com.bobodroid.myapplication.ui.theme.*
 import java.text.SimpleDateFormat
-import java.time.LocalDate
-import java.time.format.DateTimeFormatter
 import java.util.*
 
 @SuppressLint("RememberReturnType")
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterialApi::class)
 
 @Composable
-fun WonInvestScreen(wonViewModel: WonViewModel, routeAction: InvestRouteAction, sharedViewModel: SharedViewModel) {
+fun WonInvestScreen(wonViewModel: WonViewModel, routeAction: InvestRouteAction, allViewModel: AllViewModel) {
 
 
 
@@ -186,7 +171,7 @@ fun WonInvestScreen(wonViewModel: WonViewModel, routeAction: InvestRouteAction, 
                     wonViewModel.buyAddRecord()
                     wonViewModel.selectedCheckBoxId.value = 1
                     routeAction.navTo(InvestRoute.MAIN)
-                    sharedViewModel.changeMoney.value = 3
+                    allViewModel.changeMoney.value = 3
                     Log.d(TAG, "${wonViewModel.exchangeMoney.value}")
 
                 }
@@ -203,7 +188,7 @@ fun WonInvestScreen(wonViewModel: WonViewModel, routeAction: InvestRouteAction, 
             Buttons( "닫기", onClicked = {
                 wonViewModel.selectedCheckBoxId.value = 1
                 routeAction.navTo(InvestRoute.MAIN)
-                sharedViewModel.changeMoney.value = 3
+                allViewModel.changeMoney.value = 3
             }
                 , color = BuyColor
                 , fontColor = Color.Black

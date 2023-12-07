@@ -58,7 +58,7 @@ fun BuyRecordBox(dollarViewModel: DollarViewModel,
         Spacer(modifier = Modifier.width(1.dp))
         RecordTextView(recordText = "매수환율", 45.dp, 16, 2.5f,  0.dp, color = Color.Black)
         Spacer(modifier = Modifier.width(1.dp))
-        RecordTextView(recordText = "예상수익", 45.dp, 16, 2.5f,  0.dp ,color = Color.Black)
+        RecordTextView(recordText = "예상수익\n" + "(개발예정)", 45.dp, 16, 2.5f,  0.dp ,color = Color.Black)
 
     }
 

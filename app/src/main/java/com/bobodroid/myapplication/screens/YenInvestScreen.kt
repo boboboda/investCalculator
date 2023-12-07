@@ -21,22 +21,20 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.bobodroid.myapplication.components.*
 import com.bobodroid.myapplication.models.viewmodels.YenViewModel
-import com.bobodroid.myapplication.routes.YenRoute
-import com.bobodroid.myapplication.routes.YenRouteAction
 import com.bobodroid.myapplication.ui.theme.*
 import java.text.SimpleDateFormat
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.util.*
 import androidx.compose.material.SnackbarHostState
-import com.bobodroid.myapplication.models.viewmodels.SharedViewModel
+import com.bobodroid.myapplication.models.viewmodels.AllViewModel
 import com.bobodroid.myapplication.routes.InvestRoute
 import com.bobodroid.myapplication.routes.InvestRouteAction
 
 @OptIn(ExperimentalMaterial3Api::class)
 
 @Composable
-fun YenInvestScreen(yenViewModel: YenViewModel, routeAction: InvestRouteAction, sharedViewModel: SharedViewModel) {
+fun YenInvestScreen(yenViewModel: YenViewModel, routeAction: InvestRouteAction, allViewModel: AllViewModel) {
 
 
 
@@ -150,7 +148,7 @@ fun YenInvestScreen(yenViewModel: YenViewModel, routeAction: InvestRouteAction, 
                     yenViewModel.buyAddRecord()
                     yenViewModel.selectedCheckBoxId.value = 1
                     routeAction.navTo(InvestRoute.MAIN)
-                    sharedViewModel.changeMoney.value = 2
+                    allViewModel.changeMoney.value = 2
 
                 }
                 , color = BuyColor
@@ -166,7 +164,7 @@ fun YenInvestScreen(yenViewModel: YenViewModel, routeAction: InvestRouteAction, 
             Buttons( "닫기", onClicked = {
                 yenViewModel.selectedCheckBoxId.value = 1
                 routeAction.navTo(InvestRoute.MAIN)
-                sharedViewModel.changeMoney.value = 2
+                allViewModel.changeMoney.value = 2
             }
                 , color = BuyColor
                 , fontColor = Color.Black

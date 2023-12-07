@@ -1,35 +1,22 @@
 package com.bobodroid.myapplication.components
 
-import android.util.Log
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.GridItemSpan
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.KeyboardArrowLeft
 import androidx.compose.material.icons.filled.KeyboardArrowRight
-import androidx.compose.material.icons.sharp.KeyboardArrowLeft
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.bobodroid.myapplication.MainActivity
-import com.bobodroid.myapplication.models.viewmodels.SharedViewModel
+import com.bobodroid.myapplication.models.viewmodels.AllViewModel
 import com.bobodroid.myapplication.ui.theme.TopButtonColor
-import com.bobodroid.myapplication.ui.theme.TopButtonInColor
 
 @Composable
-fun TopTitleButton(sharedViewModel: SharedViewModel) {
+fun TopTitleButton(allViewModel: AllViewModel) {
 
-    val changeMoney = sharedViewModel.changeMoney.collectAsState()
+    val changeMoney = allViewModel.changeMoney.collectAsState()
 
     val mainTitle = when(changeMoney.value) {
         1-> {"달러"}
@@ -46,9 +33,9 @@ fun TopTitleButton(sharedViewModel: SharedViewModel) {
         CardIconButton(imageVector = Icons.Filled.KeyboardArrowLeft,
             onClicked = {
                         if(changeMoney.value > 1) {
-                            sharedViewModel.changeMoney.value = changeMoney.value - 1
+                            allViewModel.changeMoney.value = changeMoney.value - 1
                         } else {
-                            sharedViewModel.changeMoney.value = 3
+                            allViewModel.changeMoney.value = 3
                         }
             },
             modifier = Modifier,
@@ -59,9 +46,9 @@ fun TopTitleButton(sharedViewModel: SharedViewModel) {
         CardIconButton(imageVector = Icons.Filled.KeyboardArrowRight,
             onClicked = {
                 if(changeMoney.value < 3) {
-                    sharedViewModel.changeMoney.value = changeMoney.value + 1
+                    allViewModel.changeMoney.value = changeMoney.value + 1
                 } else {
-                    sharedViewModel.changeMoney.value = 1
+                    allViewModel.changeMoney.value = 1
                 }
             },
             modifier = Modifier,

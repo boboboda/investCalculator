@@ -34,18 +34,7 @@ import java.util.UUID
 @Composable
 fun BuyRecordBox(yenViewModel: YenViewModel, snackbarHostState: SnackbarHostState) {
 
-    val dateChangeIn = yenViewModel.changeDateAction.collectAsState()
-
-    val buyRecordHistory : State<List<YenBuyRecord>> =
-        when(dateChangeIn.value) {
-            1 -> { yenViewModel.buyDayFilteredRecordFlow.collectAsState(initial = emptyList())}
-            2 -> { yenViewModel.buyRecordFlow.collectAsState()}
-            3 -> { yenViewModel.buyMonthFilterRecordFlow.collectAsState(initial = emptyList())}
-            4 -> { yenViewModel.buyYearFilterRecordFlow.collectAsState(initial = emptyList())}
-
-            else -> { yenViewModel.buyRecordFlow.collectAsState()}
-        }
-
+    val buyRecordHistory : State<List<YenBuyRecord>> = yenViewModel.filterBuyRecordFlow.collectAsState()
     val buySortRecord = buyRecordHistory.value.sortedBy { it.date }
 
     var selectedId by remember { mutableStateOf(UUID.randomUUID()) }
@@ -169,17 +158,7 @@ fun BuyRecordBox(yenViewModel: YenViewModel, snackbarHostState: SnackbarHostStat
 @Composable
 fun SellRecordBox(yenViewModel: YenViewModel) {
 
-    val dateChangeIn = yenViewModel.changeDateAction.collectAsState()
-
-    val sellRecordHistory : State<List<YenSellRecord>> =
-        when(dateChangeIn.value) {
-            1 -> { yenViewModel.sellDayFilteredRecordFlow.collectAsState(initial = emptyList())}
-            2 -> { yenViewModel.sellRecordFlow.collectAsState() }
-            3 -> { yenViewModel.sellMonthFilterRecordFlow.collectAsState(initial = emptyList())}
-            4 -> { yenViewModel.sellYearFilterRecordFlow.collectAsState(initial = emptyList())}
-
-            else -> { yenViewModel.sellRecordFlow.collectAsState()}
-        }
+    val sellRecordHistory : State<List<YenSellRecord>> = yenViewModel.filterSellRecordFlow.collectAsState()
 
     val sellSortRecord = sellRecordHistory.value.sortedBy { it.date }
 

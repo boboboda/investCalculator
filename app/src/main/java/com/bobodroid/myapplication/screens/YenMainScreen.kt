@@ -40,8 +40,6 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.bobodroid.myapplication.MainActivity
 import com.bobodroid.myapplication.R
 import com.bobodroid.myapplication.components.*
-import com.bobodroid.myapplication.components.Caldenders.YenSellEndDatePickerDialog
-import com.bobodroid.myapplication.components.Caldenders.YenSellFirstDatePickerDialog
 import com.bobodroid.myapplication.components.Caldenders.YenTopPickerDialog
 import com.bobodroid.myapplication.lists.BuyRecordBox
 import com.bobodroid.myapplication.lists.SellRecordBox
@@ -88,9 +86,9 @@ fun YenMainScreen
 
     var date = if(today == "") "$today" else {dateRecord.value}
 
-    val dateSelected = yenViewModel.changeDateAction.collectAsState()
-
-    val total = yenViewModel.total.collectAsState("")
+//    val dateSelected = yenViewModel.changeDateAction.collectAsState()
+//
+//    val total = yenViewModel.total.collectAsState("")
 
     val resentExchangeRate = allViewModel.exchangeRateFlow.collectAsState()
 
@@ -98,22 +96,24 @@ fun YenMainScreen
 
     Column(
         modifier = Modifier
-            .fillMaxSize()
+            .fillMaxSize(),
+        horizontalAlignment = Alignment.CenterHorizontally
     ) {
 
-        Row(
+        Column(
             modifier = Modifier
-                .fillMaxWidth()
-                .height(120.dp),
-            horizontalArrangement = Arrangement.Center,
-            verticalAlignment = Alignment.CenterVertically
+                .fillMaxWidth(0.9f)
+                .height(100.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
         ) {
-            Row(modifier = Modifier.weight(1f),
+            Row(modifier = Modifier
+                .weight(1f),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.Center){
                 //업데이트 날짜 값
                 Column(modifier = Modifier
-                    .fillMaxHeight()
+                    .wrapContentHeight()
                     .weight(0.6f),
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.Center) {
@@ -123,59 +123,28 @@ fun YenMainScreen
                         verticalAlignment = Alignment.CenterVertically) {
 
                         Text(text = "JPY: ${resentExchangeRate.value.exchangeRates?.jpy}", fontSize = 20.sp)
-                        Spacer(modifier = Modifier.width(5.dp))
-                        CardTextIconButton(
-                            label = "새로고침",
-                            onClicked = {
-
-                            },
-                            buttonColor = TopButtonColor,
-                            fontColor = Color.Black,
-                            modifier = Modifier
-                                .width(80.dp)
-                                .height(30.dp),
-                            fontSize = 15,
-                        )
+                        Spacer(modifier = Modifier.width(10.dp))
                     }
-                    Spacer(modifier = Modifier.height(5.dp))
+                    Spacer(modifier = Modifier.height(15.dp))
                     Text(text = "업데이트된 환율: ${resentExchangeRate.value.createAt}")
                     // 최신환율 업데이트 환율 같을 시 업데이트 통제
                 }
-//                 달러 현재 환율 값
-                Row(modifier = Modifier
-                    .fillMaxHeight()
-                    .weight(0.4f)
-                    .padding(end = 30.dp),
-                    horizontalArrangement = Arrangement.Center,
-                    verticalAlignment = Alignment.CenterVertically) {
-
-                    Text(text = "스프레드: 1", fontSize = 15.sp)
-
-                    Spacer(modifier = Modifier.width(10.dp))
-                    CardButton(
-                        label = "설정",
-                        onClicked = { /*TODO*/ },
-                        fontSize = 15,
-                        modifier = Modifier
-                            .width(50.dp)
-                            .height(35.dp),
-                        fontColor = Color.Black,
-                        buttonColor = TopButtonColor
-                    )
-                }
 
             }
 
-            }
+        }
 
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.End,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 25.dp)
+                .padding(start = 10.dp),
+            horizontalArrangement = Arrangement.End,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
 
 
-                Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.weight(1f))
                 InvestCheckBox(title = "매수",
                     1, selectedCheckId = selectedCheckBoxId.value,
                     selectCheckBoxAction = {
@@ -204,124 +173,6 @@ fun YenMainScreen
                 }
 
             }
-
-//            Row(
-//                modifier = Modifier
-//                    .height(100.dp)
-//                    .fillMaxWidth()
-//                    .padding(start = 20.dp, bottom = 10.dp),
-//                horizontalArrangement = Arrangement.End,
-//                verticalAlignment = Alignment.CenterVertically
-//
-//            ) {
-////                Row(modifier = Modifier.weight(1f)) {
-////                    if (selectedCheckBoxId.value == 2) GetMoneyView(
-////                        title = "총 수익",
-////                        getMoney = "${total.value}",
-////                        onClicked = { Log.d(TAG, "") },
-////                        yenViewModel
-////                    )
-////                    else
-////                        null
-////                }
-//
-//                Column(
-//                    modifier = Modifier
-//                        .height(100.dp)
-//                        .weight(1f),
-//                    horizontalAlignment = Alignment.CenterHorizontally
-//                ) {
-//
-//
-//                    Card(
-//                        modifier = Modifier
-//                            .width(200.dp)
-//                            .height(40.dp),
-//                        border = BorderStroke(1.dp, Color.Black),
-//                        colors = CardDefaults.cardColors(
-//                            contentColor = Color.Black,
-//                            containerColor = Color.White
-//                        ),
-//                        onClick = {
-//                            isDialogOpen.value = !isDialogOpen.value
-//
-//                        }) {
-//
-//                        Text(
-//                            text = "$date",
-//                            color = Color.Black,
-//                            fontSize = 18.sp,
-//                            textAlign = TextAlign.Center,
-//                            modifier = Modifier
-//                                .width(160.dp)
-//                                .height(40.dp)
-//                                .padding(start = 35.dp, top = 8.dp)
-//                        )
-//
-//                        if (isDialogOpen.value) {
-//                            YenMyDatePickerDialog(onDateSelected = { date, seleceted ->
-//                                selectedDate.value = date
-//                                yenViewModel.dateFlow.value = date.toString()
-//                                yenViewModel.changeDateAction.value = seleceted!!
-//                            }, onDismissRequest = {
-//                                isDialogOpen.value = false
-//                            }, id = 1,
-//                                yenViewModel
-//                            )
-//                        }
-//                    }
-//                    Spacer(modifier = Modifier.height(5.dp))
-//
-//                    Row {
-//                        DateButtonView(
-//                            mainText = "모두",
-//                            id = 2,
-//                            selectedId = dateSelected.value,
-//                            selectAction = {
-//                                yenViewModel.changeDateAction.value = it
-//                            })
-//
-//                        Spacer(modifier = Modifier.width(18.dp))
-//
-//                        DateButtonView(
-//                            mainText = "한달",
-//                            id = 3,
-//                            selectedId = dateSelected.value,
-//                            selectAction = {
-//                                yenViewModel.changeDateAction.value = it
-//                            })
-//
-//                        Spacer(modifier = Modifier.width(18.dp))
-//
-//                        DateButtonView(
-//                            mainText = "일년",
-//                            id = 4,
-//                            selectedId = dateSelected.value,
-//                            selectAction = {
-//                                yenViewModel.changeDateAction.value = it
-//                            })
-//                    }
-//
-//
-//                }
-//
-//                Spacer(modifier = Modifier.width(30.dp))
-//
-//                FloatingActionButton(
-//                    onClick = { routeAction.navTo(InvestRoute.YEN_BUY) },
-//                    containerColor = androidx.compose.material.MaterialTheme.colors.secondary,
-//                    shape = RoundedCornerShape(16.dp),
-//                    modifier = Modifier
-//                        .padding(bottom = 10.dp, end = 20.dp)
-//                        .size(60.dp),
-//                ) {
-//                    androidx.compose.material3.Icon(
-//                        imageVector = Icons.Rounded.Add,
-//                        contentDescription = "매수화면 가기",
-//                        tint = Color.White
-//                    )
-//                }
-//            }
         }
 
     }
@@ -332,118 +183,109 @@ fun YenMainScreen
 
 
 
-@OptIn(ExperimentalMaterialApi::class, ExperimentalMaterial3Api::class)
-@Composable
-fun GetMoneyView(title: String,
-                 getMoney: String,
-                 onClicked: () -> Unit,
-                 yenViewModel: YenViewModel
-) {
-
-    val isFirstDialogOpen = remember { mutableStateOf(false) }
-
-    val isSecondDialogOpen = remember { mutableStateOf(false) }
-
-
-    val time = Calendar.getInstance().time
-
-    val formatter = SimpleDateFormat("yyyy-MM-dd")
-
-    val today = formatter.format(time)
-
-    val callFirstDate = yenViewModel.sellStartDateFlow.collectAsState()
-
-    var callsecondDate = yenViewModel.sellEndDateFlow.collectAsState()
-
-    var firstDate = if(today == "") "$today" else {callFirstDate.value}
-
-    var secondDate = if(today == "") "$today" else {callsecondDate.value}
-
-
-
-    androidx.compose.material
-        .Card(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(85.dp),
-            onClick = onClicked) {
-            Row {
-                Column(
-                    modifier = Modifier
-                        .padding(top = 8.dp)) {
-
-                    Card(
-                        modifier = Modifier
-                            .width(150.dp)
-                            .height(30.dp)
-                            .background(Color.White),
-                        border = BorderStroke(1.dp, Color.Black),
-                        colors = CardDefaults.cardColors(
-                            contentColor = Color.Black,
-                            containerColor = Color.White),
-                        onClick = { isFirstDialogOpen.value = !isFirstDialogOpen.value
-
-                        }) {
-                        Text(text = "시작: $firstDate", color = Color.Black, fontSize = 14.sp , textAlign = TextAlign.Center, modifier = Modifier
-                            .width(160.dp)
-                            .height(30.dp)
-                            .padding(start = 0.dp, top = 4.dp))
-
-                        if(isFirstDialogOpen.value) {
-                            YenSellFirstDatePickerDialog(onDateSelected = null,
-                                onDismissRequest = {
-                                    isFirstDialogOpen.value = false
-                                }, id = 1,
-                                yenViewModel
-                            )
-                        }
-                    }
-                    Spacer(modifier = Modifier.height(10.dp))
-
-                    Card(
-                        modifier = Modifier
-                            .width(150.dp)
-                            .height(30.dp)
-                            .background(Color.White),
-                        border = BorderStroke(1.dp, Color.Black),
-                        colors = CardDefaults.cardColors(contentColor = Color.Black, containerColor = Color.White),
-                        onClick = { isSecondDialogOpen.value = !isSecondDialogOpen.value
-
-                        }) {
-                        Text(
-                            text = "종료: $secondDate",
-                            color = Color.Black,
-                            fontSize = 14.sp ,
-                            textAlign = TextAlign.Center,
-                            modifier = Modifier
-                                .width(160.dp)
-                                .height(30.dp)
-                                .padding(start = 0.dp, top = 4.dp))
-
-                        if(isSecondDialogOpen.value) {
-                            YenSellEndDatePickerDialog(onDateSelected = null,
-                                onDismissRequest = {
-                                    isSecondDialogOpen.value = false
-                                }, id = 1,
-                                yenViewModel
-                            )
-                        }
-                    }
-
-                }
-                Column(modifier = Modifier
-                    .fillMaxSize()
-                    .padding(top = 10.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text(text = title)
-
-                    Spacer(modifier = Modifier.height(15.dp))
-                    Text(text = getMoney, color = Color.Red)
-                }
-            }
-
-        }
-}
+//@OptIn(ExperimentalMaterialApi::class, ExperimentalMaterial3Api::class)
+//@Composable
+//fun GetMoneyView(title: String,
+//                 getMoney: String,
+//                 onClicked: () -> Unit,
+//                 yenViewModel: YenViewModel
+//) {
+//
+//    val isFirstDialogOpen = remember { mutableStateOf(false) }
+//
+//    val isSecondDialogOpen = remember { mutableStateOf(false) }
+//
+//
+//    val time = Calendar.getInstance().time
+//
+//    val formatter = SimpleDateFormat("yyyy-MM-dd")
+//
+//    val today = formatter.format(time)
+//
+//
+//    androidx.compose.material
+//        .Card(
+//            modifier = Modifier
+//                .fillMaxWidth()
+//                .height(85.dp),
+//            onClick = onClicked) {
+//            Row {
+//                Column(
+//                    modifier = Modifier
+//                        .padding(top = 8.dp)) {
+//
+//                    Card(
+//                        modifier = Modifier
+//                            .width(150.dp)
+//                            .height(30.dp)
+//                            .background(Color.White),
+//                        border = BorderStroke(1.dp, Color.Black),
+//                        colors = CardDefaults.cardColors(
+//                            contentColor = Color.Black,
+//                            containerColor = Color.White),
+//                        onClick = { isFirstDialogOpen.value = !isFirstDialogOpen.value
+//
+//                        }) {
+//                        Text(text = "시작: $firstDate", color = Color.Black, fontSize = 14.sp , textAlign = TextAlign.Center, modifier = Modifier
+//                            .width(160.dp)
+//                            .height(30.dp)
+//                            .padding(start = 0.dp, top = 4.dp))
+//
+//                        if(isFirstDialogOpen.value) {
+//                            YenSellFirstDatePickerDialog(onDateSelected = null,
+//                                onDismissRequest = {
+//                                    isFirstDialogOpen.value = false
+//                                }, id = 1,
+//                                yenViewModel
+//                            )
+//                        }
+//                    }
+//                    Spacer(modifier = Modifier.height(10.dp))
+//
+//                    Card(
+//                        modifier = Modifier
+//                            .width(150.dp)
+//                            .height(30.dp)
+//                            .background(Color.White),
+//                        border = BorderStroke(1.dp, Color.Black),
+//                        colors = CardDefaults.cardColors(contentColor = Color.Black, containerColor = Color.White),
+//                        onClick = { isSecondDialogOpen.value = !isSecondDialogOpen.value
+//
+//                        }) {
+//                        Text(
+//                            text = "종료: $secondDate",
+//                            color = Color.Black,
+//                            fontSize = 14.sp ,
+//                            textAlign = TextAlign.Center,
+//                            modifier = Modifier
+//                                .width(160.dp)
+//                                .height(30.dp)
+//                                .padding(start = 0.dp, top = 4.dp))
+//
+//                        if(isSecondDialogOpen.value) {
+//                            YenSellEndDatePickerDialog(onDateSelected = null,
+//                                onDismissRequest = {
+//                                    isSecondDialogOpen.value = false
+//                                }, id = 1,
+//                                yenViewModel
+//                            )
+//                        }
+//                    }
+//
+//                }
+//                Column(modifier = Modifier
+//                    .fillMaxSize()
+//                    .padding(top = 10.dp),
+//                    horizontalAlignment = Alignment.CenterHorizontally) {
+//                    Text(text = title)
+//
+//                    Spacer(modifier = Modifier.height(15.dp))
+//                    Text(text = getMoney, color = Color.Red)
+//                }
+//            }
+//
+//        }
+//}
 
 
 

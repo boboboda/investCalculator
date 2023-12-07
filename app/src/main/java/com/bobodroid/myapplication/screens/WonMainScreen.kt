@@ -59,12 +59,14 @@ import kotlin.collections.ArrayList
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalUnitApi::class, ExperimentalMaterialApi::class)
 @Composable
-fun WonMainScreen(wonViewModel: WonViewModel, routeAction: InvestRouteAction) {
+fun WonMainScreen(wonViewModel: WonViewModel, routeAction: InvestRouteAction, allViewModel: AllViewModel) {
 
 
     var selectedCheckBoxId = wonViewModel.selectedCheckBoxId.collectAsState()
 
     val isDialogOpen = remember { mutableStateOf(false) }
+
+    val resentExchangeRate = allViewModel.exchangeRateFlow.collectAsState()
 
     val time = Calendar.getInstance().time
 
@@ -72,123 +74,84 @@ fun WonMainScreen(wonViewModel: WonViewModel, routeAction: InvestRouteAction) {
 
     val today = formatter.format(time)
 
-
-    val selectedDate : MutableState<LocalDate?> = remember { mutableStateOf(LocalDate.now()) }
-
     val dateRecord = wonViewModel.dateFlow.collectAsState()
 
     var date = if(today == "") "$today" else {dateRecord.value}
 
-    val dateSelected = wonViewModel.changeDateAction.collectAsState()
-
-    val dollartotal = wonViewModel.dollartotal.collectAsState("")
-
-    val yentotal = wonViewModel.yentotal.collectAsState("")
-
     val snackbarHostState = remember { SnackbarHostState() }
 
     Column(modifier = Modifier
-        .fillMaxSize()) {
+        .fillMaxSize(),
+        horizontalAlignment = Alignment.CenterHorizontally) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth(0.9f)
+                .height(100.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            Row(modifier = Modifier
+                .weight(1f),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Center){
+                //업데이트 날짜 값
+                Column(modifier = Modifier
+                    .wrapContentHeight()
+                    .weight(0.6f),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center) {
+                    Row(modifier = Modifier
+                        .wrapContentSize(),
+                        horizontalArrangement = Arrangement.Center,
+                        verticalAlignment = Alignment.CenterVertically) {
+
+                        Text(text = "USD: ${resentExchangeRate.value.exchangeRates?.usd}", fontSize = 20.sp)
+                        Spacer(modifier = Modifier.width(10.dp))
+                    }
+
+                    Spacer(modifier = Modifier.height(5.dp))
+
+                    Row(modifier = Modifier
+                        .wrapContentSize(),
+                        horizontalArrangement = Arrangement.Center,
+                        verticalAlignment = Alignment.CenterVertically) {
+
+                        Text(text = "JPY: ${resentExchangeRate.value.exchangeRates?.jpy}", fontSize = 20.sp)
+                        Spacer(modifier = Modifier.width(10.dp))
+                    }
+                    Spacer(modifier = Modifier.height(15.dp))
+                    Text(text = "업데이트된 환율: ${resentExchangeRate.value.createAt}")
+                }
+
+            }
+
+        }
+
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(120.dp),
-            horizontalArrangement = Arrangement.Center,
-            verticalAlignment = Alignment.CenterVertically
+                .padding(horizontal = 25.dp)
+                .padding(start = 10.dp),
+            horizontalArrangement = Arrangement.End,
+            verticalAlignment = Alignment.CenterVertically,
         ) {
 
-            Column(
-                modifier = Modifier
-                    .width(250.dp)
-                    .height(110.dp),
-                horizontalAlignment = Alignment.CenterHorizontally) {
+            Spacer(modifier = Modifier.weight(1f))
 
+            InvestCheckBox(title = "매수",
+                1, selectedCheckId = selectedCheckBoxId.value,
+                selectCheckBoxAction = {
+                    wonViewModel.selectedCheckBoxId.value = it
+                })
 
-                Card(
-                    modifier = Modifier
-                        .width(200.dp)
-                        .height(40.dp)
-                        .background(Color.White),
-                    border = BorderStroke(1.dp, Color.Black),
-                    colors = CardDefaults.cardColors(contentColor = Color.Black, containerColor = Color.White),
-                    onClick = { isDialogOpen.value = !isDialogOpen.value
-
-                    }) {
-                    Text(text = "$date",
-                        color = Color.Black,
-                        fontSize = 18.sp,
-                        textAlign = TextAlign.Center,
-                        modifier = Modifier
-                            .width(160.dp)
-                            .height(40.dp)
-                            .padding(start = 35.dp, top = 8.dp))
-
-                    if(isDialogOpen.value) {
-                        WonMyDatePickerDialog(onDateSelected = { date, seleceted ->
-                            selectedDate.value = date
-                            wonViewModel.dateFlow.value = date.toString()
-                            wonViewModel.changeDateAction.value = seleceted!!
-                        }, onDismissRequest = {
-                            isDialogOpen.value = false
-                        }, id = 1,
-                            wonViewModel
-                        )
-                    }
+            InvestCheckBox(title = "매도",
+                2, selectedCheckId = selectedCheckBoxId.value,
+                selectCheckBoxAction = {
+                    wonViewModel.selectedCheckBoxId.value = it
                 }
-                Spacer(modifier = Modifier.height(5.dp))
-
-                Row {
-                    DateButtonView(
-                        mainText = "모두",
-                        id = 2 ,
-                        selectedId = dateSelected.value,
-                        selectAction = {
-                            wonViewModel.changeDateAction.value = it })
-
-                    Spacer(modifier = Modifier.width(18.dp))
-
-                    DateButtonView(
-                        mainText = "한달",
-                        id = 3 ,
-                        selectedId = dateSelected.value,
-                        selectAction = {
-                            wonViewModel.changeDateAction.value = it })
-
-                    Spacer(modifier = Modifier.width(18.dp))
-
-                    DateButtonView(
-                        mainText = "일년",
-                        id = 4 ,
-                        selectedId = dateSelected.value,
-                        selectAction = {
-                            wonViewModel.changeDateAction.value = it })
-                }
-
-
-
-            }
-
-            Column(
-                modifier = Modifier
-                    .width(110.dp)
-                    .height(110.dp)
-                    .background(Color.White)
-            ) {
-                
-                Spacer(modifier = Modifier.height(8.dp))
-                InvestCheckBox(title = "매수",
-                    1, selectedCheckId = selectedCheckBoxId.value,
-                    selectCheckBoxAction = {
-                        wonViewModel.selectedCheckBoxId.value = it
-                    })
-
-                InvestCheckBox(title = "매도",
-                    2, selectedCheckId = selectedCheckBoxId.value,
-                    selectCheckBoxAction = {
-                        wonViewModel.selectedCheckBoxId.value = it
-                    })
-            }
+            )
         }
+
         Column(
             horizontalAlignment = Alignment.End
         ) {
@@ -197,7 +160,9 @@ fun WonMainScreen(wonViewModel: WonViewModel, routeAction: InvestRouteAction) {
                     .weight(1f)) {
                 if (selectedCheckBoxId.value == 1)
                     BuyRecordBox(wonViewModel, snackbarHostState = snackbarHostState)
-                else SellRecordBox(wonViewModel)
+                else
+
+                    SellRecordBox(wonViewModel)
             }
 
 //            Row(modifier = Modifier
@@ -249,142 +214,142 @@ fun WonMainScreen(wonViewModel: WonViewModel, routeAction: InvestRouteAction) {
 
 
 
-@OptIn(ExperimentalMaterialApi::class, ExperimentalMaterial3Api::class)
-@Composable
-fun GetMoneyView(title: String,
-                 getDollar: String,
-                 getYen: String,
-                 onClicked: () -> Unit,
-                 wonViewModel: WonViewModel
-) {
-
-    val isFirstDialogOpen = remember { mutableStateOf(false) }
-
-    val isSecondDialogOpen = remember { mutableStateOf(false) }
-
-
-    val time = Calendar.getInstance().time
-
-    val formatter = SimpleDateFormat("yyyy-MM-dd")
-
-    val today = formatter.format(time)
-
-    val callFirstDate = wonViewModel.sellStartDateFlow.collectAsState()
-
-    var callsecondDate = wonViewModel.sellEndDateFlow.collectAsState()
-
-    var firstDate = if (today == "") "$today" else {
-        callFirstDate.value
-    }
-
-    var secondDate = if (today == "") "$today" else {
-        callsecondDate.value
-    }
-
-
-
-    androidx.compose.material
-        .Card(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(85.dp),
-            onClick = onClicked
-        ) {
-            Row {
-                Column(
-                    modifier = Modifier
-                        .padding(top = 8.dp)
-                ) {
-
-                    Card(
-                        modifier = Modifier
-                            .width(150.dp)
-                            .height(30.dp)
-                            .background(Color.White),
-                        border = BorderStroke(1.dp, Color.Black),
-                        colors = CardDefaults.cardColors(
-                            contentColor = Color.Black,
-                            containerColor = Color.White
-                        ),
-                        onClick = {
-                            isFirstDialogOpen.value = !isFirstDialogOpen.value
-
-                        }) {
-                        Text(
-                            text = "시작: $firstDate",
-                            color = Color.Black,
-                            fontSize = 14.sp,
-                            textAlign = TextAlign.Center,
-                            modifier = Modifier
-                                .width(160.dp)
-                                .height(30.dp)
-                                .padding(start = 0.dp, top = 4.dp)
-                        )
-
-                        if (isFirstDialogOpen.value) {
-                            WonSellFirstDatePickerDialog(
-                                onDateSelected = null,
-                                onDismissRequest = {
-                                    isFirstDialogOpen.value = false
-                                }, id = 1,
-                                wonViewModel
-                            )
-                        }
-                    }
-                    Spacer(modifier = Modifier.height(10.dp))
-
-                    Card(
-                        modifier = Modifier
-                            .width(150.dp)
-                            .height(30.dp)
-                            .background(Color.White),
-                        border = BorderStroke(1.dp, Color.Black),
-                        colors = CardDefaults.cardColors(
-                            contentColor = Color.Black,
-                            containerColor = Color.White
-                        ),
-                        onClick = {
-                            isSecondDialogOpen.value = !isSecondDialogOpen.value
-
-                        }) {
-                        Text(
-                            text = "종료: $secondDate",
-                            color = Color.Black,
-                            fontSize = 14.sp,
-                            textAlign = TextAlign.Center,
-                            modifier = Modifier
-                                .width(160.dp)
-                                .height(30.dp)
-                                .padding(start = 0.dp, top = 4.dp)
-                        )
-
-                        if (isSecondDialogOpen.value) {
-                            WonSellEndDatePickerDialog(
-                                onDateSelected = null,
-                                onDismissRequest = {
-                                    isSecondDialogOpen.value = false
-                                }, id = 1,
-                                wonViewModel
-                            )
-                        }
-                    }
-
-                }
-                Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(top = 10.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    Text(text = title)
-
-                    Spacer(modifier = Modifier.height(5.dp))
-                    Text(text = getDollar, color = Color.Red)
-
-                    Spacer(modifier = Modifier.height(2.dp))
-
-                    Text(text = getYen, color = Color.Red)
-                }
-            }
-        }
-}
+//@OptIn(ExperimentalMaterialApi::class, ExperimentalMaterial3Api::class)
+//@Composable
+//fun GetMoneyView(title: String,
+//                 getDollar: String,
+//                 getYen: String,
+//                 onClicked: () -> Unit,
+//                 wonViewModel: WonViewModel
+//) {
+//
+//    val isFirstDialogOpen = remember { mutableStateOf(false) }
+//
+//    val isSecondDialogOpen = remember { mutableStateOf(false) }
+//
+//
+//    val time = Calendar.getInstance().time
+//
+//    val formatter = SimpleDateFormat("yyyy-MM-dd")
+//
+//    val today = formatter.format(time)
+//
+//    val callFirstDate = wonViewModel.sellStartDateFlow.collectAsState()
+//
+//    var callsecondDate = wonViewModel.sellEndDateFlow.collectAsState()
+//
+//    var firstDate = if (today == "") "$today" else {
+//        callFirstDate.value
+//    }
+//
+//    var secondDate = if (today == "") "$today" else {
+//        callsecondDate.value
+//    }
+//
+//
+//
+//    androidx.compose.material
+//        .Card(
+//            modifier = Modifier
+//                .fillMaxWidth()
+//                .height(85.dp),
+//            onClick = onClicked
+//        ) {
+//            Row {
+//                Column(
+//                    modifier = Modifier
+//                        .padding(top = 8.dp)
+//                ) {
+//
+//                    Card(
+//                        modifier = Modifier
+//                            .width(150.dp)
+//                            .height(30.dp)
+//                            .background(Color.White),
+//                        border = BorderStroke(1.dp, Color.Black),
+//                        colors = CardDefaults.cardColors(
+//                            contentColor = Color.Black,
+//                            containerColor = Color.White
+//                        ),
+//                        onClick = {
+//                            isFirstDialogOpen.value = !isFirstDialogOpen.value
+//
+//                        }) {
+//                        Text(
+//                            text = "시작: $firstDate",
+//                            color = Color.Black,
+//                            fontSize = 14.sp,
+//                            textAlign = TextAlign.Center,
+//                            modifier = Modifier
+//                                .width(160.dp)
+//                                .height(30.dp)
+//                                .padding(start = 0.dp, top = 4.dp)
+//                        )
+//
+//                        if (isFirstDialogOpen.value) {
+//                            WonSellFirstDatePickerDialog(
+//                                onDateSelected = null,
+//                                onDismissRequest = {
+//                                    isFirstDialogOpen.value = false
+//                                }, id = 1,
+//                                wonViewModel
+//                            )
+//                        }
+//                    }
+//                    Spacer(modifier = Modifier.height(10.dp))
+//
+//                    Card(
+//                        modifier = Modifier
+//                            .width(150.dp)
+//                            .height(30.dp)
+//                            .background(Color.White),
+//                        border = BorderStroke(1.dp, Color.Black),
+//                        colors = CardDefaults.cardColors(
+//                            contentColor = Color.Black,
+//                            containerColor = Color.White
+//                        ),
+//                        onClick = {
+//                            isSecondDialogOpen.value = !isSecondDialogOpen.value
+//
+//                        }) {
+//                        Text(
+//                            text = "종료: $secondDate",
+//                            color = Color.Black,
+//                            fontSize = 14.sp,
+//                            textAlign = TextAlign.Center,
+//                            modifier = Modifier
+//                                .width(160.dp)
+//                                .height(30.dp)
+//                                .padding(start = 0.dp, top = 4.dp)
+//                        )
+//
+//                        if (isSecondDialogOpen.value) {
+//                            WonSellEndDatePickerDialog(
+//                                onDateSelected = null,
+//                                onDismissRequest = {
+//                                    isSecondDialogOpen.value = false
+//                                }, id = 1,
+//                                wonViewModel
+//                            )
+//                        }
+//                    }
+//
+//                }
+//                Column(
+//                    modifier = Modifier
+//                        .fillMaxSize()
+//                        .padding(top = 10.dp),
+//                    horizontalAlignment = Alignment.CenterHorizontally
+//                ) {
+//                    Text(text = title)
+//
+//                    Spacer(modifier = Modifier.height(5.dp))
+//                    Text(text = getDollar, color = Color.Red)
+//
+//                    Spacer(modifier = Modifier.height(2.dp))
+//
+//                    Text(text = getYen, color = Color.Red)
+//                }
+//            }
+//        }
+//}

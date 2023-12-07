@@ -6,14 +6,12 @@ import android.util.Log
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -22,10 +20,8 @@ import com.bobodroid.myapplication.models.viewmodels.DollarViewModel
 import com.bobodroid.myapplication.ui.theme.*
 import java.text.SimpleDateFormat
 import java.util.*
-import androidx.compose.material.SnackbarDuration
-import androidx.compose.material.SnackbarHost
 import androidx.compose.material.SnackbarHostState
-import com.bobodroid.myapplication.models.viewmodels.SharedViewModel
+import com.bobodroid.myapplication.models.viewmodels.AllViewModel
 import com.bobodroid.myapplication.routes.InvestRoute
 import com.bobodroid.myapplication.routes.InvestRouteAction
 
@@ -34,7 +30,7 @@ import com.bobodroid.myapplication.routes.InvestRouteAction
 @Composable
 fun DollarInvestScreen(dollarViewModel: DollarViewModel,
                        routeAction: InvestRouteAction,
-                       sharedViewModel: SharedViewModel) {
+                       allViewModel: AllViewModel) {
 
 
 
@@ -155,7 +151,7 @@ fun DollarInvestScreen(dollarViewModel: DollarViewModel,
                         dollarViewModel.buyDollarAdd()
                         dollarViewModel.selectedCheckBoxId.value = 1
                         routeAction.navTo(InvestRoute.MAIN)
-                        sharedViewModel.changeMoney.value = 1
+                        allViewModel.changeMoney.value = 1
 
                     }
                     , color = BuyColor
@@ -172,7 +168,7 @@ fun DollarInvestScreen(dollarViewModel: DollarViewModel,
                     onClicked = {
                         dollarViewModel.selectedCheckBoxId.value = 1
                         routeAction.navTo(InvestRoute.MAIN)
-                        sharedViewModel.changeMoney.value = 1 },
+                        allViewModel.changeMoney.value = 1 },
                     color = BuyColor,
                     fontColor = Color.Black,
                     modifier = Modifier

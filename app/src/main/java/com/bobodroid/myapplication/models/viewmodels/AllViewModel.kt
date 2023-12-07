@@ -14,6 +14,8 @@ import java.time.LocalDate
 
 class AllViewModel: ViewModel() {
 
+    var changeMoney = MutableStateFlow(1)
+
     val db = Firebase.firestore
 
     init {

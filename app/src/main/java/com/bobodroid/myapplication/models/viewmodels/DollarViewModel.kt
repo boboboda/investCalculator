@@ -5,15 +5,9 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.bobodroid.myapplication.MainActivity.Companion.TAG
-import com.bobodroid.myapplication.extensions.toWon
 import com.bobodroid.myapplication.models.datamodels.DrBuyRecord
 import com.bobodroid.myapplication.models.datamodels.DrSellRecord
-import com.bobodroid.myapplication.models.datamodels.ExchangeRate
 import com.bobodroid.myapplication.models.datamodels.InvestRepository
-import com.google.firebase.Firebase
-import com.google.firebase.firestore.FirebaseFirestore
-import com.google.firebase.firestore.Query
-import com.google.firebase.firestore.firestore
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.*
@@ -22,7 +16,6 @@ import java.text.SimpleDateFormat
 import java.time.LocalDate
 import java.util.*
 import javax.inject.Inject
-import kotlin.math.roundToInt
 
 
 @HiltViewModel
@@ -87,62 +80,44 @@ class DollarViewModel @Inject constructor(private val investRepository: InvestRe
 
     val today = formatter.format(time)
 
-    val onWeek = dateWeek(1)
-
-    val oneMonth = dateMonth(1)
-
-
-    fun dateWeek(week: Int): String? {
-        val c: Calendar = GregorianCalendar()
-        c.add(Calendar.DAY_OF_WEEK, - week)
-        val sdfr = SimpleDateFormat("yyy-MM-dd")
-        return sdfr.format(c.time).toString()
-    }
-    fun dateMonth(month: Int): String? {
-        val c: Calendar = GregorianCalendar()
-        c.add(Calendar.MONTH, - month)
-        val sdfr = SimpleDateFormat("yyy-MM-dd")
-        return sdfr.format(c.time).toString()
-    }
-
-    val oneWeekFlow = MutableStateFlow("$onWeek")
-
-    val oneMonthFlow = MutableStateFlow("$oneMonth")
-
 
     // 선택된 날짜
     val dateFlow = MutableStateFlow("${LocalDate.now()}")
 
     val sellDateFlow = MutableStateFlow("${LocalDate.now()}")
 
-    val changeDateAction = MutableStateFlow(2)
 
 
 
-
-    enum class Action {
+    enum class DrAction {
         Buy, Sell
     }
 
-    fun buyDateRangeInvoke(
-        action: Action = Action.Buy,
+    fun dateRangeInvoke(
+        action: DrAction = DrAction.Buy,
         startDate: String,
         endDate: String) {
 
+        Log.d(TAG, "전체 데이터 : ${buyRecordFlow.value}")
 
         when(action) {
-            Action.Buy -> {
+            DrAction.Buy -> {
                 val startFilterBuyRecord= buyRecordFlow.value.filter { it.date >= startDate}
+
+                Log.d(TAG, "시작 데이터 : ${startFilterBuyRecord}")
 
                 var endFilterBuyRecord = startFilterBuyRecord.filter { it.date <= endDate}
 
+                Log.d(TAG, "날짜 : ${startDate} ${endDate}")
+
+                Log.d(TAG, "데이터 : ${endFilterBuyRecord}")
 
                 viewModelScope.launch {
                     _filterBuyRecordFlow.emit(endFilterBuyRecord)
                 }
             }
 
-            Action.Sell -> {
+            DrAction.Sell -> {
 
                 val startFilterSellRecord= sellRecordFlow.value.filter { it.date >= startDate}
 
@@ -157,34 +132,19 @@ class DollarViewModel @Inject constructor(private val investRepository: InvestRe
 
     }
 
-    val sellStartDateFlow = MutableStateFlow("${LocalDate.now()}")
-
-    val sellEndDateFlow = MutableStateFlow("${LocalDate.now()}")
-
-    val startFilterRecordFlow = sellRecordFlow.combine(sellStartDateFlow.filterNot { it.isEmpty() }) { sellRecordList, startDate ->
-        sellRecordList.filter { it.date >= startDate } }
-
-    val endFilterRecordFlow = startFilterRecordFlow.combine(sellEndDateFlow.filterNot { it.isEmpty() }) { sellRecordList, endDate ->
-        sellRecordList.filter { it.date <= endDate }
-    }
-
-
     //특정값만 인출
-    val sellGetMoney =  endFilterRecordFlow.filterNot {it.isEmpty()}.map { list ->
-        val result = list
-            .map{
-                it.exchangeMoney }
-            .reduce{first, end ->
-                first + end
-            }
-        return@map result
-    }
+//    val sellGetMoney =  endFilterRecordFlow.filterNot {it.isEmpty()}.map { list ->
+//        val result = list
+//            .map{
+//                it.exchangeMoney }
+//            .reduce{first, end ->
+//                first + end
+//            }
+//        return@map result
+//    }
+//
+//    val total = sellGetMoney.map { it.toWon() }
 
-    val total = sellGetMoney.map { it.toWon() }
-
-
-
-    var changeMoney = MutableStateFlow(1)
 
     // 리스트 매도 값
 
@@ -279,7 +239,6 @@ class DollarViewModel @Inject constructor(private val investRepository: InvestRe
         }
     }
 
-
     fun sellCalculation() {
         viewModelScope.launch {
             sellDollarFlow.emit(sellValue().toString())
@@ -287,7 +246,6 @@ class DollarViewModel @Inject constructor(private val investRepository: InvestRe
 
         }
     }
-
 
     fun resetValue() {
         viewModelScope.launch {

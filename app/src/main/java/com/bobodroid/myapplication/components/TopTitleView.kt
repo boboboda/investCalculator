@@ -58,7 +58,7 @@ fun TopTitleButton(sharedViewModel: SharedViewModel) {
 
         CardIconButton(imageVector = Icons.Filled.KeyboardArrowRight,
             onClicked = {
-                if(changeMoney.value <= 3) {
+                if(changeMoney.value < 3) {
                     sharedViewModel.changeMoney.value = changeMoney.value + 1
                 } else {
                     sharedViewModel.changeMoney.value = 1

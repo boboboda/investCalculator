@@ -4,6 +4,7 @@ package com.bobodroid.myapplication.components
 
 import android.graphics.drawable.Icon
 import android.util.Log
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -128,21 +129,37 @@ fun MoneyChButtonView(mainText: String,
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CardButton(label: String,
-               onClicked: () -> Unit,
+               selectedLabel: String? = null,
+               onClicked: (String) -> Unit,
                fontSize: Int,
                modifier: Modifier,
                fontColor: Color,
                buttonColor: Color,
+               disableColor: Color? = null
 ) {
+
+    var cardLabel : String = label
+
+
+
+
+    var color = if(disableColor != null) {
+        if (cardLabel == selectedLabel) fontColor else disableColor
+    } else {
+        fontColor
+    }
+
     Card(colors = CardDefaults.cardColors(buttonColor),
         elevation = CardDefaults.cardElevation(8.dp),
         modifier = modifier,
+        border = BorderStroke(1.dp, color),
         shape = RoundedCornerShape(2.dp),
         onClick = {
-            Log.d(MainActivity.TAG, "클릭되었습니다.")
-            onClicked.invoke()
+            onClicked(label)
         }) {
-        Row(Modifier.fillMaxSize(), horizontalArrangement = Arrangement.Center,
+        Row(Modifier
+            .fillMaxSize(),
+            horizontalArrangement = Arrangement.Center,
             verticalAlignment = Alignment.CenterVertically) {
             Box(
                 modifier = Modifier.fillMaxSize(),
@@ -154,7 +171,7 @@ fun CardButton(label: String,
                     fontSize = fontSize.sp,
                     maxLines = 1,
                     minFontSize = 10.sp,
-                    color = fontColor)
+                    color = color!!)
             }
 
         }

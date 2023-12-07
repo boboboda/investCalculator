@@ -10,6 +10,7 @@ import com.google.firebase.firestore.Query
 import com.google.firebase.firestore.firestore
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
+import java.time.LocalDate
 
 class AllViewModel: ViewModel() {
 
@@ -39,5 +40,11 @@ class AllViewModel: ViewModel() {
                 Log.d(MainActivity.TAG, "데이터 받아오기 실패 ${e}")
             }
     }
+
+    val startDateFlow = MutableStateFlow("${LocalDate.now()}")
+
+    val endDateFlow = MutableStateFlow("${LocalDate.now()}")
+
+    val dateStringFlow = MutableStateFlow("모두")
 
 }

@@ -54,7 +54,7 @@ private object DatabaseModule {
             InvestDatabase::class.java,
             "Invests_database"
         )
-//            .fallbackToDestructiveMigration()
+            .fallbackToDestructiveMigration()
             .build()
     }
 }

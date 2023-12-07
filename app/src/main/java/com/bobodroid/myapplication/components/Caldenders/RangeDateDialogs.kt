@@ -4,6 +4,7 @@ import android.icu.util.Calendar
 import android.icu.util.TimeZone
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -12,6 +13,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
@@ -20,6 +22,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
+import androidx.compose.material3.Divider
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.SelectableDates
@@ -27,6 +30,7 @@ import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -34,22 +38,31 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
+import com.bobodroid.myapplication.components.CardButton
+import com.bobodroid.myapplication.models.viewmodels.AllViewModel
 import com.bobodroid.myapplication.ui.theme.DialogBackgroundColor
+import com.bobodroid.myapplication.ui.theme.TopButtonColor
 import com.bobodroid.myapplication.ui.theme.WelcomeScreenBackgroundColor
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
+import java.time.Instant
 import java.time.LocalDate
+import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.time.temporal.ChronoField
+import java.util.GregorianCalendar
 
 @Composable
 fun RangeDateDialog(
     onDismissRequest: (Boolean) -> Unit,
     callStartDate: String,
     callEndDate: String,
-    selectedStartDate: (Long) -> Unit,
-    selectedEndDate: (Long) -> Unit,
-    onClicked: (() -> Unit)? = null,
+    onClicked: ((selectedStartDate: String, selectedEndDate: String) -> Unit)? = null,
+    allViewModel: AllViewModel
 ) {
+
+    val datePickerEnableState = remember { mutableStateOf(false) }
 
     val time = java.util.Calendar.getInstance().time
 
@@ -57,15 +70,37 @@ fun RangeDateDialog(
 
     val today = formatter.format(time)
 
+    val selectedStartDate = remember{ mutableStateOf("${LocalDate.now()}") }
 
-
-    var firstDate = if(callStartDate == "${LocalDate.now()}") "클릭하여 시작 날짜를 선택해주세요" else {"시작: ${callStartDate}"}
-
-    var secondDate = if(callEndDate == "${LocalDate.now()}") "클릭하여 종료 날짜를 선택해주세요" else {"종료: ${callEndDate}"}
+    val selectedEndDate = remember{ mutableStateOf("${LocalDate.now()}") }
 
     val isStartDateOpen = remember { mutableStateOf(false) }
 
     val isEndDateOpen = remember { mutableStateOf(false) }
+
+    val dateCardLabel = remember { mutableStateOf("오늘") }
+
+    fun dateWeek(week: Int): String? {
+        val c: java.util.Calendar = GregorianCalendar()
+        c.add(java.util.Calendar.DAY_OF_WEEK, - week)
+        val sdfr = SimpleDateFormat("yyy-MM-dd")
+        return sdfr.format(c.time).toString()
+    }
+    fun dateMonth(month: Int): String? {
+        val c: java.util.Calendar = GregorianCalendar()
+        c.add(java.util.Calendar.MONTH, - month)
+        val sdfr = SimpleDateFormat("yyy-MM-dd")
+        return sdfr.format(c.time).toString()
+    }
+
+    val oneWeek = dateWeek(7)
+
+    val oneMonth = dateMonth(1)
+
+    val scope = rememberCoroutineScope()
+
+
+
 
 
     Dialog(onDismissRequest = {
@@ -78,107 +113,186 @@ fun RangeDateDialog(
                     color = DialogBackgroundColor,
                     shape = RoundedCornerShape(16.dp)
                 ),
-            horizontalAlignment = Alignment.CenterHorizontally
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(5.dp)
         ) {
             Row(modifier = Modifier
+                .wrapContentHeight()
                 .fillMaxWidth()
                 .padding(vertical = 5.dp)
-                .padding(start = 10.dp)) {
+                .padding(start = 10.dp),
+                horizontalArrangement = Arrangement.Center) {
 
-                Text(text = "날짜 범위")
+                Text(text = "매수내역 조회 설정", fontSize = 25.sp)
+            }
+            Divider(Modifier.fillMaxWidth())
+
+            Row(modifier = Modifier
+                .wrapContentHeight()
+                .fillMaxWidth()
+                .padding(start = 10.dp),
+                horizontalArrangement = Arrangement.Start) {
+
+                Text(text = "조회기간", fontSize = 15.sp)
             }
 
-            OutlinedButton(
-                border = BorderStroke(1.dp, color = Color.Black),
-                shape = RoundedCornerShape(5.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = Color.White
-                ),
-                onClick = {
-                    isStartDateOpen.value = true
-                }) {
-                Box(
+            Row(modifier = Modifier
+                .height(50.dp)
+                .fillMaxWidth()
+                .padding(horizontal = 10.dp)
+                .padding(),
+                horizontalArrangement = Arrangement.spacedBy(10.dp),) {
+
+                CardButton(
+                    label = "오늘",
+                    selectedLabel = dateCardLabel.value,
+                    onClicked = {
+
+                        selectedStartDate.value = "${LocalDate.now()}"
+
+                        selectedEndDate.value = "${LocalDate.now()}"
+
+                        datePickerEnableState.value = false
+                                dateCardLabel.value = it
+                        scope.launch {
+                            allViewModel.dateStringFlow.emit(it)
+                        }
+                    },
+                    fontSize = 15,
+                    modifier = Modifier.weight(1f),
+                    fontColor = Color.Black,
+                    buttonColor = Color.White,
+                    disableColor = Color.LightGray
+                )
+
+                CardButton(
+                    label = "일주일",
+                    selectedLabel = dateCardLabel.value,
+                    onClicked = {
+
+                        selectedStartDate.value = "${oneWeek}"
+
+                        selectedEndDate.value = "${LocalDate.now()}"
+
+                        datePickerEnableState.value = false
+                        dateCardLabel.value = it
+
+                        scope.launch {
+                            allViewModel.dateStringFlow.emit(it)
+                        }
+                    },
+                    fontSize = 15,
+                    modifier = Modifier.weight(1f),
+                    fontColor = Color.Black,
+                    buttonColor = Color.White,
+                    disableColor = Color.LightGray
+                )
+
+                CardButton(
+                    label = "한달",
+                    selectedLabel = dateCardLabel.value,
+                    onClicked = {
+
+                        selectedStartDate.value = "${oneMonth}"
+
+                        selectedEndDate.value = "${LocalDate.now()}"
+
+                        datePickerEnableState.value = false
+                        dateCardLabel.value = it
+                        scope.launch {
+                            allViewModel.dateStringFlow.emit(it)
+                        }
+                    },
+                    fontSize = 15,
+                    modifier = Modifier.weight(1f),
+                    fontColor = Color.Black,
+                    buttonColor = Color.White,
+                    disableColor = Color.LightGray
+                )
+
+                CardButton(
+                    label = "직접 설정",
+                    selectedLabel = dateCardLabel.value,
+                    onClicked = {
+                        datePickerEnableState.value = true
+                        dateCardLabel.value = it
+                        scope.launch {
+                            allViewModel.dateStringFlow.emit(it)
+                        }
+                    },
+                    fontSize = 15,
+                    modifier = Modifier.weight(1f),
+                    fontColor = Color.Black,
+                    buttonColor = Color.White,
+                    disableColor = Color.LightGray
+                )
+
+            }
+
+            Row(modifier = Modifier
+                .fillMaxWidth()
+                .padding(start = 15.dp, end = 15.dp),
+                horizontalArrangement = Arrangement.Center,
+                verticalAlignment = Alignment.CenterVertically) {
+
+                OutlinedButton(
                     modifier = Modifier
-                        .wrapContentSize()
-                        .fillMaxWidth(0.8f)
-                        .padding(horizontal = 5.dp),
-                    contentAlignment = Alignment.Center
-                ) {
+                        .weight(1f),
+                    border = BorderStroke(1.dp, color = Color.Black),
+                    shape = RoundedCornerShape(5.dp),
+                    enabled = datePickerEnableState.value,
+                    colors = ButtonDefaults.buttonColors(
+                        contentColor = Color.Black,
+                        disabledContainerColor = Color.LightGray,
+                        containerColor = Color.White
+                    ),
+                    onClick = {
+                        isStartDateOpen.value = true
+                    }) {
                     Text(
-                        text = "$firstDate",
-                        color = Color.Black,
+                        text = "${selectedStartDate.value}",
                         fontSize = 13.sp,
                         textAlign = TextAlign.Center,
                     )
                 }
 
-                if(isStartDateOpen.value) {
-                    startDatePickerDialog(
-                        selectedStartDate = isStartDateOpen.value,
-                        onDateSelected = {
-                            selectedStartDate.invoke(it)
-                            isStartDateOpen.value = false
-                        },
-                        onDismissRequest = {
-                            isStartDateOpen.value = false
-                        },
-                        startDate = callStartDate,
-                        endDate = callEndDate
-                    )
-                }
+                    Text(text = "~")
 
-            }
-            Spacer(modifier = Modifier.height(15.dp))
+                    OutlinedButton(
+                        modifier = Modifier.weight(1f),
+                        border = BorderStroke(1.dp, color = Color.Black),
+                        enabled = datePickerEnableState.value,
+                        colors = ButtonDefaults.buttonColors(
+                            contentColor = Color.Black,
+                            disabledContainerColor = Color.LightGray,
+                            containerColor = Color.White
+                        ),
+                        shape = RoundedCornerShape(5.dp),
+                        onClick = {
+                            isEndDateOpen.value = true
+                        }) {
+                        Text(
+                            text = "${selectedEndDate.value}",
+                            fontSize = 13.sp,
+                            textAlign = TextAlign.Center,
+                        )
 
-            OutlinedButton(
-                border = BorderStroke(1.dp, color = Color.Black),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = Color.White
-                ),
-                shape = RoundedCornerShape(5.dp),
-                onClick = {
-                    isEndDateOpen.value = true
-                }) {
-                Box(
-                    modifier = Modifier
-                        .wrapContentSize()
-                        .fillMaxWidth(0.8f)
-                        .padding(horizontal = 5.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = "$secondDate",
-                        color = Color.Black,
-                        fontSize = 13.sp,
-                        textAlign = TextAlign.Center,
-                    )
-                }
 
-                if(isEndDateOpen.value) {
-                    endDatePickerDialog(
-                        selectedEndDate = isEndDateOpen.value,
-                        onDateSelected = {
-                            selectedEndDate.invoke(it)
-                            isEndDateOpen.value = false
-                        },
-                        onDismissRequest = {
-                            isEndDateOpen.value = false
-                        },
-                        startDate = callStartDate,
-                        endDate = callEndDate
-                    )
+                    }
+
                 }
-            }
 
             Spacer(modifier = Modifier.height(10.dp))
 
             Row(modifier = Modifier
                 .fillMaxWidth()
-                .wrapContentSize()) {
+                .wrapContentSize()
+                .padding(start = 30.dp, end = 10.dp)) {
 
                 Button(
+                    shape = RoundedCornerShape(5.dp),
                     onClick = {
-                        onClicked?.invoke()
+                        onClicked?.invoke(selectedStartDate.value, selectedEndDate.value)
                         onDismissRequest(false)
                     },
                     colors = ButtonDefaults.buttonColors(WelcomeScreenBackgroundColor)
@@ -191,7 +305,7 @@ fun RangeDateDialog(
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
-                            text = "확인",
+                            text = "조회",
                             color = Color.Black,
                             fontSize = 13.sp,
                             textAlign = TextAlign.Center,
@@ -203,6 +317,7 @@ fun RangeDateDialog(
                 Spacer(modifier = Modifier.width(15.dp))
 
                 Button(
+                    shape = RoundedCornerShape(5.dp),
                     onClick = {
                         onDismissRequest(false)
                     },
@@ -228,9 +343,55 @@ fun RangeDateDialog(
             Spacer(modifier = Modifier.height(10.dp))
 
         }
+
+
+
+
+                if(isStartDateOpen.value) {
+                    startDatePickerDialog(
+                        selectedStartDate = isStartDateOpen.value,
+                        onDateSelected = {startDate->
+
+                            selectedStartDate.value = Instant.ofEpochMilli(startDate).atZone(
+                                ZoneId.systemDefault()).toLocalDate().toString()
+
+                            isStartDateOpen.value = false
+                        },
+                        onDismissRequest = {
+                            isStartDateOpen.value = false
+                        },
+                        startDate = callStartDate,
+                        endDate = callEndDate
+                    )
+                }
+
+
+
+
+
+                if(isEndDateOpen.value) {
+                    endDatePickerDialog(
+                        selectedEndDate = isEndDateOpen.value,
+                        onDateSelected = {endDate->
+
+                          selectedEndDate.value = Instant.ofEpochMilli(endDate).atZone(
+                                ZoneId.systemDefault()).toLocalDate().toString()
+
+                            isEndDateOpen.value = false
+                        },
+                        onDismissRequest = {
+                            isEndDateOpen.value = false
+                        },
+                        startDate = callStartDate,
+                        endDate = callEndDate
+                    )
+                }
+        }
     }
 
-}
+
+
+
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -275,11 +436,6 @@ fun startDatePickerDialog(
                 calendar1.timeInMillis = utcTimeMillis
 
                 return utcTimeMillis <= calendar.timeInMillis
-                        && (calendar1[Calendar.DAY_OF_WEEK] != Calendar.MONDAY)
-                        && (calendar1[Calendar.DAY_OF_WEEK] != Calendar.TUESDAY)
-                        && (calendar1[Calendar.DAY_OF_WEEK] != Calendar.WEDNESDAY)
-                        && (calendar1[Calendar.DAY_OF_WEEK] != Calendar.THURSDAY)
-                        && (calendar1[Calendar.DAY_OF_WEEK] != Calendar.FRIDAY)
             }
         }
     )
@@ -352,11 +508,6 @@ fun endDatePickerDialog(
                 calendar1.timeInMillis = utcTimeMillis
 
                 return utcTimeMillis >= calendar.timeInMillis
-                        && (calendar1[Calendar.DAY_OF_WEEK] != Calendar.MONDAY)
-                        && (calendar1[Calendar.DAY_OF_WEEK] != Calendar.TUESDAY)
-                        && (calendar1[Calendar.DAY_OF_WEEK] != Calendar.WEDNESDAY)
-                        && (calendar1[Calendar.DAY_OF_WEEK] != Calendar.THURSDAY)
-                        && (calendar1[Calendar.DAY_OF_WEEK] != Calendar.FRIDAY)
             }
         }
     )

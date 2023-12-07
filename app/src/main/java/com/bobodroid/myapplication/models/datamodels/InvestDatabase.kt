@@ -12,8 +12,7 @@ import com.bobodroid.myapplication.models.datamodels.DrBuyRecord
     YenBuyRecord::class,
     YenSellRecord::class,
     WonBuyRecord::class,
-    WonSellRecord::class
-                     ],
+    WonSellRecord::class],
 //    autoMigrations = [
 //        AutoMigration(from = 5, to = 6)
 //                                         ],

@@ -49,7 +49,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.bobodroid.myapplication.MainActivity
 import com.bobodroid.myapplication.R
 import com.bobodroid.myapplication.components.*
-import com.bobodroid.myapplication.components.Caldenders.rangeDateDialog
+import com.bobodroid.myapplication.components.Caldenders.RangeDateDialog
 import com.bobodroid.myapplication.extensions.toWon
 import com.bobodroid.myapplication.models.viewmodels.DollarViewModel
 import com.bobodroid.myapplication.models.viewmodels.SharedViewModel
@@ -79,14 +79,10 @@ import java.time.ZoneId
 @Composable
 fun DollarMainScreen
             (dollarViewModel: DollarViewModel,
-             routeAction: InvestRouteAction,
-             sharedViewModel: SharedViewModel,
              allViewModel: AllViewModel) {
 
 
     var selectedCheckBoxId = dollarViewModel.selectedCheckBoxId.collectAsState()
-
-    val showOpenDialog = remember { mutableStateOf(false) }
 
     val time = Calendar.getInstance().time
 
@@ -111,9 +107,7 @@ fun DollarMainScreen
 
     val snackbarHostState = remember { SnackbarHostState() }
 
-    val callStartDate = dollarViewModel.startDateFlow.collectAsState()
-
-    var callEndDate = dollarViewModel.endDateFlow.collectAsState()
+    val dateString = allViewModel.dateStringFlow.collectAsState()
 
     val scope = rememberCoroutineScope()
 
@@ -169,9 +163,12 @@ fun DollarMainScreen
 
         }
         Row(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 25.dp)
+                .padding(start = 10.dp),
             horizontalArrangement = Arrangement.End,
-            verticalAlignment = Alignment.CenterVertically
+            verticalAlignment = Alignment.CenterVertically,
         ) {
 
             Spacer(modifier = Modifier.weight(1f))
@@ -202,94 +199,6 @@ fun DollarMainScreen
                     BuyRecordBox(dollarViewModel = dollarViewModel, snackbarHostState = snackbarHostState)
                 } else {
                     SellRecordBox(dollarViewModel = dollarViewModel)}
-            }
-
-            Row(
-                modifier = Modifier
-                    .height(120.dp)
-                    .fillMaxWidth()
-                    .padding(start = 20.dp, bottom = 10.dp),
-                horizontalArrangement = Arrangement.End,
-                verticalAlignment = Alignment.CenterVertically
-
-            ) {
-
-//                Row(modifier = Modifier.weight(1f)
-//                ) {
-//                    if (selectedCheckBoxId.value == 2) GetMoneyView(
-//                        title = "총 수익",
-//                        getMoney = "${total.value}",
-//                        onClicked = { Log.d(TAG, "") },
-//                        dollarViewModel
-//                    )
-//                    else
-//                        null
-//                }
-
-
-                FloatingActionButton(
-                    onClick = {
-                        showOpenDialog.value = true
-                    },
-                    containerColor = MaterialTheme.colors.secondary,
-                    shape = RoundedCornerShape(16.dp),
-                    modifier = Modifier
-                        .padding(bottom = 10.dp, end = 20.dp)
-                        .size(60.dp),
-                ) {
-                    androidx.compose.material3.Icon(
-                        imageVector = Icons.Rounded.DateRange,
-                        contentDescription = "날짜 범위 지정",
-                        tint = Color.White
-                    )
-                }
-
-                Spacer(modifier = Modifier.width(15.dp))
-
-                FloatingActionButton(
-                    onClick = { routeAction.navTo(InvestRoute.DOLLAR_BUY) },
-                    containerColor = MaterialTheme.colors.secondary,
-                    shape = RoundedCornerShape(16.dp),
-                    modifier = Modifier
-                        .padding(bottom = 10.dp, end = 20.dp)
-                        .size(60.dp),
-                ) {
-                    androidx.compose.material3.Icon(
-                        imageVector = Icons.Rounded.Add,
-                        contentDescription = "매수화면 가기",
-                        tint = Color.White
-                    )
-                }
-
-                if(showOpenDialog.value) {
-                    rangeDateDialog(
-                        onDismissRequest = {
-                            showOpenDialog.value = it
-                        },
-                        callStartDate.value,
-                        callEndDate.value,
-                        selectedStartDate = {
-                            dollarViewModel.startDateFlow.value = Instant.ofEpochMilli(it).atZone(
-                                ZoneId.systemDefault()).toLocalDate().toString()
-                        },
-                        selectedEndDate = {
-                            dollarViewModel.endDateFlow.value = Instant.ofEpochMilli(it).atZone(ZoneId.systemDefault()).toLocalDate().toString()
-                        },
-                        onClicked = {
-//                            scope.launch {
-//
-//                                val rangeDate = BigDataDate(startDate = dataViewModel.startDateFlow.value, endDate = dataViewModel.endDateFlow.value )
-//
-//
-//                                val addList = dataViewModel.allNumberDateRangeFlow.value.toMutableList().apply {
-//                                    add(dateData)
-//                                }
-//
-//                                dataViewModel.allNumberDateRangeFlow.emit(addList)
-//                            }
-                        }
-                    )
-                }
             }
 
         }

@@ -22,6 +22,9 @@ data class DrBuyRecord (
     @ColumnInfo(name = "rate")
     val rate: String,
 
+//    @ColumnInfo(name = "profit", defaultValue = "")
+//    val profit: String? = null,
+
     @ColumnInfo(name = "exchangeMoney")
     val exchangeMoney: Float,
 

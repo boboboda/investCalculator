@@ -36,18 +36,7 @@ import java.util.UUID
 fun BuyRecordBox(dollarViewModel: DollarViewModel,
                  snackbarHostState: SnackbarHostState) {
 
-    val dateChangeIn = dollarViewModel.changeDateAction.collectAsState()
-
-    val buyRecordHistory : State<List<DrBuyRecord>> =
-        when(dateChangeIn.value) {
-            1 -> { dollarViewModel.buyDayFilteredRecordFlow.collectAsState(initial = emptyList())}
-            2 -> { dollarViewModel.buyRecordFlow.collectAsState()}
-            3 -> { dollarViewModel.buyMonthFilterRecordFlow.collectAsState(initial = emptyList())}
-            4 -> { dollarViewModel.buyYearFilterRecordFlow.collectAsState(initial = emptyList())}
-
-            else -> { dollarViewModel.buyRecordFlow.collectAsState()}
-        }
-
+    val buyRecordHistory : State<List<DrBuyRecord>> = dollarViewModel.filterBuyRecordFlow.collectAsState()
 
     val buySortRecord = buyRecordHistory.value.sortedBy { it.date }
 
@@ -101,7 +90,7 @@ fun BuyRecordBox(dollarViewModel: DollarViewModel,
                         .padding(vertical = Dp(1f)),
                     directions = setOf(
                         DismissDirection.EndToStart),
-                    dismissThresholds = { FractionalThreshold(0.25f)},
+                    dismissThresholds = { FractionalThreshold(0.40f)},
                     background = {
                         val color by animateColorAsState(
                             when (dismissState.targetValue) {
@@ -175,17 +164,7 @@ fun BuyRecordBox(dollarViewModel: DollarViewModel,
 @Composable
 fun SellRecordBox(dollarViewModel: DollarViewModel) {
 
-    val dateChangeIn = dollarViewModel.changeDateAction.collectAsState()
-
-    val sellRecordHistory : State<List<DrSellRecord>> =
-        when(dateChangeIn.value) {
-            1 -> { dollarViewModel.sellDayFilteredRecordFlow.collectAsState(initial = emptyList())}
-            2 -> { dollarViewModel.sellRecordFlow.collectAsState() }
-            3 -> { dollarViewModel.sellMonthFilterRecordFlow.collectAsState(initial = emptyList())}
-            4 -> { dollarViewModel.sellYearFilterRecordFlow.collectAsState(initial = emptyList())}
-
-            else -> { dollarViewModel.sellRecordFlow.collectAsState()}
-        }
+    val sellRecordHistory = dollarViewModel.filterSellRecordFlow.collectAsState()
 
     val sellSortRecord = sellRecordHistory.value.sortedBy { it.date }
 
@@ -231,7 +210,7 @@ fun SellRecordBox(dollarViewModel: DollarViewModel) {
                     state = dismissState,
                     modifier = Modifier
                         .padding(vertical = Dp(1f)),
-                    dismissThresholds = { FractionalThreshold(0.25f)},
+                    dismissThresholds = { FractionalThreshold(0.40f)},
                     directions = setOf(
                         DismissDirection.EndToStart
                     ),

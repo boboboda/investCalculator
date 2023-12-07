@@ -200,44 +200,44 @@ fun WonMainScreen(wonViewModel: WonViewModel, routeAction: InvestRouteAction) {
                 else SellRecordBox(wonViewModel)
             }
 
-            Row(modifier = Modifier
-                .height(100.dp)
-                .fillMaxWidth()
-                .padding(start = 20.dp, bottom = 10.dp),
-                horizontalArrangement = Arrangement.End,
-                verticalAlignment = Alignment.CenterVertically
-
-            ) {
-
-                Row(modifier = Modifier.weight(1f)
-                ) {
-                    if(selectedCheckBoxId.value == 2) GetMoneyView(
-                        title = "총 수익",
-                        getDollar = "${dollartotal.value}",
-                        getYen = "${yentotal.value}",
-                        onClicked = { Log.d(TAG, "") },
-                        wonViewModel)
-                    else
-                        null
-                }
-
-                Spacer(modifier = Modifier.width(30.dp))
-
-                LargeFloatingActionButton(
-                    onClick = { routeAction.navTo(InvestRoute.WON_BUY)},
-                    containerColor = androidx.compose.material.MaterialTheme.colors.secondary,
-                    shape = RoundedCornerShape(16.dp),
-                    modifier = Modifier
-                        .padding(bottom = 10.dp, end = 20.dp)
-                        .size(60.dp),
-                ) {
-                    androidx.compose.material3.Icon(
-                        imageVector = Icons.Rounded.Add,
-                        contentDescription = "매수화면 가기",
-                        tint = Color.White
-                    )
-                }
-            }
+//            Row(modifier = Modifier
+//                .height(100.dp)
+//                .fillMaxWidth()
+//                .padding(start = 20.dp, bottom = 10.dp),
+//                horizontalArrangement = Arrangement.End,
+//                verticalAlignment = Alignment.CenterVertically
+//
+//            ) {
+//
+//                Row(modifier = Modifier.weight(1f)
+//                ) {
+//                    if(selectedCheckBoxId.value == 2) GetMoneyView(
+//                        title = "총 수익",
+//                        getDollar = "${dollartotal.value}",
+//                        getYen = "${yentotal.value}",
+//                        onClicked = { Log.d(TAG, "") },
+//                        wonViewModel)
+//                    else
+//                        null
+//                }
+//
+//                Spacer(modifier = Modifier.width(30.dp))
+//
+//                LargeFloatingActionButton(
+//                    onClick = { routeAction.navTo(InvestRoute.WON_BUY)},
+//                    containerColor = androidx.compose.material.MaterialTheme.colors.secondary,
+//                    shape = RoundedCornerShape(16.dp),
+//                    modifier = Modifier
+//                        .padding(bottom = 10.dp, end = 20.dp)
+//                        .size(60.dp),
+//                ) {
+//                    androidx.compose.material3.Icon(
+//                        imageVector = Icons.Rounded.Add,
+//                        contentDescription = "매수화면 가기",
+//                        tint = Color.White
+//                    )
+//                }
+//            }
 
         }
 

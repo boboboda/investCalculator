@@ -26,6 +26,7 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material.icons.rounded.Add
+import androidx.compose.material.icons.rounded.DateRange
 import androidx.compose.material3.*
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -54,6 +55,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.bobodroid.myapplication.MainActivity
 import com.bobodroid.myapplication.R
 import com.bobodroid.myapplication.components.*
+import com.bobodroid.myapplication.components.Caldenders.RangeDateDialog
 import com.bobodroid.myapplication.extensions.toWon
 import com.bobodroid.myapplication.models.viewmodels.DollarViewModel
 import com.bobodroid.myapplication.models.viewmodels.SharedViewModel
@@ -76,6 +78,7 @@ import com.bobodroid.myapplication.lists.SellRecordBox
 import com.bobodroid.myapplication.models.viewmodels.AllViewModel
 import com.bobodroid.myapplication.models.viewmodels.WonViewModel
 import com.bobodroid.myapplication.models.viewmodels.YenViewModel
+import com.bobodroid.myapplication.routes.InvestRoute
 import com.bobodroid.myapplication.routes.InvestRouteAction
 import com.google.firebase.ktx.Firebase
 import org.checkerframework.checker.units.qual.A
@@ -94,16 +97,13 @@ fun MainScreen(dollarViewModel: DollarViewModel,
                allViewModel: AllViewModel) {
 
 
-    var selectedCheckBoxId = dollarViewModel.selectedCheckBoxId.collectAsState()
-
-    val isDialogOpen = remember { mutableStateOf(false) }
+    val showOpenDialog = remember { mutableStateOf(false) }
 
     val time = Calendar.getInstance().time
 
     val formatter = SimpleDateFormat("yyyy-MM-dd")
 
     val today = formatter.format(time)
-
 
     val selectedDate: MutableState<LocalDate?> = remember { mutableStateOf(LocalDate.now()) }
 
@@ -113,19 +113,17 @@ fun MainScreen(dollarViewModel: DollarViewModel,
         dateRecord.value
     }
 
-    val dateSelected = dollarViewModel.changeDateAction.collectAsState()
-
-    val total = dollarViewModel.total.collectAsState("")
-
-    val resentExchangeRate = allViewModel.exchangeRateFlow.collectAsState()
-
-    val snackbarHostState = remember { SnackbarHostState() }
-
     val rowViewController = sharedViewModel.changeMoney.collectAsState()
 
     val drawerState = rememberDrawerState(DrawerValue.Closed)
 
     val scope = rememberCoroutineScope()
+
+    val callStartDate = allViewModel.startDateFlow.collectAsState()
+
+    var callEndDate = allViewModel.endDateFlow.collectAsState()
+
+    val checkBoxState = dollarViewModel.selectedCheckBoxId.collectAsState()
 
     ModalDrawer(
         drawerState = drawerState,
@@ -134,10 +132,13 @@ fun MainScreen(dollarViewModel: DollarViewModel,
             DrawerCustom(allViewModel = allViewModel)
         },
     ) {
-        Column(modifier = Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally)
+        Column(modifier = Modifier
+            .fillMaxSize(),
+            horizontalAlignment = Alignment.CenterHorizontally)
         {
 
-            Row(modifier = Modifier.fillMaxWidth(),
+            Row(modifier = Modifier
+                .fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically) {
                 TopTitleButton(sharedViewModel)
 
@@ -153,27 +154,141 @@ fun MainScreen(dollarViewModel: DollarViewModel,
                     }, modifier = Modifier.padding(end = 10.dp))
             }
 
-            when(rowViewController.value) {
-                1-> {
-                    DollarMainScreen(
-                        dollarViewModel = dollarViewModel,
-                        routeAction = routeAction,
-                        sharedViewModel = sharedViewModel,
-                        allViewModel = allViewModel
+            Column(Modifier
+                .weight(1f)) {
+                when(rowViewController.value) {
+                    1-> {
+                        DollarMainScreen(
+                            dollarViewModel = dollarViewModel,
+                            allViewModel = allViewModel
+                        )
+                    }
+
+                    2-> {
+                        YenMainScreen(
+                            yenViewModel = yenViewModel,
+                            routeAction = routeAction,
+                            allViewModel = allViewModel,
+                        )
+                    }
+
+                    3-> {
+                        WonMainScreen(wonViewModel = wonViewModel,
+                            routeAction = routeAction)
+                    }
+                }
+            }
+
+
+
+
+            Row(
+                modifier = Modifier
+                    .height(120.dp)
+                    .fillMaxWidth()
+                    .padding(start = 20.dp, bottom = 10.dp),
+                horizontalArrangement = Arrangement.End,
+                verticalAlignment = Alignment.CenterVertically
+
+            ) {
+
+//                Row(modifier = Modifier.weight(1f)
+//                ) {
+//                    if (selectedCheckBoxId.value == 2) GetMoneyView(
+//                        title = "총 수익",
+//                        getMoney = "${total.value}",
+//                        onClicked = { Log.d(TAG, "") },
+//                        dollarViewModel
+//                    )
+//                    else
+//                        null
+//                }
+
+
+                FloatingActionButton(
+                    onClick = {
+                        showOpenDialog.value = true
+                    },
+                    containerColor = MaterialTheme.colors.secondary,
+                    shape = RoundedCornerShape(16.dp),
+                    modifier = Modifier
+                        .padding(bottom = 10.dp, end = 20.dp)
+                        .size(60.dp),
+                ) {
+                    androidx.compose.material3.Icon(
+                        imageVector = Icons.Rounded.DateRange,
+                        contentDescription = "날짜 범위 지정",
+                        tint = Color.White
                     )
                 }
 
-                2-> {
-                    YenMainScreen(
-                        yenViewModel = yenViewModel,
-                        routeAction = routeAction,
-                        allViewModel = allViewModel,
+                Spacer(modifier = Modifier.width(15.dp))
+
+                FloatingActionButton(
+                    onClick = {
+
+                        when(rowViewController.value) {
+                            1-> {
+                                routeAction.navTo(InvestRoute.DOLLAR_BUY)
+                            }
+                            2-> {
+                                routeAction.navTo(InvestRoute.YEN_BUY)
+                            }
+                            3-> {
+                                routeAction.navTo(InvestRoute.WON_BUY)
+                            }
+                        }
+
+                         },
+                    containerColor = MaterialTheme.colors.secondary,
+                    shape = RoundedCornerShape(16.dp),
+                    modifier = Modifier
+                        .padding(bottom = 10.dp, end = 20.dp)
+                        .size(60.dp),
+                ) {
+                    androidx.compose.material3.Icon(
+                        imageVector = Icons.Rounded.Add,
+                        contentDescription = "매수화면 가기",
+                        tint = Color.White
                     )
                 }
 
-                3-> {
-                    WonMainScreen(wonViewModel = wonViewModel,
-                        routeAction = routeAction)
+                if(showOpenDialog.value) {
+                    RangeDateDialog(
+                        onDismissRequest = {
+                            showOpenDialog.value = it
+                        },
+                        callStartDate.value,
+                        callEndDate.value,
+                        onClicked = { selectedStartDate, selectedEndDate ->
+
+                            scope.launch {
+                                allViewModel.startDateFlow.emit(selectedStartDate)
+                                allViewModel.endDateFlow.emit(selectedEndDate)
+
+                                when(checkBoxState.value) {
+                                    1-> {
+                                        dollarViewModel.buyDateRangeInvoke(
+                                            DollarViewModel.Action.Buy,
+                                            selectedStartDate,
+                                            selectedEndDate
+                                        )
+                                    }
+
+                                    2-> {
+                                        dollarViewModel.buyDateRangeInvoke(
+                                            DollarViewModel.Action.Sell,
+                                            selectedStartDate,
+                                            selectedEndDate
+                                        )
+                                    }
+                                }
+
+                            }
+
+                        },
+                        allViewModel
+                    )
                 }
             }
 
@@ -183,34 +298,6 @@ fun MainScreen(dollarViewModel: DollarViewModel,
     }
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-//class CustomShape : Shape {
-//    override fun createOutline(
-//        size: Size,
-//        layoutDirection: LayoutDirection,
-//        density: Density
-//    ): Outline {
-//        return Outline.Rectangle(
-//            Rect(
-//                left = 0f,
-//                top = 0f,
-//                right = size.width * 2.3f / 3,
-//                bottom = size.height
-//            )
-//        )
-//    }
-//}
 
 
 

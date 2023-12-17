@@ -123,7 +123,9 @@ fun DollarInvestScreen(dollarViewModel: DollarViewModel,
                 .fillMaxWidth()
                 .height(10.dp))
 
-            RateNumberField("매수환율을 입력해주세요", onClicked = {
+            RateNumberField("매수환율을 입력해주세요",
+                Modifier.padding(10.dp),
+                onClicked = {
                 dollarViewModel.rateInputFlow.value = it
             })
 

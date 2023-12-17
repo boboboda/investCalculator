@@ -1,19 +1,30 @@
 package com.bobodroid.myapplication.screens
 
+import android.util.Log
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
+import androidx.compose.material.DrawerState
 import androidx.compose.material.DrawerValue
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material.icons.rounded.Add
+import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.DateRange
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Outline
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.unit.*
 import com.bobodroid.myapplication.components.*
 import com.bobodroid.myapplication.components.Caldenders.RangeDateDialog
@@ -27,9 +38,15 @@ import com.bobodroid.myapplication.models.viewmodels.WonViewModel
 import com.bobodroid.myapplication.models.viewmodels.YenViewModel
 import com.bobodroid.myapplication.routes.InvestRoute
 import com.bobodroid.myapplication.routes.InvestRouteAction
+import com.bobodroid.myapplication.ui.theme.TopButtonColor
+import androidx.compose.material3.Text
+import androidx.compose.ui.text.style.TextAlign
+import com.bobodroid.myapplication.components.Dialogs.NoticeDialog
+import kotlinx.coroutines.delay
 
 const val TAG = "메인"
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun MainScreen(dollarViewModel: DollarViewModel,
                yenViewModel: YenViewModel,
@@ -45,8 +62,6 @@ fun MainScreen(dollarViewModel: DollarViewModel,
     val formatter = SimpleDateFormat("yyyy-MM-dd")
 
     val today = formatter.format(time)
-
-    val selectedDate: MutableState<LocalDate?> = remember { mutableStateOf(LocalDate.now()) }
 
     val dateRecord = dollarViewModel.dateFlow.collectAsState()
 
@@ -66,13 +81,48 @@ fun MainScreen(dollarViewModel: DollarViewModel,
 
     val checkBoxState = dollarViewModel.selectedCheckBoxId.collectAsState()
 
+    val openResetShowDialog = remember { mutableStateOf(false) }
+
+    val coroutineScope = rememberCoroutineScope()
+
+    val noticeState = allViewModel.noticeState.collectAsState()
+
+    val noticeShowDialog = remember { mutableStateOf(false) }
+
+    val nowDate = allViewModel.dateFlow.collectAsState()
+
+    val userSelectDate = allViewModel.localUserData.collectAsState()
+
+    val localUserDate = userSelectDate.value.userShowNoticeDate
+
+    LaunchedEffect(key1 = Unit, block = {
+        coroutineScope.launch {
+            // 저장한 날짜와 같으면 실행
+            Log.d(TAG, "튜터리얼 날짜\n 오늘날짜: ${nowDate.value},  연기날짜: ${userSelectDate.value.userShowNoticeDate}")
+
+            if(noticeState.value) {
+                if(!localUserDate.isNullOrEmpty()) {
+                    if(nowDate.value >= userSelectDate.value.userShowNoticeDate!!) {
+                        Log.d(TAG,"오늘 날짜가 더 큽니다.")
+                        noticeShowDialog.value = true
+                    } else return@launch
+                } else {
+                    Log.d(TAG,"날짜 값이 없습니다.")
+                }
+            } else return@launch
+
+        }
+    })
+
     ModalDrawer(
         drawerState = drawerState,
-        drawerShape = NavShape(widthOffset = 0.dp, scale = 0.6f),
+        gesturesEnabled = false,
+        drawerShape = customShape(),
         drawerContent = {
-            DrawerCustom(allViewModel = allViewModel)
+            DrawerCustom(allViewModel = allViewModel, drawerState = drawerState)
         },
     ) {
+
         Column(modifier = Modifier
             .fillMaxSize(),
             horizontalAlignment = Alignment.CenterHorizontally)
@@ -84,6 +134,21 @@ fun MainScreen(dollarViewModel: DollarViewModel,
                 TopTitleButton(allViewModel)
 
                 Spacer(modifier = Modifier.weight(1f))
+
+                CardTextIconButton(
+                    label = "새로고침",
+                    onClicked = {
+
+                    },
+                    buttonColor = TopButtonColor,
+                    fontColor = Color.Black,
+                    modifier = Modifier
+                        .width(80.dp)
+                        .height(30.dp),
+                    fontSize = 15
+                )
+
+                Spacer(modifier = Modifier.width(30.dp))
 
                 IconButton(
                     imageVector = Icons.Outlined.Settings,
@@ -97,28 +162,29 @@ fun MainScreen(dollarViewModel: DollarViewModel,
 
             Column(Modifier
                 .weight(1f)) {
-                when(rowViewController.value) {
-                    1-> {
-                        DollarMainScreen(
-                            dollarViewModel = dollarViewModel,
-                            allViewModel = allViewModel
-                        )
-                    }
+                    when(rowViewController.value) {
+                        1-> {
+                            DollarMainScreen(
+                                dollarViewModel = dollarViewModel,
+                                allViewModel = allViewModel
+                            )
 
-                    2-> {
-                        YenMainScreen(
-                            yenViewModel = yenViewModel,
-                            routeAction = routeAction,
-                            allViewModel = allViewModel,
-                        )
-                    }
+                        }
 
-                    3-> {
-                        WonMainScreen(wonViewModel = wonViewModel,
-                            routeAction = routeAction,
-                            allViewModel = allViewModel)
+                        2-> {
+                            YenMainScreen(
+                                yenViewModel = yenViewModel,
+                                routeAction = routeAction,
+                                allViewModel = allViewModel,
+                            )
+                        }
+
+                        3-> {
+                            WonMainScreen(wonViewModel = wonViewModel,
+                                routeAction = routeAction,
+                                allViewModel = allViewModel)
+                        }
                     }
-                }
             }
 
 
@@ -276,6 +342,21 @@ fun MainScreen(dollarViewModel: DollarViewModel,
                         allViewModel
                     )
                 }
+
+                if (noticeShowDialog.value)
+                    NoticeDialog(
+                        onDismissRequest = { close ->
+                            allViewModel.noticeState.value = close
+                            noticeShowDialog.value = close
+                                           },
+                        dateDelaySelected = {
+                            coroutineScope.launch {
+                                allViewModel.selectDelayDate()
+                                delay(1000)
+                                Log.d(TAG, "일주일 연기날짜 ${userSelectDate.value}")
+                            }
+                        },
+                        allViewModel)
             }
 
 
@@ -289,109 +370,139 @@ fun MainScreen(dollarViewModel: DollarViewModel,
 
 @Composable
 fun DrawerCustom(
-    allViewModel: AllViewModel) {
+    allViewModel: AllViewModel,
+    drawerState: DrawerState) {
 
     val scope = rememberCoroutineScope()
 
     val resentRateDate = allViewModel.exchangeRateFlow.collectAsState()
 
+    val userData = allViewModel.localUserData.collectAsState()
+
     Column(
         modifier = Modifier
             .fillMaxHeight()
-            .requiredWidth(200.dp)
-            .padding(start = 10.dp)
+            .fillMaxWidth(2.3f / 3)
     ) {
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+            CardIconButton(imageVector = Icons.Rounded.Close, onClicked = {
+                scope.launch {
+                    drawerState.close()
+                }
+            }, modifier = Modifier, buttonColor = Color.White)
+        }
+
+        Text(
+            modifier = Modifier.padding(start = 10.dp),
+            text = "디바이스 ID: ${userData.value.id}")
+
+        Spacer(
+            modifier = Modifier
+                .height(20.dp)
+        )
+
+
+        Divider(
+            modifier = Modifier
+                .fillMaxWidth()
+        )
+
+        Spacer(
+            modifier = Modifier
+                .height(20.dp)
+        )
+
+        Text(
+            modifier = Modifier.padding(start = 10.dp),
+            text = "현재 최신 환율: ${resentRateDate.value.createAt}",
+            textAlign = TextAlign.Center)
+
+        Spacer(
+            modifier = Modifier
+                .height(15.dp)
+        )
+
+        Row(modifier = Modifier
+            .fillMaxWidth()
+            .padding(start = 10.dp),
+            horizontalArrangement = Arrangement.Start) {
+            Text(text = "환율업데이트 횟수: 3(0)회")
+
+            Spacer(modifier = Modifier.width(10.dp))
+            CardButton(
+                label = "충전",
+                onClicked = {
+
+                },
+                buttonColor = TopButtonColor,
+                fontColor = Color.Black,
+                modifier = Modifier
+                    .height(20.dp)
+                    .width(40.dp),
+                fontSize = 15
+            )
+        }
 
         Spacer(
             modifier = Modifier
                 .height(10.dp)
         )
 
+        Row(modifier = Modifier
+            .fillMaxWidth()
+            .padding(start = 10.dp),
+            horizontalArrangement = Arrangement.Start) {
+            Text(text = "스프레드: {}")
 
-//        Text(text = "디바이스 ID: {}")
+            Spacer(modifier = Modifier.width(10.dp))
+            CardButton(
+                label = "설정",
+                onClicked = {
 
-//        Divider(
-//            modifier = Modifier
-//                .fillMaxWidth()
-//                .padding(top = 10.dp)
-//        )
+                },
+                buttonColor = TopButtonColor,
+                fontColor = Color.Black,
+                modifier = Modifier
+                    .height(20.dp)
+                    .width(40.dp),
+                fontSize = 15
+            )
+        }
 
-//        Spacer(
-//            modifier = Modifier
-//                .height(20.dp)
-//        )
-//
-//        Text(text = "현재 최신 환율: ${resentRateDate.value.createAt}",
-//            textAlign = TextAlign.Center)
-//
-//        Spacer(
-//            modifier = Modifier
-//                .height(15.dp)
-//        )
-//
-//        Row(modifier = Modifier
-//            .fillMaxWidth()
-//            .padding(start = 10.dp),
-//            horizontalArrangement = Arrangement.Start) {
-//            Text(text = "환율업데이트 횟수: 3(0)회")
-//
-//            Spacer(modifier = Modifier.width(10.dp))
-//            CardButton(
-//                label = "충전",
-//                onClicked = {
-//
-//                },
-//                buttonColor = TopButtonColor,
-//                fontColor = Color.Black,
-//                modifier = Modifier
-//                    .height(20.dp)
-//                    .width(40.dp),
-//                fontSize = 15
-//            )
-//        }
-//
-//        Spacer(
-//            modifier = Modifier
-//                .height(10.dp)
-//        )
-//
-//        Row(modifier = Modifier
-//            .fillMaxWidth()
-//            .padding(start = 10.dp),
-//            horizontalArrangement = Arrangement.Start) {
-//            Text(text = "스프레드: {}")
-//
-//            Spacer(modifier = Modifier.width(10.dp))
-//            CardButton(
-//                label = "설정",
-//                onClicked = {
-//
-//                },
-//                buttonColor = TopButtonColor,
-//                fontColor = Color.Black,
-//                modifier = Modifier
-//                    .height(20.dp)
-//                    .width(40.dp),
-//                fontSize = 15
-//            )
-//        }
-//
-//        androidx.compose.material.Divider(
-//            modifier = Modifier
-//                .fillMaxWidth()
-//                .padding(top = 10.dp)
-//        )
+        Divider(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = 10.dp)
+        )
 
 
 
 
         Spacer(modifier = Modifier.weight(1f))
 
-        androidx.compose.material.Text(text = "고객센터")
-        androidx.compose.material.Text("개발자 이메일: kju9038@gmail.com")
+        Text(text = "고객센터")
+        Text("개발자 이메일: kju9038@gmail.com")
 //        androidx.compose.material.Text("개발자 유튜브: ")
-        androidx.compose.material.Text("문의: 000-0000-0000")
+        Text("문의: 000-0000-0000")
     }
 }
 
+
+@Composable
+fun customShape() = object : Shape {
+    override fun createOutline(
+        size: Size,
+        layoutDirection: LayoutDirection,
+        density: Density
+    ): Outline {
+        return Outline.Rectangle(
+            Rect(
+                left = 0f,
+                top = 0f,
+                right = size.width * 2.3f / 3,
+                bottom = size.height
+            )
+        )
+    }
+}
 

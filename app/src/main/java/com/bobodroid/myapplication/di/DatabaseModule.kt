@@ -45,6 +45,11 @@ private object DatabaseModule {
         return investDatabase.WonSellDao()
     }
 
+    @Provides
+    fun provideLocalUserDao(investDatabase: InvestDatabase) : LocalUserDatabaseDao {
+        return investDatabase.LocalUserDao()
+    }
+
 
     @Provides
     @Singleton

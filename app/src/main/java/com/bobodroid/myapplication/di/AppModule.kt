@@ -19,13 +19,15 @@ object AppModule {
         yenBuyDatabaseDao: YenBuyDatabaseDao,
         yenSellDatabaseDao: YenSellDatabaseDao,
         wonBuyDatabaseDao: WonBuyDatabaseDao,
-        wonSellDatabaseDao: WonSellDatabaseDao): InvestRepository {
+        wonSellDatabaseDao: WonSellDatabaseDao,
+        localUserDatabaseDao: LocalUserDatabaseDao): InvestRepository {
         return InvestRepository(
             dollarBuyDatabaseDao,
             dollarSellDatabaseDao,
             yenBuyDatabaseDao,
             yenSellDatabaseDao,
             wonBuyDatabaseDao,
-            wonSellDatabaseDao)
+            wonSellDatabaseDao,
+            localUserDatabaseDao)
     }
 }

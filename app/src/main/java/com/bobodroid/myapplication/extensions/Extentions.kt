@@ -1,6 +1,7 @@
 package com.bobodroid.myapplication.extensions
 
 import android.icu.util.LocaleData
+import java.math.BigDecimal
 import java.math.RoundingMode
 import java.text.DecimalFormat
 import java.text.NumberFormat
@@ -11,6 +12,24 @@ import java.util.*
 
 fun Long.toLongWon(): String {
     val won = NumberFormat.getInstance(Locale.KOREA)
+    won.maximumFractionDigits = 0
+    return won.format(this)
+}
+
+fun BigDecimal.toBigDecimalWon(): String {
+    val won = NumberFormat.getInstance(Locale.KOREA)
+    won.maximumFractionDigits = 0
+    return won.format(this)
+}
+
+fun BigDecimal.toBigDecimalUs(): String {
+    val us = NumberFormat.getCurrencyInstance(Locale.US)
+    us.maximumFractionDigits = 0
+    return us.format(this)
+}
+
+fun BigDecimal.toBigDecimalYen(): String {
+    val won = NumberFormat.getCurrencyInstance(Locale.JAPAN)
     won.maximumFractionDigits = 0
     return won.format(this)
 }
@@ -31,6 +50,12 @@ fun Int.toUs(): String {
 fun Float.toDecUs(): String {
     val us = NumberFormat.getCurrencyInstance(Locale.US)
     us.maximumFractionDigits = 3
+    return us.format(this)
+}
+
+fun Long.toLongUs(): String {
+    val us = NumberFormat.getCurrencyInstance(Locale.US)
+    us.maximumFractionDigits = 0
     return us.format(this)
 }
 

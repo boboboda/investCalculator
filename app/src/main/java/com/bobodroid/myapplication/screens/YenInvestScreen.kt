@@ -120,7 +120,9 @@ fun YenInvestScreen(yenViewModel: YenViewModel, routeAction: InvestRouteAction, 
             .fillMaxWidth()
             .height(10.dp))
 
-        RateNumberField("매수환율을 입력해주세요", onClicked = {
+        RateNumberField("매수환율을 입력해주세요",
+            Modifier.padding(horizontal = 10.dp),
+            onClicked = {
             yenViewModel.rateInputFlow.value = it
         })
 

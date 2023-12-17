@@ -61,19 +61,7 @@ fun DollarMainScreen
                         verticalAlignment = Alignment.CenterVertically) {
 
                         Text(text = "USD: ${resentExchangeRate.value.exchangeRates?.usd}", fontSize = 20.sp)
-//                        Spacer(modifier = Modifier.width(10.dp))
-//                        CardTextIconButton(
-//                            label = "새로고침",
-//                            onClicked = {
-//
-//                            },
-//                            buttonColor = TopButtonColor,
-//                            fontColor = Color.Black,
-//                            modifier = Modifier
-//                                .width(80.dp)
-//                                .height(30.dp),
-//                            fontSize = 15
-//                        )
+                        Spacer(modifier = Modifier.width(10.dp))
                     }
                     Spacer(modifier = Modifier.height(15.dp))
                     Text(text = "업데이트된 환율: ${resentExchangeRate.value.createAt}")
@@ -116,7 +104,7 @@ fun DollarMainScreen
             ) {
                 if (selectedCheckBoxId.value == 1)
                 {
-                    BuyRecordBox(dollarViewModel = dollarViewModel, snackbarHostState = snackbarHostState)
+                    BuyRecordBox(dollarViewModel = dollarViewModel, snackBarHostState = snackbarHostState)
                 } else {
                     SellRecordBox(dollarViewModel = dollarViewModel)}
             }

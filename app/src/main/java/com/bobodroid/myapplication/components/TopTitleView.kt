@@ -22,7 +22,7 @@ fun TopTitleButton(allViewModel: AllViewModel) {
         1-> {"달러"}
         2-> {"엔화"}
         3-> {"원화"}
-        else -> {"원화"}
+        else -> {"달러"}
     }
 
 
@@ -55,62 +55,6 @@ fun TopTitleButton(allViewModel: AllViewModel) {
             buttonColor = TopButtonColor)
 
     }
-
-
-
-//    Column(
-//        modifier = Modifier
-//            .background(Color.White)
-//    ) {
-//
-//
-//        LazyVerticalGrid(
-//            modifier = Modifier.padding(start = 20.dp, end = 20.dp),
-//            columns = GridCells.Fixed(3),
-//            horizontalArrangement = Arrangement.spacedBy(20.dp),
-//            verticalArrangement = Arrangement.spacedBy(8.dp),
-//            content = {
-//
-//                item(span = {
-//                    GridItemSpan(1)
-//                }
-//                ) {
-//                    TopTitleView(
-//                        "달러",
-//                        1,
-//                        selectedId = changeMoney.value,
-//                        selectAction = {
-//                            sharedViewModel.changeMoney.value = it
-//                        })
-//                }
-//
-//                item(span = {
-//                    GridItemSpan(1)
-//                }
-//                ) {
-//                    TopTitleView(
-//                        "엔화",
-//                        2,
-//                        selectedId = changeMoney.value,
-//                        selectAction = {
-//                            sharedViewModel.changeMoney.value = it
-//                        })
-//                }
-//
-//                item(span = {
-//                    GridItemSpan(1)
-//                }
-//                ) {
-//                    TopTitleView(
-//                        "원화",
-//                        3,
-//                        selectedId = changeMoney.value,
-//                        selectAction = {
-//                            sharedViewModel.changeMoney.value = it
-//                        })
-//                }
-//            })
-//    }
 }
 
 

@@ -21,6 +21,7 @@ import com.bobodroid.myapplication.models.viewmodels.WonViewModel
 import java.text.NumberFormat
 import java.util.*
 import androidx.compose.material.SnackbarHostState
+import com.bobodroid.myapplication.extensions.toLongUs
 import com.bobodroid.myapplication.extensions.toLongWon
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -66,7 +67,8 @@ fun NumberField(title: String, onClicked: ((String) -> Unit)?, snackBarHostState
                     userInput = it.toLong()
                     onClicked?.invoke(userInput.toString())
                 },
-                    snackBarHostState)
+                    limitNumberLength = 10
+                    ,snackBarHostState)
             }
         }
     }
@@ -77,7 +79,9 @@ fun NumberField(title: String, onClicked: ((String) -> Unit)?, snackBarHostState
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun RateNumberField(title: String, onClicked: ((String) -> Unit)?) {
+fun RateNumberField(title: String,
+                    modifier: Modifier,
+                    onClicked: ((String) -> Unit)?) {
 
     var openDialog = remember { mutableStateOf(false) }
     var userInput by remember { mutableStateOf("0") }
@@ -85,9 +89,8 @@ fun RateNumberField(title: String, onClicked: ((String) -> Unit)?) {
     var inputMoney = if(userInput == "0") "$title" else "${userInput}"
 
     Card(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
-            .padding(10.dp)
             .height(45.dp),
         border = BorderStroke(1.dp, Color.Black),
         colors = CardDefaults.cardColors(Color.White),
@@ -127,17 +130,19 @@ fun RateNumberField(title: String, onClicked: ((String) -> Unit)?) {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun WonNumberField(title: String, onClicked: ((String) -> Unit)?, wonViewModel: WonViewModel, snackbarHostState: SnackbarHostState) {
+fun WonNumberField(title: String, onClicked: ((String) -> Unit)?,
+                   wonViewModel: WonViewModel,
+                   snackbarHostState: SnackbarHostState) {
     var openDialog = remember { mutableStateOf(false) }
-    var userInput by remember { mutableStateOf(0) }
+    var userInput by remember { mutableStateOf(0L) }
 
     val moneyCgBtn = wonViewModel.moneyCgBtnSelected.collectAsState()
 
 
-    var inputMoney = if(userInput == 0) "$title"
+    var inputMoney = if(userInput == 0L) "$title"
     else "${
         when(moneyCgBtn.value) {
-            1 -> {userInput.toInt().toUs()}
+            1 -> {userInput.toLongUs()}
             2 -> {userInput.toFloat().toYen()}
             else -> {"$title"} }
         }"
@@ -172,9 +177,11 @@ fun WonNumberField(title: String, onClicked: ((String) -> Unit)?, wonViewModel: 
                 PopupNumberView(
                     onClicked = {
                     openDialog.value = false
-                    userInput = it.toInt()
+                    userInput = it.toLong()
                     onClicked?.invoke(userInput.toString())
                 },
+                    limitNumberLength = 6
+                    ,
                     snackbarHostState )
             }
         }

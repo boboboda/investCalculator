@@ -17,6 +17,9 @@ import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.lang.System.out
+import java.math.BigDecimal
+import java.math.BigInteger
+import java.math.RoundingMode
 import java.text.SimpleDateFormat
 import java.time.LocalDate
 import java.util.*
@@ -78,7 +81,7 @@ class YenViewModel @Inject constructor(private val investRepository: InvestRepos
 
     val rateInputFlow = MutableStateFlow("")
 
-    val exchangeMoney = MutableStateFlow(0f)
+    val exchangeMoney = MutableStateFlow("")
 
     val selectedCheckBoxId = MutableStateFlow(1)
 
@@ -175,14 +178,14 @@ class YenViewModel @Inject constructor(private val investRepository: InvestRepos
 
     fun buyAddRecord() {
         viewModelScope.launch {
-            exchangeMoney.emit(lastValue().toFloat())
+            exchangeMoney.emit("${lastValue()}")
             investRepository
                 .addRecord(
                     YenBuyRecord(
                     date = dateFlow.value,
                     money = moneyInputFlow.value,
                     rate = rateInputFlow.value,
-                    exchangeMoney = exchangeMoney.value,
+                    exchangeMoney = "${exchangeMoney.value}",
                     recordColor = sellRecordActionFlow.value
                 )
                 )
@@ -217,6 +220,7 @@ class YenViewModel @Inject constructor(private val investRepository: InvestRepos
                     yenBuyRecord.date,
                     yenBuyRecord.money,
                     yenBuyRecord.rate,
+                    yenBuyRecord.profit,
                     yenBuyRecord.exchangeMoney,
                     true)
             )
@@ -232,7 +236,7 @@ class YenViewModel @Inject constructor(private val investRepository: InvestRepos
                         date = sellDateFlow.value,
                         money = haveMoney.value.toString(),
                         rate = sellRateFlow.value,
-                        exchangeMoney = sellDollarFlow.value.toFloat()
+                        exchangeMoney = sellDollarFlow.value
                     )
                 )
         }
@@ -268,9 +272,15 @@ class YenViewModel @Inject constructor(private val investRepository: InvestRepos
         }
     }
 
-    private fun lastValue(): Int = ((moneyInputFlow.value.toFloat() / rateInputFlow.value.toFloat()) * 100f).roundToInt()
+    private fun lastValue() = (BigInteger(moneyInputFlow.value.toString())
+        .divide(BigInteger(rateInputFlow.value.toString()))
+        .toBigDecimal())
 
-    private fun sellValue(): Int = ((haveMoney.value.toFloat() * sellRateFlow.value.toFloat()) / 100f).toInt() - (recordInputMoney.value.toInt())
+
+    private fun sellValue() = (
+            (BigDecimal(haveMoney.value).times(BigDecimal(sellRateFlow.value)))
+                .setScale(20, RoundingMode.HALF_UP)
+            ) - BigDecimal(recordInputMoney.value)
 
     private fun sellPercent(): Float = ((sellDollarFlow.value.toFloat() / recordInputMoney.value.toFloat()) * 100f)
 

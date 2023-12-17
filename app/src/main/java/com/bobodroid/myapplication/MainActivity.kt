@@ -73,7 +73,6 @@ fun AppScreen(
         modifier = Modifier
             .fillMaxSize()) {
         MainTopBar()
-        Spacer(modifier = Modifier.height(10.dp))
 
         Column(modifier = Modifier.weight(1f),
             verticalArrangement = Arrangement.Bottom) {

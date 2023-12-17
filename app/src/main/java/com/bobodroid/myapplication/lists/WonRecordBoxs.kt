@@ -2,30 +2,22 @@ package com.bobodroid.myapplication.lists
 
 import android.annotation.SuppressLint
 import android.util.Log
-import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.core.animateDpAsState
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.*
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.Divider
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.bobodroid.myapplication.components.*
 import com.bobodroid.myapplication.models.datamodels.*
 import com.bobodroid.myapplication.models.viewmodels.*
-import com.bobodroid.myapplication.ui.theme.DeleteColor
+import com.bobodroid.myapplication.screens.TAG
 import java.util.UUID
 
 
@@ -33,7 +25,7 @@ import java.util.UUID
 @OptIn(ExperimentalMaterialApi::class)
 @SuppressLint("StateFlowValueCalledInComposition")
 @Composable
-fun BuyRecordBox(wonViewModel: WonViewModel, snackbarHostState: SnackbarHostState) {
+fun BuyWonRecordBox(wonViewModel: WonViewModel, snackbarHostState: SnackbarHostState) {
 
     val buyRecordHistory : State<List<WonBuyRecord>> = wonViewModel.filterBuyRecordFlow.collectAsState()
 
@@ -55,11 +47,11 @@ fun BuyRecordBox(wonViewModel: WonViewModel, snackbarHostState: SnackbarHostStat
 
         RecordTextView(recordText = "날짜", 45.dp, 16, 2.5f, 0.dp, color = Color.Black)
         Spacer(modifier = Modifier.width(1.dp))
-        RecordTextView(recordText = "매수금", 45.dp, 16, 2.5f,  0.dp, color = Color.Black)
+        RecordTextView(recordText = "매수원화\n" + "(매수금)", 45.dp, 16, 2.5f,  0.dp, color = Color.Black)
         Spacer(modifier = Modifier.width(1.dp))
         RecordTextView(recordText = "매수환율", 45.dp, 16, 2.5f,  0.dp, color = Color.Black)
         Spacer(modifier = Modifier.width(1.dp))
-        RecordTextView(recordText = "매수원화", 45.dp, 16, 2.5f,  0.dp ,color = Color.Black)
+        RecordTextView(recordText = "수익", 45.dp, 16, 2.5f,  0.dp ,color = Color.Black)
 
     }
 
@@ -78,85 +70,29 @@ fun BuyRecordBox(wonViewModel: WonViewModel, snackbarHostState: SnackbarHostStat
             //  Buy -> 라인리코드텍스트에 넣지 말고 바로 데이터 전달 -> 리팩토리
             items(buySortRecord, {item -> item.id}) {Buy ->
 
-                val dismissState = rememberDismissState()
+                WonLineRecordText(
+                    Buy,
+                    sellAction = Buy.recordColor
+                    ,
+                    sellActed = { buyRecord ->
+                        selectedId = buyRecord.id
 
-                if (dismissState.isDismissed(DismissDirection.EndToStart)) {
-                    wonViewModel.removeBuyRecord(Buy)
+                        wonViewModel.updateBuyRecord(buyRecord)
 
-                }
-                SwipeToDismiss(
-                    state = dismissState,
-                    modifier = Modifier
-                        .padding(vertical = Dp(1f)),
-                    directions = setOf(
-                        DismissDirection.EndToStart),
-                    dismissThresholds = { FractionalThreshold(0.25f)},
-                    background = {
-                        val color by animateColorAsState(
-                            when (dismissState.targetValue) {
-                                DismissValue.Default -> Color.White
-                                else -> DeleteColor
-                            }
-                        )
-                        val alignment = Alignment.CenterEnd
-                        val icon = Icons.Default.Delete
-
-                        val scale by animateFloatAsState(
-                            if (dismissState.targetValue == DismissValue.Default) 0.75f else 1f
-                        )
-
-                        Box(
-                            Modifier
-                                .fillMaxSize()
-                                .background(color)
-                                .padding(horizontal = Dp(20f)),
-                            contentAlignment = alignment
-                        ) {
-                            Image(
-                                icon,
-                                contentDescription = "Delete Icon",
-                                modifier = Modifier.scale(scale)
-                            )
-                        }
                     },
-                    dismissContent = {
+                    onClicked = { recordbox ->
+                        selectedId = recordbox.id
+                        wonViewModel.dateFlow.value = recordbox.date
+                        wonViewModel.recordInputMoney.value = recordbox.money.toInt()
+                        wonViewModel.moneyType.value = recordbox.moneyType
+                        wonViewModel.haveMoney.value = recordbox.exchangeMoney
 
+                        Log.d(TAG, " ${recordbox.money}, ${recordbox.exchangeMoney}")
 
-                        Card(
-                            elevation = animateDpAsState(
-                                if (dismissState.dismissDirection != null) 4.dp else 0.dp).value,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(Dp(50f))
-                                .align(alignment = Alignment.CenterVertically)
-                        ) {
-                            WonLineRecordText(
-                                Buy,
-                                sellAction = Buy.recordColor
-                                ,
-                                sellActed = { buyRecord ->
-                                    selectedId = buyRecord.id
-
-                                    wonViewModel.updateBuyRecord(buyRecord)
-
-                                },
-                                onClicked = { recordbox ->
-                                    selectedId = recordbox.id
-                                    wonViewModel.dateFlow.value = recordbox.date
-                                    wonViewModel.recordInputMoney.value = recordbox.money.toInt()
-                                    wonViewModel.moneyType.value = recordbox.moneyType
-                                    wonViewModel.haveMoney.value = recordbox.exchangeMoney
-
-                                    Log.d(com.bobodroid.myapplication.screens.TAG, " ${recordbox.money}, ${recordbox.exchangeMoney}")
-
-                                            }
-                                ,
-                                wonViewModel,
-                                snackbarHostState = snackbarHostState)
-
-                        }
                     }
-                )
+                    ,
+                    wonViewModel,
+                    snackbarHostState = snackbarHostState)
                 Divider()
             }
         }
@@ -168,7 +104,7 @@ fun BuyRecordBox(wonViewModel: WonViewModel, snackbarHostState: SnackbarHostStat
 
 @OptIn(ExperimentalMaterialApi::class)
 @Composable
-fun SellRecordBox(wonViewModel: WonViewModel) {
+fun SellWonRecordBox(wonViewModel: WonViewModel) {
 
     val sellRecordHistory : State<List<WonSellRecord>> = wonViewModel.filterSellRecordFlow.collectAsState()
 
@@ -190,7 +126,7 @@ fun SellRecordBox(wonViewModel: WonViewModel) {
         Spacer(modifier = Modifier.width(1.dp))
         RecordTextView(recordText = "매도환율", 45.dp, 16, 2.5f,  0.dp, color = Color.Black)
         Spacer(modifier = Modifier.width(1.dp))
-        RecordTextView(recordText = "수익", 45.dp, 16, 2.5f,  0.dp ,color = Color.Black)
+        RecordTextView(recordText = "예상수익", 45.dp, 16, 2.5f,  0.dp ,color = Color.Black)
 
     }
 
@@ -209,67 +145,13 @@ fun SellRecordBox(wonViewModel: WonViewModel) {
 
             items(sellSortRecord, {item -> item.id}) { Sell ->
 
-                val dismissState = rememberDismissState()
+                WonSellLineRecordText(Sell,
+                    onClicked = { recordBox ->
+                        wonViewModel.exchangeMoney.value = recordBox.exchangeMoney
+                        wonViewModel.sellRateFlow.value = recordBox.rate
+                        wonViewModel.sellDollarFlow.value = recordBox.money
+                    }, wonViewModel)
 
-                if (dismissState.isDismissed(DismissDirection.EndToStart)) {
-                    wonViewModel.removeSellRecord(Sell)
-                }
-                SwipeToDismiss(
-                    state = dismissState,
-                    modifier = Modifier
-                        .padding(vertical = Dp(1f)),
-                    directions = setOf(
-                        DismissDirection.EndToStart
-                    ),
-                    dismissThresholds = { FractionalThreshold(0.25f)},
-                    background = {
-                        val color by animateColorAsState(
-                            when (dismissState.targetValue) {
-                                DismissValue.Default -> Color.White
-                                else -> DeleteColor
-                            }
-                        )
-                        val alignment = Alignment.CenterEnd
-                        val icon = Icons.Default.Delete
-
-                        val scale by animateFloatAsState(
-                            if (dismissState.targetValue == DismissValue.Default) 0.75f else 1f
-                        )
-
-                        Box(
-                            Modifier
-                                .fillMaxSize()
-                                .background(color)
-                                .padding(horizontal = Dp(20f)),
-                            contentAlignment = alignment
-                        ) {
-                            Image(
-                                icon,
-                                contentDescription = "Delete Icon",
-                                modifier = Modifier.scale(scale)
-                            )
-                        }
-                    },
-                    dismissContent = {
-                        Card(
-                            elevation = animateDpAsState(
-                                if (dismissState.dismissDirection != null) 4.dp else 0.dp
-                            ).value,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(Dp(50f))
-                                .align(alignment = Alignment.CenterVertically)
-                        ) {
-                            WonSellLineRecordText(Sell,
-                                onClicked = { recordBox ->
-                                    wonViewModel.exchangeMoney.value = recordBox.exchangeMoney
-                                    wonViewModel.sellRateFlow.value = recordBox.rate
-                                    wonViewModel.sellDollarFlow.value = recordBox.money
-                                }, wonViewModel)
-
-                        }
-                    }
-                )
                 Divider()
             }
         }

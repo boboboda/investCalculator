@@ -44,6 +44,7 @@ fun Buttons(label: String,
             disabledContentColor = Color.White,
             disabledContainerColor = Color.Gray),
         modifier = modifier,
+        shape = RoundedCornerShape(5.dp),
         enabled = enabled,
         onClick = {onClicked?.invoke()})
     {

@@ -8,6 +8,7 @@ import androidx.core.util.rangeTo
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.bobodroid.myapplication.MainActivity
+import com.bobodroid.myapplication.MainActivity.Companion.TAG
 import com.bobodroid.myapplication.extensions.toDecUs
 import com.bobodroid.myapplication.extensions.toUs
 import com.bobodroid.myapplication.extensions.toWon
@@ -19,6 +20,7 @@ import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.lang.System.out
+import java.math.BigDecimal
 import java.text.SimpleDateFormat
 import java.time.LocalDate
 import java.util.*
@@ -75,7 +77,7 @@ class WonViewModel @Inject constructor(private val investRepository: InvestRepos
 
     val rateInputFlow = MutableStateFlow("")
 
-    val exchangeMoney = MutableStateFlow(0f)
+    val exchangeMoney = MutableStateFlow("")
 
     val selectedCheckBoxId = MutableStateFlow(1)
 
@@ -178,7 +180,7 @@ class WonViewModel @Inject constructor(private val investRepository: InvestRepos
 
     val recordInputMoney = MutableStateFlow(0)
 
-    var haveMoney = MutableStateFlow(0.0f)
+    var haveMoney = MutableStateFlow("")
 
     val sellRateFlow = MutableStateFlow("")
 
@@ -198,19 +200,23 @@ class WonViewModel @Inject constructor(private val investRepository: InvestRepos
                 2 -> {moneyType.emit(2)}
             }
             when(moneyCgBtnSelected.value) {
-                1-> {dollarlastValue()}
-                2-> {yenlastValue()}
-                else -> {null} }?.let {
-                exchangeMoney.emit(it.toFloat())
-
-            }
+                1-> {
+                    val dollarCg = dollarlastValue()
+                    Log.d(TAG,"값 ${dollarCg}")
+                    exchangeMoney.emit("${dollarCg}")
+                }
+                2-> {
+                    val yenCg = yenlastValue()
+                    exchangeMoney.emit("${yenCg}")
+                }
+                else -> {null}}
             investRepository
                 .addRecord(
                     WonBuyRecord(
                         date = dateFlow.value,
                         money = moneyInputFlow.value,
                         rate = rateInputFlow.value,
-                        exchangeMoney = exchangeMoney.value,
+                        exchangeMoney = "${exchangeMoney.value}",
                         recordColor = sellRecordActionFlow.value,
                         moneyType = moneyType.value
                     )
@@ -222,10 +228,6 @@ class WonViewModel @Inject constructor(private val investRepository: InvestRepos
                 rateInputFlow.emit("")
             }
         }
-    }
-
-    fun reSetValue() {
-        viewModelScope.launch {  }
     }
 
 
@@ -270,8 +272,6 @@ class WonViewModel @Inject constructor(private val investRepository: InvestRepos
                 remove(wonSellRecord)
             }.toList()
             _sellRecordFlow.value = items
-
-
         }
     }
 
@@ -285,6 +285,7 @@ class WonViewModel @Inject constructor(private val investRepository: InvestRepos
                     wonBuyRecord.date,
                     wonBuyRecord.money,
                     wonBuyRecord.rate,
+                    wonBuyRecord.profit,
                     wonBuyRecord.exchangeMoney,
                     true,
                     wonBuyRecord.moneyType)
@@ -301,7 +302,7 @@ class WonViewModel @Inject constructor(private val investRepository: InvestRepos
                         date = sellDateFlow.value,
                         money = haveMoney.value.toString(),
                         rate = sellRateFlow.value,
-                        exchangeMoney = sellDollarFlow.value.toFloat(),
+                        exchangeMoney = sellDollarFlow.value,
                         moneyType = moneyType.value)
                 )
         }
@@ -316,16 +317,17 @@ class WonViewModel @Inject constructor(private val investRepository: InvestRepos
     }
 
 
-    private fun dollarlastValue(): Int = (moneyInputFlow.value.toFloat() * rateInputFlow.value.toFloat()).roundToInt()
+    private fun dollarlastValue() = BigDecimal(moneyInputFlow.value).times(BigDecimal(rateInputFlow.value))
 
-    private fun yenlastValue(): Int = ((moneyInputFlow.value.toFloat() * rateInputFlow.value.toFloat()) / 100f).roundToInt()
-
-
+    private fun yenlastValue() = (BigDecimal(moneyInputFlow.value).times(BigDecimal(rateInputFlow.value)))
 
 
-    private fun dollarsellValue(): Float = (haveMoney.value / sellRateFlow.value.toFloat()) - recordInputMoney.value
 
-    private fun yensellValue(): Float = ((haveMoney.value / sellRateFlow.value.toFloat()) * 100f) - recordInputMoney.value
+
+    private fun dollarsellValue() = (BigDecimal(haveMoney.value).divide(BigDecimal(sellRateFlow.value))).minus(BigDecimal(recordInputMoney.value))
+
+    private fun yensellValue() =((BigDecimal(haveMoney.value).divide(BigDecimal(sellRateFlow.value))).times(
+        BigDecimal("100"))).minus(BigDecimal(recordInputMoney.value))
 
 
     private fun sellPercent(): Float = (sellDollarFlow.value.toFloat() / recordInputMoney.value.toFloat()) * 100f

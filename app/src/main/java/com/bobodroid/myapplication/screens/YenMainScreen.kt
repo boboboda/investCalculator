@@ -42,7 +42,9 @@ import com.bobodroid.myapplication.R
 import com.bobodroid.myapplication.components.*
 import com.bobodroid.myapplication.components.Caldenders.YenTopPickerDialog
 import com.bobodroid.myapplication.lists.BuyRecordBox
+import com.bobodroid.myapplication.lists.BuyYenRecordBox
 import com.bobodroid.myapplication.lists.SellRecordBox
+import com.bobodroid.myapplication.lists.SellYenRecordBox
 import com.bobodroid.myapplication.models.viewmodels.*
 import com.bobodroid.myapplication.routes.InvestRoute
 import com.bobodroid.myapplication.routes.InvestRouteAction
@@ -167,9 +169,9 @@ fun YenMainScreen
             ) {
 
                 if (selectedCheckBoxId.value == 1) {
-                    BuyRecordBox(yenViewModel, snackbarHostState = snackbarHostState)
+                    BuyYenRecordBox(yenViewModel, snackbarHostState = snackbarHostState)
                 } else {
-                    SellRecordBox(yenViewModel)
+                    SellYenRecordBox(yenViewModel)
                 }
 
             }

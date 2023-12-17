@@ -12,6 +12,9 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+import java.math.BigDecimal
+import java.math.BigInteger
+import java.math.RoundingMode
 import java.text.SimpleDateFormat
 import java.time.LocalDate
 import java.util.*
@@ -69,7 +72,7 @@ class DollarViewModel @Inject constructor(private val investRepository: InvestRe
 
     val rateInputFlow = MutableStateFlow("")
 
-    val exchangeMoney = MutableStateFlow(0f)
+    val exchangeMoney = MutableStateFlow("")
 
     val selectedCheckBoxId = MutableStateFlow(1)
 
@@ -148,9 +151,9 @@ class DollarViewModel @Inject constructor(private val investRepository: InvestRe
 
     // 리스트 매도 값
 
-    val recordInputMoney = MutableStateFlow(0)
+    val recordInputMoney = MutableStateFlow("")
 
-    var haveMoneyDollar = MutableStateFlow(0f)
+    var haveMoneyDollar = MutableStateFlow("")
 
     val sellRateFlow = MutableStateFlow("")
 
@@ -164,13 +167,13 @@ class DollarViewModel @Inject constructor(private val investRepository: InvestRe
 
     fun buyDollarAdd() {
         viewModelScope.launch {
-            exchangeMoney.emit(lastValue().toFloat())
+            exchangeMoney.emit("${lastValue()}")
             investRepository
                 .addRecord(DrBuyRecord(
                     date = dateFlow.value,
                     money = moneyInputFlow.value,
                     rate = rateInputFlow.value,
-                    exchangeMoney = exchangeMoney.value,
+                    exchangeMoney = "${exchangeMoney.value}",
                     recordColor = sellRecordActionFlow.value
                 ))
 
@@ -204,7 +207,7 @@ class DollarViewModel @Inject constructor(private val investRepository: InvestRe
                     drBuyrecord.date,
                     drBuyrecord.money,
                     drBuyrecord.rate,
-//                    drBuyrecord.profit,
+                    drBuyrecord.profit,
                     drBuyrecord.exchangeMoney,
                     true))
         }
@@ -217,9 +220,9 @@ class DollarViewModel @Inject constructor(private val investRepository: InvestRe
                 .addRecord(
                     DrSellRecord(
                 date = sellDateFlow.value,
-                money = haveMoneyDollar.value.toString(),
+                money = haveMoneyDollar.value,
                 rate = sellRateFlow.value,
-                exchangeMoney = sellDollarFlow.value.toFloat()
+                exchangeMoney = sellDollarFlow.value
             )
                 )
         }
@@ -253,9 +256,14 @@ class DollarViewModel @Inject constructor(private val investRepository: InvestRe
         }
     }
 
-    private fun lastValue(): Float = (moneyInputFlow.value.toFloat() / rateInputFlow.value.toFloat())
+    private fun lastValue() = (BigInteger(moneyInputFlow.value.toString())
+        .divide(BigInteger(rateInputFlow.value.toString()))
+        .toBigDecimal())
 
-    private fun sellValue(): Float = (haveMoneyDollar.value * sellRateFlow.value.toFloat()) - (recordInputMoney.value)
+    private fun sellValue() = (
+            (BigDecimal(haveMoneyDollar.value).times(BigDecimal(sellRateFlow.value)))
+                .setScale(20, RoundingMode.HALF_UP)
+            ) - BigDecimal(recordInputMoney.value)
 
     private fun sellPercent(): Float = (sellDollarFlow.value.toFloat() / recordInputMoney.value.toFloat()) * 100f
 

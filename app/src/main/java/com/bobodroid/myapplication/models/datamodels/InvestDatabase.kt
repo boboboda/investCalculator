@@ -12,11 +12,13 @@ import com.bobodroid.myapplication.models.datamodels.DrBuyRecord
     YenBuyRecord::class,
     YenSellRecord::class,
     WonBuyRecord::class,
-    WonSellRecord::class],
-//    autoMigrations = [
-//        AutoMigration(from = 5, to = 6)
-//                                         ],
-    version = 5, exportSchema = true)
+    WonSellRecord::class,
+    LocalUserData::class],
+    autoMigrations = [
+        AutoMigration(from = 5, to = 6),
+        AutoMigration(from = 6, to = 7)
+                                         ],
+    version = 7, exportSchema = true)
 abstract class InvestDatabase: RoomDatabase() {
 
     abstract fun DrBuyDao() : DollarBuyDatabaseDao
@@ -30,4 +32,6 @@ abstract class InvestDatabase: RoomDatabase() {
     abstract fun WonBuyDao() : WonBuyDatabaseDao
 
     abstract fun WonSellDao() : WonSellDatabaseDao
+
+    abstract fun LocalUserDao() : LocalUserDatabaseDao
 }

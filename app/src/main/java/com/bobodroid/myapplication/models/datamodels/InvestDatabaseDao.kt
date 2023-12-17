@@ -146,4 +146,23 @@ interface WonSellDatabaseDao {
 }
 
 
+@Dao
+interface LocalUserDatabaseDao {
+
+    @Query("SELECT * from LocalUserData_table")
+    fun getUserData(): Flow<LocalUserData>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insert(localUserData: LocalUserData)
+
+    @Update(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun update(localUserData: LocalUserData)
+
+    @Query("DELETE from LocalUserData_table")
+    suspend fun deleteAll()
+    @Delete
+    suspend fun deleteNote(localUserData: LocalUserData)
+}
+
+
 

@@ -39,6 +39,7 @@ import java.util.*
 @Composable
 fun PopupNumberView(
     onClicked: ((String) -> Unit)?,
+    limitNumberLength: Int,
     snackbarHostState: SnackbarHostState
 
 ) {
@@ -177,13 +178,14 @@ fun PopupNumberView(
 
 
                         scope.launch {
-                            if(UserInput.length >= 12) {
+                            if(UserInput.length >= limitNumberLength) {
 
                                 if(snackBarHostState.currentSnackbarData == null) {
                                     snackBarHostState.showSnackbar(
-                                        "너무 큰 수를 입력하셨습니다.\n 열두자리 이하 숫자까지만 가능합니다.",
+                                        "너무 큰 수를 입력하셨습니다.\n ${limitNumberLength}자리 이하 숫자까지만 가능합니다.",
                                         actionLabel = "닫기", SnackbarDuration.Short
                                     )
+                                    UserInput == ""
                                 } else {
                                     return@launch
                                 }
@@ -200,13 +202,14 @@ fun PopupNumberView(
                     NumberButtonBottom(number = "99", onClicked = {
 
                         scope.launch {
-                            if(UserInput.length >= 12) {
+                            if(UserInput.length >= limitNumberLength) {
 
                                 if(snackBarHostState.currentSnackbarData == null) {
                                     snackBarHostState.showSnackbar(
-                                        "너무 큰 수를 입력하셨습니다.\n 열두자리 이하 숫자까지만 가능합니다.",
+                                        "너무 큰 수를 입력하셨습니다.\n ${limitNumberLength}자리 이하 숫자까지만 가능합니다.",
                                         actionLabel = "닫기", SnackbarDuration.Short
                                     )
+                                    UserInput == ""
                                 } else {
                                     return@launch
                                 }
@@ -226,13 +229,14 @@ fun PopupNumberView(
                     NumberButtonBottom(number = "00", onClicked = {
 
                         scope.launch {
-                            if(UserInput.length >= 12) {
+                            if(UserInput.length >= limitNumberLength) {
 
                                 if(snackBarHostState.currentSnackbarData == null) {
                                     snackBarHostState.showSnackbar(
-                                        "너무 큰 수를 입력하셨습니다.\n 열두자리 이하 숫자까지만 가능합니다.",
+                                        "너무 큰 수를 입력하셨습니다.\n ${limitNumberLength}자리 이하 숫자까지만 가능합니다.",
                                         actionLabel = "닫기", SnackbarDuration.Short
                                     )
+                                    UserInput == ""
                                 } else {
                                     return@launch
                                 }
@@ -249,13 +253,14 @@ fun PopupNumberView(
                     NumberButtonBottom(number = "000", onClicked = {
 
                         scope.launch {
-                            if(UserInput.length >= 12) {
+                            if(UserInput.length >= limitNumberLength) {
 
                                 if(snackBarHostState.currentSnackbarData == null) {
                                     snackBarHostState.showSnackbar(
-                                        "너무 큰 수를 입력하셨습니다.\n 열두자리 이하 숫자까지만 가능합니다.",
+                                        "너무 큰 수를 입력하셨습니다.\n ${limitNumberLength}자리 이하 숫자까지만 가능합니다.",
                                         actionLabel = "닫기", SnackbarDuration.Short
                                     )
+                                    UserInput == ""
                                 } else {
                                     return@launch
                                 }
@@ -499,6 +504,7 @@ fun FloatPopupNumberView(onClicked: ((String) -> Unit)?) {
                                        "너무 큰 수를 입력하셨습니다.\n 열자리 이하 숫자까지만 가능합니다.",
                                        actionLabel = "닫기", SnackbarDuration.Short
                                    )
+                                   UserInput == ""
                                } else {
                                    return@launch
                                }
@@ -525,6 +531,7 @@ fun FloatPopupNumberView(onClicked: ((String) -> Unit)?) {
                                         "너무 큰 수를 입력하셨습니다.\n 열자리 이하 숫자까지만 가능합니다.",
                                         actionLabel = "닫기", SnackbarDuration.Short
                                     )
+                                    UserInput == ""
                                 } else {
                                     return@launch
                                 }
@@ -548,6 +555,7 @@ fun FloatPopupNumberView(onClicked: ((String) -> Unit)?) {
                                             "너무 큰 수를 입력하셨습니다.\n 열자리 이하 숫자까지만 가능합니다.",
                                             actionLabel = "닫기", SnackbarDuration.Short
                                         )
+                                        UserInput == ""
                                     } else {
                                         return@launch
                                     }
@@ -624,4 +632,3 @@ fun FloatNumberButton(number: String, onClicked: () -> Unit) {
         }
     }
 }
-

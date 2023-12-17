@@ -12,7 +12,8 @@ class InvestRepository @Inject constructor(
     private val yenBuyDatabaseDao: YenBuyDatabaseDao,
     private val yenSellDatabaseDao: YenSellDatabaseDao,
     private val wonBuyDatabaseDao: WonBuyDatabaseDao,
-    private val wonSellDatabaseDao: WonSellDatabaseDao) {
+    private val wonSellDatabaseDao: WonSellDatabaseDao,
+    private val localUserDatabaseDao: LocalUserDatabaseDao) {
 
 
     // 달러
@@ -56,5 +57,9 @@ class InvestRepository @Inject constructor(
     fun getAllWonSellRecords(): Flow<List<WonSellRecord>> = wonSellDatabaseDao.getRecords().flowOn(Dispatchers.IO).conflate()
 
 
-
+    //로컬 유저 생성
+    suspend fun localUserAdd(localUserData: LocalUserData) = localUserDatabaseDao.insert(localUserData)
+    suspend fun localUserUpdate(localUserData: LocalUserData) = localUserDatabaseDao.update(localUserData)
+    suspend fun localUserDataDelete() = localUserDatabaseDao.deleteAll()
+    fun localUserDataGet(): Flow<LocalUserData> = localUserDatabaseDao.getUserData().flowOn(Dispatchers.IO).conflate()
 }

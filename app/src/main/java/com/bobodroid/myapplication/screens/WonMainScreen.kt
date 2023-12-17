@@ -41,7 +41,9 @@ import com.bobodroid.myapplication.components.Caldenders.*
 import com.bobodroid.myapplication.extensions.toDecUs
 import com.bobodroid.myapplication.extensions.toYen
 import com.bobodroid.myapplication.lists.BuyRecordBox
+import com.bobodroid.myapplication.lists.BuyWonRecordBox
 import com.bobodroid.myapplication.lists.SellRecordBox
+import com.bobodroid.myapplication.lists.SellWonRecordBox
 import com.bobodroid.myapplication.models.viewmodels.*
 import com.bobodroid.myapplication.routes.*
 import com.bobodroid.myapplication.ui.theme.InverstCalculatorTheme
@@ -159,10 +161,10 @@ fun WonMainScreen(wonViewModel: WonViewModel, routeAction: InvestRouteAction, al
                 modifier = Modifier
                     .weight(1f)) {
                 if (selectedCheckBoxId.value == 1)
-                    BuyRecordBox(wonViewModel, snackbarHostState = snackbarHostState)
+                    BuyWonRecordBox(wonViewModel, snackbarHostState = snackbarHostState)
                 else
 
-                    SellRecordBox(wonViewModel)
+                    SellWonRecordBox(wonViewModel)
             }
 
 //            Row(modifier = Modifier

@@ -35,8 +35,6 @@ class AllViewModel @Inject constructor(
 
     val localUserData = MutableStateFlow<LocalUserData>(LocalUserData())
     init {
-        // 최신 환율 데이터 받아오기
-        resentGetExchangeRate()
 
         //로컬 ID 생성
         viewModelScope.launch(Dispatchers.IO) {
@@ -119,7 +117,7 @@ class AllViewModel @Inject constructor(
 
     val exchangeRateFlow = MutableStateFlow<ExchangeRate>(ExchangeRate())
 
-    fun resentGetExchangeRate() {
+    fun resentGetExchangeRate( response: (ExchangeRate) -> Unit ) {
 
         db.collection("exchangeRates")
             .orderBy("createAt", Query.Direction.DESCENDING)
@@ -130,6 +128,9 @@ class AllViewModel @Inject constructor(
                 Log.d(MainActivity.TAG, "데이터 받아오기 성공 ${data}")
                 viewModelScope.launch {
                     exchangeRateFlow.emit(data)
+
+                    response.invoke(data)
+
                 }
             }
             .addOnFailureListener {e->

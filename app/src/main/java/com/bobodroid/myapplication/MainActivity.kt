@@ -44,12 +44,19 @@ class MainActivity : ComponentActivity() {
 
     private val allViewModel: AllViewModel by viewModels()
 
-
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         MobileAds.initialize(this)
         setContent {
+
+            // 최신 환율 데이터 받아오기
+            allViewModel.resentGetExchangeRate { resentRate ->
+                dollarViewModel.beforeCalculateProfit(resentRate)
+                dollarViewModel.requestRate(resentRate)
+            }
+
+
+
             AppScreen(
                     dollarViewModel,
                     yenViewModel,
@@ -61,7 +68,6 @@ class MainActivity : ComponentActivity() {
 }
 
 @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AppScreen(
     dollarViewModel: DollarViewModel,

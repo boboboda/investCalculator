@@ -7,6 +7,7 @@ import androidx.lifecycle.viewModelScope
 import com.bobodroid.myapplication.MainActivity.Companion.TAG
 import com.bobodroid.myapplication.models.datamodels.DrBuyRecord
 import com.bobodroid.myapplication.models.datamodels.DrSellRecord
+import com.bobodroid.myapplication.models.datamodels.ExchangeRate
 import com.bobodroid.myapplication.models.datamodels.InvestRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
@@ -42,7 +43,7 @@ class DollarViewModel @Inject constructor(private val investRepository: InvestRe
             investRepository.getAllBuyRecords().distinctUntilChanged()
                 .collect {listOfRecord ->
                     if(listOfRecord.isNullOrEmpty()) {
-                    Log.d(TAG, "Empty buy list")
+                    Log.d(TAG, "Empty Buy list")
                     } else {
                         _buyRecordFlow.value = listOfRecord
                         _filterBuyRecordFlow.value = listOfRecord
@@ -54,7 +55,7 @@ class DollarViewModel @Inject constructor(private val investRepository: InvestRe
             investRepository.getAllSellRecords().distinctUntilChanged()
                 .collect {listOfRecord ->
                     if(listOfRecord.isNullOrEmpty()) {
-                        Log.d(TAG, "Empty sell list")
+                        Log.d(TAG, "Empty Sell list")
                     } else {
                         _sellRecordFlow.value = listOfRecord
                         _filterSellRecordFlow.value = listOfRecord
@@ -174,7 +175,8 @@ class DollarViewModel @Inject constructor(private val investRepository: InvestRe
                     money = moneyInputFlow.value,
                     rate = rateInputFlow.value,
                     exchangeMoney = "${exchangeMoney.value}",
-                    recordColor = sellRecordActionFlow.value
+                    recordColor = sellRecordActionFlow.value,
+                    profit = expectSellValue()
                 ))
 
             // 데이터 값 초기화
@@ -256,8 +258,82 @@ class DollarViewModel @Inject constructor(private val investRepository: InvestRe
         }
     }
 
-    private fun lastValue() = (BigInteger(moneyInputFlow.value.toString())
-        .divide(BigInteger(rateInputFlow.value.toString()))
+
+    // resentRate
+
+    val drResentRateStateFlow = MutableStateFlow<ExchangeRate>(ExchangeRate())
+
+
+    fun requestRate(exchangeRate: ExchangeRate) {
+        viewModelScope.launch {
+            drResentRateStateFlow.emit(exchangeRate)
+        }
+    }
+
+    // 기존 데이터 저장
+    fun beforeCalculateProfit(exchangeRate: ExchangeRate) {
+
+        val buyRecordProfit = buyRecordFlow.value.map { it.profit }
+
+        Log.d(TAG, "불러온 profit 값 : ${buyRecordProfit}")
+
+            _buyRecordFlow.value.forEach {drBuyRecord->
+
+                if(drBuyRecord.profit == null) {
+
+                    Log.d(TAG, "기존 데이터 profit 추가 실행")
+
+                    val resentRate = exchangeRate.exchangeRates?.usd
+
+                    if(resentRate.isNullOrEmpty()) {
+                        Log.d(TAG, "calculateProfit 최신 값 받아오기 실패")
+
+                    } else {
+                        val exChangeMoney = drBuyRecord.exchangeMoney
+
+                        val koreaMoney = drBuyRecord.money
+
+                        Log.d(TAG, "값을 받아왔니? ${resentRate}")
+
+                        val profit = (((BigDecimal(exChangeMoney).times(BigDecimal(resentRate)))
+                            .setScale(20, RoundingMode.HALF_UP)) - BigDecimal(koreaMoney)).toString()
+
+                        Log.d(TAG, "예상 수익 ${profit}")
+
+                        val updateDate = drBuyRecord.copy(profit = profit)
+
+                        viewModelScope.launch {
+                            investRepository.updateRecord(updateDate)
+                        }
+                    }
+                } else {
+                    Log.d(TAG, "profit 값이 존재하여 추가 진행하지 않음")
+                }
+
+
+            }
+    }
+
+
+
+    fun expectSellValue(): String {
+
+        val resentUsRate = drResentRateStateFlow.value.exchangeRates?.usd
+
+        Log.d(TAG, "개별 profit 실행 exchangeMoney:${exchangeMoney.value} 최신환율: ${resentUsRate} 원화: ${moneyInputFlow.value}")
+
+        val profit = ((BigDecimal(exchangeMoney.value).times(BigDecimal(resentUsRate)))
+            .setScale(20, RoundingMode.HALF_UP)
+                ).minus(BigDecimal(moneyInputFlow.value))
+        Log.d(TAG, "개별 profit 결과 값 ${profit}")
+
+        return profit.toString()
+    }
+
+
+
+    private fun lastValue() = (BigInteger(moneyInputFlow.value)
+        .divide(BigInteger(rateInputFlow.value))
         .toBigDecimal())
 
     private fun sellValue() = (

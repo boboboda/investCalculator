@@ -147,7 +147,7 @@ fun LineDrRecordText(
                     Spacer(modifier = Modifier.width(1.dp))
 
                     RecordTextView(
-                        recordText = "개발 예정",
+                        recordText = "${data.profit?.toBigDecimal()?.toBigDecimalWon()}",
                         TextHeight = 50.dp,
                         13,
                         2.5f,

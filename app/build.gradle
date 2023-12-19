@@ -7,6 +7,12 @@ plugins {
     id 'com.google.gms.google-services'
 }
 
+android.buildFeatures.buildConfig true
+
+Properties properties = new Properties()
+properties.load(project.rootProject.file('local.properties').newDataInputStream())
+
+
 android {
     namespace 'com.bobodroid.myapplication'
     compileSdk 33
@@ -15,13 +21,16 @@ android {
         applicationId "com.bobodroid.myapplication"
         minSdk 26
         targetSdk 33
-        versionCode 14
+        versionCode 15
         versionName "6.0"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
             useSupportLibrary true
         }
+
+        buildConfigField("String", "BANNER_AD_KEY", properties['banner_ad_key'])
+        buildConfigField("String", "FONT_AD_KEY", properties['font_ad_key'])
 
         javaCompileOptions {
             annotationProcessorOptions {
@@ -34,6 +43,10 @@ android {
 
     buildTypes {
         release {
+
+            buildConfigField("String", "BANNER_AD_KEY", properties['banner_ad_key'])
+            buildConfigField("String", "FONT_AD_KEY", properties['font_ad_key'])
+
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }

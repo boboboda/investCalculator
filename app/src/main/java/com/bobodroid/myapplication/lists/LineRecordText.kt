@@ -299,6 +299,8 @@ fun LineYenRecordText(
 
     val dismissState = rememberDismissState()
 
+    val profitColor = if(data.profit?.toBigDecimal()?.signum() == -1) { Color.Blue} else {Color.Red}
+
     if(dismissState.isDismissed(DismissDirection.EndToStart))
 
 
@@ -391,12 +393,12 @@ fun LineYenRecordText(
                     Spacer(modifier = Modifier.width(1.dp))
 
                     RecordTextView(
-                        recordText = "개발 예정",
+                        recordText = "${data.profit?.toBigDecimal()?.toBigDecimalWon()}",
                         TextHeight = 50.dp,
                         13,
                         2.5f,
                         bottonPpaing = 0.dp,
-                        color = Color.Black)
+                        color = profitColor)
                 }
 
             }
@@ -543,12 +545,20 @@ fun WonLineRecordText(
         else -> null
     }
 
+    val profitMoneyCg = when(data.moneyType) {
+        1 -> {data.profit?.toBigDecimal()?.toBigDecimalUs() }
+        2 -> {data.profit?.toBigDecimal()?.toBigDecimalYen() }
+        else -> null
+    }
+
 
     val openDialog = remember { mutableStateOf(false) }
 
     val deleteAskDialog = remember { mutableStateOf(false) }
 
     val dismissState = rememberDismissState()
+
+    val profitColor = if(data.profit?.toBigDecimal()?.signum() == -1) { Color.Blue} else {Color.Red}
 
     if(dismissState.isDismissed(DismissDirection.EndToStart))
 
@@ -618,7 +628,7 @@ fun WonLineRecordText(
                     Spacer(modifier = Modifier.width(1.dp))
                     RecordTextView(recordText = "${data.rate}", TextHeight = 50.dp,13, 2.5f, bottonPpaing = 0.dp, color = Color.Black)
                     Spacer(modifier = Modifier.width(1.dp))
-                    RecordTextView(recordText = "개발 예정", TextHeight = 50.dp, 13, 2.5f, bottonPpaing = 0.dp, color = Color.Black)
+                    RecordTextView(recordText = "${profitMoneyCg}", TextHeight = 50.dp, 13, 2.5f, bottonPpaing = 0.dp, color = profitColor)
 
 
 

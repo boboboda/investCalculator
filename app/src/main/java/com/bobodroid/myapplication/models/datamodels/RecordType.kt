@@ -28,6 +28,9 @@ data class LocalUserData(
     @ColumnInfo(name = "rate_Ad_Count")
     val rateAdCount: Int? = null,
 
+    @ColumnInfo(name = "user_Reset_State")
+    var userResetState: String? = null,
+
     @ColumnInfo(name = "user_Reset_Date")
     var userResetDate: String? = null,
 

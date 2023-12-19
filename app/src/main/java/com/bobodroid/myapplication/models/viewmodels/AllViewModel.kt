@@ -37,21 +37,49 @@ class AllViewModel @Inject constructor(
 
     val localUserData = MutableStateFlow(LocalUserData())
 
+    val noticeShowDialog = MutableStateFlow(false)
+
+    fun noticeDialogState(localUserDate: LocalUserData) {
+            // 저장한 날짜와 같으면 실행
+                Log.d(com.bobodroid.myapplication.screens.TAG, "튜터리얼 날짜\n 오늘날짜: ${dateFlow.value},  연기날짜: ${localUserDate.userShowNoticeDate}")
+
+                if(noticeState.value) {
+                    if(!localUserDate.userShowNoticeDate.isNullOrEmpty()) {
+                        if(dateFlow.value >= localUserDate.userShowNoticeDate!!) {
+                            Log.d(com.bobodroid.myapplication.screens.TAG,"오늘 날짜가 더 큽니다.")
+                            noticeShowDialog.value = true
+                        } else return
+                    } else {
+                        Log.d(com.bobodroid.myapplication.screens.TAG,"날짜 값이 없습니다.")
+                        noticeShowDialog.value  = true
+                    }
+                } else return
+            }
+
+
 
     // 임시 더미 로컬 유저데이터 수정 필요
     fun localIdAdd(localUser: (LocalUserData) -> Unit ) {
-        viewModelScope.launch {
+        viewModelScope.launch(Dispatchers.IO) {
                 Log.d(TAG, "로컬 유저 생성 실행")
 
             val createLocalUser = LocalUserData(
-                userShowNoticeDate = dateFlow.value,
                 userResetDate = dateFlow.value,
                 rateAdCount = 0,
                 rateResetCount = 3
             )
-                investRepository.localUserAdd(createLocalUser)
+            investRepository.localUserAdd(createLocalUser)
 
-            localUser(createLocalUser)
+            investRepository.localUserDataGet().distinctUntilChanged()
+                .collect {localUser ->
+                    if(localUser.userResetDate.isNullOrEmpty()) {
+                        Log.d(TAG, "LocalUserData null")
+                    } else {
+                        localUser(localUser)
+                    }
+                }
+
+
         }
     }
 
@@ -62,11 +90,19 @@ class AllViewModel @Inject constructor(
             val user = localUserData.value
 
             val updateUserData = user.copy(
-                userShowNoticeDate = dateFlow.value
-            )
-            Log.d(TAG, "오늘 날짜 수정 실행, ${dateFlow.value}")
+                userShowNoticeDate = "",
+                userResetDate = "",
+                userResetState = ""
 
+
+            )
             investRepository.localUserUpdate(updateUserData)
+        }
+    }
+
+    fun deleteLocalUser() {
+        viewModelScope.launch {
+            investRepository.localUserDataDelete()
         }
     }
 
@@ -116,134 +152,144 @@ class AllViewModel @Inject constructor(
     // 항상 최신 값 가지고 있음
     val recentExChangeRateFlow = MutableStateFlow(ExchangeRate())
 
-    fun dateHourTime(hour: Int): String? {
-        val c: java.util.Calendar = GregorianCalendar()
-        c.add(java.util.Calendar.HOUR, - hour)
-        val sdfr = SimpleDateFormat("yyyy-MM-dd HH:mm:ss")
-        return sdfr.format(c.time).toString()
-    }
 
     fun recentRateHotListener( response: (ExchangeRate) -> Unit ) {
+//        dateUpdate()
 
-            db.collection("exchangeRates")
-                .orderBy("createAt", Query.Direction.DESCENDING)
-                .limit(20)
-                .addSnapshotListener { snapshot, e ->
-                    if (e != null) {
-                        Log.w(TAG, "Listen failed.", e)
-                        return@addSnapshotListener
-                    }
+       viewModelScope.launch {
 
-                    if (snapshot != null) {
+           localExistCheck { localData ->
 
-                        val dataList = mutableListOf<ExchangeRate>()
+               localUserData.value = localData
 
-                        snapshot.forEach { queruSnapshot->
-                            val data = ExchangeRate(queruSnapshot)
+               resetChance(localData)
 
-                            dataList.add(data)
-                        }
+               noticeDialogState(localData)
 
-                        Log.w(TAG, "들어온 데이터 ${dataList}")
+               Log.d(TAG, "localData ${localUserData}")
+
+               db.collection("exchangeRates")
+                   .orderBy("createAt", Query.Direction.DESCENDING)
+                   .limit(20)
+                   .addSnapshotListener { snapshot, e ->
+                       if (e != null) {
+                           Log.w(TAG, "Listen failed.", e)
+                           return@addSnapshotListener
+                       }
+
+                       if (snapshot != null) {
+
+                           val dataList = mutableListOf<ExchangeRate>()
+
+                           snapshot.forEach { queruSnapshot->
+                               val data = ExchangeRate(queruSnapshot)
+
+                               dataList.add(data)
+                           }
+
+                           Log.w(TAG, "들어온 유저데이터 ${localUserData}")
 
 
-                        localExistCheck { localUserData->
+                           if(localData.recentUsRate == null) {
 
-                            Log.w(TAG, "들어온 유저데이터 ${localUserData}")
+                               Log.d(TAG, "rate 데이터가 없어서 데이터 넣어줌")
 
-                            if(localUserData.recentUsRate == null) {
+                               viewModelScope.launch {
 
-                                Log.d(TAG, "rate 데이터가 없어서 데이터 넣어줌")
+                                   exChangeRateListFlow.emit(dataList)
 
-                                viewModelScope.launch {
+                                   // 서버 초기 1시간 값 이전 값 넣어주기
+                                   exChangeRateFlow.emit(dataList.last())
 
-                                    exChangeRateListFlow.emit(dataList)
+                                   recentExChangeRateFlow.emit(dataList.first())
 
-                                    // 서버 초기 1시간 값 이전 값 넣어주기
-                                    exChangeRateFlow.emit(dataList.last())
+                                   response(dataList.last())
 
-                                    recentExChangeRateFlow.emit(dataList.first())
+                                   val localUser = localData
 
-                                    response(dataList.last())
+                                   val serverRateData = dataList.last()
 
-                                    val localUser = localUserData
+                                   val updateData = localUser.copy(
+                                       recentRateCreateAt = serverRateData.createAt,
+                                       recentUsRate = serverRateData.exchangeRates?.usd,
+                                       recentYenRate = serverRateData.exchangeRates?.jpy
+                                   )
 
-                                    val serverRateData = dataList.last()
+                                   investRepository.localUserUpdate(updateData)
+                               }
+                           } else {
 
-                                    val updateData = localUser.copy(
-                                        recentRateCreateAt = serverRateData.createAt,
-                                        recentUsRate = serverRateData.exchangeRates?.usd,
-                                        recentYenRate = serverRateData.exchangeRates?.jpy
-                                    )
+                               val delayDate = dateFormat(
+                                   serverDateCreateAt = dataList.last().createAt!!,
+                                   localDateCreateAt = localData.recentRateCreateAt!!
+                               )
+                               if(delayDate) {
 
-                                    investRepository.localUserUpdate(updateData)
-                                }
-                            } else {
+                                   Log.d(TAG, "새로고침된 환율이 한시간 차이나서 업데이트 함")
 
-                                val delayDate = dateFormat(
-                                    serverDateCreateAt = dataList.last().createAt!!,
-                                    localDateCreateAt = localUserData.recentRateCreateAt!!
-                                )
-                                if(delayDate) {
+                                   viewModelScope.launch {
 
-                                    Log.d(TAG, "새로고침된 환율이 한시간 차이나서 업데이트 함")
+                                       exChangeRateListFlow.emit(dataList)
 
-                                    viewModelScope.launch {
+                                       // 서버 초기 1시간 값 이전 값 넣어주기
+                                       exChangeRateFlow.emit(dataList.last())
 
-                                        exChangeRateListFlow.emit(dataList)
+                                       recentExChangeRateFlow.emit(dataList.first())
 
-                                        // 서버 초기 1시간 값 이전 값 넣어주기
-                                        exChangeRateFlow.emit(dataList.last())
+                                       response(dataList.last())
 
-                                        recentExChangeRateFlow.emit(dataList.first())
+                                       val localUser = localUserData
 
-                                        response(dataList.last())
+                                       val serverRateData = dataList.last()
 
-                                        val localUser = localUserData
+                                       val updateData = localData.copy(
+                                           recentRateCreateAt = serverRateData.createAt,
+                                           recentUsRate = serverRateData.exchangeRates?.usd,
+                                           recentYenRate = serverRateData.exchangeRates?.jpy
+                                       )
 
-                                        val serverRateData = dataList.last()
+                                       investRepository.localUserUpdate(updateData)
+                                   }
+                               } else {
+                                   viewModelScope.launch {
 
-                                        val updateData = localUser.copy(
-                                            recentRateCreateAt = serverRateData.createAt,
-                                            recentUsRate = serverRateData.exchangeRates?.usd,
-                                            recentYenRate = serverRateData.exchangeRates?.jpy
-                                        )
+                                       exChangeRateListFlow.emit(dataList)
 
-                                        investRepository.localUserUpdate(updateData)
-                                    }
-                                } else {
-                                    viewModelScope.launch {
+                                       // 로컬 초기 1시간 값 이전 값 넣어주기
 
-                                        exChangeRateListFlow.emit(dataList)
+                                       val localRecentRate = ExchangeRate(
+                                           createAt = localData.recentRateCreateAt,
+                                           exchangeRates = Rate(
+                                               jpy = localData.recentYenRate,
+                                               usd = localData.recentUsRate
 
-                                        // 로컬 초기 1시간 값 이전 값 넣어주기
+                                           )
+                                       )
 
-                                        val localRecentRate = ExchangeRate(
-                                            createAt = localUserData.recentRateCreateAt,
-                                            exchangeRates = Rate(
-                                                jpy = localUserData.recentYenRate,
-                                                usd = localUserData.recentUsRate
-                                            )
-                                        )
+                                       exChangeRateFlow.emit(localRecentRate)
 
-                                        exChangeRateFlow.emit(localRecentRate)
+                                       recentExChangeRateFlow.emit(dataList.first())
 
-                                        recentExChangeRateFlow.emit(dataList.first())
+                                       response(localRecentRate)
+                                   }
+                               }
 
-                                        response(localRecentRate)
-                                    }
-                                }
+                           }
 
-                            }
-                        }
 
-                        // 새로고침 값이 1시간 이전보다 최근 값 보존하기 위한 코드
+                           // 새로고침 값이 1시간 이전보다 최근 값 보존하기 위한 코드
 
-                    } else {
-                        Log.d(TAG, "Current data: null")
-                    }
-                }
-        }
+                       } else {
+                           Log.d(TAG, "Current data: null")
+                       }
+                   }
+           }
+       }
+
+
+
+
+    }
 
 
 
@@ -294,20 +340,25 @@ class AllViewModel @Inject constructor(
     }
 
     fun localExistCheck (localData: (LocalUserData) -> Unit) {
+        Log.d(TAG, "로컬아이디 체크 실행")
         viewModelScope.launch(Dispatchers.IO) {
             investRepository.localUserDataGet().distinctUntilChanged()
-                .collect(){userData ->
+                .collect(){ userData ->
+
                     if(userData == null) {
                         localIdAdd {
                             localData(it)
                         }
+
                         Log.d(TAG, "로컬 유저아이디 없음 ${userData}") }
 
                     else {
-                        Log.d(TAG, "가져온 유저 데이터 ${userData}")
-                        localData(userData)
-                        localUserData.emit(userData)
+                            Log.d(TAG, "가져온 유저 데이터 ${userData}")
+                            localData(userData)
+
+                            localUserData.emit(userData)
 //                       dateUpdate()
+
                     }
                 }
         }
@@ -322,4 +373,101 @@ class AllViewModel @Inject constructor(
 
     val dateStringFlow = MutableStateFlow("모두")
 
+
+
+    fun useItem(
+        useChance: () -> Unit,
+        notExistChance: () -> Unit
+    ) {
+
+        val localUser = localUserData.value
+
+        val freeChance = localUser.rateResetCount
+        val payChance = localUser.rateAdCount
+
+        // 기회 모두 소진한 경우
+        if(freeChance == 0 && payChance == 0) {
+            Log.d(TAG,"useItem 기회 모두 소진한 경우")
+            notExistChance.invoke()
+        } else {
+            // 무료 기회만 소진한 경우
+            if(freeChance == 0) {
+                //유료 기회 사용 로직
+
+                viewModelScope.launch {
+
+                    val usePayChange = payChance!! - 1
+
+                    Log.d(TAG,"useItem 무료기회만 소진한 경우 ${usePayChange}")
+
+                    val updateDate = localUser.copy(rateAdCount = usePayChange)
+
+                    investRepository.localUserUpdate(updateDate)
+
+                    useChance.invoke()
+                }
+
+            } else {
+
+                viewModelScope.launch {
+
+                    val useFreeChance = freeChance!! - 1
+
+                    Log.d(TAG,"useItem 무료기회 차감 로직 ${useFreeChance}")
+
+                    val updateDate = localUser.copy(rateResetCount = useFreeChance)
+
+                    investRepository.localUserUpdate(updateDate)
+
+                    useChance.invoke()
+                }
+
+            }
+        }
+
+    }
+
+    fun chargeChance() {
+        val localUser = localUserData.value
+
+        val payChance = localUser.rateAdCount
+
+        viewModelScope.launch {
+            val chargeChance = payChance!! + 1
+
+            val updateDate = localUser.copy(
+                rateAdCount = chargeChance
+            )
+            investRepository.localUserUpdate(updateDate)
+        }
+    }
+
+    fun resetChance(localUser: LocalUserData) {
+
+        val resetDate = localUser.userResetDate
+
+        val resetState = localUser.userResetState
+
+
+        if(dateFlow.value >= resetDate!!) {
+            Log.w(TAG, "리셋 받을 날짜가 오늘이랑 같거나 큰 경우")
+            if(dateFlow.value == resetState) {
+                Log.w(TAG, "무료기회가 리셋된 기기입니다.")
+            } else {
+
+                Log.w(TAG, "무료기회 리셋 진행")
+                viewModelScope.launch {
+                    val updateData = localUser.copy(
+                        userResetDate = dateFlow.value,
+                        userResetState = dateFlow.value,
+                        rateResetCount = 3)
+
+                    investRepository.localUserUpdate(updateData)
+                }
+            }
+        } else {
+            Log.w(TAG, "리셋 에러")
+            return
+        }
+    }
 }

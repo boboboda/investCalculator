@@ -260,7 +260,6 @@ class DollarViewModel @Inject constructor(private val investRepository: InvestRe
 
 
     // resentRate
-
     val drResentRateStateFlow = MutableStateFlow<ExchangeRate>(ExchangeRate())
 
 
@@ -276,6 +275,8 @@ class DollarViewModel @Inject constructor(private val investRepository: InvestRe
         val buyRecordProfit = buyRecordFlow.value.map { it.profit }
 
         Log.d(TAG, "불러온 profit 값 : ${buyRecordProfit}")
+
+
 
             _buyRecordFlow.value.forEach {drBuyRecord->
 
@@ -358,9 +359,7 @@ class DollarViewModel @Inject constructor(private val investRepository: InvestRe
 
 
 
-    private fun lastValue() = (BigInteger(moneyInputFlow.value)
-        .divide(BigInteger(rateInputFlow.value))
-        .toBigDecimal())
+    private fun lastValue() = (moneyInputFlow.value.toBigDecimal() / rateInputFlow.value.toBigDecimal())
 
     private fun sellValue() = (
             (BigDecimal(haveMoneyDollar.value).times(BigDecimal(sellRateFlow.value)))

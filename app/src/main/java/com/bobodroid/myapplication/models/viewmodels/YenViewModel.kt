@@ -8,6 +8,7 @@ import androidx.core.util.rangeTo
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.bobodroid.myapplication.MainActivity
+import com.bobodroid.myapplication.MainActivity.Companion.TAG
 import com.bobodroid.myapplication.extensions.toUs
 import com.bobodroid.myapplication.extensions.toWon
 import com.bobodroid.myapplication.models.datamodels.*
@@ -28,14 +29,13 @@ import kotlin.math.roundToInt
 import kotlin.time.days
 
 
-
 @HiltViewModel
-class YenViewModel @Inject constructor(private val investRepository: InvestRepository): ViewModel() {
+class YenViewModel @Inject constructor(private val investRepository: InvestRepository) :
+    ViewModel() {
 
 
     private val _buyRecordFlow = MutableStateFlow<List<YenBuyRecord>>(emptyList())
     val buyRecordFlow = _buyRecordFlow.asStateFlow()
-
 
 
     private val _sellRecordFlow = MutableStateFlow<List<YenSellRecord>>(emptyList())
@@ -49,11 +49,11 @@ class YenViewModel @Inject constructor(private val investRepository: InvestRepos
     val filterSellRecordFlow = _filterSellRecordFlow.asStateFlow()
 
 
-    init{
+    init {
         viewModelScope.launch(Dispatchers.IO) {
             investRepository.getAllYenBuyRecords().distinctUntilChanged()
-                .collect {listOfRecord ->
-                    if(listOfRecord.isNullOrEmpty()) {
+                .collect { listOfRecord ->
+                    if (listOfRecord.isNullOrEmpty()) {
                         Log.d(MainActivity.TAG, "Empty buy list")
                     } else {
                         _buyRecordFlow.value = listOfRecord
@@ -63,8 +63,8 @@ class YenViewModel @Inject constructor(private val investRepository: InvestRepos
         }
         viewModelScope.launch(Dispatchers.IO) {
             investRepository.getAllYenSellRecords().distinctUntilChanged()
-                .collect {listOfRecord ->
-                    if(listOfRecord.isNullOrEmpty()) {
+                .collect { listOfRecord ->
+                    if (listOfRecord.isNullOrEmpty()) {
                         Log.d(MainActivity.TAG, "Empty sell list")
                     } else {
                         _sellRecordFlow.value = listOfRecord
@@ -93,7 +93,6 @@ class YenViewModel @Inject constructor(private val investRepository: InvestRepos
     val today = formatter.format(time)
 
 
-
     // 선택된 날짜
     val dateFlow = MutableStateFlow("${LocalDate.now()}")
 
@@ -107,14 +106,15 @@ class YenViewModel @Inject constructor(private val investRepository: InvestRepos
     fun dateRangeInvoke(
         action: YenAction = YenAction.Buy,
         startDate: String,
-        endDate: String) {
+        endDate: String
+    ) {
 
 
-        when(action) {
+        when (action) {
             YenAction.Buy -> {
-                val startFilterBuyRecord= buyRecordFlow.value.filter { it.date >= startDate}
+                val startFilterBuyRecord = buyRecordFlow.value.filter { it.date >= startDate }
 
-                var endFilterBuyRecord = startFilterBuyRecord.filter { it.date <= endDate}
+                var endFilterBuyRecord = startFilterBuyRecord.filter { it.date <= endDate }
 
 
                 viewModelScope.launch {
@@ -124,9 +124,9 @@ class YenViewModel @Inject constructor(private val investRepository: InvestRepos
 
             YenAction.Sell -> {
 
-                val startFilterSellRecord= sellRecordFlow.value.filter { it.date >= startDate}
+                val startFilterSellRecord = sellRecordFlow.value.filter { it.date >= startDate }
 
-                var endFilterSellRecord = startFilterSellRecord.filter { it.date <= endDate}
+                var endFilterSellRecord = startFilterSellRecord.filter { it.date <= endDate }
 
 
                 viewModelScope.launch {
@@ -142,7 +142,6 @@ class YenViewModel @Inject constructor(private val investRepository: InvestRepos
     // 리스트 변경이 되어도 발생
 
 
-
     //특정값만 인출
 //    val sellGetMoney =  endFilterRecordFlow.filterNot {it.isEmpty()}.map { list ->
 //        val result = list
@@ -155,9 +154,6 @@ class YenViewModel @Inject constructor(private val investRepository: InvestRepos
 //    }
 //
 //    val total = sellGetMoney.map { it.toWon() }
-
-
-
 
 
     // 리스트 매도 값
@@ -175,19 +171,19 @@ class YenViewModel @Inject constructor(private val investRepository: InvestRepos
     private val sellRecordActionFlow = MutableStateFlow(false)
 
 
-
     fun buyAddRecord() {
         viewModelScope.launch {
             exchangeMoney.emit("${lastValue()}")
             investRepository
                 .addRecord(
                     YenBuyRecord(
-                    date = dateFlow.value,
-                    money = moneyInputFlow.value,
-                    rate = rateInputFlow.value,
-                    exchangeMoney = "${exchangeMoney.value}",
-                    recordColor = sellRecordActionFlow.value
-                )
+                        date = dateFlow.value,
+                        money = moneyInputFlow.value,
+                        rate = rateInputFlow.value,
+                        exchangeMoney = "${exchangeMoney.value}",
+                        recordColor = sellRecordActionFlow.value,
+                        profit = expectSellValue()
+                    )
                 )
 
             // 데이터 값 초기화
@@ -204,7 +200,7 @@ class YenViewModel @Inject constructor(private val investRepository: InvestRepos
             investRepository.deleteRecord(yenBuyRecord)
 
             val buyRecordState = _buyRecordFlow.value
-            val items = buyRecordState.toMutableList().apply{
+            val items = buyRecordState.toMutableList().apply {
                 remove(yenBuyRecord)
             }.toList()
             _buyRecordFlow.value = items
@@ -222,7 +218,8 @@ class YenViewModel @Inject constructor(private val investRepository: InvestRepos
                     yenBuyRecord.rate,
                     yenBuyRecord.profit,
                     yenBuyRecord.exchangeMoney,
-                    true)
+                    true
+                )
             )
         }
     }
@@ -247,7 +244,7 @@ class YenViewModel @Inject constructor(private val investRepository: InvestRepos
             investRepository.deleteRecord(yenSellRecord)
 
             val sellRecordState = _sellRecordFlow.value
-            val items = sellRecordState.toMutableList().apply{
+            val items = sellRecordState.toMutableList().apply {
                 remove(yenSellRecord)
             }.toList()
             _sellRecordFlow.value = items
@@ -266,15 +263,110 @@ class YenViewModel @Inject constructor(private val investRepository: InvestRepos
     }
 
 
+    fun beforeCalculateProfit(exchangeRate: ExchangeRate) {
+
+        val buyRecordProfit = buyRecordFlow.value.map { it.profit }
+
+        Log.d(MainActivity.TAG, "불러온 profit 값 : ${buyRecordProfit}")
+
+        _buyRecordFlow.value.forEach { yenBuyRecord ->
+
+            if (yenBuyRecord.profit == null) {
+
+                Log.d(MainActivity.TAG, "기존 데이터 profit 추가 실행")
+
+                val resentRate = exchangeRate.exchangeRates?.jpy
+
+                if (resentRate.isNullOrEmpty()) {
+                    Log.d(MainActivity.TAG, "calculateProfit 최신 값 받아오기 실패")
+
+                } else {
+                    val exChangeMoney = yenBuyRecord.exchangeMoney
+
+                    val koreaMoney = yenBuyRecord.money
+
+                    Log.d(MainActivity.TAG, "값을 받아왔니? ${resentRate}")
+
+                    val profit = (((BigDecimal(exChangeMoney).times(BigDecimal(resentRate).times(BigDecimal("100"))))
+                        .setScale(20, RoundingMode.HALF_UP)) - BigDecimal(koreaMoney)).toString()
+
+                    Log.d(MainActivity.TAG, "예상 수익 ${profit}")
+
+                    val updateDate = yenBuyRecord.copy(profit = profit)
+
+                    viewModelScope.launch {
+                        investRepository.updateRecord(updateDate)
+                    }
+                }
+            } else {
+
+                Log.d(MainActivity.TAG, "업데이트 데이터 profit 실행")
+
+                val resentRate = exchangeRate.exchangeRates?.jpy
+
+                if (resentRate.isNullOrEmpty()) {
+                    Log.d(MainActivity.TAG, "calculateProfit 최신 값 받아오기 실패")
+
+                } else {
+                    val exChangeMoney = yenBuyRecord.exchangeMoney
+
+                    val koreaMoney = yenBuyRecord.money
+
+                    Log.d(MainActivity.TAG, "값을 받아왔니? ${resentRate}")
+
+                    val profit = (((BigDecimal(exChangeMoney).times(BigDecimal(resentRate).times(BigDecimal("100"))))
+                        .setScale(20, RoundingMode.HALF_UP)) - BigDecimal(koreaMoney)).toString()
+
+                    Log.d(MainActivity.TAG, "예상 수익 ${profit}")
+
+                    val updateDate = yenBuyRecord.copy(profit = profit)
+
+                    viewModelScope.launch {
+                        investRepository.updateRecord(updateDate)
+                    }
+                }
+
+
+            }
+
+        }
+    }
+
+
+    val yenResentRateStateFlow = MutableStateFlow<ExchangeRate>(ExchangeRate())
+
+
+    fun requestRate(exchangeRate: ExchangeRate) {
+        viewModelScope.launch {
+            yenResentRateStateFlow.emit(exchangeRate)
+        }
+    }
+
+
     fun resetValue() {
         viewModelScope.launch {
             sellRateFlow.emit("")
         }
     }
 
-    private fun lastValue() = (BigInteger(moneyInputFlow.value.toString())
-        .divide(BigInteger(rateInputFlow.value.toString()))
-        .toBigDecimal())
+    fun expectSellValue(): String {
+
+        val resentUsRate = yenResentRateStateFlow.value.exchangeRates?.jpy
+
+        Log.d(
+            TAG,
+            "개별 profit 실행 exchangeMoney:${exchangeMoney.value} 최신환율: ${resentUsRate} 원화: ${moneyInputFlow.value}"
+        )
+
+        val profit = ((BigDecimal(exchangeMoney.value).times(BigDecimal(resentUsRate)))
+            .setScale(20, RoundingMode.HALF_UP)
+                ).minus(BigDecimal(moneyInputFlow.value))
+        Log.d(TAG, "개별 profit 결과 값 ${profit}")
+
+        return profit.toString()
+    }
+
+    private fun lastValue() = (moneyInputFlow.value.toBigDecimal() / rateInputFlow.value.toBigDecimal())
 
 
     private fun sellValue() = (
@@ -282,6 +374,7 @@ class YenViewModel @Inject constructor(private val investRepository: InvestRepos
                 .setScale(20, RoundingMode.HALF_UP)
             ) - BigDecimal(recordInputMoney.value)
 
-    private fun sellPercent(): Float = ((sellDollarFlow.value.toFloat() / recordInputMoney.value.toFloat()) * 100f)
+    private fun sellPercent(): Float =
+        ((sellDollarFlow.value.toFloat() / recordInputMoney.value.toFloat()) * 100f)
 
 }

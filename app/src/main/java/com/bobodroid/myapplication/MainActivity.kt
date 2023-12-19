@@ -7,21 +7,14 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
 import androidx.compose.foundation.layout.*
-import androidx.compose.material.Scaffold
-import androidx.compose.material.rememberScaffoldState
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
-import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
-import com.bobodroid.myapplication.components.BannerAd
-import com.bobodroid.myapplication.components.MainBottomBar
 import com.bobodroid.myapplication.components.MainTopBar
+import com.bobodroid.myapplication.components.admobs.loadInterstitial
 import com.bobodroid.myapplication.models.viewmodels.AllViewModel
 import com.bobodroid.myapplication.models.viewmodels.DollarViewModel
 import com.bobodroid.myapplication.models.viewmodels.WonViewModel
@@ -54,10 +47,22 @@ class MainActivity : ComponentActivity() {
         MobileAds.initialize(this)
         setContent {
 
+//            allViewModel.deleteLocalUser()
+
+            loadInterstitial(this)
+
             allViewModel.recentRateHotListener { recentRate->
                 Log.d(TAG, "실시간 데이터 수신 ${recentRate}")
                 dollarViewModel.beforeCalculateProfit(recentRate)
                 dollarViewModel.requestRate(recentRate)
+
+                yenViewModel.beforeCalculateProfit(recentRate)
+                yenViewModel.requestRate(recentRate)
+
+                wonViewModel.beforeCalculateProfit(recentRate)
+                wonViewModel.requestRate(recentRate)
+
+
 
             }
 
@@ -79,62 +84,46 @@ fun AppScreen(
     wonViewModel: WonViewModel,
     allViewModel: AllViewModel
 ) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()) {
+        MainTopBar()
+
+        Column(modifier = Modifier.weight(1f),
+            verticalArrangement = Arrangement.Bottom) {
+
+            InvestAppScreen(dollarViewModel, yenViewModel, wonViewModel , allViewModel)
+        }
+
+    }
 
 
-    val scaffoldState = rememberScaffoldState()
+}
+
+
+@Composable
+fun InvestAppScreen(
+    dollarViewModel: DollarViewModel,
+    yenViewModel: YenViewModel,
+    wonViewModel: WonViewModel,
+    allViewModel: AllViewModel) {
+
 
     val investNavController = rememberNavController()
     val investRouteAction = remember(investNavController) {
         InvestRouteAction(investNavController)
     }
 
-    val mainBackStack = investNavController.currentBackStackEntryAsState()
+    InvestNavHost(
+        investNavController = investNavController,
+        dollarViewModel = dollarViewModel,
+        yenViewModel = yenViewModel,
+        wonViewModel = wonViewModel,
+        routeAction = investRouteAction,
+        allViewModel = allViewModel
+    )
 
 
-    Scaffold(
-        scaffoldState = scaffoldState,
-        topBar = { MainTopBar() },
-        bottomBar = {
-            MainBottomBar(
-                investRouteAction,
-                mainBackStack.value,
-                allViewModel = allViewModel
-            )
-        }) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(
-                    top = it.calculateTopPadding(),
-                    bottom = it.calculateBottomPadding()
-                )
-        ) {
-
-            Column(Modifier.weight(1f)) {
-
-
-                InvestNavHost(
-                    investNavController = investNavController,
-                    dollarViewModel = dollarViewModel,
-                    yenViewModel = yenViewModel,
-                    wonViewModel = wonViewModel,
-                    routeAction = investRouteAction,
-                    allViewModel = allViewModel
-                )
-            }
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth(),
-                verticalArrangement = Arrangement.Center,
-                horizontalAlignment = Alignment.CenterHorizontally) {
-                BannerAd()
-            }
-
-            Spacer(modifier = Modifier.height(5.dp))
-        }
-
-
-    }
 
 
 }

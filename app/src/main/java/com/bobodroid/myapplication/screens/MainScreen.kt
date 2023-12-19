@@ -1,21 +1,21 @@
 package com.bobodroid.myapplication.screens
 
 import android.util.Log
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.ExperimentalAnimationApi
 import androidx.compose.foundation.ExperimentalFoundationApi
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.pager.HorizontalPager
-import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
 import androidx.compose.material.DrawerState
 import androidx.compose.material.DrawerValue
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.Settings
+import androidx.compose.material.icons.outlined.Menu
 import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.DateRange
+import androidx.compose.material.icons.rounded.Refresh
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -31,7 +31,6 @@ import com.bobodroid.myapplication.components.Caldenders.RangeDateDialog
 import com.bobodroid.myapplication.models.viewmodels.DollarViewModel
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
-import java.time.LocalDate
 import java.util.*
 import com.bobodroid.myapplication.models.viewmodels.AllViewModel
 import com.bobodroid.myapplication.models.viewmodels.WonViewModel
@@ -40,13 +39,18 @@ import com.bobodroid.myapplication.routes.InvestRoute
 import com.bobodroid.myapplication.routes.InvestRouteAction
 import com.bobodroid.myapplication.ui.theme.TopButtonColor
 import androidx.compose.material3.Text
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
+import com.bobodroid.myapplication.components.Dialogs.ChargeDialog
 import com.bobodroid.myapplication.components.Dialogs.NoticeDialog
+import com.bobodroid.myapplication.components.Dialogs.RateRefreshDialog
+import com.bobodroid.myapplication.components.admobs.BannerAd
+import com.bobodroid.myapplication.components.admobs.showInterstitial
 import kotlinx.coroutines.delay
 
 const val TAG = "메인"
 
-@OptIn(ExperimentalFoundationApi::class)
+@OptIn(ExperimentalFoundationApi::class, ExperimentalAnimationApi::class)
 @Composable
 fun MainScreen(dollarViewModel: DollarViewModel,
                yenViewModel: YenViewModel,
@@ -81,13 +85,13 @@ fun MainScreen(dollarViewModel: DollarViewModel,
 
     val checkBoxState = dollarViewModel.selectedCheckBoxId.collectAsState()
 
-    val openResetShowDialog = remember { mutableStateOf(false) }
+//    val openResetShowDialog = remember { mutableStateOf(false) }
 
     val coroutineScope = rememberCoroutineScope()
 
     val noticeState = allViewModel.noticeState.collectAsState()
 
-    val noticeShowDialog = remember { mutableStateOf(false) }
+    val noticeShowDialog = allViewModel.noticeShowDialog.collectAsState()
 
     val nowDate = allViewModel.dateFlow.collectAsState()
 
@@ -95,22 +99,23 @@ fun MainScreen(dollarViewModel: DollarViewModel,
 
     val localUserDate = userSelectDate.value.userShowNoticeDate
 
+    val bottomRefresh = remember { mutableStateOf("새로고침") }
+
+    val bottomRefreshPadding = remember { mutableStateOf(5) }
+
+    var isVisible by remember { mutableStateOf(true) }
+
+    val rateRefreshDialog = remember { mutableStateOf(false) }
+
+    val context = LocalContext.current
+
     LaunchedEffect(key1 = Unit, block = {
+
         coroutineScope.launch {
-            // 저장한 날짜와 같으면 실행
-            Log.d(TAG, "튜터리얼 날짜\n 오늘날짜: ${nowDate.value},  연기날짜: ${userSelectDate.value.userShowNoticeDate}")
-
-            if(noticeState.value) {
-                if(!localUserDate.isNullOrEmpty()) {
-                    if(nowDate.value >= userSelectDate.value.userShowNoticeDate!!) {
-                        Log.d(TAG,"오늘 날짜가 더 큽니다.")
-                        noticeShowDialog.value = true
-                    } else return@launch
-                } else {
-                    Log.d(TAG,"날짜 값이 없습니다.")
-                }
-            } else return@launch
-
+            delay(3000)
+//            bottomRefresh.value = ""
+            isVisible = false
+            bottomRefreshPadding.value = 0
         }
     })
 
@@ -124,43 +129,35 @@ fun MainScreen(dollarViewModel: DollarViewModel,
     ) {
 
         Column(modifier = Modifier
-            .fillMaxSize(),
+            .fillMaxSize()
+            .padding(top = 10.dp),
             horizontalAlignment = Alignment.CenterHorizontally)
         {
 
+
+
             Row(modifier = Modifier
-                .fillMaxWidth(),
+                .fillMaxWidth()
+                .padding(start = 20.dp, end = 20.dp),
                 verticalAlignment = Alignment.CenterVertically) {
 
-                Spacer(modifier = Modifier.weight(1f))
-
-                CardTextIconButton(
-                    label = "새로고침",
-                    onClicked = {
-                                allViewModel.resetRate { resentRate->
-
-                                    dollarViewModel.requestRate(resentRate)
-
-                                }
-                    },
-                    buttonColor = TopButtonColor,
-                    fontColor = Color.Black,
-                    modifier = Modifier
-                        .width(80.dp)
-                        .height(30.dp),
-                    fontSize = 15
-                )
-
-                Spacer(modifier = Modifier.width(30.dp))
-
                 IconButton(
-                    imageVector = Icons.Outlined.Settings,
+                    imageVector = Icons.Outlined.Menu,
                     onClicked = {
                         scope.launch {
                             drawerState.open()
                         }
 
                     }, modifier = Modifier.padding(end = 10.dp))
+
+
+
+                Spacer(modifier = Modifier.weight(1f))
+
+
+                TopButtonView(allViewModel = allViewModel)
+
+
             }
 
             Column(Modifier
@@ -224,13 +221,28 @@ fun MainScreen(dollarViewModel: DollarViewModel,
                     shape = RoundedCornerShape(16.dp),
                     modifier = Modifier
                         .padding(bottom = 10.dp, end = 20.dp)
-                        .size(60.dp),
+                        .height(60.dp)
+                        .wrapContentWidth(),
                 ) {
-                    androidx.compose.material3.Icon(
-                        imageVector = Icons.Rounded.DateRange,
-                        contentDescription = "날짜 범위 지정",
-                        tint = Color.White
-                    )
+
+                    Row(
+                        Modifier
+                            .wrapContentSize()
+                            .padding(start = 17.dp, end = 17.dp),
+                        horizontalArrangement = Arrangement.spacedBy(bottomRefreshPadding.value.dp),
+                        verticalAlignment = Alignment.CenterVertically) {
+                        androidx.compose.material3.Icon(
+                            imageVector = Icons.Rounded.DateRange,
+                            contentDescription = "날짜 범위 지정",
+                            tint = Color.White
+                        )
+                        AnimatedVisibility(visible = isVisible) {
+                            Text(text = "조회", color = Color.White, modifier = Modifier)
+                        }
+
+                    }
+
+
                 }
 
                 Spacer(modifier = Modifier.width(15.dp))
@@ -255,14 +267,105 @@ fun MainScreen(dollarViewModel: DollarViewModel,
                     shape = RoundedCornerShape(16.dp),
                     modifier = Modifier
                         .padding(bottom = 10.dp, end = 20.dp)
-                        .size(60.dp),
-                ) {
-                    androidx.compose.material3.Icon(
-                        imageVector = Icons.Rounded.Add,
-                        contentDescription = "매수화면 가기",
-                        tint = Color.White
-                    )
+                        .height(60.dp)
+                        .wrapContentWidth(),
+                    ) {
+                    Row(
+                        Modifier
+                            .wrapContentSize()
+                            .padding(start = 17.dp, end = 17.dp),
+                        horizontalArrangement = Arrangement.spacedBy(bottomRefreshPadding.value.dp),
+                        verticalAlignment = Alignment.CenterVertically) {
+                        androidx.compose.material3.Icon(
+                            imageVector = Icons.Rounded.Add,
+                            contentDescription = "매수화면",
+                            tint = Color.White
+                        )
+                        AnimatedVisibility(visible = isVisible) {
+                            Text(text = "매수", color = Color.White, modifier = Modifier)
+                        }
+
+                    }
                 }
+
+                Spacer(modifier = Modifier.width(15.dp))
+
+
+                FloatingActionButton(
+                    onClick = {
+
+                        rateRefreshDialog.value = true
+
+                    },
+                    containerColor = MaterialTheme.colors.secondary,
+                    shape = RoundedCornerShape(16.dp),
+                    modifier = Modifier
+                        .padding(bottom = 10.dp, end = 20.dp)
+                        .height(60.dp)
+                        .wrapContentWidth(),
+                ) {
+                    Row(
+                        Modifier
+                            .wrapContentSize()
+                            .padding(start = 17.dp, end = 17.dp),
+                        horizontalArrangement = Arrangement.spacedBy(bottomRefreshPadding.value.dp),
+                        verticalAlignment = Alignment.CenterVertically) {
+                        androidx.compose.material3.Icon(
+                            imageVector = Icons.Rounded.Refresh,
+                            contentDescription = "새로고침",
+                            tint = Color.White
+                        )
+                        AnimatedVisibility(visible = isVisible) {
+                            Text(text = "새로고침", color = Color.White, modifier = Modifier)
+                        }
+
+                    }
+
+                }
+
+                if(rateRefreshDialog.value) {
+                    RateRefreshDialog(
+                        allViewModel,
+                        onDismissRequest = {
+                        rateRefreshDialog.value = it
+                    }
+                        ) {
+
+                        allViewModel.useItem(
+                            useChance = {
+                                allViewModel.resetRate { resentRate->
+
+                                    dollarViewModel.requestRate(resentRate)
+
+                                    yenViewModel.requestRate(resentRate)
+
+                                    wonViewModel.requestRate(resentRate)
+
+                                    rateRefreshDialog.value = false
+                                }
+                            },
+                            notExistChance = {
+                                showInterstitial(context) {
+                                    allViewModel.resetRate { resentRate->
+
+                                        dollarViewModel.requestRate(resentRate)
+
+                                        yenViewModel.requestRate(resentRate)
+
+                                        wonViewModel.requestRate(resentRate)
+                                    }
+
+                                    rateRefreshDialog.value = false
+                                }
+                            }
+                        )
+                    }
+
+
+
+                }
+
+
 
                 if(showOpenDialog.value) {
                     RangeDateDialog(
@@ -350,7 +453,7 @@ fun MainScreen(dollarViewModel: DollarViewModel,
                     NoticeDialog(
                         onDismissRequest = { close ->
                             allViewModel.noticeState.value = close
-                            noticeShowDialog.value = close
+                            allViewModel.noticeShowDialog.value = close
                                            },
                         dateDelaySelected = {
                             coroutineScope.launch {
@@ -361,6 +464,17 @@ fun MainScreen(dollarViewModel: DollarViewModel,
                         },
                         allViewModel)
             }
+
+
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth(),
+                verticalArrangement = Arrangement.Center,
+                horizontalAlignment = Alignment.CenterHorizontally) {
+                BannerAd()
+            }
+
+
 
         }
     }
@@ -379,6 +493,16 @@ fun DrawerCustom(
     val resentRateDate = allViewModel.recentExChangeRateFlow.collectAsState()
 
     val userData = allViewModel.localUserData.collectAsState()
+
+    val chargeDialog = remember { mutableStateOf(false) }
+
+    val localUser = allViewModel.localUserData.collectAsState()
+
+    val freeChance = localUser.value.rateResetCount
+
+    val payChance = localUser.value.rateAdCount
+
+    val context = LocalContext.current
 
     Column(
         modifier = Modifier
@@ -427,13 +551,13 @@ fun DrawerCustom(
             .fillMaxWidth()
             .padding(start = 10.dp),
             horizontalArrangement = Arrangement.Start) {
-            Text(text = "환율업데이트 횟수: 3(0)회")
+            Text(text = "환율업데이트 횟수: ${freeChance}(${payChance})회")
 
             Spacer(modifier = Modifier.width(10.dp))
             CardButton(
                 label = "충전",
                 onClicked = {
-
+                            chargeDialog.value = true
                 },
                 buttonColor = TopButtonColor,
                 fontColor = Color.Black,
@@ -475,6 +599,18 @@ fun DrawerCustom(
                 .fillMaxWidth()
                 .padding(top = 10.dp)
         )
+
+        if(chargeDialog.value) {
+            ChargeDialog(onDismissRequest = {
+                chargeDialog.value = it
+            }) {
+                showInterstitial(context) {
+                    allViewModel.chargeChance()
+
+                    chargeDialog.value = false
+                }
+            }
+        }
 
 
 

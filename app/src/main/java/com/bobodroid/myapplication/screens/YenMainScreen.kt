@@ -48,8 +48,6 @@ import com.bobodroid.myapplication.lists.SellYenRecordBox
 import com.bobodroid.myapplication.models.viewmodels.*
 import com.bobodroid.myapplication.routes.InvestRoute
 import com.bobodroid.myapplication.routes.InvestRouteAction
-import com.bobodroid.myapplication.routes.YenRoute
-import com.bobodroid.myapplication.routes.YenRouteAction
 import com.bobodroid.myapplication.ui.theme.InverstCalculatorTheme
 import com.bobodroid.myapplication.ui.theme.TopButtonColor
 import com.bobodroid.myapplication.ui.theme.TopButtonInColor
@@ -57,6 +55,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.launch
+import java.math.BigDecimal
 import java.text.SimpleDateFormat
 import java.time.LocalDate
 import java.util.*
@@ -124,7 +123,9 @@ fun YenMainScreen
                         horizontalArrangement = Arrangement.Center,
                         verticalAlignment = Alignment.CenterVertically) {
 
-                        Text(text = "JPY: ${resentExchangeRate.value.exchangeRates?.jpy}", fontSize = 20.sp)
+                        Text(text = "JPY: ${resentExchangeRate.value.exchangeRates?.jpy?.toBigDecimal()?.times(
+                            BigDecimal("100")
+                        )}", fontSize = 20.sp)
                         Spacer(modifier = Modifier.width(10.dp))
                     }
                     Spacer(modifier = Modifier.height(15.dp))

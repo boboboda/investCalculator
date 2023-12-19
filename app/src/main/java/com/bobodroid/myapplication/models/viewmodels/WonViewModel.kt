@@ -21,6 +21,8 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.lang.System.out
 import java.math.BigDecimal
+import java.math.BigInteger
+import java.math.RoundingMode
 import java.text.SimpleDateFormat
 import java.time.LocalDate
 import java.util.*
@@ -218,7 +220,8 @@ class WonViewModel @Inject constructor(private val investRepository: InvestRepos
                         rate = rateInputFlow.value,
                         exchangeMoney = "${exchangeMoney.value}",
                         recordColor = sellRecordActionFlow.value,
-                        moneyType = moneyType.value
+                        moneyType = moneyType.value,
+                        profit = expectSellValue()
                     )
                 )
 
@@ -317,9 +320,139 @@ class WonViewModel @Inject constructor(private val investRepository: InvestRepos
     }
 
 
+    fun beforeCalculateProfit(exchangeRate: ExchangeRate) {
+
+        val buyRecordProfit = buyRecordFlow.value.map { it.profit }
+
+        Log.d(TAG, "불러온 profit 값 : ${buyRecordProfit}")
+
+        _buyRecordFlow.value.forEach { wonBuyRecord->
+
+            if(wonBuyRecord.profit == null) {
+
+                Log.d(TAG, "업데이트 데이터 profit 실행")
+
+                val resentRateUs = exchangeRate.exchangeRates?.usd
+                val resentRateYen = exchangeRate.exchangeRates?.jpy
+
+                if(resentRateUs.isNullOrEmpty()) {
+                    Log.d(TAG, "calculateProfit 최신 값 받아오기 실패")
+
+                } else {
+
+                    //원화
+                    val exChangeMoney = wonBuyRecord.exchangeMoney
+
+                    //외화
+                    val foreignCurrencyMoney = wonBuyRecord.money
+
+                    Log.d(TAG, "값을 받아왔니? us: ${resentRateUs} jpy:${resentRateYen}")
+
+                    Log.d(TAG, "계산해보자 원화: ${exChangeMoney} 외화:${foreignCurrencyMoney}")
+
+                    val profit = when(wonBuyRecord.moneyType) {
+                        1-> {  foreignCurrencyMoney.toBigDecimal() -(exChangeMoney.toBigDecimal() / (resentRateUs.toBigDecimal()))   }
+
+                        2-> {  foreignCurrencyMoney.toBigDecimal() - (exChangeMoney.toBigDecimal() / (resentRateYen!!.toBigDecimal())) }
+
+                        else -> { "" }
+                    }
+
+
+                    Log.d(TAG, "예상 수익 ${profit}")
+
+                    val updateDate = wonBuyRecord.copy(profit = profit.toString())
+
+                    viewModelScope.launch {
+                        investRepository.updateRecord(updateDate)
+                    }
+                }
+            } else {
+
+                Log.d(TAG, "기존 데이터 profit 추가 실행")
+
+                val resentRateUs = exchangeRate.exchangeRates?.usd
+                val resentRateYen = exchangeRate.exchangeRates?.jpy
+
+                if(resentRateUs.isNullOrEmpty()) {
+                    Log.d(MainActivity.TAG, "calculateProfit 최신 값 받아오기 실패")
+
+                } else {
+                    val exChangeMoney = wonBuyRecord.exchangeMoney
+
+                    val foreignCurrencyMoney = wonBuyRecord.money
+
+                    Log.d(TAG, "값을 받아왔니? us: ${resentRateUs} jpy:${resentRateYen}")
+
+                    Log.d(TAG, "계산해보자 원화: ${exChangeMoney} 외화:${foreignCurrencyMoney}")
+
+                    val profit = when(wonBuyRecord.moneyType) {
+                        1-> {  foreignCurrencyMoney.toBigDecimal() -(exChangeMoney.toBigDecimal() / (resentRateUs.toBigDecimal()))   }
+
+                        2-> {  foreignCurrencyMoney.toBigDecimal() - (exChangeMoney.toBigDecimal() / (resentRateYen!!.toBigDecimal())) }
+
+                        else -> { "" }
+                    }
+
+                    Log.d(TAG, "예상 수익 ${profit}")
+
+                    val updateDate = wonBuyRecord.copy(profit = profit.toString())
+
+                    viewModelScope.launch {
+                        investRepository.updateRecord(updateDate)
+                    }
+                }
+
+
+            }
+
+        }
+    }
+
+
+
+    val wonResentRateStateFlow = MutableStateFlow<ExchangeRate>(ExchangeRate())
+
+
+    fun requestRate(exchangeRate: ExchangeRate) {
+        viewModelScope.launch {
+            wonResentRateStateFlow.emit(exchangeRate)
+        }
+    }
+
+
+    fun expectSellValue(): String {
+
+        Log.d(TAG, "머니 타입 ${moneyType.value}")
+
+        Log.d(TAG, "원화 us: ${wonResentRateStateFlow.value.exchangeRates?.usd}")
+
+        Log.d(TAG, "원화 jpy: ${wonResentRateStateFlow.value.exchangeRates?.jpy}")
+
+        val resentUsRate = when(moneyType.value) {
+            1-> {wonResentRateStateFlow.value.exchangeRates?.usd}
+            2-> {wonResentRateStateFlow.value.exchangeRates?.jpy}
+            else -> { null }
+        }
+
+        Log.d(
+            TAG,
+            "개별 profit 실행 exchangeMoney:${exchangeMoney.value} 최신환율: ${resentUsRate} 원화: ${moneyInputFlow.value}"
+        )
+
+        val profit = (BigDecimal(moneyInputFlow.value) - (BigDecimal(exchangeMoney.value) / BigDecimal(resentUsRate)) )
+        Log.d(TAG, "개별 profit 결과 값 ${profit}")
+
+        return profit.toString()
+    }
+
+
+
     private fun dollarlastValue() = BigDecimal(moneyInputFlow.value).times(BigDecimal(rateInputFlow.value))
 
-    private fun yenlastValue() = (BigDecimal(moneyInputFlow.value).times(BigDecimal(rateInputFlow.value)))
+    private fun yenlastValue() = (BigDecimal(moneyInputFlow.value).times(BigDecimal(rateInputFlow.value))).divide(
+        BigDecimal("100")
+    )
 
 
 

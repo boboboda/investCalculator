@@ -22,7 +22,7 @@ fun BannerAd() {
 
     Box(
         modifier = Modifier
-            .fillMaxWidth()
+            .wrapContentSize()
             .padding(start = 10.dp, end = 10.dp)
     ) {
 //        val adId = stringResource(id = R.string.admob_sample_app_id)

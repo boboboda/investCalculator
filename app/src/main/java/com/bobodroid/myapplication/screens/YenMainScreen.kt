@@ -92,7 +92,7 @@ fun YenMainScreen
 //
 //    val total = yenViewModel.total.collectAsState("")
 
-    val resentExchangeRate = allViewModel.exchangeRateFlow.collectAsState()
+    val resentExchangeRate = allViewModel.exChangeRateFlow.collectAsState()
 
     val snackbarHostState = remember { SnackbarHostState() }
 

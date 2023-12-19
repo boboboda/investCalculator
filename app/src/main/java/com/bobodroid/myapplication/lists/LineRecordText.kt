@@ -57,6 +57,8 @@ fun LineDrRecordText(
 
     val dismissState = rememberDismissState()
 
+    val profitColor = if(data.profit?.toBigDecimal()?.signum() == -1) { Color.Blue} else {Color.Red}
+
     if(dismissState.isDismissed(DismissDirection.EndToStart))
         LaunchedEffect(key1 = Unit, block = {
             dismissState.reset()
@@ -152,7 +154,7 @@ fun LineDrRecordText(
                         13,
                         2.5f,
                         bottonPpaing = 0.dp,
-                        color = Color.Black)
+                        color = profitColor)
                 }
 
             }

@@ -1,5 +1,8 @@
 package com.bobodroid.myapplication.models.datamodels
 
+import android.util.Log
+import com.bobodroid.myapplication.MainActivity.Companion.TAG
+import com.google.firebase.firestore.QueryDocumentSnapshot
 import com.google.firebase.firestore.QuerySnapshot
 
 data class ExchangeRate(
@@ -14,8 +17,18 @@ data class ExchangeRate(
             this.id = document.id
             this.createAt = document["createAt"] as String? ?: ""
             this.exchangeRates = Rate(document["exchangeRates"]!!) as Rate? ?: Rate()
+
+
         }
     }
+
+
+    constructor(data: QueryDocumentSnapshot): this() {
+            // document는 QueryDocumentSnapshot 객체입니다.
+            this.id = data.id
+            this.createAt = data["createAt"] as String? ?: ""
+            this.exchangeRates = Rate(data["exchangeRates"]!!) as Rate? ?: Rate()
+        }
 
 
 
@@ -33,10 +46,14 @@ data class Rate(
     var jpy: String? = null
 ) {
     constructor(data: Any): this() {
-            // document는 QueryDocumentSnapshot 객체입니다.
-           this.jpy = (data as? Map<String, String>)?.get("JPY")
+        this.jpy = (data as? Map<String, String>)?.get("JPY")
         this.usd = (data as? Map<String, String>)?.get("USD")
     }
+
+//    constructor(querySnapshotData: String): this() {
+//        this.jpy = (querySnapshotData as Map<String, String>)?.get("JPY")
+//        this.usd = (querySnapshotData as Map<String, String>)?.get("USD")
+//    }
 
     fun asHasMap(): HashMap<String, Any?> {
         return hashMapOf(

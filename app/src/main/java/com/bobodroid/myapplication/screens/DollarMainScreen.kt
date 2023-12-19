@@ -26,7 +26,7 @@ fun DollarMainScreen
 
     var selectedCheckBoxId = dollarViewModel.selectedCheckBoxId.collectAsState()
 
-    val resentExchangeRate = allViewModel.exchangeRateFlow.collectAsState()
+    val resentExchangeRate = allViewModel.exChangeRateFlow.collectAsState()
 
     val snackbarHostState = remember { SnackbarHostState() }
 

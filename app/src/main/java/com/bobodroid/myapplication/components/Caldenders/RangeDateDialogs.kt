@@ -83,15 +83,17 @@ fun RangeDateDialog(
     fun dateWeek(week: Int): String? {
         val c: java.util.Calendar = GregorianCalendar()
         c.add(java.util.Calendar.DAY_OF_WEEK, - week)
-        val sdfr = SimpleDateFormat("yyy-MM-dd")
+        val sdfr = SimpleDateFormat("yyyy-MM-dd")
         return sdfr.format(c.time).toString()
     }
     fun dateMonth(month: Int): String? {
         val c: java.util.Calendar = GregorianCalendar()
         c.add(java.util.Calendar.MONTH, - month)
-        val sdfr = SimpleDateFormat("yyy-MM-dd")
+        val sdfr = SimpleDateFormat("yyyy-MM-dd")
         return sdfr.format(c.time).toString()
     }
+
+
 
     val oneWeek = dateWeek(7)
 

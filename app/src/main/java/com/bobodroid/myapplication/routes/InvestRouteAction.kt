@@ -1,23 +1,31 @@
 package com.bobodroid.myapplication.routes
 
 import androidx.navigation.NavHostController
+import com.bobodroid.myapplication.R
 
 
-enum class InvestRoute(val routeName: String) {
+sealed class InvestRoute(open val routeName: String? = null,
+                         open val title: String? = null,
+                         open val selectValue: Int? = null,
+                         open val iconResId: Int? = null) {
 
-    MAIN("BUY"),
-    DOLLAR_BUY("DOLLAR_BUY"),
-    YEN_BUY("YEN_BUY"),
-    WON_BUY("WON_BUY")
+    object MAIN: InvestRoute("BUY", "달러", 1 , )
+    object YEN_BUY: InvestRoute("YEN_BUY","엔화", 2, )
+    object WON_BUY: InvestRoute("WON_BUY","원화", 3, )
+    object DOLLAR_BUY: InvestRoute("DOLLAR_BUY","",4, )
 }
+
 
 class InvestRouteAction(navHostController: NavHostController) {
 
 
+
+
+
     //특정 라우트로 이동
     val navTo: (InvestRoute) -> Unit = { investRoute ->
-        navHostController.navigate(investRoute.routeName) {
-            popUpTo(investRoute.routeName){ inclusive = true }
+        navHostController.navigate(investRoute.routeName!!) {
+            popUpTo(investRoute.routeName!!){ inclusive = true }
 
         }
     }

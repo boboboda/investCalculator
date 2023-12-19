@@ -131,14 +131,17 @@ fun MainScreen(dollarViewModel: DollarViewModel,
             Row(modifier = Modifier
                 .fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically) {
-                TopTitleButton(allViewModel)
 
                 Spacer(modifier = Modifier.weight(1f))
 
                 CardTextIconButton(
                     label = "새로고침",
                     onClicked = {
+                                allViewModel.resetRate { resentRate->
 
+                                    dollarViewModel.requestRate(resentRate)
+
+                                }
                     },
                     buttonColor = TopButtonColor,
                     fontColor = Color.Black,
@@ -359,8 +362,6 @@ fun MainScreen(dollarViewModel: DollarViewModel,
                         allViewModel)
             }
 
-
-
         }
     }
 }
@@ -375,7 +376,7 @@ fun DrawerCustom(
 
     val scope = rememberCoroutineScope()
 
-    val resentRateDate = allViewModel.exchangeRateFlow.collectAsState()
+    val resentRateDate = allViewModel.recentExChangeRateFlow.collectAsState()
 
     val userData = allViewModel.localUserData.collectAsState()
 

@@ -68,7 +68,7 @@ fun WonMainScreen(wonViewModel: WonViewModel, routeAction: InvestRouteAction, al
 
     val isDialogOpen = remember { mutableStateOf(false) }
 
-    val resentExchangeRate = allViewModel.exchangeRateFlow.collectAsState()
+    val resentExchangeRate = allViewModel.exChangeRateFlow.collectAsState()
 
     val time = Calendar.getInstance().time
 

@@ -307,9 +307,35 @@ class DollarViewModel @Inject constructor(private val investRepository: InvestRe
                         }
                     }
                 } else {
-                    Log.d(TAG, "profit 값이 존재하여 추가 진행하지 않음")
-                }
 
+                    Log.d(TAG, "업데이트 데이터 profit 실행")
+
+                    val resentRate = exchangeRate.exchangeRates?.usd
+
+                    if(resentRate.isNullOrEmpty()) {
+                        Log.d(TAG, "calculateProfit 최신 값 받아오기 실패")
+
+                    } else {
+                        val exChangeMoney = drBuyRecord.exchangeMoney
+
+                        val koreaMoney = drBuyRecord.money
+
+                        Log.d(TAG, "값을 받아왔니? ${resentRate}")
+
+                        val profit = (((BigDecimal(exChangeMoney).times(BigDecimal(resentRate)))
+                            .setScale(20, RoundingMode.HALF_UP)) - BigDecimal(koreaMoney)).toString()
+
+                        Log.d(TAG, "예상 수익 ${profit}")
+
+                        val updateDate = drBuyRecord.copy(profit = profit)
+
+                        viewModelScope.launch {
+                            investRepository.updateRecord(updateDate)
+                        }
+                    }
+
+
+                }
 
             }
     }

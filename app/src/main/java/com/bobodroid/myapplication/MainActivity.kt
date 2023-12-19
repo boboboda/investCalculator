@@ -2,10 +2,13 @@ package com.bobodroid.myapplication
 
 import android.annotation.SuppressLint
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
 import androidx.compose.foundation.layout.*
+import androidx.compose.material.Scaffold
+import androidx.compose.material.rememberScaffoldState
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -14,8 +17,10 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.bobodroid.myapplication.components.BannerAd
+import com.bobodroid.myapplication.components.MainBottomBar
 import com.bobodroid.myapplication.components.MainTopBar
 import com.bobodroid.myapplication.models.viewmodels.AllViewModel
 import com.bobodroid.myapplication.models.viewmodels.DollarViewModel
@@ -49,13 +54,12 @@ class MainActivity : ComponentActivity() {
         MobileAds.initialize(this)
         setContent {
 
-            // 최신 환율 데이터 받아오기
-            allViewModel.resentGetExchangeRate { resentRate ->
-                dollarViewModel.beforeCalculateProfit(resentRate)
-                dollarViewModel.requestRate(resentRate)
+            allViewModel.recentRateHotListener { recentRate->
+                Log.d(TAG, "실시간 데이터 수신 ${recentRate}")
+                dollarViewModel.beforeCalculateProfit(recentRate)
+                dollarViewModel.requestRate(recentRate)
+
             }
-
-
 
             AppScreen(
                     dollarViewModel,
@@ -75,53 +79,62 @@ fun AppScreen(
     wonViewModel: WonViewModel,
     allViewModel: AllViewModel
 ) {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()) {
-        MainTopBar()
-
-        Column(modifier = Modifier.weight(1f),
-            verticalArrangement = Arrangement.Bottom) {
-
-            InvestAppScreen(dollarViewModel, yenViewModel, wonViewModel , allViewModel)
-        }
-        Column(
-            modifier = Modifier
-                .fillMaxWidth(),
-            verticalArrangement = Arrangement.Center,
-            horizontalAlignment = Alignment.CenterHorizontally) {
-            BannerAd()
-        }
-
-    }
 
 
-}
-
-
-@Composable
-fun InvestAppScreen(
-    dollarViewModel: DollarViewModel,
-    yenViewModel: YenViewModel,
-    wonViewModel: WonViewModel,
-    allViewModel: AllViewModel) {
-
+    val scaffoldState = rememberScaffoldState()
 
     val investNavController = rememberNavController()
     val investRouteAction = remember(investNavController) {
         InvestRouteAction(investNavController)
     }
 
-    InvestNavHost(
-        investNavController = investNavController,
-        dollarViewModel = dollarViewModel,
-        yenViewModel = yenViewModel,
-        wonViewModel = wonViewModel,
-        routeAction = investRouteAction,
-        allViewModel = allViewModel
-    )
+    val mainBackStack = investNavController.currentBackStackEntryAsState()
 
 
+    Scaffold(
+        scaffoldState = scaffoldState,
+        topBar = { MainTopBar() },
+        bottomBar = {
+            MainBottomBar(
+                investRouteAction,
+                mainBackStack.value,
+                allViewModel = allViewModel
+            )
+        }) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(
+                    top = it.calculateTopPadding(),
+                    bottom = it.calculateBottomPadding()
+                )
+        ) {
+
+            Column(Modifier.weight(1f)) {
+
+
+                InvestNavHost(
+                    investNavController = investNavController,
+                    dollarViewModel = dollarViewModel,
+                    yenViewModel = yenViewModel,
+                    wonViewModel = wonViewModel,
+                    routeAction = investRouteAction,
+                    allViewModel = allViewModel
+                )
+            }
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth(),
+                verticalArrangement = Arrangement.Center,
+                horizontalAlignment = Alignment.CenterHorizontally) {
+                BannerAd()
+            }
+
+            Spacer(modifier = Modifier.height(5.dp))
+        }
+
+
+    }
 
 
 }
@@ -137,8 +150,8 @@ fun InvestNavHost(
     routeAction: InvestRouteAction,
     allViewModel: AllViewModel
 ) {
-   NavHost(navController = investNavController, startDestination = startRouter.routeName) {
-       composable(InvestRoute.MAIN.routeName) {
+   NavHost(navController = investNavController, startDestination = startRouter.routeName!!) {
+       composable(InvestRoute.MAIN.routeName!!) {
            MainScreen(
                dollarViewModel = dollarViewModel,
                yenViewModel = yenViewModel,
@@ -147,15 +160,15 @@ fun InvestNavHost(
                allViewModel = allViewModel
            )
        }
-       composable(InvestRoute.DOLLAR_BUY.routeName) {
+       composable(InvestRoute.DOLLAR_BUY.routeName!!) {
            DollarInvestScreen(dollarViewModel = dollarViewModel, routeAction = routeAction, allViewModel)
        }
 
-       composable(InvestRoute.YEN_BUY.routeName) {
+       composable(InvestRoute.YEN_BUY.routeName!!) {
            YenInvestScreen(yenViewModel = yenViewModel, routeAction = routeAction, allViewModel)
        }
 
-       composable(InvestRoute.WON_BUY.routeName) {
+       composable(InvestRoute.WON_BUY.routeName!!) {
            WonInvestScreen(wonViewModel = wonViewModel, routeAction = routeAction, allViewModel)
        }
    }

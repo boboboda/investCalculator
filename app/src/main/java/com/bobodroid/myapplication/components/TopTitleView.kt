@@ -21,17 +21,18 @@ fun TopTitleButton(allViewModel: AllViewModel) {
 
     val changeMoney = allViewModel.changeMoney.collectAsState()
 
-    val mainTitle = when(changeMoney.value) {
-        1-> {"달러"}
-        2-> {"엔화"}
-        3-> {"원화"}
-        else -> {"달러"}
-    }
+
 
 
     Row(modifier = Modifier,
         verticalAlignment = Alignment.CenterVertically)
     {
+        val mainTitle = when(changeMoney.value) {
+            1-> {"달러"}
+            2-> {"엔화"}
+            3-> {"원화"}
+            else -> {"달러"}
+        }
 
         CardIconButton(imageVector = Icons.Filled.KeyboardArrowLeft,
             onClicked = {
@@ -45,6 +46,7 @@ fun TopTitleButton(allViewModel: AllViewModel) {
             buttonColor = TopButtonColor)
 
         Text(text = mainTitle, fontSize = 25.sp)
+
 
         CardIconButton(imageVector = Icons.Filled.KeyboardArrowRight,
             onClicked = {

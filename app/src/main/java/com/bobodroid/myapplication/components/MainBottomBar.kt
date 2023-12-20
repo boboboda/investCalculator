@@ -85,28 +85,27 @@ fun TopButton(mainText: String,
 @Composable
 fun TopButtonView(allViewModel: AllViewModel) {
 
-    val titles = listOf<String>("달러", "엔화", "원화")
+//    val titles = listOf<String>("달러", "엔화", "원화")
 
-    val title = remember { mutableStateOf(titles[0]) }
+    val changeMoney = allViewModel.changeMoney.collectAsState()
 
+    val mainTitle = when(changeMoney.value) {
+        1-> {"달러"}
+        2-> {"엔화"}
+        3-> {"원화"}
+        else -> {"달러"}
+    }
     TopButton(
-        "${title.value}",
+        "${mainTitle}",
         selectAction = {
-            when(title.value) {
-                "달러" -> {
-                    title.value = titles[1]
+            when(changeMoney.value) {
+                1 -> {
                     allViewModel.changeMoney.value = 2
                 }
-                "엔화" -> {
-                    title.value = titles[2]
+                2 -> {
                     allViewModel.changeMoney.value = 3
                 }
-                "원화" -> {
-                    title.value = titles[0]
-                    allViewModel.changeMoney.value = 1
-                }
-                else -> {
-                    title.value = titles[0]
+                3 -> {
                     allViewModel.changeMoney.value = 1
                 }
             }

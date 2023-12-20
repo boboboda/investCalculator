@@ -314,7 +314,7 @@ class YenViewModel @Inject constructor(private val investRepository: InvestRepos
 
                     Log.d(MainActivity.TAG, "값을 받아왔니? ${resentRate}")
 
-                    val profit = (((BigDecimal(exChangeMoney).times(BigDecimal(resentRate).times(BigDecimal("100"))))
+                    val profit = (((BigDecimal(exChangeMoney).times(BigDecimal(resentRate)))
                         .setScale(20, RoundingMode.HALF_UP)) - BigDecimal(koreaMoney)).toString()
 
                     Log.d(MainActivity.TAG, "예상 수익 ${profit}")
@@ -366,13 +366,13 @@ class YenViewModel @Inject constructor(private val investRepository: InvestRepos
         return profit.toString()
     }
 
-    private fun lastValue() = (moneyInputFlow.value.toBigDecimal() / rateInputFlow.value.toBigDecimal())
+    private fun lastValue() = (moneyInputFlow.value.toBigDecimal() / rateInputFlow.value.toBigDecimal()) * BigDecimal("100")
 
 
     private fun sellValue() = (
             (BigDecimal(haveMoney.value).times(BigDecimal(sellRateFlow.value)))
                 .setScale(20, RoundingMode.HALF_UP)
-            ) - BigDecimal(recordInputMoney.value)
+            ) / BigDecimal("100") - BigDecimal(recordInputMoney.value)
 
     private fun sellPercent(): Float =
         ((sellDollarFlow.value.toFloat() / recordInputMoney.value.toFloat()) * 100f)

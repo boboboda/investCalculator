@@ -2,31 +2,21 @@ package com.bobodroid.myapplication.models.viewmodels
 
 
 import android.util.Log
-import androidx.compose.runtime.State
-import androidx.compose.runtime.toMutableStateList
-import androidx.core.util.rangeTo
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.bobodroid.myapplication.MainActivity
 import com.bobodroid.myapplication.MainActivity.Companion.TAG
-import com.bobodroid.myapplication.extensions.toUs
-import com.bobodroid.myapplication.extensions.toWon
 import com.bobodroid.myapplication.models.datamodels.*
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
-import java.lang.System.out
 import java.math.BigDecimal
-import java.math.BigInteger
 import java.math.RoundingMode
 import java.text.SimpleDateFormat
 import java.time.LocalDate
 import java.util.*
 import javax.inject.Inject
-import kotlin.math.roundToInt
-import kotlin.time.days
 
 
 @HiltViewModel
@@ -262,12 +252,28 @@ class YenViewModel @Inject constructor(private val investRepository: InvestRepos
         }
     }
 
+    val refreshDateFlow = MutableStateFlow("")
 
-    fun beforeCalculateProfit(exchangeRate: ExchangeRate) {
+    val localUserDataFlow = MutableStateFlow<LocalUserData>(LocalUserData())
+
+    fun calculateProfit(exchangeRate: ExchangeRate) {
+
+        viewModelScope.launch {
+            refreshDateFlow.emit(exchangeRate.createAt!!)
+
+
+            val localUser = localUserDataFlow.value
+
+            val updateData = localUser.copy(
+                reFreshCreateAt = exchangeRate.createAt
+            )
+
+            investRepository.localUserUpdate(updateData)
+        }
 
         val buyRecordProfit = buyRecordFlow.value.map { it.profit }
 
-        Log.d(MainActivity.TAG, "불러온 profit 값 : ${buyRecordProfit}")
+        Log.d(TAG, "yenBuyList 불러온 profit 값 : ${buyRecordProfit}")
 
         _buyRecordFlow.value.forEach { yenBuyRecord ->
 
@@ -336,9 +342,11 @@ class YenViewModel @Inject constructor(private val investRepository: InvestRepos
     val yenResentRateStateFlow = MutableStateFlow<ExchangeRate>(ExchangeRate())
 
 
-    fun requestRate(exchangeRate: ExchangeRate) {
+    fun requestRate(exchangeRate: ExchangeRate, localData: LocalUserData) {
         viewModelScope.launch {
             yenResentRateStateFlow.emit(exchangeRate)
+            refreshDateFlow.emit(localData.reFreshCreateAt ?: "")
+            localUserDataFlow.emit(localData)
         }
     }
 

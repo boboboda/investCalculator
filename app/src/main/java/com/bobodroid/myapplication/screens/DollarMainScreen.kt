@@ -9,6 +9,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.*
 import com.bobodroid.myapplication.components.*
 import com.bobodroid.myapplication.models.viewmodels.DollarViewModel
@@ -26,7 +27,9 @@ fun DollarMainScreen
 
     var selectedCheckBoxId = dollarViewModel.selectedCheckBoxId.collectAsState()
 
-    val resentExchangeRate = allViewModel.exChangeRateFlow.collectAsState()
+    val resentExchangeRate = allViewModel.recentExChangeRateFlow.collectAsState()
+
+    val reFreshDate = dollarViewModel.refreshDateFlow.collectAsState()
 
     val snackbarHostState = remember { SnackbarHostState() }
 
@@ -78,6 +81,11 @@ fun DollarMainScreen
             horizontalArrangement = Arrangement.End,
             verticalAlignment = Alignment.CenterVertically,
         ) {
+
+            Text(
+                modifier = Modifier.padding(start = 10.dp),
+                text = "새로고침 시간: ${reFreshDate.value}",
+                textAlign = TextAlign.Center)
 
             Spacer(modifier = Modifier.weight(1f))
 

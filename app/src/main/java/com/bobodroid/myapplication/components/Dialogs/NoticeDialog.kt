@@ -92,18 +92,28 @@ fun NoticeDialog(
                                 .fillMaxWidth()
                                 .padding(start = 20.dp),
                             horizontalAlignment = Alignment.Start) {
+
+                            Text(fontSize = 20.sp, text = "개발자 인사말")
+
+                            Spacer(modifier = Modifier.height(5.dp))
+
+                            Text(fontSize = 13.sp,
+                                lineHeight = 25.sp,
+                                text = "유저가 평생 쓸 수 있는 앱을 만들려고 하였으나," +
+                                        " 이전 업데이트는 그러지 못했던거 같습니다. 실시간" +
+                                        "환율은 평생 무료로 제공하고, 예상 수익 확인 시에만" +
+                                        " 새로고침 할 수 있도록 하겠습니다. 많이 사용해주세요")
+
+
+                        Spacer(modifier = Modifier.height(20.dp))
+
                             Text(fontSize = 20.sp, text = "업데이트 내용")
 
                             Text(fontSize = 15.sp,
                                 lineHeight = 25.sp,
-                                text = "1. 환율 변경에 따른 예상 수익 추가\n" +
-                                        "2. 버튼 ui 변경\n" +
-                                        "3. 평균 1시간 환율 업데이트\n" +
-                                        "  - 새로고침 1~2분 전 환율 데이터 제공\n" +
-                                        "  - 하루 3회 무료 새로고침 제공\n" +
-                                        "  - 광고 시청 후 기회 누적 가능\n" +
-                                        "  - 원화 오차 범위 수정\n" +
-                                        "4. 달러, 엔화, 원화 이동은 버튼 클릭 시 변경")
+                                text = "1. 실시간 무료 환율 제공\n" +
+                                        "2. 새로고침 예상수익 확인 시 적용\n" +
+                                        "3. 평균 1시간 환율 업데이트\n")
                         }
                         
                         Spacer(modifier = Modifier.height(20.dp))

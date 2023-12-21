@@ -91,7 +91,9 @@ fun YenMainScreen
 //
 //    val total = yenViewModel.total.collectAsState("")
 
-    val resentExchangeRate = allViewModel.exChangeRateFlow.collectAsState()
+    val resentExchangeRate = allViewModel.recentExChangeRateFlow.collectAsState()
+
+    val reFreshDate = yenViewModel.refreshDateFlow.collectAsState()
 
     val snackbarHostState = remember { SnackbarHostState() }
 
@@ -145,6 +147,11 @@ fun YenMainScreen
             horizontalArrangement = Arrangement.End,
             verticalAlignment = Alignment.CenterVertically,
         ) {
+
+            Text(
+                modifier = Modifier.padding(start = 10.dp),
+                text = "새로고침 시간: ${reFreshDate.value}",
+                textAlign = TextAlign.Center)
 
 
             Spacer(modifier = Modifier.weight(1f))

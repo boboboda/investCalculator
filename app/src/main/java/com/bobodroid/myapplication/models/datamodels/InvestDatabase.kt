@@ -2,7 +2,11 @@ package com.bobodroid.myapplication.models.datamodels
 
 import androidx.room.AutoMigration
 import androidx.room.Database
+import androidx.room.DeleteColumn
+import androidx.room.RenameColumn
+import androidx.room.RenameTable
 import androidx.room.RoomDatabase
+import androidx.room.migration.AutoMigrationSpec
 import com.bobodroid.myapplication.models.datamodels.DrBuyRecord
 
 
@@ -18,10 +22,28 @@ import com.bobodroid.myapplication.models.datamodels.DrBuyRecord
         AutoMigration(from = 5, to = 6),
         AutoMigration(from = 6, to = 7),
         AutoMigration(from = 7, to = 8),
-        AutoMigration(from = 8, to = 9)
+        AutoMigration(from = 8, to = 9),
+        AutoMigration(
+            from = 9,
+            to = 10,
+            spec = InvestDatabase.MyAutoMigration::class
+        )
                                          ],
-    version = 9, exportSchema = true)
+    version = 10, exportSchema = true)
 abstract class InvestDatabase: RoomDatabase() {
+
+    @RenameColumn(
+        tableName = "LocalUserData_table",
+        fromColumnName = "recent_rate_CreateAt",
+        toColumnName = "reFresh_CreateAt"
+    )
+
+    @DeleteColumn(
+    tableName = "LocalUserData_table",
+    columnName = "recent_rate_CreateAt"
+    )
+
+    class MyAutoMigration : AutoMigrationSpec
 
     abstract fun DrBuyDao() : DollarBuyDatabaseDao
 

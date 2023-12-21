@@ -69,7 +69,7 @@ fun WonMainScreen(wonViewModel: WonViewModel, routeAction: InvestRouteAction, al
 
     val isDialogOpen = remember { mutableStateOf(false) }
 
-    val resentExchangeRate = allViewModel.exChangeRateFlow.collectAsState()
+    val resentExchangeRate = allViewModel.recentExChangeRateFlow.collectAsState()
 
     val time = Calendar.getInstance().time
 
@@ -80,6 +80,8 @@ fun WonMainScreen(wonViewModel: WonViewModel, routeAction: InvestRouteAction, al
     val dateRecord = wonViewModel.dateFlow.collectAsState()
 
     var date = if(today == "") "$today" else {dateRecord.value}
+
+    val reFreshDate = wonViewModel.refreshDateFlow.collectAsState()
 
     val snackbarHostState = remember { SnackbarHostState() }
 
@@ -140,6 +142,11 @@ fun WonMainScreen(wonViewModel: WonViewModel, routeAction: InvestRouteAction, al
             horizontalArrangement = Arrangement.End,
             verticalAlignment = Alignment.CenterVertically,
         ) {
+
+            Text(
+                modifier = Modifier.padding(start = 10.dp),
+                text = "새로고침 시간: ${reFreshDate.value}",
+                textAlign = TextAlign.Center)
 
             Spacer(modifier = Modifier.weight(1f))
 

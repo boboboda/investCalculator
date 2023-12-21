@@ -2,33 +2,20 @@ package com.bobodroid.myapplication.models.viewmodels
 
 
 import android.util.Log
-import androidx.compose.runtime.State
-import androidx.compose.runtime.toMutableStateList
-import androidx.core.util.rangeTo
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.bobodroid.myapplication.MainActivity
 import com.bobodroid.myapplication.MainActivity.Companion.TAG
-import com.bobodroid.myapplication.extensions.toDecUs
-import com.bobodroid.myapplication.extensions.toUs
-import com.bobodroid.myapplication.extensions.toWon
-import com.bobodroid.myapplication.extensions.toYen
 import com.bobodroid.myapplication.models.datamodels.*
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
-import java.lang.System.out
 import java.math.BigDecimal
-import java.math.BigInteger
-import java.math.RoundingMode
 import java.text.SimpleDateFormat
 import java.time.LocalDate
 import java.util.*
 import javax.inject.Inject
-import kotlin.math.roundToInt
-import kotlin.time.days
 
 @HiltViewModel
 class WonViewModel @Inject constructor(private val investRepository: InvestRepository): ViewModel() {
@@ -320,17 +307,34 @@ class WonViewModel @Inject constructor(private val investRepository: InvestRepos
     }
 
 
-    fun beforeCalculateProfit(exchangeRate: ExchangeRate) {
+    val refreshDateFlow = MutableStateFlow("")
+
+    val localUserDataFlow = MutableStateFlow<LocalUserData>(LocalUserData())
+    fun calculateProfit(exchangeRate: ExchangeRate) {
+
+
+        viewModelScope.launch {
+            refreshDateFlow.emit(exchangeRate.createAt!!)
+
+
+            val localUser = localUserDataFlow.value
+
+            val updateData = localUser.copy(
+                reFreshCreateAt = exchangeRate.createAt
+            )
+
+            investRepository.localUserUpdate(updateData)
+        }
 
         val buyRecordProfit = buyRecordFlow.value.map { it.profit }
 
-        Log.d(TAG, "불러온 profit 값 : ${buyRecordProfit}")
+        Log.d(TAG, "wonBuyList 불러온 profit 값 : ${buyRecordProfit}")
 
         _buyRecordFlow.value.forEach { wonBuyRecord->
 
             if(wonBuyRecord.profit == null) {
-
-                Log.d(TAG, "업데이트 데이터 profit 실행")
+                // 기존 데이터가 비어있을 때
+                Log.d(TAG, "프로핏 데이터가 없는경우 profit 실행")
 
                 val resentRateUs = exchangeRate.exchangeRates?.usd
                 val resentRateYen = exchangeRate.exchangeRates?.jpy
@@ -368,8 +372,6 @@ class WonViewModel @Inject constructor(private val investRepository: InvestRepos
                     }
                 }
             } else {
-
-                Log.d(TAG, "기존 데이터 profit 추가 실행")
 
                 val resentRateUs = exchangeRate.exchangeRates?.usd
                 val resentRateYen = exchangeRate.exchangeRates?.jpy
@@ -414,9 +416,13 @@ class WonViewModel @Inject constructor(private val investRepository: InvestRepos
     val wonResentRateStateFlow = MutableStateFlow<ExchangeRate>(ExchangeRate())
 
 
-    fun requestRate(exchangeRate: ExchangeRate) {
+    fun requestRate(exchangeRate: ExchangeRate, localData: LocalUserData) {
         viewModelScope.launch {
             wonResentRateStateFlow.emit(exchangeRate)
+
+            refreshDateFlow.emit(localData.reFreshCreateAt ?: "")
+
+            localUserDataFlow.emit(localData)
         }
     }
 

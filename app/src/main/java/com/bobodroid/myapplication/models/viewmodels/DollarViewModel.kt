@@ -2,6 +2,20 @@ package com.bobodroid.myapplication.models.viewmodels
 
 
 import android.util.Log
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Slider
+import androidx.compose.material3.SliderDefaults
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.bobodroid.myapplication.MainActivity.Companion.TAG
@@ -9,6 +23,7 @@ import com.bobodroid.myapplication.models.datamodels.DrBuyRecord
 import com.bobodroid.myapplication.models.datamodels.DrSellRecord
 import com.bobodroid.myapplication.models.datamodels.ExchangeRate
 import com.bobodroid.myapplication.models.datamodels.InvestRepository
+import com.bobodroid.myapplication.models.datamodels.LocalUserData
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.*
@@ -262,21 +277,43 @@ class DollarViewModel @Inject constructor(private val investRepository: InvestRe
     // resentRate
     val drResentRateStateFlow = MutableStateFlow<ExchangeRate>(ExchangeRate())
 
+    val localUserDataFlow = MutableStateFlow<LocalUserData>(LocalUserData())
 
-    fun requestRate(exchangeRate: ExchangeRate) {
+    val refreshDateFlow = MutableStateFlow("")
+
+
+    fun requestRate(exchangeRate: ExchangeRate, localData: LocalUserData) {
         viewModelScope.launch {
             drResentRateStateFlow.emit(exchangeRate)
+
+            localUserDataFlow.emit(localData)
+
+            refreshDateFlow.emit(localData.reFreshCreateAt ?: "")
         }
     }
 
     // 기존 데이터 저장
-    fun beforeCalculateProfit(exchangeRate: ExchangeRate) {
+    fun calculateProfit(exchangeRate: ExchangeRate) {
+
+        viewModelScope.launch {
+            refreshDateFlow.emit(exchangeRate.createAt!!)
+
+
+            val localUser = localUserDataFlow.value
+
+            val updateData = localUser.copy(
+                reFreshCreateAt = exchangeRate.createAt
+            )
+
+            investRepository.localUserUpdate(updateData)
+        }
+
+
+
 
         val buyRecordProfit = buyRecordFlow.value.map { it.profit }
 
-        Log.d(TAG, "불러온 profit 값 : ${buyRecordProfit}")
-
-
+        Log.d(TAG, "dollarBuyList 불러온 profit 값 : ${buyRecordProfit}")
 
             _buyRecordFlow.value.forEach {drBuyRecord->
 
@@ -308,7 +345,6 @@ class DollarViewModel @Inject constructor(private val investRepository: InvestRe
                         }
                     }
                 } else {
-
                     Log.d(TAG, "업데이트 데이터 profit 실행")
 
                     val resentRate = exchangeRate.exchangeRates?.usd
@@ -369,5 +405,6 @@ class DollarViewModel @Inject constructor(private val investRepository: InvestRe
     private fun sellPercent(): Float = (sellDollarFlow.value.toFloat() / recordInputMoney.value.toFloat()) * 100f
 
 }
+
 
 

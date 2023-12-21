@@ -333,26 +333,26 @@ fun MainScreen(dollarViewModel: DollarViewModel,
 
                         allViewModel.useItem(
                             useChance = {
-                                allViewModel.resetRate { resentRate->
+                                allViewModel.resetRate { resentRate, userData->
 
-                                    dollarViewModel.requestRate(resentRate)
+                                    dollarViewModel.calculateProfit(resentRate)
 
-                                    yenViewModel.requestRate(resentRate)
+                                    yenViewModel.calculateProfit(resentRate)
 
-                                    wonViewModel.requestRate(resentRate)
+                                    wonViewModel.calculateProfit(resentRate)
 
                                     rateRefreshDialog.value = false
                                 }
                             },
                             notExistChance = {
                                 showInterstitial(context) {
-                                    allViewModel.resetRate { resentRate->
+                                    allViewModel.resetRate { resentRate, userData->
 
-                                        dollarViewModel.requestRate(resentRate)
+                                        dollarViewModel.calculateProfit(resentRate)
 
-                                        yenViewModel.requestRate(resentRate)
+                                        yenViewModel.calculateProfit(resentRate)
 
-                                        wonViewModel.requestRate(resentRate)
+                                        wonViewModel.calculateProfit(resentRate)
                                     }
 
                                     rateRefreshDialog.value = false
@@ -490,8 +490,6 @@ fun DrawerCustom(
 
     val scope = rememberCoroutineScope()
 
-    val resentRateDate = allViewModel.recentExChangeRateFlow.collectAsState()
-
     val userData = allViewModel.localUserData.collectAsState()
 
     val chargeDialog = remember { mutableStateOf(false) }
@@ -535,16 +533,6 @@ fun DrawerCustom(
         Spacer(
             modifier = Modifier
                 .height(20.dp)
-        )
-
-        Text(
-            modifier = Modifier.padding(start = 10.dp),
-            text = "현재 최신 환율: ${resentRateDate.value.createAt}",
-            textAlign = TextAlign.Center)
-
-        Spacer(
-            modifier = Modifier
-                .height(15.dp)
         )
 
         Row(modifier = Modifier

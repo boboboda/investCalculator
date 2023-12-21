@@ -22,8 +22,8 @@ data class LocalUserData(
     @ColumnInfo(name = "recent_Yen_Rate", defaultValue = "")
     val recentYenRate: String? = null,
 
-    @ColumnInfo(name = "recent_rate_CreateAt", defaultValue = "")
-    val recentRateCreateAt: String? = null,
+    @ColumnInfo(name = "reFresh_CreateAt", defaultValue = "")
+    val reFreshCreateAt: String? = null,
 
     @ColumnInfo(name = "rate_Ad_Count")
     val rateAdCount: Int? = null,

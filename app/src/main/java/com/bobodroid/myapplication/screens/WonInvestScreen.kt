@@ -190,6 +190,8 @@ fun WonInvestScreen(wonViewModel: WonViewModel, routeAction: InvestRouteAction, 
             Buttons( "닫기", onClicked = {
                 wonViewModel.selectedCheckBoxId.value = 1
                 routeAction.navTo(InvestRoute.MAIN)
+                wonViewModel.moneyInputFlow.value = ""
+                wonViewModel.rateInputFlow.value = ""
                 allViewModel.changeMoney.value = 3
             }
                 , color = BuyColor

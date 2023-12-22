@@ -75,8 +75,8 @@ fun BuyYenRecordBox(yenViewModel: YenViewModel, snackbarHostState: SnackbarHostS
                     onClicked = { recordbox ->
                         selectedId = recordbox.id
                         yenViewModel.dateFlow.value = recordbox.date
-                        yenViewModel.haveMoney.value = recordbox.exchangeMoney.toInt()
-                        yenViewModel.recordInputMoney.value = recordbox.money.toInt() },
+                        yenViewModel.haveMoney.value = recordbox.exchangeMoney
+                        yenViewModel.recordInputMoney.value = recordbox.money },
                     yenViewModel,
                     snackbarHostState = snackbarHostState)
                 Divider()

@@ -31,20 +31,6 @@ import com.bobodroid.myapplication.models.datamodels.DrBuyRecord
                                          ],
     version = 10, exportSchema = true)
 abstract class InvestDatabase: RoomDatabase() {
-
-    @RenameColumn(
-        tableName = "LocalUserData_table",
-        fromColumnName = "recent_rate_CreateAt",
-        toColumnName = "reFresh_CreateAt"
-    )
-
-    @DeleteColumn(
-    tableName = "LocalUserData_table",
-    columnName = "recent_rate_CreateAt"
-    )
-
-    class MyAutoMigration : AutoMigrationSpec
-
     abstract fun DrBuyDao() : DollarBuyDatabaseDao
 
     abstract fun DrSellDao() : DollarSellDatabaseDao
@@ -58,4 +44,17 @@ abstract class InvestDatabase: RoomDatabase() {
     abstract fun WonSellDao() : WonSellDatabaseDao
 
     abstract fun LocalUserDao() : LocalUserDatabaseDao
+
+    @RenameColumn(
+        tableName = "LocalUserData_table",
+        fromColumnName = "recent_rate_CreateAt",
+        toColumnName = "reFresh_CreateAt"
+    )
+
+    @DeleteColumn(
+        tableName = "LocalUserData_table",
+        columnName = "recent_rate_CreateAt"
+    )
+
+    class MyAutoMigration : AutoMigrationSpec
 }

@@ -170,7 +170,10 @@ fun DollarInvestScreen(dollarViewModel: DollarViewModel,
                     onClicked = {
                         dollarViewModel.selectedCheckBoxId.value = 1
                         routeAction.navTo(InvestRoute.MAIN)
-                        allViewModel.changeMoney.value = 1 },
+                        allViewModel.changeMoney.value = 1
+                        dollarViewModel.moneyInputFlow.value = ""
+                        dollarViewModel.rateInputFlow.value = ""
+                                },
                     color = BuyColor,
                     fontColor = Color.Black,
                     modifier = Modifier

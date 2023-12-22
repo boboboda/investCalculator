@@ -148,9 +148,9 @@ class YenViewModel @Inject constructor(private val investRepository: InvestRepos
 
     // 리스트 매도 값
 
-    val recordInputMoney = MutableStateFlow(0)
+    val recordInputMoney = MutableStateFlow("")
 
-    var haveMoney = MutableStateFlow(0)
+    var haveMoney = MutableStateFlow("")
 
     val sellRateFlow = MutableStateFlow("")
 
@@ -190,11 +190,20 @@ class YenViewModel @Inject constructor(private val investRepository: InvestRepos
             investRepository.deleteRecord(yenBuyRecord)
 
             val buyRecordState = _buyRecordFlow.value
-            val items = buyRecordState.toMutableList().apply {
+
+            val filterBuyRecord = _filterBuyRecordFlow.value
+
+            val buyItems = buyRecordState.toMutableList().apply {
                 remove(yenBuyRecord)
             }.toList()
-            _buyRecordFlow.value = items
 
+            val filterBuyItems = filterBuyRecord.toMutableList().apply {
+                remove(yenBuyRecord)
+            }.toList()
+
+            _buyRecordFlow.value = buyItems
+
+            _filterBuyRecordFlow.value = filterBuyItems
         }
     }
 
@@ -234,10 +243,20 @@ class YenViewModel @Inject constructor(private val investRepository: InvestRepos
             investRepository.deleteRecord(yenSellRecord)
 
             val sellRecordState = _sellRecordFlow.value
-            val items = sellRecordState.toMutableList().apply {
+
+            val filterSellRecord = _filterSellRecordFlow.value
+
+            val sellItems = sellRecordState.toMutableList().apply {
                 remove(yenSellRecord)
             }.toList()
-            _sellRecordFlow.value = items
+
+            val filterSellItems = filterSellRecord.toMutableList().apply {
+                remove(yenSellRecord)
+            }.toList()
+
+            _sellRecordFlow.value = sellItems
+
+            _filterSellRecordFlow.value = filterSellItems
 
 
         }

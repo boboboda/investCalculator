@@ -10,6 +10,23 @@ import java.util.*
 
 
 
+fun String.toStringWon(): String {
+    val won = NumberFormat.getInstance(Locale.KOREA)
+    won.maximumFractionDigits = 0
+    return won.format(this)
+}
+
+fun String.toStringUs(): String {
+    val won = NumberFormat.getInstance(Locale.US)
+    won.maximumFractionDigits = 2
+    return won.format(this)
+}
+
+fun String.toStringYen(): String {
+    val won = NumberFormat.getInstance(Locale.JAPAN)
+    won.maximumFractionDigits = 2
+    return won.format(this)
+}
 fun Long.toLongWon(): String {
     val won = NumberFormat.getInstance(Locale.KOREA)
     won.maximumFractionDigits = 0

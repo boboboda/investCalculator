@@ -39,6 +39,9 @@ import androidx.compose.material.SwipeToDismiss
 import androidx.compose.material.rememberDismissState
 import com.bobodroid.myapplication.MainActivity.Companion.TAG
 import com.bobodroid.myapplication.components.RecordTextView
+import java.math.BigDecimal
+import java.math.MathContext
+import java.math.RoundingMode
 import java.util.*
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterialApi::class)
@@ -51,19 +54,28 @@ fun LineDrRecordText(
     dollarViewModel: DollarViewModel,
     snackBarHostState: SnackbarHostState) {
 
+    val mathContext = MathContext(28, RoundingMode.HALF_UP)
+
     val openDialog = remember { mutableStateOf(false) }
 
     val deleteAskDialog = remember { mutableStateOf(false) }
 
     val dismissState = rememberDismissState()
 
-    val profitColor = if(data.profit?.toBigDecimal()?.signum() == -1) { Color.Blue} else {Color.Red}
+    val profitColor = if(BigDecimal(data.profit, mathContext).signum() == -1) { Color.Blue} else {Color.Red}
 
     if(dismissState.isDismissed(DismissDirection.StartToEnd))
+
         LaunchedEffect(key1 = Unit, block = {
+            Log.d(TAG, "스와이프 이벤트")
             dismissState.reset()
             deleteAskDialog.value = true
         })
+
+
+
+
+
 
 
     SwipeToDismiss(
@@ -129,7 +141,7 @@ fun LineDrRecordText(
                     Spacer(modifier = Modifier.width(1.dp))
 
                     RecordTextView(
-                        recordText = "${data.exchangeMoney.toBigDecimal().toBigDecimalUs()!!}\n (${data.money!!.toBigDecimal().toBigDecimalWon()})",
+                        recordText = "${BigDecimal(data.exchangeMoney, mathContext).toBigDecimalUs()!!}\n (${BigDecimal(data.money, mathContext).toBigDecimalWon()})",
                         TextHeight = 50.dp,
                         13,
                         2.5f,
@@ -149,7 +161,7 @@ fun LineDrRecordText(
                     Spacer(modifier = Modifier.width(1.dp))
 
                     RecordTextView(
-                        recordText = "${data.profit?.toBigDecimal()?.toBigDecimalWon()}",
+                        recordText = "${BigDecimal(data.profit, mathContext).toBigDecimalWon()}",
                         TextHeight = 50.dp,
                         13,
                         2.5f,
@@ -195,6 +207,8 @@ fun SellLineDrRecordText(data: DrSellRecord,
 
     val dismissState = rememberDismissState()
 
+    val mathContext = MathContext(28, RoundingMode.HALF_UP)
+
     if(dismissState.isDismissed(DismissDirection.StartToEnd))
 
 
@@ -258,11 +272,11 @@ fun SellLineDrRecordText(data: DrSellRecord,
                 ) {
                     RecordTextView(recordText = "${data.date}", TextHeight = 50.dp, 13, 2.5f, bottonPpaing = 0.dp, color = Color.Black)
                     Spacer(modifier = Modifier.width(1.dp))
-                    RecordTextView(recordText = "${data.money.toBigDecimal().toBigDecimalUs()}", TextHeight = 50.dp, 13, 2.5f, bottonPpaing = 0.dp, color = Color.Black)
+                    RecordTextView(recordText = "${BigDecimal(data.money, mathContext).toBigDecimalUs()}", TextHeight = 50.dp, 13, 2.5f, bottonPpaing = 0.dp, color = Color.Black)
                     Spacer(modifier = Modifier.width(1.dp))
                     RecordTextView(recordText = "${data.rate}", TextHeight = 50.dp, 13, 2.5f, bottonPpaing = 0.dp, color = Color.Black)
                     Spacer(modifier = Modifier.width(1.dp))
-                    RecordTextView(recordText = "${data.exchangeMoney.toBigDecimal().toBigDecimalWon()}", TextHeight = 50.dp, 13, 2.5f, bottonPpaing = 0.dp, color = Color.Red)
+                    RecordTextView(recordText = "${BigDecimal(data.exchangeMoney, mathContext).toBigDecimalWon()}", TextHeight = 50.dp, 13, 2.5f, bottonPpaing = 0.dp, color = Color.Red)
                 }
 
             }
@@ -293,22 +307,22 @@ fun LineYenRecordText(
     yenViewModel: YenViewModel,
     snackbarHostState: SnackbarHostState) {
 
+    val mathContext = MathContext(28, RoundingMode.HALF_UP)
+
     val openDialog = remember { mutableStateOf(false) }
 
     val deleteAskDialog = remember { mutableStateOf(false) }
 
     val dismissState = rememberDismissState()
 
-    val profitColor = if(data.profit?.toBigDecimal()?.signum() == -1) { Color.Blue} else {Color.Red}
+    val profitColor = if(BigDecimal(data.profit, mathContext).signum() == -1) { Color.Blue} else {Color.Red}
 
-    if(dismissState.isDismissed(DismissDirection.StartToEnd))
-
-
+    if(dismissState.isDismissed(DismissDirection.StartToEnd)){
         LaunchedEffect(key1 = Unit, block = {
             dismissState.reset()
             deleteAskDialog.value = true
         })
-
+    }
 
     SwipeToDismiss(
         state = dismissState,
@@ -373,7 +387,7 @@ fun LineYenRecordText(
                     Spacer(modifier = Modifier.width(1.dp))
 
                     RecordTextView(
-                        recordText = "${data.exchangeMoney.toBigDecimal().toBigDecimalYen()!!}\n (${data.money.toBigDecimal().toBigDecimalWon()!!})",
+                        recordText = "${BigDecimal(data.exchangeMoney, mathContext).toBigDecimalYen()!!}\n (${BigDecimal(data.money, mathContext).toBigDecimalWon()!!})",
                         TextHeight = 50.dp,
                         13,
                         2.5f,
@@ -393,7 +407,7 @@ fun LineYenRecordText(
                     Spacer(modifier = Modifier.width(1.dp))
 
                     RecordTextView(
-                        recordText = "${data.profit?.toBigDecimal()?.toBigDecimalWon()}",
+                        recordText = "${BigDecimal(data.profit, mathContext).toBigDecimalWon()}",
                         TextHeight = 50.dp,
                         13,
                         2.5f,
@@ -433,6 +447,8 @@ fun LineYenRecordText(
 fun SellLineYenRecordText(data: YenSellRecord,
                        onClicked: ((YenSellRecord)-> Unit)?,
                           yenViewModel: YenViewModel) {
+
+    val mathContext = MathContext(28, RoundingMode.HALF_UP)
 
     val deleteAskDialog = remember { mutableStateOf(false) }
 
@@ -501,11 +517,11 @@ fun SellLineYenRecordText(data: YenSellRecord,
                 ) {
                     RecordTextView(recordText = "${data.date}", TextHeight = 50.dp, 13, 2.5f, bottonPpaing = 0.dp, color = Color.Black)
                     Spacer(modifier = Modifier.width(1.dp))
-                    RecordTextView(recordText = "${data.money.toBigDecimal().toBigDecimalYen()}", TextHeight = 50.dp, 13, 2.5f, bottonPpaing = 0.dp, color = Color.Black)
+                    RecordTextView(recordText = "${BigDecimal(data.money, mathContext).toBigDecimalYen()}", TextHeight = 50.dp, 13, 2.5f, bottonPpaing = 0.dp, color = Color.Black)
                     Spacer(modifier = Modifier.width(1.dp))
                     RecordTextView(recordText = "${data.rate}", TextHeight = 50.dp, 13, 2.5f, bottonPpaing = 0.dp, color = Color.Black)
                     Spacer(modifier = Modifier.width(1.dp))
-                    RecordTextView(recordText = "${data.exchangeMoney.toBigDecimal().toBigDecimalWon()}", TextHeight = 50.dp, 13, 2.5f, bottonPpaing = 0.dp, color = Color.Red)
+                    RecordTextView(recordText = "${BigDecimal(data.exchangeMoney, mathContext).toBigDecimalWon()}", TextHeight = 50.dp, 13, 2.5f, bottonPpaing = 0.dp, color = Color.Red)
                 }
 
             }
@@ -539,17 +555,20 @@ fun WonLineRecordText(
     wonViewModel: WonViewModel,
     snackbarHostState: SnackbarHostState) {
 
+    val mathContext = MathContext(28, RoundingMode.HALF_UP)
+
     val moneyCg = when(data.moneyType) {
-        1 -> {data.money.toBigDecimal().toBigDecimalUs() }
-        2 -> {data.money.toBigDecimal().toBigDecimalYen() }
+        1 -> {BigDecimal(data.money, mathContext).toBigDecimalUs() }
+        2 -> {BigDecimal(data.money, mathContext).toBigDecimalYen() }
         else -> null
     }
 
     val profitMoneyCg = when(data.moneyType) {
-        1 -> {data.profit?.toBigDecimal()?.toBigDecimalUs() }
-        2 -> {data.profit?.toBigDecimal()?.toBigDecimalYen() }
+        1 -> {BigDecimal(data.profit, mathContext).toBigDecimalUs() }
+        2 -> {BigDecimal(data.profit, mathContext).toBigDecimalYen() }
         else -> null
     }
+
 
 
     val openDialog = remember { mutableStateOf(false) }
@@ -558,7 +577,7 @@ fun WonLineRecordText(
 
     val dismissState = rememberDismissState()
 
-    val profitColor = if(data.profit?.toBigDecimal()?.signum() == -1) { Color.Blue} else {Color.Red}
+    val profitColor = if(BigDecimal(data.profit, mathContext).signum() == -1) { Color.Blue} else {Color.Red}
 
     if(dismissState.isDismissed(DismissDirection.StartToEnd))
 
@@ -624,7 +643,7 @@ fun WonLineRecordText(
 
                     RecordTextView(recordText = "${data.date}", TextHeight = 50.dp, 13, 2.5f, bottonPpaing = 0.dp, color = Color.Black)
                     Spacer(modifier = Modifier.width(1.dp))
-                    RecordTextView(recordText = "${data.exchangeMoney.toBigDecimal().toBigDecimalWon()}\n (${moneyCg})", TextHeight = 50.dp, 13, 2.5f, bottonPpaing = 0.dp, color = Color.Black)
+                    RecordTextView(recordText = "${BigDecimal(data.exchangeMoney, mathContext).toBigDecimalWon()}\n (${moneyCg})", TextHeight = 50.dp, 13, 2.5f, bottonPpaing = 0.dp, color = Color.Black)
                     Spacer(modifier = Modifier.width(1.dp))
                     RecordTextView(recordText = "${data.rate}", TextHeight = 50.dp,13, 2.5f, bottonPpaing = 0.dp, color = Color.Black)
                     Spacer(modifier = Modifier.width(1.dp))
@@ -673,9 +692,11 @@ fun WonSellLineRecordText(
     onClicked: ((WonSellRecord)-> Unit)?,
     wonViewModel: WonViewModel) {
 
+    val mathContext = MathContext(28, RoundingMode.HALF_UP)
+
     val moneyCg = when(data.moneyType) {
-        1 -> {data.exchangeMoney.toBigDecimal().toBigDecimalUs() }
-        2 -> {data.exchangeMoney.toBigDecimal().toBigDecimalYen() }
+        1 -> {BigDecimal(data.exchangeMoney, mathContext).toBigDecimalUs() }
+        2 -> {BigDecimal(data.exchangeMoney, mathContext).toBigDecimalYen() }
         else -> null
     }
 
@@ -747,7 +768,7 @@ fun WonSellLineRecordText(
                 ) {
                     RecordTextView(recordText = "${data.date}", TextHeight = 50.dp, 13, 2.5f, bottonPpaing = 0.dp, color = Color.Black)
                     Spacer(modifier = Modifier.width(1.dp))
-                    RecordTextView(recordText = "${data.money.toBigDecimal().toBigDecimalWon()}", TextHeight = 50.dp, 13, 2.5f, bottonPpaing = 0.dp, color = Color.Black)
+                    RecordTextView(recordText = "${BigDecimal(data.money, mathContext).toBigDecimalWon()}", TextHeight = 50.dp, 13, 2.5f, bottonPpaing = 0.dp, color = Color.Black)
                     Spacer(modifier = Modifier.width(1.dp))
                     RecordTextView(recordText = "${data.rate}", TextHeight = 50.dp, 13, 2.5f, bottonPpaing = 0.dp, color = Color.Black)
                     Spacer(modifier = Modifier.width(1.dp))

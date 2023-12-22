@@ -500,7 +500,7 @@ fun FloatPopupNumberView(onClicked: ((String) -> Unit)?) {
                     FloatActionButton(
                         action = CalculateAction.AllClear,
                         onClicked = {
-                            UserInput = "0"
+                            UserInput = ""
                         })
                 }
 

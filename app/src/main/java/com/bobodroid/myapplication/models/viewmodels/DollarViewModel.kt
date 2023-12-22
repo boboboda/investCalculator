@@ -206,13 +206,23 @@ class DollarViewModel @Inject constructor(private val investRepository: InvestRe
 
     fun removeBuyRecord(drBuyrecord: DrBuyRecord) {
         viewModelScope.launch {
+
             investRepository.deleteRecord(drBuyrecord)
 
             val buyRecordState = _buyRecordFlow.value
-            val items = buyRecordState.toMutableList().apply{
+            val filterRecord = _filterBuyRecordFlow.value
+            val buyItems = buyRecordState.toMutableList().apply{
                 remove(drBuyrecord)
             }.toList()
-            _buyRecordFlow.value = items
+
+            val filterBuyItems = filterRecord.toMutableList().apply{
+                remove(drBuyrecord)
+            }.toList()
+
+
+            _buyRecordFlow.value = buyItems
+
+            _filterBuyRecordFlow.value = filterBuyItems
 
         }
     }
@@ -251,10 +261,18 @@ class DollarViewModel @Inject constructor(private val investRepository: InvestRe
             investRepository.deleteRecord(drSellRecord)
 
             val sellRecordState = _sellRecordFlow.value
-            val items = sellRecordState.toMutableList().apply{
+            val filterSellRecord = _filterSellRecordFlow.value
+            val sellItems = sellRecordState.toMutableList().apply{
                 remove(drSellRecord)
             }.toList()
-            _sellRecordFlow.value = items
+
+            val filterSellItems = filterSellRecord.toMutableList().apply{
+                remove(drSellRecord)
+            }.toList()
+
+            _sellRecordFlow.value = sellItems
+
+            _filterSellRecordFlow.value = filterSellItems
 
 
         }

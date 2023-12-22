@@ -93,20 +93,6 @@ fun NoticeDialog(
                                 .padding(start = 20.dp),
                             horizontalAlignment = Alignment.Start) {
 
-                            Text(fontSize = 20.sp, text = "개발자 인사말")
-
-                            Spacer(modifier = Modifier.height(5.dp))
-
-                            Text(fontSize = 13.sp,
-                                lineHeight = 25.sp,
-                                text = "유저가 평생 쓸 수 있는 앱을 만들려고 하였으나," +
-                                        " 이전 업데이트는 그러지 못했던거 같습니다. 실시간" +
-                                        "환율은 평생 무료로 제공하고, 예상 수익 확인 시에만" +
-                                        " 새로고침 할 수 있도록 하겠습니다. 많이 사용해주세요")
-
-
-                        Spacer(modifier = Modifier.height(20.dp))
-
                             Text(fontSize = 20.sp, text = "업데이트 내용")
 
                             Text(fontSize = 15.sp,

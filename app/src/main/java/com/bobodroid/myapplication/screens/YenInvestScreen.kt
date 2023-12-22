@@ -166,6 +166,8 @@ fun YenInvestScreen(yenViewModel: YenViewModel, routeAction: InvestRouteAction, 
             Buttons( "닫기", onClicked = {
                 yenViewModel.selectedCheckBoxId.value = 1
                 routeAction.navTo(InvestRoute.MAIN)
+                yenViewModel.moneyInputFlow.value = ""
+                yenViewModel.rateInputFlow.value = ""
                 allViewModel.changeMoney.value = 2
             }
                 , color = BuyColor

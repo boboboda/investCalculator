@@ -245,10 +245,21 @@ class WonViewModel @Inject constructor(private val investRepository: InvestRepos
             investRepository.deleteRecord(wonBuyRecord)
 
             val buyRecordState = _buyRecordFlow.value
-            val items = buyRecordState.toMutableList().apply{
+
+            val filterBuyRecord = _filterBuyRecordFlow.value
+
+            val buyItems = buyRecordState.toMutableList().apply{
                 remove(wonBuyRecord)
             }.toList()
-            _buyRecordFlow.value = items
+
+            val filterBuyItems = filterBuyRecord.toMutableList().apply{
+                remove(wonBuyRecord)
+            }.toList()
+
+
+            _buyRecordFlow.value = buyItems
+
+            _filterBuyRecordFlow.value = filterBuyItems
 
         }
     }
@@ -259,10 +270,20 @@ class WonViewModel @Inject constructor(private val investRepository: InvestRepos
             investRepository.deleteRecord(wonSellRecord)
 
             val sellRecordState = _sellRecordFlow.value
-            val items = sellRecordState.toMutableList().apply{
+
+            val filterSellRecord = _filterSellRecordFlow.value
+
+            val sellItems = sellRecordState.toMutableList().apply{
                 remove(wonSellRecord)
             }.toList()
-            _sellRecordFlow.value = items
+
+            val filterSellItems = filterSellRecord.toMutableList().apply{
+                remove(wonSellRecord)
+            }.toList()
+
+            _sellRecordFlow.value = sellItems
+
+            _filterSellRecordFlow.value = filterSellItems
         }
     }
 
@@ -441,9 +462,9 @@ class WonViewModel @Inject constructor(private val investRepository: InvestRepos
     )
 
 
-    private fun dollarSellValue() = (BigDecimal(haveMoney.value).divide(BigDecimal(sellRateFlow.value))).minus(BigDecimal(recordInputMoney.value))
+    private fun dollarSellValue() = (BigDecimal(haveMoney.value).divide(BigDecimal(sellRateFlow.value), 28, RoundingMode.HALF_UP)).minus(BigDecimal(recordInputMoney.value))
 
-    private fun yenSellValue() =((BigDecimal(haveMoney.value).divide(BigDecimal(sellRateFlow.value))).times(
+    private fun yenSellValue() =((BigDecimal(haveMoney.value).divide(BigDecimal(sellRateFlow.value),28, RoundingMode.HALF_UP)).times(
         BigDecimal("100"))).minus(BigDecimal(recordInputMoney.value))
 
 

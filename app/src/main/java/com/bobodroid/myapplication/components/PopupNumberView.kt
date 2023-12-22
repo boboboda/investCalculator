@@ -40,8 +40,6 @@ import java.util.*
 fun PopupNumberView(
     onClicked: ((String) -> Unit)?,
     limitNumberLength: Int,
-    snackbarHostState: SnackbarHostState
-
 ) {
 
 
@@ -50,10 +48,8 @@ fun PopupNumberView(
         "6", "7", "8", "9", "0"
     )
 
-
-
     //매수금 입력
-    var UserInput: String by remember { mutableStateOf("") }
+    var UserInput by remember { mutableStateOf("") }
 
     var inputMoney = if(UserInput == "") "" else "${UserInput.toLong().toLongWon()}"
 
@@ -148,15 +144,14 @@ fun PopupNumberView(
                     ActionButton(
                         action = CalculateAction.AllClear,
                         onClicked = {
-                            UserInput = "0"
-                        })
+                        UserInput = ""})
                 }
 
                 item(){
                     ActionButton(
                         action = CalculateAction.Del,
                         onClicked = {
-                            UserInput = if(UserInput.toString().length == 1) "0" else UserInput.dropLast(1)
+                            UserInput = if(UserInput.length == 1) "0" else UserInput.dropLast(1)
                         })
                 }
 
@@ -185,12 +180,24 @@ fun PopupNumberView(
                                         "너무 큰 수를 입력하셨습니다.\n ${limitNumberLength}자리 이하 숫자까지만 가능합니다.",
                                         actionLabel = "닫기", SnackbarDuration.Short
                                     )
-                                    UserInput == ""
+                                    UserInput = ""
                                 } else {
                                     return@launch
                                 }
                             } else {
-                                if(UserInput == "0") UserInput = aButtons.toString() else UserInput += aButtons
+                                if(UserInput == "0")
+                                {
+                                    if(snackBarHostState.currentSnackbarData == null) {
+                                        snackBarHostState.showSnackbar(
+                                            "0원은 입력할 수 없습니다.",
+                                            actionLabel = "닫기", SnackbarDuration.Short
+                                        )
+                                        UserInput = ""
+                                    } else {
+                                        return@launch
+                                    }
+
+                                } else UserInput += aButtons
                             }
                         }
                     }) //숫자 버튼
@@ -205,11 +212,12 @@ fun PopupNumberView(
                             if(UserInput.length >= limitNumberLength) {
 
                                 if(snackBarHostState.currentSnackbarData == null) {
+
                                     snackBarHostState.showSnackbar(
                                         "너무 큰 수를 입력하셨습니다.\n ${limitNumberLength}자리 이하 숫자까지만 가능합니다.",
                                         actionLabel = "닫기", SnackbarDuration.Short
                                     )
-                                    UserInput == ""
+                                    UserInput = ""
                                 } else {
                                     return@launch
                                 }
@@ -236,12 +244,25 @@ fun PopupNumberView(
                                         "너무 큰 수를 입력하셨습니다.\n ${limitNumberLength}자리 이하 숫자까지만 가능합니다.",
                                         actionLabel = "닫기", SnackbarDuration.Short
                                     )
-                                    UserInput == ""
+                                    UserInput = ""
                                 } else {
                                     return@launch
                                 }
                             } else {
-                                UserInput += "00"
+
+                                    if(UserInput == "") {
+                                        if(snackBarHostState.currentSnackbarData == null) {
+                                            snackBarHostState.showSnackbar(
+                                                "0원은 입력할 수 없습니다.",
+                                                actionLabel = "닫기", SnackbarDuration.Short
+                                            )
+                                            UserInput = ""
+                                        } else {
+                                            return@launch
+                                        }
+                                    } else {
+                                        UserInput += "00"
+                                    }
                             }
                         }
                     }, 20)
@@ -260,12 +281,25 @@ fun PopupNumberView(
                                         "너무 큰 수를 입력하셨습니다.\n ${limitNumberLength}자리 이하 숫자까지만 가능합니다.",
                                         actionLabel = "닫기", SnackbarDuration.Short
                                     )
-                                    UserInput == ""
+                                    UserInput = ""
                                 } else {
                                     return@launch
                                 }
                             } else {
-                                UserInput += "000"
+
+                                if(UserInput == "") {
+                                    if(snackBarHostState.currentSnackbarData == null) {
+                                        snackBarHostState.showSnackbar(
+                                            "0원은 입력할 수 없습니다.",
+                                            actionLabel = "닫기", SnackbarDuration.Short
+                                        )
+                                        UserInput = ""
+                                    } else {
+                                        return@launch
+                                    }
+                                } else {
+                                    UserInput += "000"
+                                }
                             }
                         }
 
@@ -358,7 +392,7 @@ fun NumberButtonBottom(number: String, onClicked: () -> Unit, fontSize: Int) {
 
 @Composable
 fun FloatPopupNumberView(onClicked: ((String) -> Unit)?) {
-
+    //환율 입력하는 뷰
     var won = NumberFormat.getInstance(Locale.KOREA)
 
     val actions: Array<CalculateAction> = CalculateAction.values()
@@ -504,12 +538,24 @@ fun FloatPopupNumberView(onClicked: ((String) -> Unit)?) {
                                        "너무 큰 수를 입력하셨습니다.\n 열자리 이하 숫자까지만 가능합니다.",
                                        actionLabel = "닫기", SnackbarDuration.Short
                                    )
-                                   UserInput == ""
+                                   UserInput = ""
                                } else {
                                    return@launch
                                }
                             } else {
-                                if(UserInput == "0") UserInput = aButtons else UserInput += aButtons
+                                if(UserInput == "0")
+                                {
+                                    if(snackBarHostState.currentSnackbarData == null) {
+                                        snackBarHostState.showSnackbar(
+                                            "0원은 입력할 수 없습니다.",
+                                            actionLabel = "닫기", SnackbarDuration.Short
+                                        )
+                                        UserInput = ""
+                                    } else {
+                                        return@launch
+                                    }
+
+                                } else UserInput += aButtons
                             }
                         }
 
@@ -531,12 +577,24 @@ fun FloatPopupNumberView(onClicked: ((String) -> Unit)?) {
                                         "너무 큰 수를 입력하셨습니다.\n 열자리 이하 숫자까지만 가능합니다.",
                                         actionLabel = "닫기", SnackbarDuration.Short
                                     )
-                                    UserInput == ""
+                                    UserInput = ""
                                 } else {
                                     return@launch
                                 }
                             } else {
-                                UserInput += "00"
+                                if(UserInput == "")
+                                {
+                                    if(snackBarHostState.currentSnackbarData == null) {
+                                        snackBarHostState.showSnackbar(
+                                            "0원은 입력할 수 없습니다.",
+                                            actionLabel = "닫기", SnackbarDuration.Short
+                                        )
+                                        UserInput = ""
+                                    } else {
+                                        return@launch
+                                    }
+
+                                } else UserInput += "00"
                             }
                         }
                     }, 30)
@@ -555,12 +613,24 @@ fun FloatPopupNumberView(onClicked: ((String) -> Unit)?) {
                                             "너무 큰 수를 입력하셨습니다.\n 열자리 이하 숫자까지만 가능합니다.",
                                             actionLabel = "닫기", SnackbarDuration.Short
                                         )
-                                        UserInput == ""
+                                        UserInput = ""
                                     } else {
                                         return@launch
                                     }
                                 } else {
-                                    UserInput += "."
+                                    if(UserInput == "")
+                                    {
+                                        if(snackBarHostState.currentSnackbarData == null) {
+                                            snackBarHostState.showSnackbar(
+                                                "소수점을 먼저 입력할 수 없습니다.",
+                                                actionLabel = "닫기", SnackbarDuration.Short
+                                            )
+                                            UserInput = ""
+                                        } else {
+                                            return@launch
+                                        }
+
+                                    } else UserInput += "."
                                 }
                             }
                             })

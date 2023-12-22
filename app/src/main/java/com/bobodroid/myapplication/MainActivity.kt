@@ -52,13 +52,13 @@ class MainActivity : ComponentActivity() {
             loadInterstitial(this)
 
             allViewModel.recentRateHotListener { recentRate, localData->
-                Log.d(TAG, "실시간 데이터 수신 ${recentRate}")
+                Log.d(TAG, "실시간 데이터 수신 ${recentRate}, ${localData}")
 
-                dollarViewModel.requestRate(recentRate, localData)
+                dollarViewModel.requestRate(recentRate)
 
-                yenViewModel.requestRate(recentRate, localData)
+                yenViewModel.requestRate(recentRate)
 
-                wonViewModel.requestRate(recentRate, localData)
+                wonViewModel.requestRate(recentRate)
 
 
 

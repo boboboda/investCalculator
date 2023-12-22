@@ -41,6 +41,7 @@ import com.bobodroid.myapplication.ui.theme.TopButtonColor
 import androidx.compose.material3.Text
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
+import com.bobodroid.myapplication.MainActivity
 import com.bobodroid.myapplication.components.Dialogs.ChargeDialog
 import com.bobodroid.myapplication.components.Dialogs.NoticeDialog
 import com.bobodroid.myapplication.components.Dialogs.RateRefreshDialog
@@ -84,8 +85,6 @@ fun MainScreen(dollarViewModel: DollarViewModel,
     var callEndDate = allViewModel.endDateFlow.collectAsState()
 
     val checkBoxState = dollarViewModel.selectedCheckBoxId.collectAsState()
-
-//    val openResetShowDialog = remember { mutableStateOf(false) }
 
     val coroutineScope = rememberCoroutineScope()
 
@@ -332,31 +331,33 @@ fun MainScreen(dollarViewModel: DollarViewModel,
                         ) {
 
                         allViewModel.useItem(
-                            useChance = {
-                                allViewModel.resetRate { resentRate, userData->
+                            useChance = { haveChance, recentRate ->
 
-                                    dollarViewModel.calculateProfit(resentRate)
+                                if(!haveChance) {
+                                    Log.d(TAG, "기회 있는 로직 실행")
+                                    dollarViewModel.calculateProfit(recentRate)
 
-                                    yenViewModel.calculateProfit(resentRate)
+                                    yenViewModel.calculateProfit(recentRate)
 
-                                    wonViewModel.calculateProfit(resentRate)
+                                    wonViewModel.calculateProfit(recentRate)
 
                                     rateRefreshDialog.value = false
-                                }
-                            },
-                            notExistChance = {
-                                showInterstitial(context) {
-                                    allViewModel.resetRate { resentRate, userData->
 
-                                        dollarViewModel.calculateProfit(resentRate)
+                                } else {
+                                    Log.d(TAG, "기회 없어서 광고 실행")
+                                    showInterstitial(context) {
 
-                                        yenViewModel.calculateProfit(resentRate)
+                                            dollarViewModel.calculateProfit(recentRate)
 
-                                        wonViewModel.calculateProfit(resentRate)
+                                            yenViewModel.calculateProfit(recentRate)
+
+                                            wonViewModel.calculateProfit(recentRate)
+
+                                            rateRefreshDialog.value = false
+
                                     }
-
-                                    rateRefreshDialog.value = false
                                 }
+
                             }
                         )
                     }
@@ -539,7 +540,7 @@ fun DrawerCustom(
             .fillMaxWidth()
             .padding(start = 10.dp),
             horizontalArrangement = Arrangement.Start) {
-            Text(text = "환율업데이트 횟수: ${freeChance}(${payChance})회")
+            Text(text = "새로고침 업데이트 횟수: ${freeChance}(${payChance})회")
 
             Spacer(modifier = Modifier.width(10.dp))
             CardButton(

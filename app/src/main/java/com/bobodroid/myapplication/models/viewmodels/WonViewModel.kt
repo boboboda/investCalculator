@@ -12,6 +12,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import java.math.BigDecimal
+import java.math.RoundingMode
 import java.text.SimpleDateFormat
 import java.time.LocalDate
 import java.util.*
@@ -190,12 +191,12 @@ class WonViewModel @Inject constructor(private val investRepository: InvestRepos
             }
             when(moneyCgBtnSelected.value) {
                 1-> {
-                    val dollarCg = dollarlastValue()
+                    val dollarCg = dollarLastValue()
                     Log.d(TAG,"값 ${dollarCg}")
                     exchangeMoney.emit("${dollarCg}")
                 }
                 2-> {
-                    val yenCg = yenlastValue()
+                    val yenCg = yenLastValue()
                     exchangeMoney.emit("${yenCg}")
                 }
                 else -> {null}}
@@ -226,10 +227,10 @@ class WonViewModel @Inject constructor(private val investRepository: InvestRepos
         viewModelScope.launch {
             when(moneyType.value) {
                 1 -> {
-                    sellDollarFlow.emit(dollarsellValue().toString())
+                    sellDollarFlow.emit(dollarSellValue().toString())
                     getPercentFlow.emit(sellPercent())}
                 2 -> {
-                    sellDollarFlow.emit(yensellValue().toString())
+                    sellDollarFlow.emit(yenSellValue().toString())
                     getPercentFlow.emit(sellPercent())
                 }
 
@@ -306,25 +307,8 @@ class WonViewModel @Inject constructor(private val investRepository: InvestRepos
         }
     }
 
-
-    val refreshDateFlow = MutableStateFlow("")
-
-    val localUserDataFlow = MutableStateFlow<LocalUserData>(LocalUserData())
     fun calculateProfit(exchangeRate: ExchangeRate) {
 
-
-        viewModelScope.launch {
-            refreshDateFlow.emit(exchangeRate.createAt!!)
-
-
-            val localUser = localUserDataFlow.value
-
-            val updateData = localUser.copy(
-                reFreshCreateAt = exchangeRate.createAt
-            )
-
-            investRepository.localUserUpdate(updateData)
-        }
 
         val buyRecordProfit = buyRecordFlow.value.map { it.profit }
 
@@ -416,13 +400,9 @@ class WonViewModel @Inject constructor(private val investRepository: InvestRepos
     val wonResentRateStateFlow = MutableStateFlow<ExchangeRate>(ExchangeRate())
 
 
-    fun requestRate(exchangeRate: ExchangeRate, localData: LocalUserData) {
+    fun requestRate(exchangeRate: ExchangeRate) {
         viewModelScope.launch {
             wonResentRateStateFlow.emit(exchangeRate)
-
-            refreshDateFlow.emit(localData.reFreshCreateAt ?: "")
-
-            localUserDataFlow.emit(localData)
         }
     }
 
@@ -454,18 +434,16 @@ class WonViewModel @Inject constructor(private val investRepository: InvestRepos
 
 
 
-    private fun dollarlastValue() = BigDecimal(moneyInputFlow.value).times(BigDecimal(rateInputFlow.value))
+    private fun dollarLastValue() = (BigDecimal(moneyInputFlow.value).times(BigDecimal(rateInputFlow.value))).setScale(20, RoundingMode.HALF_UP)
 
-    private fun yenlastValue() = (BigDecimal(moneyInputFlow.value).times(BigDecimal(rateInputFlow.value))).divide(
+    private fun yenLastValue() = (BigDecimal(moneyInputFlow.value).times(BigDecimal(rateInputFlow.value))).setScale(20, RoundingMode.HALF_UP).divide(
         BigDecimal("100")
     )
 
 
+    private fun dollarSellValue() = (BigDecimal(haveMoney.value).divide(BigDecimal(sellRateFlow.value))).minus(BigDecimal(recordInputMoney.value))
 
-
-    private fun dollarsellValue() = (BigDecimal(haveMoney.value).divide(BigDecimal(sellRateFlow.value))).minus(BigDecimal(recordInputMoney.value))
-
-    private fun yensellValue() =((BigDecimal(haveMoney.value).divide(BigDecimal(sellRateFlow.value))).times(
+    private fun yenSellValue() =((BigDecimal(haveMoney.value).divide(BigDecimal(sellRateFlow.value))).times(
         BigDecimal("100"))).minus(BigDecimal(recordInputMoney.value))
 
 

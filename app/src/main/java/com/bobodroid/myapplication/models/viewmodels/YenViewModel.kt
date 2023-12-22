@@ -252,24 +252,8 @@ class YenViewModel @Inject constructor(private val investRepository: InvestRepos
         }
     }
 
-    val refreshDateFlow = MutableStateFlow("")
-
-    val localUserDataFlow = MutableStateFlow<LocalUserData>(LocalUserData())
 
     fun calculateProfit(exchangeRate: ExchangeRate) {
-
-        viewModelScope.launch {
-            refreshDateFlow.emit(exchangeRate.createAt!!)
-
-
-            val localUser = localUserDataFlow.value
-
-            val updateData = localUser.copy(
-                reFreshCreateAt = exchangeRate.createAt
-            )
-
-            investRepository.localUserUpdate(updateData)
-        }
 
         val buyRecordProfit = buyRecordFlow.value.map { it.profit }
 
@@ -342,11 +326,9 @@ class YenViewModel @Inject constructor(private val investRepository: InvestRepos
     val yenResentRateStateFlow = MutableStateFlow<ExchangeRate>(ExchangeRate())
 
 
-    fun requestRate(exchangeRate: ExchangeRate, localData: LocalUserData) {
+    fun requestRate(exchangeRate: ExchangeRate) {
         viewModelScope.launch {
             yenResentRateStateFlow.emit(exchangeRate)
-            refreshDateFlow.emit(localData.reFreshCreateAt ?: "")
-            localUserDataFlow.emit(localData)
         }
     }
 
@@ -374,7 +356,7 @@ class YenViewModel @Inject constructor(private val investRepository: InvestRepos
         return profit.toString()
     }
 
-    private fun lastValue() = (moneyInputFlow.value.toBigDecimal() / rateInputFlow.value.toBigDecimal()) * BigDecimal("100")
+    private fun lastValue() = BigDecimal(moneyInputFlow.value).divide(BigDecimal(rateInputFlow.value), 20, RoundingMode.HALF_UP) * BigDecimal("100")
 
 
     private fun sellValue() = (

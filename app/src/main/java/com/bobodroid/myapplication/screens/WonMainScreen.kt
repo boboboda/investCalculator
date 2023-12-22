@@ -69,7 +69,7 @@ fun WonMainScreen(wonViewModel: WonViewModel, routeAction: InvestRouteAction, al
 
     val isDialogOpen = remember { mutableStateOf(false) }
 
-    val resentExchangeRate = allViewModel.recentExChangeRateFlow.collectAsState()
+    val recentExchangeRate = allViewModel.recentExChangeRateFlow.collectAsState()
 
     val time = Calendar.getInstance().time
 
@@ -81,7 +81,7 @@ fun WonMainScreen(wonViewModel: WonViewModel, routeAction: InvestRouteAction, al
 
     var date = if(today == "") "$today" else {dateRecord.value}
 
-    val reFreshDate = wonViewModel.refreshDateFlow.collectAsState()
+    val reFreshDate = allViewModel.refreshDateFlow.collectAsState()
 
     val snackbarHostState = remember { SnackbarHostState() }
 
@@ -110,7 +110,7 @@ fun WonMainScreen(wonViewModel: WonViewModel, routeAction: InvestRouteAction, al
                         horizontalArrangement = Arrangement.Center,
                         verticalAlignment = Alignment.CenterVertically) {
 
-                        Text(text = "USD: ${resentExchangeRate.value.exchangeRates?.usd}", fontSize = 20.sp)
+                        Text(text = "USD: ${recentExchangeRate.value.exchangeRates?.usd}", fontSize = 20.sp)
                         Spacer(modifier = Modifier.width(10.dp))
                     }
 
@@ -121,13 +121,12 @@ fun WonMainScreen(wonViewModel: WonViewModel, routeAction: InvestRouteAction, al
                         horizontalArrangement = Arrangement.Center,
                         verticalAlignment = Alignment.CenterVertically) {
 
-                        Text(text = "JPY: ${resentExchangeRate.value.exchangeRates?.jpy?.toBigDecimal()?.times(
-                            BigDecimal("100")
-                        )}", fontSize = 20.sp)
+                        Text(text = "JPY: ${recentExchangeRate.value.exchangeRates?.jpy?.toBigDecimal()?.times(BigDecimal("100"))?.setScale(2)
+                        }", fontSize = 20.sp)
                         Spacer(modifier = Modifier.width(10.dp))
                     }
                     Spacer(modifier = Modifier.height(15.dp))
-                    Text(text = "업데이트된 환율: ${resentExchangeRate.value.createAt}")
+                    Text(text = "업데이트된 환율: ${recentExchangeRate.value.createAt}")
                 }
 
             }
@@ -142,12 +141,6 @@ fun WonMainScreen(wonViewModel: WonViewModel, routeAction: InvestRouteAction, al
             horizontalArrangement = Arrangement.End,
             verticalAlignment = Alignment.CenterVertically,
         ) {
-
-            Text(
-                modifier = Modifier.padding(start = 10.dp),
-                text = "새로고침 시간: ${reFreshDate.value}",
-                textAlign = TextAlign.Center)
-
             Spacer(modifier = Modifier.weight(1f))
 
             InvestCheckBox(title = "매수",
@@ -162,6 +155,19 @@ fun WonMainScreen(wonViewModel: WonViewModel, routeAction: InvestRouteAction, al
                     wonViewModel.selectedCheckBoxId.value = it
                 }
             )
+        }
+
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(end = 30.dp),
+            horizontalArrangement = Arrangement.End,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                modifier = Modifier.padding(start = 10.dp),
+                text = "예상수익 새로고침 시간: ${reFreshDate.value}",
+                textAlign = TextAlign.Center)
         }
 
         Column(

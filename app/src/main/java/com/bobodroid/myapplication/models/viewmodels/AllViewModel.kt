@@ -40,28 +40,30 @@ class AllViewModel @Inject constructor(
     val noticeShowDialog = MutableStateFlow(false)
 
     fun noticeDialogState(localUserDate: LocalUserData) {
-            // 저장한 날짜와 같으면 실행
-                Log.d(com.bobodroid.myapplication.screens.TAG, "튜터리얼 날짜\n 오늘날짜: ${dateFlow.value},  연기날짜: ${localUserDate.userShowNoticeDate}")
+        // 저장한 날짜와 같으면 실행
+        Log.d(
+            com.bobodroid.myapplication.screens.TAG,
+            "튜터리얼 날짜\n 오늘날짜: ${dateFlow.value},  연기날짜: ${localUserDate.userShowNoticeDate}"
+        )
 
-                if(noticeState.value) {
-                    if(!localUserDate.userShowNoticeDate.isNullOrEmpty()) {
-                        if(dateFlow.value >= localUserDate.userShowNoticeDate!!) {
-                            Log.d(com.bobodroid.myapplication.screens.TAG,"오늘 날짜가 더 큽니다.")
-                            noticeShowDialog.value = true
-                        } else return
-                    } else {
-                        Log.d(com.bobodroid.myapplication.screens.TAG,"날짜 값이 없습니다.")
-                        noticeShowDialog.value  = true
-                    }
+        if (noticeState.value) {
+            if (!localUserDate.userShowNoticeDate.isNullOrEmpty()) {
+                if (dateFlow.value >= localUserDate.userShowNoticeDate!!) {
+                    Log.d(com.bobodroid.myapplication.screens.TAG, "오늘 날짜가 더 큽니다.")
+                    noticeShowDialog.value = true
                 } else return
+            } else {
+                Log.d(com.bobodroid.myapplication.screens.TAG, "날짜 값이 없습니다.")
+                noticeShowDialog.value = true
             }
-
+        } else return
+    }
 
 
     // 임시 더미 로컬 유저데이터 수정 필요
-    fun localIdAdd(localUser: (LocalUserData) -> Unit ) {
+    fun localIdAdd(localUser: (LocalUserData) -> Unit) {
         viewModelScope.launch(Dispatchers.IO) {
-                Log.d(TAG, "로컬 유저 생성 실행")
+            Log.d(TAG, "로컬 유저 생성 실행")
 
             val createLocalUser = LocalUserData(
                 userResetDate = dateFlow.value,
@@ -71,8 +73,8 @@ class AllViewModel @Inject constructor(
             investRepository.localUserAdd(createLocalUser)
 
             investRepository.localUserDataGet().distinctUntilChanged()
-                .collect {localUser ->
-                    if(localUser.userResetDate.isNullOrEmpty()) {
+                .collect { localUser ->
+                    if (localUser.userResetDate.isNullOrEmpty()) {
                         Log.d(TAG, "LocalUserData null")
                     } else {
                         localUser(localUser)
@@ -85,7 +87,7 @@ class AllViewModel @Inject constructor(
 
     fun dateUpdate() {
         viewModelScope.launch {
-            Log.d(TAG,"날짜 초기화")
+            Log.d(TAG, "날짜 초기화")
 
             val user = localUserData.value
 
@@ -109,9 +111,9 @@ class AllViewModel @Inject constructor(
 
     fun selectDelayDate() {
         viewModelScope.launch {
-            if(localUserData.value != null) {
+            if (localUserData.value != null) {
 
-                Log.d(TAG,"날짜 연기 신청")
+                Log.d(TAG, "날짜 연기 신청")
 
                 val user = localUserData.value
 
@@ -128,7 +130,7 @@ class AllViewModel @Inject constructor(
 
     val dateFlow = MutableStateFlow("${LocalDate.now()}")
 
-    val noticeState = MutableStateFlow( true)
+    val noticeState = MutableStateFlow(true)
     fun dateWeek(week: Int): String? {
         val c = GregorianCalendar()
         c.add(Calendar.DAY_OF_WEEK, +week)
@@ -139,7 +141,6 @@ class AllViewModel @Inject constructor(
     val delayDay = dateWeek(7)
 
     val delayDayFlow = MutableStateFlow("${delayDay}")
-
 
 
     // 20개 범위 최신 환율 가지고 있음
@@ -153,65 +154,52 @@ class AllViewModel @Inject constructor(
     val recentExChangeRateFlow = MutableStateFlow(ExchangeRate())
 
 
-    fun recentRateHotListener( response: (ExchangeRate, LocalUserData) -> Unit ) {
+    fun recentRateHotListener(response: (ExchangeRate, LocalUserData) -> Unit) {
 //        dateUpdate()
 
-       viewModelScope.launch {
-
-           localExistCheck { localData ->
-
-               localUserData.value = localData
-
-               resetChance(localData)
-
-               noticeDialogState(localData)
-
-
-
-               Log.d(TAG, "localData ${localUserData}")
-
-               db.collection("exchangeRates")
-                   .orderBy("createAt", Query.Direction.DESCENDING)
-                   .limit(1)
-                   .addSnapshotListener { snapshot, e ->
-                       if (e != null) {
-                           Log.w(TAG, "Listen failed.", e)
-                           return@addSnapshotListener
-                       }
-
-                       if (snapshot != null) {
-
-                           val data = ExchangeRate(snapshot)
-
-                           Log.d(TAG, "서버에서 들어온 값 ${data}")
-
-                           response(data, localData)
-
-                           viewModelScope.launch {
-                               recentExChangeRateFlow.emit(data)
-                           }
-
-                       } else {
-                           Log.d(TAG, "Current data: null")
-                       }
-                   }
-           }
-       }
-
-
-
-
-    }
-
-
-
-    fun resetRate(res:(ExchangeRate, LocalUserData) -> Unit) {
-
         viewModelScope.launch {
-            val resentRate = recentExChangeRateFlow.value
 
-            val localUser = localUserData.value
-            res(resentRate, localUser)
+            localExistCheck { localData ->
+
+                localUserData.value = localData
+
+                Log.d(TAG, "localData ${localUserData.value}")
+
+                resetChance(localData)
+
+                noticeDialogState(localData)
+
+                viewModelScope.launch {
+                    refreshDateFlow.emit(localData.reFreshCreateAt ?: "새로고침 정보가 없습니다.")
+                }
+            }
+
+            db.collection("exchangeRates")
+                .orderBy("createAt", Query.Direction.DESCENDING)
+                .limit(1)
+                .addSnapshotListener { snapshot, e ->
+                    if (e != null) {
+                        Log.w(TAG, "Listen failed.", e)
+                        return@addSnapshotListener
+                    }
+
+                    if (snapshot != null) {
+
+                        val data = ExchangeRate(snapshot)
+
+                        Log.d(TAG, "서버에서 들어온 값 ${data}")
+
+                        response(data, localUserData.value)
+
+                        viewModelScope.launch {
+                            recentExChangeRateFlow.emit(data)
+                        }
+
+                    } else {
+                        Log.d(TAG, "Current data: null")
+                    }
+                }
+
         }
     }
 
@@ -237,32 +225,27 @@ class AllViewModel @Inject constructor(
         return diffHours >= 1
     }
 
-    fun localExistCheck (localData: (LocalUserData) -> Unit) {
-        Log.d(TAG, "로컬아이디 체크 실행")
+    fun localExistCheck(localData: (LocalUserData) -> Unit) {
+
         viewModelScope.launch(Dispatchers.IO) {
             investRepository.localUserDataGet().distinctUntilChanged()
-                .collect(){ userData ->
-
-                    if(userData == null) {
+                .collect() { userData ->
+                    Log.d(TAG, "로컬아이디 체크 실행")
+                    if (userData == null) {
                         localIdAdd {
                             localData(it)
                         }
 
-                        Log.d(TAG, "로컬 유저아이디 없음 ${userData}") }
+                        Log.d(TAG, "로컬 유저아이디 없음 ${userData}")
+                    } else {
+                        Log.d(TAG, "가져온 유저 데이터 ${userData}")
+                        localData(userData)
 
-                    else {
-                            Log.d(TAG, "가져온 유저 데이터 ${userData}")
-                            localData(userData)
-
-                            localUserData.emit(userData)
-//                       dateUpdate()
-
+                        localUserData.emit(userData)
                     }
                 }
         }
     }
-
-
 
 
     val startDateFlow = MutableStateFlow("${LocalDate.now()}")
@@ -272,37 +255,60 @@ class AllViewModel @Inject constructor(
     val dateStringFlow = MutableStateFlow("모두")
 
 
+    val refreshDateFlow = MutableStateFlow("")
+
 
     fun useItem(
-        useChance: () -> Unit,
-        notExistChance: () -> Unit
+        useChance: (Boolean, ExchangeRate) -> Unit
     ) {
+
+        val resentRate = recentExChangeRateFlow.value
 
         val localUser = localUserData.value
 
         val freeChance = localUser.rateResetCount
         val payChance = localUser.rateAdCount
 
+        // 리셋되어 차감된 데이터 가져옴
+        Log.e(TAG, "데이터 체크${localUser}")
+
         // 기회 모두 소진한 경우
-        if(freeChance == 0 && payChance == 0) {
-            Log.d(TAG,"useItem 기회 모두 소진한 경우")
-            notExistChance.invoke()
+        if (freeChance == 0 && payChance == 0) {
+
+            viewModelScope.launch {
+                Log.d(TAG, "useItem 기회 모두 소진한 경우")
+
+                val updateDate = localUser.copy(
+                    reFreshCreateAt = resentRate.createAt
+                )
+
+                refreshDateFlow.emit(resentRate.createAt!!)
+
+                investRepository.localUserUpdate(updateDate)
+
+                useChance.invoke(true, resentRate)
+            }
         } else {
             // 무료 기회만 소진한 경우
-            if(freeChance == 0) {
+            if (freeChance == 0) {
                 //유료 기회 사용 로직
 
                 viewModelScope.launch {
 
                     val usePayChange = payChance!! - 1
 
-                    Log.d(TAG,"useItem 무료기회만 소진한 경우 ${usePayChange}")
+                    Log.d(TAG, "useItem 무료기회만 소진한 경우 ${usePayChange}")
 
-                    val updateDate = localUser.copy(rateAdCount = usePayChange)
+                    val updateDate = localUser.copy(
+                        rateAdCount = usePayChange,
+                        reFreshCreateAt = resentRate.createAt
+                    )
+
+                    refreshDateFlow.emit(resentRate.createAt!!)
 
                     investRepository.localUserUpdate(updateDate)
 
-                    useChance.invoke()
+                    useChance.invoke(false, resentRate)
                 }
 
             } else {
@@ -311,13 +317,19 @@ class AllViewModel @Inject constructor(
 
                     val useFreeChance = freeChance!! - 1
 
-                    Log.d(TAG,"useItem 무료기회 차감 로직 ${useFreeChance}")
+                    Log.d(TAG, "useItem 무료기회 차감 로직 ${useFreeChance}")
 
-                    val updateDate = localUser.copy(rateResetCount = useFreeChance)
+                    val updateDate = localUser.copy(
+                        rateResetCount = useFreeChance,
+                        reFreshCreateAt = resentRate.createAt
+                    )
+
+                    refreshDateFlow.emit(resentRate.createAt!!)
 
                     investRepository.localUserUpdate(updateDate)
 
-                    useChance.invoke()
+
+                    useChance.invoke(false, resentRate)
                 }
 
             }
@@ -347,9 +359,9 @@ class AllViewModel @Inject constructor(
         val resetState = localUser.userResetState
 
 
-        if(dateFlow.value >= resetDate!!) {
+        if (dateFlow.value >= resetDate!!) {
             Log.w(TAG, "리셋 받을 날짜가 오늘이랑 같거나 큰 경우")
-            if(dateFlow.value == resetState) {
+            if (dateFlow.value == resetState) {
                 Log.w(TAG, "무료기회가 리셋된 기기입니다.")
             } else {
 
@@ -358,7 +370,8 @@ class AllViewModel @Inject constructor(
                     val updateData = localUser.copy(
                         userResetDate = dateFlow.value,
                         userResetState = dateFlow.value,
-                        rateResetCount = 3)
+                        rateResetCount = 3
+                    )
 
                     investRepository.localUserUpdate(updateData)
                 }

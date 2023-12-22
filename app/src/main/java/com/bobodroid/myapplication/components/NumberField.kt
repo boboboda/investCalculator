@@ -26,12 +26,16 @@ import com.bobodroid.myapplication.extensions.toLongWon
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun NumberField(title: String, onClicked: ((String) -> Unit)?, snackBarHostState: SnackbarHostState) {
+fun NumberField(
+    title: String,
+    onClicked: ((String) -> Unit)?,
+    snackBarHostState: SnackbarHostState) {
+
     var won = NumberFormat.getInstance(Locale.KOREA)
     var openDialog = remember { mutableStateOf(false) }
-    var userInput by remember { mutableStateOf(0L) }
+    var userInput by remember { mutableStateOf("") }
 
-    var inputMoney = if(userInput == 0L) "$title" else "${userInput.toLongWon()}"
+    var inputMoney = if(userInput == "") "$title" else "${userInput.toLong().toLongWon()}"
 
     Card(
         modifier = Modifier
@@ -64,11 +68,10 @@ fun NumberField(title: String, onClicked: ((String) -> Unit)?, snackBarHostState
                 PopupNumberView(
                     onClicked = {
                     openDialog.value = false
-                    userInput = it.toLong()
-                    onClicked?.invoke(userInput.toString())
+                        userInput = it
+                    onClicked?.invoke(it)
                 },
-                    limitNumberLength = 10
-                    ,snackBarHostState)
+                    limitNumberLength = 10)
             }
         }
     }
@@ -170,6 +173,7 @@ fun WonNumberField(title: String, onClicked: ((String) -> Unit)?,
     }
     if (openDialog.value) {
         Popup(
+            onDismissRequest = {openDialog.value = false},
             alignment = Alignment.TopCenter,
             offset = IntOffset(0, 1100)
         ) {
@@ -181,8 +185,7 @@ fun WonNumberField(title: String, onClicked: ((String) -> Unit)?,
                     onClicked?.invoke(userInput.toString())
                 },
                     limitNumberLength = 6
-                    ,
-                    snackbarHostState )
+                    )
             }
         }
     }

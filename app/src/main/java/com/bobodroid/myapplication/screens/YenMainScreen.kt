@@ -91,9 +91,9 @@ fun YenMainScreen
 //
 //    val total = yenViewModel.total.collectAsState("")
 
-    val resentExchangeRate = allViewModel.recentExChangeRateFlow.collectAsState()
+    val recentExchangeRate = allViewModel.recentExChangeRateFlow.collectAsState()
 
-    val reFreshDate = yenViewModel.refreshDateFlow.collectAsState()
+    val reFreshDate = allViewModel.refreshDateFlow.collectAsState()
 
     val snackbarHostState = remember { SnackbarHostState() }
 
@@ -125,13 +125,12 @@ fun YenMainScreen
                         horizontalArrangement = Arrangement.Center,
                         verticalAlignment = Alignment.CenterVertically) {
 
-                        Text(text = "JPY: ${resentExchangeRate.value.exchangeRates?.jpy?.toBigDecimal()?.times(
-                            BigDecimal("100")
-                        )}", fontSize = 20.sp)
+                        Text(text = "JPY: ${recentExchangeRate.value.exchangeRates?.jpy?.toBigDecimal()?.times(BigDecimal("100"))?.setScale(2)
+                        }", fontSize = 20.sp)
                         Spacer(modifier = Modifier.width(10.dp))
                     }
                     Spacer(modifier = Modifier.height(15.dp))
-                    Text(text = "업데이트된 환율: ${resentExchangeRate.value.createAt}")
+                    Text(text = "업데이트된 환율: ${recentExchangeRate.value.createAt}")
                     // 최신환율 업데이트 환율 같을 시 업데이트 통제
                 }
 
@@ -148,12 +147,6 @@ fun YenMainScreen
             verticalAlignment = Alignment.CenterVertically,
         ) {
 
-            Text(
-                modifier = Modifier.padding(start = 10.dp),
-                text = "새로고침 시간: ${reFreshDate.value}",
-                textAlign = TextAlign.Center)
-
-
             Spacer(modifier = Modifier.weight(1f))
                 InvestCheckBox(title = "매수",
                     1, selectedCheckId = selectedCheckBoxId.value,
@@ -168,6 +161,20 @@ fun YenMainScreen
                     }
                 )
             }
+
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(end = 30.dp),
+            horizontalArrangement = Arrangement.End,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                modifier = Modifier.padding(start = 10.dp),
+                text = "예상수익 새로고침 시간: ${reFreshDate.value}",
+                textAlign = TextAlign.Center)
+        }
+
         Column(
             horizontalAlignment = Alignment.End
         ) {

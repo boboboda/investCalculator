@@ -27,9 +27,9 @@ fun DollarMainScreen
 
     var selectedCheckBoxId = dollarViewModel.selectedCheckBoxId.collectAsState()
 
-    val resentExchangeRate = allViewModel.recentExChangeRateFlow.collectAsState()
+    val recentExchangeRate = allViewModel.recentExChangeRateFlow.collectAsState()
 
-    val reFreshDate = dollarViewModel.refreshDateFlow.collectAsState()
+    val reFreshDate = allViewModel.refreshDateFlow.collectAsState()
 
     val snackbarHostState = remember { SnackbarHostState() }
 
@@ -63,11 +63,11 @@ fun DollarMainScreen
                         horizontalArrangement = Arrangement.Center,
                         verticalAlignment = Alignment.CenterVertically) {
 
-                        Text(text = "USD: ${resentExchangeRate.value.exchangeRates?.usd}", fontSize = 20.sp)
+                        Text(text = "USD: ${recentExchangeRate.value.exchangeRates?.usd}", fontSize = 20.sp)
                         Spacer(modifier = Modifier.width(10.dp))
                     }
                     Spacer(modifier = Modifier.height(15.dp))
-                    Text(text = "업데이트된 환율: ${resentExchangeRate.value.createAt}")
+                    Text(text = "업데이트된 환율: ${recentExchangeRate.value.createAt}")
                 }
 
             }
@@ -76,17 +76,10 @@ fun DollarMainScreen
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 25.dp)
-                .padding(start = 10.dp),
+                .padding(horizontal = 25.dp),
             horizontalArrangement = Arrangement.End,
             verticalAlignment = Alignment.CenterVertically,
         ) {
-
-            Text(
-                modifier = Modifier.padding(start = 10.dp),
-                text = "새로고침 시간: ${reFreshDate.value}",
-                textAlign = TextAlign.Center)
-
             Spacer(modifier = Modifier.weight(1f))
 
             InvestCheckBox(title = "매수",
@@ -101,6 +94,19 @@ fun DollarMainScreen
                     dollarViewModel.selectedCheckBoxId.value = it
                 }
             )
+        }
+
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(end = 30.dp),
+            horizontalArrangement = Arrangement.End,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                modifier = Modifier.padding(start = 10.dp),
+                text = "예상수익 새로고침 시간: ${reFreshDate.value}",
+                textAlign = TextAlign.Center)
         }
 
         Column(

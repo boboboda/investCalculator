@@ -112,8 +112,7 @@ fun NoticeDialog(
                             Text(fontSize = 15.sp,
                                 lineHeight = 25.sp,
                                 text = "1. 실시간 무료 환율 제공\n" +
-                                        "2. 새로고침 예상수익 확인 시 적용\n" +
-                                        "3. 평균 1시간 환율 업데이트\n")
+                                        "2. 새로고침 예상수익 확인 시 적용\n")
                         }
                         
                         Spacer(modifier = Modifier.height(20.dp))

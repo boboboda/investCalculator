@@ -59,7 +59,7 @@ fun LineDrRecordText(
 
     val profitColor = if(data.profit?.toBigDecimal()?.signum() == -1) { Color.Blue} else {Color.Red}
 
-    if(dismissState.isDismissed(DismissDirection.EndToStart))
+    if(dismissState.isDismissed(DismissDirection.StartToEnd))
         LaunchedEffect(key1 = Unit, block = {
             dismissState.reset()
             deleteAskDialog.value = true
@@ -70,7 +70,7 @@ fun LineDrRecordText(
         state = dismissState,
         modifier = Modifier,
         directions = setOf(
-            DismissDirection.EndToStart
+            DismissDirection.StartToEnd
         ),
         dismissThresholds = { FractionalThreshold(0.40f) },
         background = {
@@ -80,7 +80,7 @@ fun LineDrRecordText(
                     else -> DeleteColor
                 }
             )
-            val alignment = Alignment.CenterEnd
+            val alignment = Alignment.CenterStart
             val icon = Icons.Default.Delete
 
             val scale by animateFloatAsState(
@@ -195,7 +195,7 @@ fun SellLineDrRecordText(data: DrSellRecord,
 
     val dismissState = rememberDismissState()
 
-    if(dismissState.isDismissed(DismissDirection.EndToStart))
+    if(dismissState.isDismissed(DismissDirection.StartToEnd))
 
 
         LaunchedEffect(key1 = Unit, block = {
@@ -208,7 +208,7 @@ fun SellLineDrRecordText(data: DrSellRecord,
         state = dismissState,
         modifier = Modifier,
         directions = setOf(
-            DismissDirection.EndToStart
+            DismissDirection.StartToEnd
         ),
         dismissThresholds = { FractionalThreshold(0.40f) },
         background = {
@@ -218,7 +218,7 @@ fun SellLineDrRecordText(data: DrSellRecord,
                     else -> DeleteColor
                 }
             )
-            val alignment = Alignment.CenterEnd
+            val alignment = Alignment.CenterStart
             val icon = Icons.Default.Delete
 
             val scale by animateFloatAsState(
@@ -301,7 +301,7 @@ fun LineYenRecordText(
 
     val profitColor = if(data.profit?.toBigDecimal()?.signum() == -1) { Color.Blue} else {Color.Red}
 
-    if(dismissState.isDismissed(DismissDirection.EndToStart))
+    if(dismissState.isDismissed(DismissDirection.StartToEnd))
 
 
         LaunchedEffect(key1 = Unit, block = {
@@ -314,7 +314,7 @@ fun LineYenRecordText(
         state = dismissState,
         modifier = Modifier,
         directions = setOf(
-            DismissDirection.EndToStart
+            DismissDirection.StartToEnd
         ),
         dismissThresholds = { FractionalThreshold(0.40f) },
         background = {
@@ -324,7 +324,7 @@ fun LineYenRecordText(
                     else -> DeleteColor
                 }
             )
-            val alignment = Alignment.CenterEnd
+            val alignment = Alignment.CenterStart
             val icon = Icons.Default.Delete
 
             val scale by animateFloatAsState(
@@ -438,7 +438,7 @@ fun SellLineYenRecordText(data: YenSellRecord,
 
     val dismissState = rememberDismissState()
 
-    if(dismissState.isDismissed(DismissDirection.EndToStart))
+    if(dismissState.isDismissed(DismissDirection.StartToEnd))
 
 
         LaunchedEffect(key1 = Unit, block = {
@@ -451,7 +451,7 @@ fun SellLineYenRecordText(data: YenSellRecord,
         state = dismissState,
         modifier = Modifier,
         directions = setOf(
-            DismissDirection.EndToStart
+            DismissDirection.StartToEnd
         ),
         dismissThresholds = { FractionalThreshold(0.40f) },
         background = {
@@ -461,7 +461,7 @@ fun SellLineYenRecordText(data: YenSellRecord,
                     else -> DeleteColor
                 }
             )
-            val alignment = Alignment.CenterEnd
+            val alignment = Alignment.CenterStart
             val icon = Icons.Default.Delete
 
             val scale by animateFloatAsState(
@@ -560,7 +560,7 @@ fun WonLineRecordText(
 
     val profitColor = if(data.profit?.toBigDecimal()?.signum() == -1) { Color.Blue} else {Color.Red}
 
-    if(dismissState.isDismissed(DismissDirection.EndToStart))
+    if(dismissState.isDismissed(DismissDirection.StartToEnd))
 
 
         LaunchedEffect(key1 = Unit, block = {
@@ -573,7 +573,7 @@ fun WonLineRecordText(
         state = dismissState,
         modifier = Modifier,
         directions = setOf(
-            DismissDirection.EndToStart
+            DismissDirection.StartToEnd
         ),
         dismissThresholds = { FractionalThreshold(0.40f) },
         background = {
@@ -583,7 +583,7 @@ fun WonLineRecordText(
                     else -> DeleteColor
                 }
             )
-            val alignment = Alignment.CenterEnd
+            val alignment = Alignment.CenterStart
             val icon = Icons.Default.Delete
 
             val scale by animateFloatAsState(
@@ -684,7 +684,7 @@ fun WonSellLineRecordText(
 
     val dismissState = rememberDismissState()
 
-    if(dismissState.isDismissed(DismissDirection.EndToStart))
+    if(dismissState.isDismissed(DismissDirection.StartToEnd))
 
 
         LaunchedEffect(key1 = Unit, block = {
@@ -697,7 +697,7 @@ fun WonSellLineRecordText(
         state = dismissState,
         modifier = Modifier,
         directions = setOf(
-            DismissDirection.EndToStart
+            DismissDirection.StartToEnd
         ),
         dismissThresholds = { FractionalThreshold(0.40f) },
         background = {
@@ -707,7 +707,7 @@ fun WonSellLineRecordText(
                     else -> DeleteColor
                 }
             )
-            val alignment = Alignment.CenterEnd
+            val alignment = Alignment.CenterStart
             val icon = Icons.Default.Delete
 
             val scale by animateFloatAsState(

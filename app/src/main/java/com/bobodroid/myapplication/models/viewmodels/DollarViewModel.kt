@@ -184,6 +184,7 @@ class DollarViewModel @Inject constructor(private val investRepository: InvestRe
     fun buyDollarAdd() {
         viewModelScope.launch {
             exchangeMoney.emit("${lastValue()}")
+            Log.d(TAG, "매수 달러 ${exchangeMoney.value}")
             investRepository
                 .addRecord(DrBuyRecord(
                     date = dateFlow.value,
@@ -277,39 +278,16 @@ class DollarViewModel @Inject constructor(private val investRepository: InvestRe
     // resentRate
     val drResentRateStateFlow = MutableStateFlow<ExchangeRate>(ExchangeRate())
 
-    val localUserDataFlow = MutableStateFlow<LocalUserData>(LocalUserData())
-
-    val refreshDateFlow = MutableStateFlow("")
 
 
-    fun requestRate(exchangeRate: ExchangeRate, localData: LocalUserData) {
+    fun requestRate(exchangeRate: ExchangeRate) {
         viewModelScope.launch {
             drResentRateStateFlow.emit(exchangeRate)
-
-            localUserDataFlow.emit(localData)
-
-            refreshDateFlow.emit(localData.reFreshCreateAt ?: "")
         }
     }
 
     // 기존 데이터 저장
     fun calculateProfit(exchangeRate: ExchangeRate) {
-
-        viewModelScope.launch {
-            refreshDateFlow.emit(exchangeRate.createAt!!)
-
-
-            val localUser = localUserDataFlow.value
-
-            val updateData = localUser.copy(
-                reFreshCreateAt = exchangeRate.createAt
-            )
-
-            investRepository.localUserUpdate(updateData)
-        }
-
-
-
 
         val buyRecordProfit = buyRecordFlow.value.map { it.profit }
 
@@ -395,8 +373,9 @@ class DollarViewModel @Inject constructor(private val investRepository: InvestRe
 
 
 
-    private fun lastValue() = (moneyInputFlow.value.toBigDecimal() / rateInputFlow.value.toBigDecimal())
+//    private fun lastValue() = (moneyInputFlow.value.toBigDecimal() / rateInputFlow.value.toBigDecimal()).setScale(2)
 
+    private fun lastValue() = BigDecimal(moneyInputFlow.value).divide(BigDecimal(rateInputFlow.value), 20, RoundingMode.HALF_UP)
     private fun sellValue() = (
             (BigDecimal(haveMoneyDollar.value).times(BigDecimal(sellRateFlow.value)))
                 .setScale(20, RoundingMode.HALF_UP)

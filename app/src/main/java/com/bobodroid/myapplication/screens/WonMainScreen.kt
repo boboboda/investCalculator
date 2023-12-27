@@ -88,60 +88,14 @@ fun WonMainScreen(wonViewModel: WonViewModel, routeAction: InvestRouteAction, al
     Column(modifier = Modifier
         .fillMaxSize(),
         horizontalAlignment = Alignment.CenterHorizontally) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth(0.9f)
-                .height(100.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
-        ) {
-            Row(modifier = Modifier
-                .weight(1f),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.Center){
-                //업데이트 날짜 값
-                Column(modifier = Modifier
-                    .wrapContentHeight()
-                    .weight(0.6f),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.Center) {
-                    Row(modifier = Modifier
-                        .wrapContentSize(),
-                        horizontalArrangement = Arrangement.Center,
-                        verticalAlignment = Alignment.CenterVertically) {
-
-                        Text(text = "USD: ${recentExchangeRate.value.exchangeRates?.usd}", fontSize = 20.sp)
-                        Spacer(modifier = Modifier.width(10.dp))
-                    }
-
-                    Spacer(modifier = Modifier.height(5.dp))
-
-                    Row(modifier = Modifier
-                        .wrapContentSize(),
-                        horizontalArrangement = Arrangement.Center,
-                        verticalAlignment = Alignment.CenterVertically) {
-
-                        Text(text = "JPY: ${recentExchangeRate.value.exchangeRates?.jpy?.toBigDecimal()?.times(BigDecimal("100"))?.setScale(2)
-                        }", fontSize = 20.sp)
-                        Spacer(modifier = Modifier.width(10.dp))
-                    }
-                    Spacer(modifier = Modifier.height(15.dp))
-                    Text(text = "업데이트된 환율: ${recentExchangeRate.value.createAt}")
-                }
-
-            }
-
-        }
 
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 25.dp)
-                .padding(start = 10.dp),
-            horizontalArrangement = Arrangement.End,
+                .padding(horizontal = 25.dp),
+            horizontalArrangement = Arrangement.Start,
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Spacer(modifier = Modifier.weight(1f))
 
             InvestCheckBox(title = "매수",
                 1, selectedCheckId = selectedCheckBoxId.value,
@@ -160,8 +114,8 @@ fun WonMainScreen(wonViewModel: WonViewModel, routeAction: InvestRouteAction, al
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(end = 30.dp),
-            horizontalArrangement = Arrangement.End,
+                .padding(start = 25.dp),
+            horizontalArrangement = Arrangement.Start,
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(

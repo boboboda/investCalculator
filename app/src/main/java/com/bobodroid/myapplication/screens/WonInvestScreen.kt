@@ -19,6 +19,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.bobodroid.myapplication.components.*
 import com.bobodroid.myapplication.components.Caldenders.WonMyDatePickerDialog
+import com.bobodroid.myapplication.components.admobs.BuyBannerAd
 import com.bobodroid.myapplication.models.viewmodels.AllViewModel
 import com.bobodroid.myapplication.models.viewmodels.WonViewModel
 import com.bobodroid.myapplication.routes.*
@@ -192,16 +193,25 @@ fun WonInvestScreen(wonViewModel: WonViewModel, routeAction: InvestRouteAction, 
                 routeAction.navTo(InvestRoute.MAIN)
                 wonViewModel.moneyInputFlow.value = ""
                 wonViewModel.rateInputFlow.value = ""
-                allViewModel.changeMoney.value = 3
-            }
-                , color = BuyColor
-                , fontColor = Color.Black
-                , modifier = Modifier
+                allViewModel.changeMoney.value = 3 },
+                color = BuyColor,
+                fontColor = Color.Black,
+                modifier = Modifier
                     .height(60.dp)
-                    .width(120.dp)
-                , fontSize = 25)
+                    .width(120.dp),
+                fontSize = 25)
 
 
+        }
+
+        Spacer(modifier = Modifier.weight(1f))
+
+        Column(
+            modifier = Modifier
+                .fillMaxWidth(),
+            verticalArrangement = Arrangement.Center,
+            horizontalAlignment = Alignment.CenterHorizontally) {
+            BuyBannerAd()
         }
 
     }

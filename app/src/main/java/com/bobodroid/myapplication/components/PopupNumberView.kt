@@ -607,30 +607,40 @@ fun FloatPopupNumberView(onClicked: ((String) -> Unit)?) {
                         onClicked = {
 
                             scope.launch {
-                                if(UserInput.length >= 10) {
-                                    if(snackBarHostState.currentSnackbarData == null) {
-                                        snackBarHostState.showSnackbar(
-                                            "너무 큰 수를 입력하셨습니다.\n 열자리 이하 숫자까지만 가능합니다.",
-                                            actionLabel = "닫기", SnackbarDuration.Short
-                                        )
-                                        UserInput = ""
-                                    } else {
-                                        return@launch
-                                    }
+
+
+                                if(hasTwoOrMoreDots(UserInput)) {
+                                    snackBarHostState.showSnackbar(
+                                        "소수점은 2개 이상 찍을 수 없습니다.",
+                                        actionLabel = "닫기", SnackbarDuration.Short
+                                    )
+                                    UserInput = ""
                                 } else {
-                                    if(UserInput == "")
-                                    {
+                                    if(UserInput.length >= 10) {
                                         if(snackBarHostState.currentSnackbarData == null) {
                                             snackBarHostState.showSnackbar(
-                                                "소수점을 먼저 입력할 수 없습니다.",
+                                                "너무 큰 수를 입력하셨습니다.\n 열자리 이하 숫자까지만 가능합니다.",
                                                 actionLabel = "닫기", SnackbarDuration.Short
                                             )
                                             UserInput = ""
                                         } else {
                                             return@launch
                                         }
+                                    } else {
+                                        if(UserInput == "")
+                                        {
+                                            if(snackBarHostState.currentSnackbarData == null) {
+                                                snackBarHostState.showSnackbar(
+                                                    "소수점을 먼저 입력할 수 없습니다.",
+                                                    actionLabel = "닫기", SnackbarDuration.Short
+                                                )
+                                                UserInput = ""
+                                            } else {
+                                                return@launch
+                                            }
 
-                                    } else UserInput += "."
+                                        } else UserInput += "."
+                                    }
                                 }
                             }
                             })
@@ -701,4 +711,9 @@ fun FloatNumberButton(number: String, onClicked: () -> Unit) {
             )
         }
     }
+}
+
+
+fun hasTwoOrMoreDots(str: String): Boolean {
+    return str.count { it == '.' } >= 1
 }

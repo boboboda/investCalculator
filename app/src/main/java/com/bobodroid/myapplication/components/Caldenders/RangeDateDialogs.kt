@@ -168,29 +168,6 @@ fun RangeDateDialog(
                 )
 
                 CardButton(
-                    label = "일주일",
-                    selectedLabel = dateCardLabel.value,
-                    onClicked = {
-
-                        selectedStartDate.value = "${oneWeek}"
-
-                        selectedEndDate.value = "${LocalDate.now()}"
-
-                        datePickerEnableState.value = false
-                        dateCardLabel.value = it
-
-                        scope.launch {
-                            allViewModel.dateStringFlow.emit(it)
-                        }
-                    },
-                    fontSize = 15,
-                    modifier = Modifier.weight(1f),
-                    fontColor = Color.Black,
-                    buttonColor = Color.White,
-                    disableColor = Color.LightGray
-                )
-
-                CardButton(
                     label = "한달",
                     selectedLabel = dateCardLabel.value,
                     onClicked = {
@@ -211,6 +188,30 @@ fun RangeDateDialog(
                     buttonColor = Color.White,
                     disableColor = Color.LightGray
                 )
+
+                CardButton(
+                    label = "모두",
+                    selectedLabel = dateCardLabel.value,
+                    onClicked = {
+
+                        selectedStartDate.value = ""
+
+                        selectedEndDate.value = ""
+
+                        datePickerEnableState.value = false
+                        dateCardLabel.value = it
+
+                        scope.launch {
+                            allViewModel.dateStringFlow.emit(it)
+                        }
+                    },
+                    fontSize = 15,
+                    modifier = Modifier.weight(1f),
+                    fontColor = Color.Black,
+                    buttonColor = Color.White,
+                    disableColor = Color.LightGray
+                )
+
 
                 CardButton(
                     label = "직접 설정",
@@ -362,8 +363,8 @@ fun RangeDateDialog(
                         onDismissRequest = {
                             isStartDateOpen.value = false
                         },
-                        startDate = callStartDate,
-                        endDate = callEndDate
+                        startDate =  if(callStartDate == "") "${LocalDate.now()}" else { callStartDate },
+                        endDate =  if(callEndDate == "") "${LocalDate.now()}" else { callEndDate }
                     )
                 }
 
@@ -384,8 +385,8 @@ fun RangeDateDialog(
                         onDismissRequest = {
                             isEndDateOpen.value = false
                         },
-                        startDate = callStartDate,
-                        endDate = callEndDate
+                        startDate = if(callStartDate == "") "${LocalDate.now()}" else { callStartDate },
+                        endDate = if(callEndDate == "") "${LocalDate.now()}" else { callEndDate }
                     )
                 }
         }

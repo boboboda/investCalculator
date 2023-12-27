@@ -40,48 +40,13 @@ fun DollarMainScreen
         .fillMaxSize(),
         horizontalAlignment = Alignment.CenterHorizontally)
     {
-
-        Column(
-            modifier = Modifier
-                .fillMaxWidth(0.9f)
-                .height(100.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
-        ) {
-            Row(modifier = Modifier
-                .weight(1f),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.Center){
-                //업데이트 날짜 값
-                Column(modifier = Modifier
-                    .wrapContentHeight()
-                    .weight(0.6f),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.Center) {
-                    Row(modifier = Modifier
-                        .wrapContentSize(),
-                        horizontalArrangement = Arrangement.Center,
-                        verticalAlignment = Alignment.CenterVertically) {
-
-                        Text(text = "USD: ${recentExchangeRate.value.exchangeRates?.usd}", fontSize = 20.sp)
-                        Spacer(modifier = Modifier.width(10.dp))
-                    }
-                    Spacer(modifier = Modifier.height(15.dp))
-                    Text(text = "업데이트된 환율: ${recentExchangeRate.value.createAt}")
-                }
-
-            }
-
-        }
         Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 25.dp),
-            horizontalArrangement = Arrangement.End,
+            horizontalArrangement = Arrangement.Start,
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Spacer(modifier = Modifier.weight(1f))
-
             InvestCheckBox(title = "매수",
                 1, selectedCheckId = selectedCheckBoxId.value,
                 selectCheckBoxAction = {
@@ -99,8 +64,8 @@ fun DollarMainScreen
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(end = 30.dp),
-            horizontalArrangement = Arrangement.End,
+                .padding(start = 25.dp),
+            horizontalArrangement = Arrangement.Start,
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
@@ -134,123 +99,7 @@ fun DollarMainScreen
 
 
 
-//@OptIn(ExperimentalMaterialApi::class, ExperimentalMaterial3Api::class)
-//@Composable
-//fun GetMoneyView(title: String,
-//                 getMoney: String,
-//                 onClicked: () -> Unit,
-//                 dollarViewModel: DollarViewModel
-//) {
-//
-//    val isFirstDialogOpen = remember { mutableStateOf(false) }
-//
-//    val isSecondDialogOpen = remember { mutableStateOf(false) }
-//
-//
-//    val time = Calendar.getInstance().time
-//
-//    val formatter = SimpleDateFormat("yyyy-MM-dd")
-//
-//    val today = formatter.format(time)
-//
-//    val callFirstDate = dollarViewModel.sellStartDateFlow.collectAsState()
-//
-//    var callsecondDate = dollarViewModel.sellEndDateFlow.collectAsState()
-//
-//    var firstDate = if(today == "") "$today" else {callFirstDate.value}
-//
-//    var secondDate = if(today == "") "$today" else {callsecondDate.value}
-//
-//
-//
-//    androidx.compose.material
-//        .Card(
-//            modifier = Modifier
-//                .fillMaxWidth()
-//                .height(85.dp),
-//            onClick = onClicked
-//        ) {
-//
-//
-////            androidx.compose.material3
-////            DatePicker
-//            Row {
-//                Column(
-//                    modifier = Modifier
-//                        .padding(top = 8.dp)) {
-//
-//                    Card(
-//                        modifier = Modifier
-//                            .width(150.dp)
-//                            .height(30.dp)
-//                            .background(Color.White),
-//                        border = BorderStroke(1.dp, Color.Black),
-//                        colors = CardDefaults.cardColors(
-//                            contentColor = Color.Black,
-//                            containerColor = Color.White),
-//                        onClick = { isFirstDialogOpen.value = !isFirstDialogOpen.value
-//
-//                        }) {
-//                        Text(text = "시작: $firstDate", color = Color.Black, fontSize = 14.sp , textAlign = TextAlign.Center, modifier = Modifier
-//                            .width(160.dp)
-//                            .height(30.dp)
-//                            .padding(start = 0.dp, top = 4.dp))
-//
-//                        if(isFirstDialogOpen.value) {
-//                            SellFirstDatePickerDialog(onDateSelected = null,
-//                                onDismissRequest = {
-//                                    isFirstDialogOpen.value = false
-//                                }, id = 1,
-//                                dollarViewModel
-//                            )
-//                        }
-//                    }
-//                    Spacer(modifier = Modifier.height(10.dp))
-//
-//                    Card(
-//                        modifier = Modifier
-//                            .width(150.dp)
-//                            .height(30.dp)
-//                            .background(Color.White),
-//                        border = BorderStroke(1.dp, Color.Black),
-//                        colors = CardDefaults.cardColors(contentColor = Color.Black, containerColor = Color.White),
-//                        onClick = { isSecondDialogOpen.value = !isSecondDialogOpen.value
-//
-//                        }) {
-//                        Text(
-//                            text = "종료: $secondDate",
-//                            color = Color.Black,
-//                            fontSize = 14.sp ,
-//                            textAlign = TextAlign.Center,
-//                            modifier = Modifier
-//                                .width(160.dp)
-//                                .height(30.dp)
-//                                .padding(start = 0.dp, top = 4.dp))
-//
-//                        if(isSecondDialogOpen.value) {
-//                            SellEndDatePickerDialog(onDateSelected = null,
-//                                onDismissRequest = {
-//                                    isSecondDialogOpen.value = false
-//                                }, id = 1,
-//                                dollarViewModel
-//                            )
-//                        }
-//                    }
-//
-//                }
-//                Column(modifier = Modifier
-//                    .fillMaxSize()
-//                    .padding(top = 10.dp),
-//                    horizontalAlignment = Alignment.CenterHorizontally) {
-//                    Text(text = title)
-//
-//                    Spacer(modifier = Modifier.height(15.dp))
-//                    Text(text = getMoney, color = Color.Red)
-//                }
-//            }
-//
-//        }
-//}
+
 
 
 

@@ -21,8 +21,8 @@ android {
         applicationId "com.bobodroid.myapplication"
         minSdk 26
         targetSdk 33
-        versionCode 21
-        versionName "6.0"
+        versionCode 23
+        versionName "22.1.1"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
@@ -30,7 +30,10 @@ android {
         }
 
         buildConfigField("String", "BANNER_AD_KEY", properties['banner_ad_key'])
+        buildConfigField("String", "BUY_BANNER_AD_KEY", properties['buy_banner_ad_key'])
         buildConfigField("String", "FONT_AD_KEY", properties['font_ad_key'])
+
+
 
         javaCompileOptions {
             annotationProcessorOptions {

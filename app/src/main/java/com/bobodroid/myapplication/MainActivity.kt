@@ -7,6 +7,9 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
 import androidx.compose.foundation.layout.*
+import androidx.compose.material.DrawerState
+import androidx.compose.material.DrawerValue
+import androidx.compose.material.rememberDrawerState
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.navigation.NavHostController
@@ -24,6 +27,7 @@ import com.bobodroid.myapplication.screens.*
 import com.google.android.gms.ads.MobileAds
 //import com.google.android.gms.ads.MobileAds
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.launch
 import java.util.*
 
 
@@ -82,15 +86,25 @@ fun AppScreen(
     wonViewModel: WonViewModel,
     allViewModel: AllViewModel
 ) {
+
+    val scope = rememberCoroutineScope()
+
+    val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
+
+
     Column(
         modifier = Modifier
             .fillMaxSize()) {
-        MainTopBar()
+        MainTopBar(menuBarClinked = {
+            scope.launch {
+                drawerState.open()
+            }
+        })
 
         Column(modifier = Modifier.weight(1f),
             verticalArrangement = Arrangement.Bottom) {
 
-            InvestAppScreen(dollarViewModel, yenViewModel, wonViewModel , allViewModel)
+            InvestAppScreen(dollarViewModel, yenViewModel, wonViewModel , allViewModel, drawerState = drawerState)
         }
 
     }
@@ -104,7 +118,8 @@ fun InvestAppScreen(
     dollarViewModel: DollarViewModel,
     yenViewModel: YenViewModel,
     wonViewModel: WonViewModel,
-    allViewModel: AllViewModel) {
+    allViewModel: AllViewModel,
+    drawerState: DrawerState) {
 
 
     val investNavController = rememberNavController()
@@ -118,7 +133,8 @@ fun InvestAppScreen(
         yenViewModel = yenViewModel,
         wonViewModel = wonViewModel,
         routeAction = investRouteAction,
-        allViewModel = allViewModel
+        allViewModel = allViewModel,
+        drawerState = drawerState
     )
 
 
@@ -135,7 +151,8 @@ fun InvestNavHost(
     yenViewModel: YenViewModel,
     wonViewModel: WonViewModel,
     routeAction: InvestRouteAction,
-    allViewModel: AllViewModel
+    allViewModel: AllViewModel,
+    drawerState: DrawerState
 ) {
    NavHost(navController = investNavController, startDestination = startRouter.routeName!!) {
        composable(InvestRoute.MAIN.routeName!!) {
@@ -144,7 +161,9 @@ fun InvestNavHost(
                yenViewModel = yenViewModel,
                wonViewModel = wonViewModel,
                routeAction = routeAction,
-               allViewModel = allViewModel
+               allViewModel = allViewModel,
+               drawerState = drawerState
+
            )
        }
        composable(InvestRoute.DOLLAR_BUY.routeName!!) {

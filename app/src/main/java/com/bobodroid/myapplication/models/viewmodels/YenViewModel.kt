@@ -6,6 +6,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.bobodroid.myapplication.MainActivity
 import com.bobodroid.myapplication.MainActivity.Companion.TAG
+import com.bobodroid.myapplication.extensions.toBigDecimalWon
 import com.bobodroid.myapplication.models.datamodels.*
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
@@ -102,25 +103,69 @@ class YenViewModel @Inject constructor(private val investRepository: InvestRepos
 
         when (action) {
             YenAction.Buy -> {
-                val startFilterBuyRecord = buyRecordFlow.value.filter { it.date >= startDate }
-
-                var endFilterBuyRecord = startFilterBuyRecord.filter { it.date <= endDate }
-
 
                 viewModelScope.launch {
-                    _filterBuyRecordFlow.emit(endFilterBuyRecord)
+                    if(startDate == "" && endDate == "") {
+
+                        _filterBuyRecordFlow.emit(_buyRecordFlow.value)
+
+                        val totalProfit = sumProfit(
+                            action = YenAction.Buy,
+                            buyList = _buyRecordFlow.value, sellList = null)
+
+                        totalExpectProfit.emit(totalProfit)
+
+                    } else {
+                        val startFilterBuyRecord= buyRecordFlow.value.filter { it.date >= startDate}
+
+                        var endFilterBuyRecord = startFilterBuyRecord.filter { it.date <= endDate}
+
+
+
+                        Log.d(TAG, "데이터 : ${endFilterBuyRecord}")
+
+                        _filterBuyRecordFlow.emit(endFilterBuyRecord)
+
+                        val totalProfit = sumProfit(
+                            action = YenAction.Buy,
+                            buyList = endFilterBuyRecord, sellList = null)
+
+                        totalExpectProfit.emit(totalProfit)
+
+                    }
                 }
+
             }
 
             YenAction.Sell -> {
 
-                val startFilterSellRecord = sellRecordFlow.value.filter { it.date >= startDate }
-
-                var endFilterSellRecord = startFilterSellRecord.filter { it.date <= endDate }
-
-
                 viewModelScope.launch {
-                    _filterSellRecordFlow.emit(endFilterSellRecord)
+                    if(startDate == "" && endDate == "") {
+
+                        _filterSellRecordFlow.emit(_sellRecordFlow.value)
+
+                        val totalProfit = sumProfit(
+                            action = YenAction.Sell,
+                            buyList = null, sellList = _sellRecordFlow.value)
+
+                        totalSellProfit.emit(totalProfit)
+
+                    } else {
+                        val startFilterSellRecord= sellRecordFlow.value.filter { it.date >= startDate}
+
+                        val endFilterSellRecord = startFilterSellRecord.filter { it.date <= endDate}
+
+
+                        _filterSellRecordFlow.emit(endFilterSellRecord)
+
+                        val totalProfit = sumProfit(
+                            action = YenAction.Sell,
+                            buyList = null, sellList = endFilterSellRecord)
+
+                        totalSellProfit.emit(totalProfit)
+
+
+                    }
                 }
             }
         }
@@ -133,17 +178,44 @@ class YenViewModel @Inject constructor(private val investRepository: InvestRepos
 
 
     //특정값만 인출
-//    val sellGetMoney =  endFilterRecordFlow.filterNot {it.isEmpty()}.map { list ->
-//        val result = list
-//            .map{
-//                it.exchangeMoney }
-//            .reduce{first, end ->
-//                first + end
-//            }
-//        return@map result
-//    }
-//
-//    val total = sellGetMoney.map { it.toWon() }
+    val totalSellProfit = MutableStateFlow("")
+
+    val totalExpectProfit = MutableStateFlow("")
+
+
+
+    fun sumProfit(
+        action: YenAction = YenAction.Buy,
+        buyList: List<YenBuyRecord>?,
+        sellList: List<YenSellRecord>?
+    ) : String {
+
+        when(action) {
+            YenAction.Buy ->  {
+                val result = buyList?.map { BigDecimal(it.profit) }
+
+                if(result.isNullOrEmpty()) {
+                    return ""
+                } else {
+                    return result.reduce {first, end ->
+                        first + end }.toBigDecimalWon()
+                }
+            }
+
+            YenAction.Sell -> {
+                val result = sellList?.map { BigDecimal(it.exchangeMoney) }
+
+                if(result.isNullOrEmpty()) {
+                    return ""
+                } else {
+                    result.reduceOrNull { first, end ->
+                        first!! + end!!
+                    }
+                    return result.toString()
+                }
+            }
+        }
+    }
 
 
     // 리스트 매도 값

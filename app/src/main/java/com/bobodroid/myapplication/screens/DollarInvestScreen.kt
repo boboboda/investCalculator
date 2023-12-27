@@ -21,6 +21,8 @@ import com.bobodroid.myapplication.ui.theme.*
 import java.text.SimpleDateFormat
 import java.util.*
 import androidx.compose.material.SnackbarHostState
+import com.bobodroid.myapplication.components.admobs.BannerAd
+import com.bobodroid.myapplication.components.admobs.BuyBannerAd
 import com.bobodroid.myapplication.models.viewmodels.AllViewModel
 import com.bobodroid.myapplication.routes.InvestRoute
 import com.bobodroid.myapplication.routes.InvestRouteAction
@@ -52,10 +54,6 @@ fun DollarInvestScreen(dollarViewModel: DollarViewModel,
 
 
 
-    Box(
-        Modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center
-        ) {
 
         Column(
             modifier = Modifier
@@ -64,49 +62,51 @@ fun DollarInvestScreen(dollarViewModel: DollarViewModel,
             Spacer(modifier = Modifier
                 .fillMaxWidth()
                 .height(8.dp))
-            Card(
-                modifier = Modifier
-                    .padding(10.dp)
-                    .height(50.dp)
-                    .width(80.dp),
-                colors = CardDefaults.cardColors(containerColor = Green)
-            ) {
-                Text(
-                    text = "달러",
-                    fontSize = 20.sp,
+
+
+            Row(modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically) {
+
+                Card(
                     modifier = Modifier
                         .padding(10.dp)
                         .height(50.dp)
                         .width(80.dp),
-                    textAlign = TextAlign.Center)
-            }
+                    colors = CardDefaults.cardColors(containerColor = Green)
+                ) {
+                    Text(
+                        text = "달러",
+                        fontSize = 20.sp,
+                        modifier = Modifier
+                            .padding(10.dp)
+                            .height(50.dp)
+                            .width(80.dp),
+                        textAlign = TextAlign.Center)
+                }
 
-            Spacer(modifier = Modifier
-                .fillMaxWidth()
-                .height(5.dp))
+                Spacer(modifier = Modifier.weight(1f))
 
-
-            Card(
-                modifier = Modifier
-                    .width(170.dp)
-                    .height(40.dp)
-                    .background(Color.White),
-                border = BorderStroke(1.dp, Color.Black),
-                colors = CardDefaults.cardColors(contentColor = Color.Black, containerColor = Color.White),
-                onClick = { isDialogOpen.value = !isDialogOpen.value
-
-                }) {
-                Text(text = "$date",
-                    color = Color.Black,
-                    fontSize = 18.sp,
-                    textAlign = TextAlign.Center,
+                Card(
                     modifier = Modifier
-                        .width(160.dp)
+                        .width(170.dp)
+                        .padding(end = 10.dp)
                         .height(40.dp)
-                        .padding(start = 12.dp, top = 8.dp))
+                        .background(Color.White),
+                    border = BorderStroke(1.dp, Color.Black),
+                    colors = CardDefaults.cardColors(contentColor = Color.Black, containerColor = Color.White),
+                    onClick = { isDialogOpen.value = !isDialogOpen.value
+
+                    }) {
+                    Text(text = "$date",
+                        color = Color.Black,
+                        fontSize = 18.sp,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier
+                            .width(160.dp)
+                            .height(40.dp)
+                            .padding(start = 12.dp, top = 8.dp))
+                }
             }
-
-
 
 
             Spacer(modifier = Modifier
@@ -184,7 +184,20 @@ fun DollarInvestScreen(dollarViewModel: DollarViewModel,
 
             }
 
-        }
+            Spacer(modifier = Modifier.weight(1f))
+
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth(),
+                verticalArrangement = Arrangement.Center,
+                horizontalAlignment = Alignment.CenterHorizontally) {
+                BuyBannerAd()
+            }
+
+
+
+
+
 }
 }
 

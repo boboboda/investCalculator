@@ -38,3 +38,33 @@ fun BannerAd() {
 
     }
 }
+
+
+@SuppressLint("ResourceType")
+@Composable
+fun BuyBannerAd() {
+
+    Box(
+        modifier = Modifier
+            .wrapContentSize()
+            .padding(start = 10.dp, end = 10.dp)
+    ) {
+//        val adId = stringResource(id = R.string.admob_sample_app_id)
+        val adRequest = com.google.android.gms.ads.AdRequest.Builder().build()
+        AndroidView(
+            modifier = Modifier.fillMaxWidth(),
+            factory = {context ->
+                AdView(context).apply {
+                    setAdSize(AdSize.SMART_BANNER)
+                    adUnitId = BuildConfig.BUY_BANNER_AD_KEY
+                    loadAd(adRequest)
+
+                }
+            },
+            update = {adView ->
+                adView.loadAd(adRequest)
+            }
+        )
+
+    }
+}

@@ -103,25 +103,45 @@ class WonViewModel @Inject constructor(private val investRepository: InvestRepos
 
         when(action) {
             WonAction.Buy -> {
-                val startFilterBuyRecord= buyRecordFlow.value.filter { it.date >= startDate}
-
-                var endFilterBuyRecord = startFilterBuyRecord.filter { it.date <= endDate}
-
 
                 viewModelScope.launch {
-                    _filterBuyRecordFlow.emit(endFilterBuyRecord)
+                    if(startDate == "" && endDate == "") {
+
+                        _filterBuyRecordFlow.emit(_buyRecordFlow.value)
+
+                    } else {
+                        val startFilterBuyRecord= buyRecordFlow.value.filter { it.date >= startDate}
+
+                        var endFilterBuyRecord = startFilterBuyRecord.filter { it.date <= endDate}
+
+
+
+                        Log.d(TAG, "데이터 : ${endFilterBuyRecord}")
+
+                        _filterBuyRecordFlow.emit(endFilterBuyRecord)
+
+                    }
                 }
+
             }
 
             WonAction.Sell -> {
 
-                val startFilterSellRecord= sellRecordFlow.value.filter { it.date >= startDate}
-
-                var endFilterSellRecord = startFilterSellRecord.filter { it.date <= endDate}
-
-
                 viewModelScope.launch {
-                    _filterSellRecordFlow.emit(endFilterSellRecord)
+                    if(startDate == "" && endDate == "") {
+
+                        _filterSellRecordFlow.emit(_sellRecordFlow.value)
+
+                    } else {
+                        val startFilterSellRecord= sellRecordFlow.value.filter { it.date >= startDate}
+
+                        val endFilterSellRecord = startFilterSellRecord.filter { it.date <= endDate}
+
+
+                        _filterSellRecordFlow.emit(endFilterSellRecord)
+
+
+                    }
                 }
             }
         }

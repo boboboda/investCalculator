@@ -248,12 +248,13 @@ class AllViewModel @Inject constructor(
     }
 
 
-    val startDateFlow = MutableStateFlow("${LocalDate.now()}")
+    val startDateFlow = MutableStateFlow("")
 
-    val endDateFlow = MutableStateFlow("${LocalDate.now()}")
+    val endDateFlow = MutableStateFlow("")
 
     val dateStringFlow = MutableStateFlow("모두")
 
+    val mainDateState = MutableStateFlow(true)
 
     val refreshDateFlow = MutableStateFlow("")
 
@@ -381,4 +382,5 @@ class AllViewModel @Inject constructor(
             return
         }
     }
+
 }

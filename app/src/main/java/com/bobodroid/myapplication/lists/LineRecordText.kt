@@ -62,20 +62,24 @@ fun LineDrRecordText(
 
     val dismissState = rememberDismissState()
 
-    val profitColor = if(BigDecimal(data.profit, mathContext).signum() == -1) { Color.Blue} else {Color.Red}
+    val profitColor = if(data.profit == "") {
+        Color.Black
+    } else {
+        if(BigDecimal(data.profit, mathContext).signum() == -1) { Color.Blue} else {Color.Red}
+    }
+
+    val profit = if(data.profit == "") {
+        "0"
+    } else {
+        data.profit
+    }
 
     if(dismissState.isDismissed(DismissDirection.StartToEnd))
-
         LaunchedEffect(key1 = Unit, block = {
             Log.d(TAG, "스와이프 이벤트")
             dismissState.reset()
             deleteAskDialog.value = true
         })
-
-
-
-
-
 
 
     SwipeToDismiss(
@@ -161,7 +165,7 @@ fun LineDrRecordText(
                     Spacer(modifier = Modifier.width(1.dp))
 
                     RecordTextView(
-                        recordText = "${BigDecimal(data.profit, mathContext).toBigDecimalWon()}",
+                        recordText = "${BigDecimal(profit, mathContext).toBigDecimalWon()}",
                         TextHeight = 50.dp,
                         13,
                         2.5f,
@@ -315,7 +319,19 @@ fun LineYenRecordText(
 
     val dismissState = rememberDismissState()
 
-    val profitColor = if(BigDecimal(data.profit, mathContext).signum() == -1) { Color.Blue} else {Color.Red}
+    val profitColor = if(data.profit == "") {
+        Color.Black
+    } else {
+        if(BigDecimal(data.profit, mathContext).signum() == -1) { Color.Blue} else {Color.Red}
+    }
+
+    val profit = if(data.profit == "") {
+        "0"
+    } else {
+        data.profit
+    }
+
+
 
     if(dismissState.isDismissed(DismissDirection.StartToEnd)){
         LaunchedEffect(key1 = Unit, block = {
@@ -407,7 +423,7 @@ fun LineYenRecordText(
                     Spacer(modifier = Modifier.width(1.dp))
 
                     RecordTextView(
-                        recordText = "${BigDecimal(data.profit, mathContext).toBigDecimalWon()}",
+                        recordText = "${BigDecimal(profit, mathContext).toBigDecimalWon()}",
                         TextHeight = 50.dp,
                         13,
                         2.5f,
@@ -563,9 +579,15 @@ fun WonLineRecordText(
         else -> null
     }
 
+    val profit = if(data.profit == "") {
+        "0"
+    } else {
+        data.profit
+    }
+
     val profitMoneyCg = when(data.moneyType) {
-        1 -> {BigDecimal(data.profit, mathContext).toBigDecimalUs() }
-        2 -> {BigDecimal(data.profit, mathContext).toBigDecimalYen() }
+        1 -> {BigDecimal(profit, mathContext).toBigDecimalUs() }
+        2 -> {BigDecimal(profit, mathContext).toBigDecimalYen() }
         else -> null
     }
 
@@ -577,7 +599,11 @@ fun WonLineRecordText(
 
     val dismissState = rememberDismissState()
 
-    val profitColor = if(BigDecimal(data.profit, mathContext).signum() == -1) { Color.Blue} else {Color.Red}
+    val profitColor = if(data.profit == "") {
+        Color.Black
+    } else {
+        if(BigDecimal(data.profit, mathContext).signum() == -1) { Color.Blue} else {Color.Red}
+    }
 
     if(dismissState.isDismissed(DismissDirection.StartToEnd))
 

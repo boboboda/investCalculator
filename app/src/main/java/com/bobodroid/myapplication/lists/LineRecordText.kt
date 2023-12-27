@@ -3,6 +3,7 @@
 package com.bobodroid.myapplication.lists
 
 import android.util.Log
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.Image
@@ -39,6 +40,7 @@ import androidx.compose.material.SwipeToDismiss
 import androidx.compose.material.rememberDismissState
 import com.bobodroid.myapplication.MainActivity.Companion.TAG
 import com.bobodroid.myapplication.components.RecordTextView
+import com.bobodroid.myapplication.ui.theme.TopButtonColor
 import java.math.BigDecimal
 import java.math.MathContext
 import java.math.RoundingMode
@@ -57,6 +59,8 @@ fun LineDrRecordText(
     val mathContext = MathContext(28, RoundingMode.HALF_UP)
 
     val openDialog = remember { mutableStateOf(false) }
+
+    var itemRowVisible by remember { mutableStateOf(false) }
 
     val deleteAskDialog = remember { mutableStateOf(false) }
 
@@ -120,11 +124,11 @@ fun LineDrRecordText(
         dismissContent = {
             Card(
                 modifier = Modifier
-                    .height(50.dp),
+                    .wrapContentHeight(),
                 shape = RoundedCornerShape(0.dp),
                 colors = CardDefaults.cardColors(containerColor = if(sellAction) SelectedColor else Color.White , contentColor = Color.Black),
                 onClick = {
-                    if(openDialog.value == false) openDialog.value = !openDialog.value else null
+                    if(itemRowVisible == false) itemRowVisible = true else itemRowVisible = false
                     onClicked?.invoke(data)
                 }
             ) {
@@ -136,7 +140,7 @@ fun LineDrRecordText(
                     horizontalArrangement = Arrangement.Center) {
                     RecordTextView(
                         recordText = "${data.date}",
-                        TextHeight = 50.dp,
+                        TextHeight = 40.dp,
                         13,
                         2.5f,
                         bottonPpaing = 0.dp,
@@ -146,7 +150,7 @@ fun LineDrRecordText(
 
                     RecordTextView(
                         recordText = "${BigDecimal(data.exchangeMoney, mathContext).toBigDecimalUs()!!}\n (${BigDecimal(data.money, mathContext).toBigDecimalWon()})",
-                        TextHeight = 50.dp,
+                        TextHeight = 40.dp,
                         13,
                         2.5f,
                         bottonPpaing = 0.dp,
@@ -156,7 +160,7 @@ fun LineDrRecordText(
 
                     RecordTextView(
                         recordText = "${data.rate}",
-                        TextHeight = 50.dp,
+                        TextHeight = 40.dp,
                         13,
                         2.5f,
                         bottonPpaing = 0.dp,
@@ -166,22 +170,46 @@ fun LineDrRecordText(
 
                     RecordTextView(
                         recordText = "${BigDecimal(profit, mathContext).toBigDecimalWon()}",
-                        TextHeight = 50.dp,
+                        TextHeight = 40.dp,
                         13,
                         2.5f,
                         bottonPpaing = 0.dp,
                         color = profitColor)
                 }
 
+                AnimatedVisibility(visible = itemRowVisible) {
+                    Column(
+                       modifier = Modifier
+                           .fillMaxWidth()
+                           .padding(start = 32.dp, end = 30.dp)
+                           .height(100.dp)) {
+                        Row(modifier = Modifier
+                            .fillMaxWidth()) {
+                            Card(colors = CardDefaults.cardColors( TopButtonColor ),
+                                elevation = CardDefaults.cardElevation(8.dp),
+                                shape = RoundedCornerShape(2.dp)) {
+                                Text(
+                                    text = "메모",
+                                    modifier = Modifier
+                                        .padding(all = 5.dp)
+                                        .padding(horizontal = 3.dp))
+                            }
+                        }
+
+                    }
+                }
+
+
+
             }
-            if (openDialog.value) {
-                SellDialog(
-                    sellAction = { sellActed(data)},
-                    onDismissRequest = { openDialog.value = it},
-                    onClicked = {openDialog.value = it},
-                    dollarViewModel = dollarViewModel,
-                    snackbarHostState = snackBarHostState)
-            }
+//            if (openDialog.value) {
+//                SellDialog(
+//                    sellAction = { sellActed(data)},
+//                    onDismissRequest = { openDialog.value = it},
+//                    onClicked = {openDialog.value = it},
+//                    dollarViewModel = dollarViewModel,
+//                    snackbarHostState = snackBarHostState)
+//            }
 
             if(deleteAskDialog.value) {
 

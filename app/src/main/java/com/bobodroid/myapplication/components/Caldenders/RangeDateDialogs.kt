@@ -194,9 +194,9 @@ fun RangeDateDialog(
                     selectedLabel = dateCardLabel.value,
                     onClicked = {
 
-                        selectedStartDate.value = ""
+                        selectedStartDate.value = "1970-01-01"
 
-                        selectedEndDate.value = ""
+                        selectedEndDate.value = "${LocalDate.now()}"
 
                         datePickerEnableState.value = false
                         dateCardLabel.value = it

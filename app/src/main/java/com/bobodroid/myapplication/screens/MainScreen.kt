@@ -407,20 +407,20 @@ fun MainScreen(dollarViewModel: DollarViewModel,
                 )
             }
 
-            if (noticeShowDialog.value)
-                NoticeDialog(
-                    onDismissRequest = { close ->
-                        allViewModel.noticeState.value = close
-                        allViewModel.noticeShowDialog.value = close
-                    },
-                    dateDelaySelected = {
-                        coroutineScope.launch {
-                            allViewModel.selectDelayDate()
-                            delay(1000)
-                            Log.d(TAG, "일주일 연기날짜 ${userSelectDate.value}")
-                        }
-                    },
-                    allViewModel)
+//            if (noticeShowDialog.value)
+//                NoticeDialog(
+//                    onDismissRequest = { close ->
+//                        allViewModel.noticeState.value = close
+//                        allViewModel.noticeShowDialog.value = close
+//                    },
+//                    dateDelaySelected = {
+//                        coroutineScope.launch {
+//                            allViewModel.selectDelayDate()
+//                            delay(1000)
+//                            Log.d(TAG, "일주일 연기날짜 ${userSelectDate.value}")
+//                        }
+//                    },
+//                    allViewModel)
 
             Column(
                 modifier = Modifier
@@ -658,37 +658,7 @@ fun MainBottomView(
             verticalAlignment = Alignment.CenterVertically
 
         ) {
-            FloatingActionButton(
-                onClick = {
-                    showOpenDialog.invoke(true)
-                },
-                containerColor = MaterialTheme.colors.secondary,
-                shape = RoundedCornerShape(16.dp),
-                modifier = Modifier
-                    .padding(bottom = 10.dp, end = 20.dp)
-                    .height(60.dp)
-                    .wrapContentWidth(),
-            ) {
 
-                Row(
-                    Modifier
-                        .wrapContentSize()
-                        .padding(start = 17.dp, end = 17.dp),
-                    horizontalArrangement = Arrangement.spacedBy(bottomRefreshPadding.dp),
-                    verticalAlignment = Alignment.CenterVertically) {
-                    androidx.compose.material3.Icon(
-                        imageVector = Icons.Rounded.DateRange,
-                        contentDescription = "날짜 범위 지정",
-                        tint = Color.White
-                    )
-                    AnimatedVisibility(visible = isVisible) {
-                        Text(text = "조회", color = Color.White, modifier = Modifier)
-                    }
-
-                }
-
-
-            }
 
             Spacer(modifier = Modifier.width(15.dp))
 
@@ -783,6 +753,40 @@ fun MainBottomView(
             verticalAlignment = Alignment.CenterVertically
 
         ) {
+            FloatingActionButton(
+                onClick = {
+                    showOpenDialog.invoke(true)
+                },
+                containerColor = MaterialTheme.colors.secondary,
+                shape = RoundedCornerShape(16.dp),
+                modifier = Modifier
+                    .padding(bottom = 10.dp, end = 20.dp)
+                    .height(60.dp)
+                    .wrapContentWidth(),
+            ) {
+
+                Row(
+                    Modifier
+                        .wrapContentSize()
+                        .padding(start = 17.dp, end = 17.dp),
+                    horizontalArrangement = Arrangement.spacedBy(bottomRefreshPadding.dp),
+                    verticalAlignment = Alignment.CenterVertically) {
+                    androidx.compose.material3.Icon(
+                        imageVector = Icons.Rounded.DateRange,
+                        contentDescription = "날짜 범위 지정",
+                        tint = Color.White
+                    )
+                    AnimatedVisibility(visible = isVisible) {
+                        Text(text = "조회", color = Color.White, modifier = Modifier)
+                    }
+
+                }
+
+
+            }
+
+            Spacer(modifier = Modifier.width(15.dp))
+
             FloatingActionButton(
                 onClick = {
 
@@ -897,7 +901,7 @@ fun ContentIcon(allViewModel: AllViewModel,
                         }
                         2-> {
                             GetMoneyView(
-                                getMoney = "${totalYenExpectProfit.value}",
+                                getMoney = "${totalYenSellProfit.value}",
                                 onClicked = { Log.d(TAG, "") },
                                 allViewModel
                             )
@@ -960,12 +964,12 @@ fun GetMoneyView(
 
     val startDate = allViewModel.startDateFlow.collectAsState()
 
-    val stringGetMoney = if(getMoney == "") { "달력에서 조회를 해주세요"} else { getMoney}
+    val stringGetMoney = if(getMoney == "") "" else { getMoney}
 
     var endDate = allViewModel.endDateFlow.collectAsState()
 
     val date = if(startDate.value == "" && endDate.value == "")
-        "조회기간: 모두" else "조회기간: ${startDate.value}~${endDate.value}"
+        "조회기간: 달력해서 조회 해주세요" else "조회기간: ${startDate.value}~${endDate.value}"
 
     val profitColor = if(getMoney == ""){
         Color.Black
@@ -980,9 +984,9 @@ fun GetMoneyView(
         verticalArrangement = Arrangement.spacedBy(5.dp)) {
 
         Row {
-            Text(text = "총수익: ")
+            Text(text = "총 수익: ", fontSize = 15.sp)
 
-            Text(text = "${stringGetMoney}", color =  profitColor)
+            Text(text = "${stringGetMoney}",fontSize = 15.sp, color =  profitColor)
         }
 
 

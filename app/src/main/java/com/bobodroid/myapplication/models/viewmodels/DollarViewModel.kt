@@ -254,7 +254,9 @@ class DollarViewModel @Inject constructor(private val investRepository: InvestRe
                     rate = rateInputFlow.value,
                     exchangeMoney = "${exchangeMoney.value}",
                     recordColor = sellRecordActionFlow.value,
-                    profit = expectSellValue()
+                    profit = expectSellValue(),
+                    buyDrCategoryName = "",
+                    buyDrMemo = ""
                 ))
 
             // 데이터 값 초기화
@@ -299,7 +301,10 @@ class DollarViewModel @Inject constructor(private val investRepository: InvestRe
                     drBuyrecord.rate,
                     drBuyrecord.profit,
                     drBuyrecord.exchangeMoney,
-                    true))
+                    true,
+                    "",
+                    ""
+                    ))
         }
     }
 
@@ -312,7 +317,9 @@ class DollarViewModel @Inject constructor(private val investRepository: InvestRe
                 date = sellDateFlow.value,
                 money = haveMoneyDollar.value,
                 rate = sellRateFlow.value,
-                exchangeMoney = sellDollarFlow.value
+                exchangeMoney = sellDollarFlow.value,
+                        sellDrMemo = "",
+                        sellDrCategoryName = ""
             )
                 )
         }
@@ -433,6 +440,12 @@ class DollarViewModel @Inject constructor(private val investRepository: InvestRe
                 }
 
             }
+    }
+
+    fun buyDrMemoUpdate(updateData: DrBuyRecord) {
+        viewModelScope.launch {
+            investRepository.updateRecord(updateData)
+        }
     }
 
 

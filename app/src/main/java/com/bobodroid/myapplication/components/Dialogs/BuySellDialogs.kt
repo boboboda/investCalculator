@@ -40,8 +40,7 @@ fun SellDialog(
     onDismissRequest: (Boolean) -> Unit,
     onClicked: ((Boolean) -> Unit)?,
     sellAction: () -> Unit,
-    dollarViewModel: DollarViewModel,
-    snackbarHostState: SnackbarHostState) {
+    dollarViewModel: DollarViewModel) {
 
     val isDialogOpen = remember { mutableStateOf(false) }
 

@@ -229,7 +229,9 @@ class WonViewModel @Inject constructor(private val investRepository: InvestRepos
                         exchangeMoney = "${exchangeMoney.value}",
                         recordColor = sellRecordActionFlow.value,
                         moneyType = moneyType.value,
-                        profit = expectSellValue()
+                        profit = expectSellValue(),
+                        buyWonCategoryName = "",
+                        buyWonMemo = ""
                     )
                 )
 
@@ -320,7 +322,9 @@ class WonViewModel @Inject constructor(private val investRepository: InvestRepos
                     wonBuyRecord.profit,
                     wonBuyRecord.exchangeMoney,
                     true,
-                    wonBuyRecord.moneyType)
+                    wonBuyRecord.moneyType,
+                    buyWonMemo = "",
+                    buyWonCategoryName = "")
             )
         }
     }
@@ -335,7 +339,9 @@ class WonViewModel @Inject constructor(private val investRepository: InvestRepos
                         money = haveMoney.value.toString(),
                         rate = sellRateFlow.value,
                         exchangeMoney = sellDollarFlow.value,
-                        moneyType = moneyType.value)
+                        moneyType = moneyType.value,
+                        sellWonMemo = "",
+                        sellWonCategoryName = "")
                 )
         }
     }

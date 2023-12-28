@@ -8,12 +8,18 @@ import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.DismissDirection
 import androidx.compose.material.DismissValue
 import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.FractionalThreshold
+import androidx.compose.material.SnackbarDuration
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -37,10 +43,33 @@ import com.bobodroid.myapplication.components.Dialogs.WonSellDialog
 import com.bobodroid.myapplication.components.Dialogs.YenSellDialog
 import com.bobodroid.myapplication.ui.theme.DeleteColor
 import androidx.compose.material.SwipeToDismiss
+import androidx.compose.material.OutlinedTextField
+import androidx.compose.material.TextFieldDefaults
+import androidx.compose.material.icons.rounded.Close
+import androidx.compose.material.icons.rounded.MoreVert
 import androidx.compose.material.rememberDismissState
+import androidx.compose.ui.focus.FocusManager
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.graphics.Color.Companion.Black
+import androidx.compose.ui.graphics.Color.Companion.Yellow
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.modifier.modifierLocalMapOf
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.VisualTransformation
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.DpOffset
+import androidx.compose.ui.unit.sp
 import com.bobodroid.myapplication.MainActivity.Companion.TAG
 import com.bobodroid.myapplication.components.RecordTextView
+import com.bobodroid.myapplication.ui.theme.Green
 import com.bobodroid.myapplication.ui.theme.TopButtonColor
+import kotlinx.coroutines.launch
 import java.math.BigDecimal
 import java.math.MathContext
 import java.math.RoundingMode
@@ -58,13 +87,27 @@ fun LineDrRecordText(
 
     val mathContext = MathContext(28, RoundingMode.HALF_UP)
 
-    val openDialog = remember { mutableStateOf(false) }
+    var openDialog by remember { mutableStateOf(false) }
 
     var itemRowVisible by remember { mutableStateOf(false) }
 
     val deleteAskDialog = remember { mutableStateOf(false) }
 
     val dismissState = rememberDismissState()
+
+    var dropdownExpanded by remember { mutableStateOf(false) }
+
+    var memoTextInput by remember { mutableStateOf("") }
+
+    val coroutineScope = rememberCoroutineScope()
+
+    val focusManager = LocalFocusManager.current
+
+    var isTextFieldFocused = false
+
+    val focusRequester by remember { mutableStateOf(FocusRequester()) }
+
+
 
     val profitColor = if(data.profit == "") {
         Color.Black
@@ -77,6 +120,10 @@ fun LineDrRecordText(
     } else {
         data.profit
     }
+
+    LaunchedEffect(key1 = data.buyDrMemo, block = {
+        memoTextInput = data.buyDrMemo
+    })
 
     if(dismissState.isDismissed(DismissDirection.StartToEnd))
         LaunchedEffect(key1 = Unit, block = {
@@ -127,14 +174,15 @@ fun LineDrRecordText(
                     .wrapContentHeight(),
                 shape = RoundedCornerShape(0.dp),
                 colors = CardDefaults.cardColors(containerColor = if(sellAction) SelectedColor else Color.White , contentColor = Color.Black),
-                onClick = {
-                    if(itemRowVisible == false) itemRowVisible = true else itemRowVisible = false
-                    onClicked?.invoke(data)
-                }
             ) {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
+                        .clickable {
+                            focusManager.clearFocus()
+                            if (itemRowVisible == false) itemRowVisible = true else itemRowVisible =
+                                false
+                        }
                         .padding(top = 7.dp, bottom = 7.dp),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.Center) {
@@ -182,10 +230,12 @@ fun LineDrRecordText(
                        modifier = Modifier
                            .fillMaxWidth()
                            .padding(start = 32.dp, end = 30.dp)
-                           .height(100.dp)) {
+                           .wrapContentHeight()) {
                         Row(modifier = Modifier
-                            .fillMaxWidth()) {
-                            Card(colors = CardDefaults.cardColors( TopButtonColor ),
+                            .wrapContentSize()) {
+                            Card(modifier = Modifier
+                                .padding(bottom = 10.dp),
+                                colors = CardDefaults.cardColors( TopButtonColor ),
                                 elevation = CardDefaults.cardElevation(8.dp),
                                 shape = RoundedCornerShape(2.dp)) {
                                 Text(
@@ -194,22 +244,159 @@ fun LineDrRecordText(
                                         .padding(all = 5.dp)
                                         .padding(horizontal = 3.dp))
                             }
+
+                            Spacer(modifier = Modifier.weight(1f))
+
+
+                            Box(
+                                modifier = Modifier
+                                    .wrapContentSize(Alignment.TopEnd)
+                            ) {
+                                Icon(
+                                    modifier = Modifier
+                                        .clickable {
+                                            if(!dropdownExpanded) dropdownExpanded = true else dropdownExpanded = false
+                                        },
+                                    imageVector = Icons.Rounded.MoreVert,
+                                    contentDescription = "메뉴",
+                                    tint = Color.Black
+                                )
+                                DropdownMenu(
+                                    offset = DpOffset(x = 0.dp, y = 10.dp),
+                                    expanded = dropdownExpanded,
+                                    onDismissRequest = {
+                                        dropdownExpanded = false
+                                    }
+                                ) {
+
+                                    DropdownMenuItem(
+                                        modifier = Modifier
+                                            .fillMaxWidth(),
+                                        text = {
+                                        Box(modifier = Modifier
+                                            .fillMaxWidth(),
+                                            contentAlignment = Alignment.TopStart) {
+                                            Text(
+                                                text = "매수 수정",
+                                                fontSize = 13.sp)
+                                        }
+                                    }, onClick = {
+
+                                    })
+
+                                    DropdownMenuItem(
+                                        modifier = Modifier
+                                            .fillMaxWidth(),
+                                        text = {
+                                            Box(modifier = Modifier
+                                                .fillMaxWidth(),
+                                                contentAlignment = Alignment.TopStart) {
+                                                Text(
+                                                    text = "매도",
+                                                    fontSize = 13.sp)
+                                            }
+                                        }, onClick = {
+                                            if(!data.recordColor) {
+                                                onClicked?.invoke(data)
+                                                if(!openDialog) openDialog = true else openDialog = false
+                                            } else {
+                                                if(snackBarHostState.currentSnackbarData == null) {
+                                                    coroutineScope.launch {
+                                                        snackBarHostState.showSnackbar(
+                                                            "매도한 기록입니다.",
+                                                            actionLabel = "닫기", SnackbarDuration.Short
+                                                        )
+                                                    }
+                                                }
+                                                dropdownExpanded = false
+                                            }
+                                        })
+                                }
+                            }
+
+
+                            
                         }
 
+                        OutlinedTextField(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .wrapContentHeight()
+                                .padding(bottom = 15.dp)
+                                .focusRequester(focusRequester = focusRequester)
+                                .onFocusChanged {
+                                    isTextFieldFocused = it.isFocused
+                                },
+                            placeholder = {
+                                          Text(text = "메모를 입력해주세요")
+                            },
+                            value = memoTextInput,
+                            onValueChange = {
+                                memoTextInput = it
+                            },
+                            textStyle = TextStyle(
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.Medium,
+                                textAlign = TextAlign.Start),
+                            colors = TextFieldDefaults.outlinedTextFieldColors(
+                                focusedBorderColor = Black,
+                                unfocusedBorderColor = Black)
+                            )
+
+                        Row(modifier = Modifier
+                            .wrapContentSize(),
+                            horizontalArrangement = Arrangement.spacedBy(10.dp)
+                        ) {
+
+                            Spacer(modifier = Modifier.weight(1f))
+
+                            Card(modifier = Modifier
+                                .padding(bottom = 10.dp),
+                                colors = CardDefaults.cardColors( TopButtonColor ),
+                                elevation = CardDefaults.cardElevation(8.dp),
+                                shape = RoundedCornerShape(2.dp),
+                                onClick = {
+                                    val updateData = data.copy(buyDrMemo = memoTextInput)
+                                    dollarViewModel.buyDrMemoUpdate(updateData)
+                                }) {
+                                Text(
+                                    text = "저장",
+                                    modifier = Modifier
+                                        .padding(all = 5.dp)
+                                        .padding(horizontal = 3.dp))
+                            }
+
+                            Card(modifier = Modifier
+                                .padding(bottom = 10.dp),
+                                colors = CardDefaults.cardColors( TopButtonColor ),
+                                elevation = CardDefaults.cardElevation(8.dp),
+                                shape = RoundedCornerShape(2.dp),
+                                onClick = {
+                                    itemRowVisible = false
+                                }) {
+                                Text(
+                                    text = "닫기",
+                                    modifier = Modifier
+                                        .padding(all = 5.dp)
+                                        .padding(horizontal = 3.dp))
+                            }
+                        }
                     }
                 }
 
 
 
             }
-//            if (openDialog.value) {
-//                SellDialog(
-//                    sellAction = { sellActed(data)},
-//                    onDismissRequest = { openDialog.value = it},
-//                    onClicked = {openDialog.value = it},
-//                    dollarViewModel = dollarViewModel,
-//                    snackbarHostState = snackBarHostState)
-//            }
+            if (openDialog) {
+                SellDialog(
+                    sellAction = {
+                        sellActed(data)
+
+                                 },
+                    onDismissRequest = { openDialog = it},
+                    onClicked = {openDialog = it},
+                    dollarViewModel = dollarViewModel)
+            }
 
             if(deleteAskDialog.value) {
 
@@ -226,6 +413,15 @@ fun LineDrRecordText(
         }
     )
 
+}
+
+fun Modifier.addFocusCleaner(focusManager: FocusManager, doOnClear: () -> Unit = {}): Modifier {
+    return this.pointerInput(Unit) {
+        detectTapGestures(onTap = {
+            doOnClear()
+            focusManager.clearFocus()
+        })
+    }
 }
 
 

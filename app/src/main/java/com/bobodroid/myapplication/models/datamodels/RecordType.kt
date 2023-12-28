@@ -73,7 +73,13 @@ data class DrBuyRecord (
     val exchangeMoney: String,
 
     @ColumnInfo(name = "usingRecord")
-    val recordColor: Boolean
+    val recordColor: Boolean,
+
+    @ColumnInfo(name = "buyDrMemo", defaultValue = "")
+    val buyDrMemo: String,
+
+    @ColumnInfo(name = "buyDrCategoryName", defaultValue = "")
+    val buyDrCategoryName : String,
 
 )
 
@@ -96,6 +102,12 @@ data class DrSellRecord (
 
     @ColumnInfo(name = "exchangeMoney")
     val exchangeMoney: String,
+
+    @ColumnInfo(name = "sellDrMemo", defaultValue = "")
+    val sellDrMemo: String,
+
+    @ColumnInfo(name = "sellDrCategoryName", defaultValue = "")
+    val sellDrCategoryName : String,
 )
 
 @Entity(tableName = "buyYen_table")
@@ -121,7 +133,13 @@ data class YenBuyRecord (
     val exchangeMoney: String,
 
     @ColumnInfo(name = "usingRecord")
-    val recordColor: Boolean
+    val recordColor: Boolean,
+
+    @ColumnInfo(name = "buyYenMemo", defaultValue = "")
+    val buyYenMemo: String,
+
+    @ColumnInfo(name = "buyYenCategoryName", defaultValue = "")
+    val buyYenCategoryName : String,
 )
 
 @Entity(tableName = "sellYen_table")
@@ -142,6 +160,12 @@ data class YenSellRecord (
 
     @ColumnInfo(name = "exchangeMoney")
     val exchangeMoney: String,
+
+    @ColumnInfo(name = "sellYenMemo", defaultValue = "")
+    val sellYenMemo: String,
+
+    @ColumnInfo(name = "sellYenCategoryName", defaultValue = "")
+    val sellYenCategoryName : String,
 )
 
 
@@ -171,7 +195,13 @@ data class WonBuyRecord (
     val recordColor: Boolean,
 
     @ColumnInfo(name = "moneyType")
-    val moneyType: Int
+    val moneyType: Int,
+
+    @ColumnInfo(name = "buyWonMemo", defaultValue = "")
+    val buyWonMemo: String,
+
+    @ColumnInfo(name = "buyWonCategoryName", defaultValue = "")
+    val buyWonCategoryName : String,
 
 )
 
@@ -195,6 +225,12 @@ data class WonSellRecord (
     val exchangeMoney: String,
 
     @ColumnInfo(name = "moneyType")
-    val moneyType: Int
+    val moneyType: Int,
+
+    @ColumnInfo(name = "sellWonMemo", defaultValue = "")
+    val sellWonMemo: String,
+
+    @ColumnInfo(name = "sellWonCategoryName", defaultValue = "")
+    val sellWonCategoryName : String,
 )
 

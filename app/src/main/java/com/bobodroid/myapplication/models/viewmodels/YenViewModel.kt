@@ -244,7 +244,9 @@ class YenViewModel @Inject constructor(private val investRepository: InvestRepos
                         rate = rateInputFlow.value,
                         exchangeMoney = "${exchangeMoney.value}",
                         recordColor = sellRecordActionFlow.value,
-                        profit = expectSellValue()
+                        profit = expectSellValue(),
+                        buyYenMemo = "",
+                        buyYenCategoryName = ""
                     )
                 )
 
@@ -289,7 +291,9 @@ class YenViewModel @Inject constructor(private val investRepository: InvestRepos
                     yenBuyRecord.rate,
                     yenBuyRecord.profit,
                     yenBuyRecord.exchangeMoney,
-                    true
+                    true,
+                    "",
+                    ""
                 )
             )
         }
@@ -304,7 +308,9 @@ class YenViewModel @Inject constructor(private val investRepository: InvestRepos
                         date = sellDateFlow.value,
                         money = haveMoney.value.toString(),
                         rate = sellRateFlow.value,
-                        exchangeMoney = sellDollarFlow.value
+                        exchangeMoney = sellDollarFlow.value,
+                        sellYenMemo = "",
+                        sellYenCategoryName = "",
                     )
                 )
         }

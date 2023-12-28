@@ -67,16 +67,18 @@ fun BuyYenRecordBox(yenViewModel: YenViewModel, snackbarHostState: SnackbarHostS
                     sellAction = Buy.recordColor
                     ,
                     sellActed = { buyRecord ->
+                        // 매도시 컬러 변경
                         selectedId = buyRecord.id
 
                         yenViewModel.updateBuyRecord(buyRecord)
 
                     },
-                    onClicked = { recordbox ->
-                        selectedId = recordbox.id
-                        yenViewModel.dateFlow.value = recordbox.date
-                        yenViewModel.haveMoney.value = recordbox.exchangeMoney
-                        yenViewModel.recordInputMoney.value = recordbox.money },
+                    onClicked = { recordBox ->
+                        // 매도시 값 인계
+                        selectedId = recordBox .id
+                        yenViewModel.dateFlow.value = recordBox.date
+                        yenViewModel.haveMoney.value = recordBox.exchangeMoney
+                        yenViewModel.recordInputMoney.value = recordBox.money },
                     yenViewModel,
                     snackbarHostState = snackbarHostState)
                 Divider()

@@ -22,6 +22,7 @@ import com.bobodroid.myapplication.extensions.toDecUs
 import com.bobodroid.myapplication.extensions.toPer
 import com.bobodroid.myapplication.extensions.toWon
 import com.bobodroid.myapplication.extensions.toYen
+import com.bobodroid.myapplication.models.datamodels.DrBuyRecord
 import com.bobodroid.myapplication.models.viewmodels.DollarViewModel
 import com.bobodroid.myapplication.models.viewmodels.WonViewModel
 import com.bobodroid.myapplication.models.viewmodels.YenViewModel
@@ -33,6 +34,7 @@ import java.util.*
 
 @Composable
 fun SellResultDialog(
+    buyRecord: DrBuyRecord,
     onDismissRequest: ((Boolean)->Unit)?,
     onClicked: ((Boolean) -> Unit)?,
     sellAction:()->Unit,
@@ -54,133 +56,113 @@ fun SellResultDialog(
             modifier = Modifier
                 .wrapContentSize()
                 .background(
-                    color = Color.White,
-                    shape = RoundedCornerShape(16.dp)
-                )
+                    color = SellPopColor,
+                    shape = RoundedCornerShape(5.dp))
         ) {
-            Box(
+            Row(
                 modifier = Modifier
-                    .width(250.dp)
-                    .height(200.dp)
-                    .background(color = SellPopColor)
+                    .wrapContentSize()
+                    .padding(top = 20.dp, start = 20.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Start
             ) {
-                Column {
 
-                    Spacer(modifier = Modifier.height(20.dp))
+                Text(
+                    text = "수익:",
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.padding(5.dp))
 
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(30.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
+                Spacer(modifier = Modifier.width(10.dp))
 
-                        Spacer(modifier = Modifier.width(10.dp))
-                        Box(
-                            modifier = Modifier
-                                .background(Color.White)
-                                .width(60.dp)
-                                .height(50.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text(text = "수익", textAlign = TextAlign.Center)
-                        }
-                        Spacer(modifier = Modifier.width(10.dp))
-
-                        Box(
-                            modifier = Modifier
-                                .background(Color.White)
-                                .width(150.dp)
-                                .height(50.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text(
-                                text = "${inputMoney.value.toFloat().toWon()}",
-                                color = Color.Red,
-                                textAlign = TextAlign.Center
-                            )
-                        }
-
-                    }
-
-                    Spacer(modifier = Modifier.height(10.dp))
-
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(30.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-
-                        Spacer(modifier = Modifier.width(10.dp))
-                        Box(
-                            modifier = Modifier
-                                .background(Color.White)
-                                .width(60.dp)
-                                .height(50.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text(text = "수익률", textAlign = TextAlign.Center)
-                        }
-                        Spacer(modifier = Modifier.width(10.dp))
-
-                        Box(
-                            modifier = Modifier
-                                .background(Color.White)
-                                .width(150.dp)
-                                .height(50.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text(
-                                text = "${percent.value.toPer()} %",
-                                color = Color.Red,
-                                textAlign = TextAlign.Center
-                            )
-                        }
-
-                    }
-
-
-
-                    Spacer(modifier = Modifier.height(25.dp))
-                    Row(
-                        modifier =
-                        Modifier
-                            .fillMaxWidth(),
-                        horizontalArrangement = Arrangement.Center
-                    ) {
-                        Buttons(
-                            label = "기록",
-                            onClicked = {
-                                sellAction()
-                                dollarViewModel.sellRecordValue()
-                                dollarViewModel.selectedCheckBoxId.value = 2
-                            },
-                            color = SellButtonColor,
-                            fontColor = Color.White,
-                            modifier = Modifier
-                                .height(40.dp)
-                                .width(80.dp),
-                            fontSize = 15)
-
-                        Spacer(modifier = Modifier.width(40.dp))
-
-                        Buttons(
-                            label = "닫기",
-                            onClicked = {
-                                onDismissRequest?.invoke(false)
-                                onClicked?.invoke(false)
-                                        },
-                            color = SellButtonColor,
-                            fontColor = Color.White,
-                            modifier = Modifier
-                                .height(40.dp)
-                                .width(80.dp),
-                            fontSize = 15)
-                    }
+                Box(
+                    modifier = Modifier
+                        .background(
+                            color = Color.White,
+                            shape = RoundedCornerShape(5.dp))
+                        .wrapContentSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = "${inputMoney.value.toFloat().toWon()}",
+                        color = Color.Red,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.padding(5.dp)
+                    )
                 }
+
             }
 
+            Row(
+                modifier = Modifier
+                    .wrapContentSize()
+                    .padding(top = 20.dp, start = 20.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Start
+            ) {
+                Text(text = "수익률:",
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.padding(5.dp))
+
+                Spacer(modifier = Modifier.width(10.dp))
+
+                Box(
+                    modifier = Modifier
+                        .background(
+                            color = Color.White,
+                            shape = RoundedCornerShape(5.dp))
+                        .wrapContentSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = "${percent.value.toPer()} %",
+                        color = Color.Red,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.padding(5.dp)
+                    )
+                }
+
+            }
+
+
+
+            Spacer(modifier = Modifier.height(25.dp))
+            Row(
+                modifier =
+                Modifier
+                    .wrapContentSize()
+                    .padding(bottom = 20.dp)
+                    .padding(horizontal = 20.dp),
+                horizontalArrangement = Arrangement.Center
+            ) {
+                Buttons(
+                    label = "기록",
+                    onClicked = {
+                        sellAction()
+                        dollarViewModel.sellRecordValue(buyRecord)
+                        dollarViewModel.selectedCheckBoxId.value = 2
+                    },
+                    color = SellButtonColor,
+                    fontColor = Color.White,
+                    modifier = Modifier
+                        .height(40.dp)
+                        .width(80.dp),
+                    fontSize = 15)
+
+                Spacer(modifier = Modifier.width(40.dp))
+
+                Buttons(
+                    label = "닫기",
+                    onClicked = {
+                        onDismissRequest?.invoke(false)
+                        onClicked?.invoke(false)
+                    },
+                    color = SellButtonColor,
+                    fontColor = Color.White,
+                    modifier = Modifier
+                        .height(40.dp)
+                        .width(80.dp),
+                    fontSize = 15)
+            }
         }
     }
 }
@@ -209,133 +191,113 @@ fun YenSellResultDialog(
             modifier = Modifier
                 .wrapContentSize()
                 .background(
-                    color = Color.White,
-                    shape = RoundedCornerShape(16.dp)
-                )
+                    color = SellPopColor,
+                    shape = RoundedCornerShape(5.dp))
         ) {
-            Box(
+            Row(
                 modifier = Modifier
-                    .width(250.dp)
-                    .height(200.dp)
-                    .background(color = SellPopColor)
+                    .wrapContentSize()
+                    .padding(top = 20.dp, start = 20.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Start
             ) {
-                Column {
 
-                    Spacer(modifier = Modifier.height(20.dp))
+                Text(
+                    text = "수익:",
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.padding(5.dp))
 
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(30.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
+                Spacer(modifier = Modifier.width(10.dp))
 
-                        Spacer(modifier = Modifier.width(10.dp))
-                        Box(
-                            modifier = Modifier
-                                .background(Color.White)
-                                .width(60.dp)
-                                .height(50.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text(text = "수익", textAlign = TextAlign.Center)
-                        }
-                        Spacer(modifier = Modifier.width(10.dp))
-
-                        Box(
-                            modifier = Modifier
-                                .background(Color.White)
-                                .width(150.dp)
-                                .height(50.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text(
-                                text = "${inputMoney.value.toFloat().toWon()}",
-                                color = Color.Red,
-                                textAlign = TextAlign.Center
-                            )
-                        }
-
-                    }
-
-                    Spacer(modifier = Modifier.height(10.dp))
-
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(30.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-
-                        Spacer(modifier = Modifier.width(10.dp))
-                        Box(
-                            modifier = Modifier
-                                .background(Color.White)
-                                .width(60.dp)
-                                .height(50.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text(text = "수익률", textAlign = TextAlign.Center)
-                        }
-                        Spacer(modifier = Modifier.width(10.dp))
-
-                        Box(
-                            modifier = Modifier
-                                .background(Color.White)
-                                .width(150.dp)
-                                .height(50.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text(
-                                text = "${percent.value.toPer()} %",
-                                color = Color.Red,
-                                textAlign = TextAlign.Center
-                            )
-                        }
-
-                    }
-
-
-
-                    Spacer(modifier = Modifier.height(25.dp))
-                    Row(
-                        modifier =
-                        Modifier
-                            .fillMaxWidth(),
-                        horizontalArrangement = Arrangement.Center
-                    ) {
-                        Buttons(
-                            label = "기록",
-                            onClicked = {
-                                sellAction()
-                                yenViewModel.sellRecordValue()
-                                yenViewModel.selectedCheckBoxId.value = 2
-                            },
-                            color = SellButtonColor,
-                            fontColor = Color.White,
-                            modifier = Modifier
-                                .height(40.dp)
-                                .width(80.dp),
-                            fontSize = 15)
-
-                        Spacer(modifier = Modifier.width(40.dp))
-
-                        Buttons(
-                            label = "닫기",
-                            onClicked = {
-                                onDismissRequest?.invoke(false)
-                                onClicked?.invoke(false)
-                            },
-                            color = SellButtonColor,
-                            fontColor = Color.White,
-                            modifier = Modifier
-                                .height(40.dp)
-                                .width(80.dp),
-                            fontSize = 15)
-                    }
+                Box(
+                    modifier = Modifier
+                        .background(
+                            color = Color.White,
+                            shape = RoundedCornerShape(5.dp))
+                        .wrapContentSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = "${inputMoney.value.toFloat().toWon()}",
+                        color = Color.Red,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.padding(5.dp)
+                    )
                 }
+
             }
 
+            Row(
+                modifier = Modifier
+                    .wrapContentSize()
+                    .padding(top = 20.dp, start = 20.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Start
+            ) {
+                Text(text = "수익률:",
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.padding(5.dp))
+
+                Spacer(modifier = Modifier.width(10.dp))
+
+                Box(
+                    modifier = Modifier
+                        .background(
+                            color = Color.White,
+                            shape = RoundedCornerShape(5.dp))
+                        .wrapContentSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = "${percent.value.toPer()} %",
+                        color = Color.Red,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.padding(5.dp)
+                    )
+                }
+
+            }
+
+
+
+            Spacer(modifier = Modifier.height(25.dp))
+            Row(
+                modifier =
+                Modifier
+                    .wrapContentSize()
+                    .padding(bottom = 20.dp)
+                    .padding(horizontal = 20.dp),
+                horizontalArrangement = Arrangement.Center
+            ) {
+                Buttons(
+                    label = "기록",
+                    onClicked = {
+                        sellAction()
+                        yenViewModel.sellRecordValue()
+                        yenViewModel.selectedCheckBoxId.value = 2
+                    },
+                    color = SellButtonColor,
+                    fontColor = Color.White,
+                    modifier = Modifier
+                        .height(40.dp)
+                        .width(80.dp),
+                    fontSize = 15)
+
+                Spacer(modifier = Modifier.width(40.dp))
+
+                Buttons(
+                    label = "닫기",
+                    onClicked = {
+                        onDismissRequest?.invoke(false)
+                        onClicked?.invoke(false)
+                    },
+                    color = SellButtonColor,
+                    fontColor = Color.White,
+                    modifier = Modifier
+                        .height(40.dp)
+                        .width(80.dp),
+                    fontSize = 15)
+            }
         }
     }
 }
@@ -373,134 +335,113 @@ fun WonSellResultDialog(
             modifier = Modifier
                 .wrapContentSize()
                 .background(
-                    color = Color.White,
-                    shape = RoundedCornerShape(16.dp)
-                )
+                    color = SellPopColor,
+                    shape = RoundedCornerShape(5.dp))
         ) {
-            Box(
+            Row(
                 modifier = Modifier
-                    .width(250.dp)
-                    .height(180.dp)
-                    .background(color = SellPopColor)
+                    .wrapContentSize()
+                    .padding(top = 20.dp, start = 20.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Start
             ) {
-                Column {
 
-                    Spacer(modifier = Modifier.height(20.dp))
+                Text(
+                    text = "수익:",
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.padding(5.dp))
 
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(30.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
+                Spacer(modifier = Modifier.width(10.dp))
 
-                        Spacer(modifier = Modifier.width(10.dp))
-                        Box(
-                            modifier = Modifier
-                                .background(Color.White)
-                                .width(60.dp)
-                                .height(50.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text(text = "수익", textAlign = TextAlign.Center)
-                        }
-                        Spacer(modifier = Modifier.width(10.dp))
-
-                        Box(
-                            modifier = Modifier
-                                .background(Color.White)
-                                .width(150.dp)
-                                .height(50.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text(
-                                text = "${moneyCg}",
-                                color = Color.Red,
-                                textAlign = TextAlign.Center
-                            )
-                        }
-
-                    }
-
-                    Spacer(modifier = Modifier.height(10.dp))
-
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(30.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-
-                        Spacer(modifier = Modifier.width(10.dp))
-                        Box(
-                            modifier = Modifier
-                                .background(Color.White)
-                                .width(60.dp)
-                                .height(50.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text(text = "수익률", textAlign = TextAlign.Center)
-                        }
-                        Spacer(modifier = Modifier.width(10.dp))
-
-                        Box(
-                            modifier = Modifier
-                                .background(Color.White)
-                                .width(150.dp)
-                                .height(50.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text(
-                                text = "${percent.value.toPer()} %",
-                                color = Color.Red,
-                                textAlign = TextAlign.Center
-                            )
-                        }
-
-                    }
-
-
-
-                    Spacer(modifier = Modifier.height(25.dp))
-                    Row(
-                        modifier =
-                        Modifier
-                            .fillMaxWidth(),
-                        horizontalArrangement = Arrangement.Center
-                    ) {
-                        Buttons(
-                            label = "기록",
-                            onClicked = {
-                                sellAction()
-                                wonViewModel.sellRecordValue()
-                                wonViewModel.selectedCheckBoxId.value = 2
-
-                            },
-                            color = SellButtonColor,
-                            fontColor = Color.White,
-                            modifier = Modifier
-                                .height(40.dp)
-                                .width(80.dp),
-                            fontSize = 15)
-
-                        Spacer(modifier = Modifier.width(40.dp))
-
-                        Buttons(
-                            label = "닫기",
-                            onClicked = {
-                                onDismissRequest?.invoke(false)
-                                onClicked?.invoke(false)
-                            },
-                            color = SellButtonColor,
-                            fontColor = Color.White,
-                            modifier = Modifier
-                                .height(40.dp)
-                                .width(80.dp),
-                            fontSize = 15)
-                    }
+                Box(
+                    modifier = Modifier
+                        .background(
+                            color = Color.White,
+                            shape = RoundedCornerShape(5.dp))
+                        .wrapContentSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = "${inputMoney.value.toFloat().toWon()}",
+                        color = Color.Red,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.padding(5.dp)
+                    )
                 }
+
             }
 
+            Row(
+                modifier = Modifier
+                    .wrapContentSize()
+                    .padding(top = 20.dp, start = 20.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Start
+            ) {
+                Text(text = "수익률:",
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.padding(5.dp))
+
+                Spacer(modifier = Modifier.width(10.dp))
+
+                Box(
+                    modifier = Modifier
+                        .background(
+                            color = Color.White,
+                            shape = RoundedCornerShape(5.dp))
+                        .wrapContentSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = "${percent.value.toPer()} %",
+                        color = Color.Red,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.padding(5.dp)
+                    )
+                }
+
+            }
+
+
+
+            Spacer(modifier = Modifier.height(25.dp))
+            Row(
+                modifier =
+                Modifier
+                    .wrapContentSize()
+                    .padding(bottom = 20.dp)
+                    .padding(horizontal = 20.dp),
+                horizontalArrangement = Arrangement.Center
+            ) {
+                Buttons(
+                    label = "기록",
+                    onClicked = {
+                        sellAction()
+                        wonViewModel.sellRecordValue()
+                        wonViewModel.selectedCheckBoxId.value = 2
+                    },
+                    color = SellButtonColor,
+                    fontColor = Color.White,
+                    modifier = Modifier
+                        .height(40.dp)
+                        .width(80.dp),
+                    fontSize = 15)
+
+                Spacer(modifier = Modifier.width(40.dp))
+
+                Buttons(
+                    label = "닫기",
+                    onClicked = {
+                        onDismissRequest?.invoke(false)
+                        onClicked?.invoke(false)
+                    },
+                    color = SellButtonColor,
+                    fontColor = Color.White,
+                    modifier = Modifier
+                        .height(40.dp)
+                        .width(80.dp),
+                    fontSize = 15)
+            }
         }
     }
 }

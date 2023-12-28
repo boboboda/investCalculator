@@ -2,6 +2,7 @@ package com.bobodroid.myapplication.models.datamodels
 
 import androidx.room.*
 import kotlinx.coroutines.flow.Flow
+import java.util.UUID
 
 
 @Dao
@@ -11,13 +12,13 @@ interface DollarBuyDatabaseDao {
     fun getRecords(): Flow<List<DrBuyRecord>>
 
     @Query("SELECT * from buyDollar_table where id=:id")
-    suspend fun getRecordById(id: String): DrBuyRecord
+    suspend fun getRecordById(id: UUID): DrBuyRecord
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(drBuyRecord: DrBuyRecord)
 
     @Update(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun update(drBuyRecord: DrBuyRecord)
+    suspend fun update(drBuyRecord: DrBuyRecord) : Int
 
     @Query("DELETE from buyDollar_table")
     suspend fun deleteAll()
@@ -41,7 +42,7 @@ interface DollarSellDatabaseDao {
     suspend fun insert(drSellRecord: DrSellRecord)
 
     @Update(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun update(drSellRecord: DrSellRecord)
+    suspend fun update(drSellRecord: DrSellRecord): Int
 
     @Query("DELETE from sellDollar_table")
     suspend fun deleteAll()
@@ -65,7 +66,7 @@ interface YenBuyDatabaseDao {
     suspend fun insert(yenBuyRecord: YenBuyRecord)
 
     @Update(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun update(yenBuyRecord: YenBuyRecord)
+    suspend fun update(yenBuyRecord: YenBuyRecord): Int
 
     @Query("DELETE from buyYen_table")
     suspend fun deleteAll()
@@ -88,7 +89,7 @@ interface YenSellDatabaseDao {
     suspend fun insert(yenSellRecord: YenSellRecord)
 
     @Update(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun update(yenSellRecord: YenSellRecord)
+    suspend fun update(yenSellRecord: YenSellRecord): Int
 
     @Query("DELETE from sellYen_table")
     suspend fun deleteAll()
@@ -112,7 +113,7 @@ interface WonBuyDatabaseDao {
     suspend fun insert(wonBuyRecord: WonBuyRecord)
 
     @Update(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun update(wonBuyRecord: WonBuyRecord)
+    suspend fun update(wonBuyRecord: WonBuyRecord): Int
 
     @Query("DELETE from buyWon_table")
     suspend fun deleteAll()
@@ -135,7 +136,7 @@ interface WonSellDatabaseDao {
     suspend fun insert(wonSellRecord: WonSellRecord)
 
     @Update(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun update(wonSellRecord: WonSellRecord)
+    suspend fun update(wonSellRecord: WonSellRecord): Int
 
     @Query("DELETE from sellWon_table")
     suspend fun deleteAll()

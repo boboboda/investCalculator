@@ -33,10 +33,12 @@ import com.bobodroid.myapplication.components.RateNumberField
 import com.bobodroid.myapplication.components.SellResultDialog
 import com.bobodroid.myapplication.components.WonSellResultDialog
 import com.bobodroid.myapplication.components.YenSellResultDialog
+import com.bobodroid.myapplication.models.datamodels.DrBuyRecord
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SellDialog(
+    buyRecord: DrBuyRecord,
     onDismissRequest: (Boolean) -> Unit,
     onClicked: ((Boolean) -> Unit)?,
     sellAction: () -> Unit,
@@ -121,11 +123,6 @@ fun SellDialog(
                             onClicked = {
                                 if(openDialog.value == false) openDialog.value = !openDialog.value else null
                                 dollarViewModel.sellCalculation()
-
-                                Log.d(TAG, "팔 때 환율  ${dollarViewModel.sellRateFlow.value}")
-                                Log.d(TAG, "수익  ${dollarViewModel.sellDollarFlow.value}")
-                                Log.d(TAG, "현재 돈  ${dollarViewModel.recordInputMoney.value}")
-                                Log.d(TAG, "수익률  ${dollarViewModel.getPercentFlow.value}")
                             },
 
                             color = SellButtonColor,
@@ -151,6 +148,7 @@ fun SellDialog(
 
             if (openDialog.value) {
                 SellResultDialog(
+                    buyRecord,
                     sellAction = sellAction,
                     onDismissRequest = {
                         openDialog.value = it

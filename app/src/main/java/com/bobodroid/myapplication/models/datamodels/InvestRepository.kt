@@ -4,6 +4,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.conflate
 import kotlinx.coroutines.flow.flowOn
+import java.util.UUID
 import javax.inject.Inject
 
 class InvestRepository @Inject constructor(
@@ -18,6 +19,7 @@ class InvestRepository @Inject constructor(
 
     // 달러
     suspend fun addRecord(drbuyrecord: DrBuyRecord) = dollarBuyDatabaseDao.insert(drbuyrecord)
+    suspend fun getRecordId(drBuyId: UUID): DrBuyRecord = dollarBuyDatabaseDao.getRecordById(drBuyId)
     suspend fun updateRecord(drbuyrecord: DrBuyRecord) = dollarBuyDatabaseDao.update(drbuyrecord)
     suspend fun deleteRecord(drbuyrecord: DrBuyRecord) = dollarBuyDatabaseDao.deleteNote(drbuyrecord)
     suspend fun deleteAllRecord(drbuyrecord: DrBuyRecord) = dollarBuyDatabaseDao.deleteAll()

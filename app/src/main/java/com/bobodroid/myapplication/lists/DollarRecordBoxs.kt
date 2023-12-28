@@ -99,7 +99,7 @@ fun BuyRecordBox(dollarViewModel: DollarViewModel,
 
 @OptIn(ExperimentalMaterialApi::class)
 @Composable
-fun SellRecordBox(dollarViewModel: DollarViewModel) {
+fun SellRecordBox(dollarViewModel: DollarViewModel, snackBarHostState: SnackbarHostState) {
 
     val sellRecordHistory = dollarViewModel.filterSellRecordFlow.collectAsState()
 
@@ -145,7 +145,7 @@ fun SellRecordBox(dollarViewModel: DollarViewModel) {
                         dollarViewModel.exchangeMoney.value = recordBox.exchangeMoney
                         dollarViewModel.sellRateFlow.value = recordBox.rate
                         dollarViewModel.sellDollarFlow.value = recordBox.money
-                    }, dollarViewModel)
+                    }, dollarViewModel, snackBarHostState)
 
                 Divider()
             }

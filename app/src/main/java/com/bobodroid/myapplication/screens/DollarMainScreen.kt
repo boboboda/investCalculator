@@ -96,9 +96,9 @@ fun DollarMainScreen
             ) {
                 if (selectedCheckBoxId.value == 1)
                 {
-                    BuyRecordBox(dollarViewModel = dollarViewModel, snackBarHostState = snackBarHostState)
+                    BuyRecordBox(dollarViewModel, snackBarHostState)
                 } else {
-                    SellRecordBox(dollarViewModel = dollarViewModel)}
+                    SellRecordBox(dollarViewModel, snackBarHostState)}
             }
 
             //snackBar

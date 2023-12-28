@@ -1,5 +1,7 @@
 package com.bobodroid.myapplication.screens
 
+import android.content.Intent
+import android.net.Uri
 import android.util.Log
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
@@ -52,6 +54,8 @@ import com.bobodroid.myapplication.ui.theme.TopButtonColor
 import androidx.compose.material3.Text
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.core.content.ContextCompat.startActivity
 import com.bobodroid.myapplication.MainActivity
 import com.bobodroid.myapplication.components.Dialogs.ChargeDialog
 import com.bobodroid.myapplication.components.Dialogs.NoticeDialog
@@ -458,6 +462,10 @@ fun DrawerCustom(
 
     val context = LocalContext.current
 
+    val intent = Intent(Intent.ACTION_VIEW)
+    intent.data = Uri.parse("https://cobusilsite-uks-projects-52ed7978.vercel.app")
+
+
     Column(
         modifier = Modifier
             .fillMaxHeight()
@@ -472,8 +480,10 @@ fun DrawerCustom(
         }
 
         Text(
-            modifier = Modifier.padding(start = 10.dp),
-            text = "디바이스 ID: ${userData.value.id}")
+            modifier = Modifier.padding(start = 10.dp, end = 20.dp),
+            text = "디바이스 ID: ${userData.value.id}",
+            overflow = TextOverflow.Ellipsis,
+            maxLines = 1)
 
         Spacer(
             modifier = Modifier
@@ -556,15 +566,35 @@ fun DrawerCustom(
             }
         }
 
-
+//        [uk] [오전 12:08] https://cobusilsite-uks-projects-52ed7978.vercel.app/
 
 
         Spacer(modifier = Modifier.weight(1f))
 
-        Text(text = "고객센터")
-        Text("개발자 이메일: kju9038@gmail.com")
-//        androidx.compose.material.Text("개발자 유튜브: ")
-        Text("문의: 000-0000-0000")
+        Column(modifier = Modifier
+            .wrapContentSize()
+            .padding(start = 5.dp, bottom = 20.dp)) {
+            Text(text = "고객센터", fontSize = 18.sp)
+            Text("개발자 이메일: kju9038@gmail.com", fontSize = 15.sp)
+            Row(modifier = Modifier.fillMaxWidth().padding(),
+                horizontalArrangement = Arrangement.Start) {
+                CardButton(
+                    label = "공식사이트 가기",
+                    onClicked = {
+                        startActivity(context, intent, null)
+                    },
+                    fontSize = 15,
+                    modifier = Modifier
+                        .height(30.dp)
+                        .width(100.dp),
+                    fontColor = Color.Black,
+                    buttonColor = TopButtonColor
+                )
+            }
+
+        }
+
+
     }
 }
 

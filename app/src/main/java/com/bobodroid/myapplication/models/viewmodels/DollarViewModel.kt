@@ -309,15 +309,19 @@ class DollarViewModel @Inject constructor(private val investRepository: InvestRe
     }
 
 
-    fun sellRecordValue() {
+    fun sellRecordValue(buyRecord: DrBuyRecord) {
         viewModelScope.launch {
+            val buyRecordId = buyRecord.id
+
+            Log.d(TAG, "매도아이디 ${buyRecordId}")
             investRepository
                 .addRecord(
                     DrSellRecord(
-                date = sellDateFlow.value,
-                money = haveMoneyDollar.value,
-                rate = sellRateFlow.value,
-                exchangeMoney = sellDollarFlow.value,
+                        id = buyRecordId,
+                        date = sellDateFlow.value,
+                        money = haveMoneyDollar.value,
+                        rate = sellRateFlow.value,
+                        exchangeMoney = sellDollarFlow.value,
                         sellDrMemo = "",
                         sellDrCategoryName = ""
             )
@@ -442,11 +446,48 @@ class DollarViewModel @Inject constructor(private val investRepository: InvestRe
             }
     }
 
-    fun buyDrMemoUpdate(updateData: DrBuyRecord) {
+    fun buyDrMemoUpdate(updateData: DrBuyRecord, result:(Boolean) -> Unit){
+
+        var success: Boolean = false
         viewModelScope.launch {
-            investRepository.updateRecord(updateData)
+           val successValue = investRepository.updateRecord(updateData)
+
+            Log.d(TAG, "업데이트 성공 ${successValue}")
+            success = if(successValue > 0) true else false
+            result(success)
+
         }
     }
+
+    fun sellDrMemoUpdate(updateData: DrSellRecord, result:(Boolean) -> Unit){
+
+        var success: Boolean = false
+        viewModelScope.launch {
+            val successValue = investRepository.updateRecord(updateData)
+
+            Log.d(TAG, "업데이트 성공 ${successValue}")
+            success = if(successValue > 0) true else false
+            result(success)
+
+        }
+    }
+
+   suspend fun cancelSellRecord(id: UUID): Boolean {
+
+       val searchBuyRecord = investRepository.getRecordId(id)
+
+       Log.d(TAG, "cancelSellRecord: ${searchBuyRecord}, sellId: ${id}")
+
+       if(searchBuyRecord == null) {
+           return false
+       } else {
+           val updateData = searchBuyRecord.copy(recordColor = false)
+
+           investRepository.updateRecord(updateData)
+
+           return true}
+    }
+
 
 
 

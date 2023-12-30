@@ -1,5 +1,20 @@
 <?xml version="1.0" encoding="utf-8"?>
-<resources>
+<resources xmlns:tools="http://schemas.android.com/tools">
 
-    <style name="Theme.InverstCalculator" parent="android:Theme.Material.Light.NoActionBar" />
+    <style name="Theme.InvestCalculator" parent="android:Theme.Material.Light.NoActionBar"/>
+
+
+    <style name="Theme.App.Starting" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">@color/white</item>
+        <item name="windowSplashScreenAnimatedIcon">@mipmap/ic_main_round</item>
+        <item name="postSplashScreenTheme">@style/Theme.Splash</item>
+    </style>
+
+    <style name="Theme.Splash" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:windowSplashScreenBackground" tools:targetApi="S">@color/white</item>
+        <item name="android:windowSplashScreenAnimatedIcon" tools:targetApi="S">@mipmap/ic_main_round</item>
+        <item name="android:windowSplashScreenIconBackgroundColor" tools:targetApi="S">@color/white</item>
+        <item name="android:windowSplashScreenAnimationDuration" tools:targetApi="S">1000</item>
+<!--        <item name="android:windowSplashScreenBrandingImage" tools:targetApi="S">@drawable/branding_image</item>-->
+    </style>
 </resources>

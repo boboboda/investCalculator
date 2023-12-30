@@ -1,8 +1,13 @@
 package com.bobodroid.myapplication
 
+import android.animation.ObjectAnimator
+import android.animation.PropertyValuesHolder
 import android.annotation.SuppressLint
 import android.os.Bundle
 import android.util.Log
+import android.view.View
+import android.view.animation.AnticipateInterpolator
+import android.view.animation.LinearInterpolator
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
@@ -12,6 +17,9 @@ import androidx.compose.material.DrawerValue
 import androidx.compose.material.rememberDrawerState
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.core.animation.doOnEnd
+import androidx.core.splashscreen.SplashScreen
+import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -34,6 +42,8 @@ import java.util.*
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
 
+    private lateinit var splashScreen: SplashScreen
+
     companion object {
         const val TAG = "메인"
     }
@@ -48,12 +58,29 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        MobileAds.initialize(this)
+
+
+        splashScreen = installSplashScreen()
+        startSplash()
         setContent {
+            MobileAds.initialize(this)
 
 //            allViewModel.deleteLocalUser()
 
             loadInterstitial(this)
+
+
+            AppScreen(
+                    dollarViewModel,
+                    yenViewModel,
+                    wonViewModel,
+                    allViewModel)
+
+        }
+    }
+
+    private fun startSplash() {
+        splashScreen.setOnExitAnimationListener { splashScreenView ->
 
             allViewModel.recentRateHotListener { recentRate, localData->
                 Log.d(TAG, "실시간 데이터 수신 ${recentRate}, ${localData}")
@@ -63,18 +90,23 @@ class MainActivity : ComponentActivity() {
                 yenViewModel.requestRate(recentRate)
 
                 wonViewModel.requestRate(recentRate)
-
-
-
             }
 
-            AppScreen(
-                    dollarViewModel,
-                    yenViewModel,
-                    wonViewModel,
-                    allViewModel)
+            val translateY = PropertyValuesHolder.ofFloat(View.TRANSLATION_Y, 0f, -50f, 0f) // 위아래로 이동
 
+            ObjectAnimator.ofPropertyValuesHolder(splashScreenView.iconView, translateY).run {
+                duration = 1500L
+                interpolator = LinearInterpolator()
+                repeatCount = 2
+                repeatMode = ObjectAnimator.REVERSE
+                doOnEnd {
+                    splashScreenView.remove()
+                }
+                start()
+            }
         }
+
+
     }
 }
 

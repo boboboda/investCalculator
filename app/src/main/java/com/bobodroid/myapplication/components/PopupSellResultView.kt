@@ -1,7 +1,5 @@
 package com.bobodroid.myapplication.components
 
-import android.util.Half.toFloat
-import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -17,19 +15,17 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
-import com.bobodroid.myapplication.MainActivity.Companion.TAG
 import com.bobodroid.myapplication.extensions.toDecUs
 import com.bobodroid.myapplication.extensions.toPer
 import com.bobodroid.myapplication.extensions.toWon
 import com.bobodroid.myapplication.extensions.toYen
 import com.bobodroid.myapplication.models.datamodels.DrBuyRecord
+import com.bobodroid.myapplication.models.datamodels.YenBuyRecord
 import com.bobodroid.myapplication.models.viewmodels.DollarViewModel
 import com.bobodroid.myapplication.models.viewmodels.WonViewModel
 import com.bobodroid.myapplication.models.viewmodels.YenViewModel
 import com.bobodroid.myapplication.ui.theme.SellButtonColor
 import com.bobodroid.myapplication.ui.theme.SellPopColor
-import java.text.NumberFormat
-import java.util.*
 
 
 @Composable
@@ -54,23 +50,35 @@ fun SellResultDialog(
     ) {
         Column(
             modifier = Modifier
-                .wrapContentSize()
+                .fillMaxWidth()
                 .background(
                     color = SellPopColor,
-                    shape = RoundedCornerShape(5.dp))
+                    shape = RoundedCornerShape(5.dp)
+                )
         ) {
             Row(
                 modifier = Modifier
-                    .wrapContentSize()
-                    .padding(top = 20.dp, start = 20.dp),
+                    .fillMaxWidth()
+                    .padding(top = 20.dp, start = 20.dp, end = 20.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.Start
             ) {
 
-                Text(
-                    text = "수익:",
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.padding(5.dp))
+                Box(
+                    modifier = Modifier
+                        .background(
+                            color = Color.White,
+                            shape = RoundedCornerShape(5.dp)
+                        )
+                        .wrapContentHeight()
+                        .weight(0.2f),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = "수익",
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.padding(5.dp).padding(vertical = 5.dp))
+                }
 
                 Spacer(modifier = Modifier.width(10.dp))
 
@@ -78,15 +86,17 @@ fun SellResultDialog(
                     modifier = Modifier
                         .background(
                             color = Color.White,
-                            shape = RoundedCornerShape(5.dp))
-                        .wrapContentSize(),
+                            shape = RoundedCornerShape(5.dp)
+                        )
+                        .wrapContentHeight()
+                        .weight(0.8f),
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
                         text = "${inputMoney.value.toFloat().toWon()}",
                         color = Color.Red,
                         textAlign = TextAlign.Center,
-                        modifier = Modifier.padding(5.dp)
+                        modifier = Modifier.padding(5.dp).padding(vertical = 5.dp)
                     )
                 }
 
@@ -95,13 +105,26 @@ fun SellResultDialog(
             Row(
                 modifier = Modifier
                     .wrapContentSize()
-                    .padding(top = 20.dp, start = 20.dp),
+                    .padding(top = 20.dp, start = 20.dp, end = 20.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.Start
             ) {
-                Text(text = "수익률:",
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.padding(5.dp))
+
+                Box(
+                    modifier = Modifier
+                        .background(
+                            color = Color.White,
+                            shape = RoundedCornerShape(5.dp)
+                        )
+                        .wrapContentHeight()
+                        .weight(0.2f),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(text = "수익률",
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.padding(5.dp).padding(vertical = 5.dp))
+                }
+
 
                 Spacer(modifier = Modifier.width(10.dp))
 
@@ -109,15 +132,17 @@ fun SellResultDialog(
                     modifier = Modifier
                         .background(
                             color = Color.White,
-                            shape = RoundedCornerShape(5.dp))
-                        .wrapContentSize(),
+                            shape = RoundedCornerShape(5.dp)
+                        )
+                        .wrapContentHeight()
+                        .weight(0.8f),
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
                         text = "${percent.value.toPer()} %",
                         color = Color.Red,
                         textAlign = TextAlign.Center,
-                        modifier = Modifier.padding(5.dp)
+                        modifier = Modifier.padding(5.dp).padding(vertical = 5.dp)
                     )
                 }
 
@@ -129,7 +154,7 @@ fun SellResultDialog(
             Row(
                 modifier =
                 Modifier
-                    .wrapContentSize()
+                    .fillMaxWidth()
                     .padding(bottom = 20.dp)
                     .padding(horizontal = 20.dp),
                 horizontalArrangement = Arrangement.Center
@@ -167,13 +192,13 @@ fun SellResultDialog(
     }
 }
 
-
 @Composable
 fun YenSellResultDialog(
-    onDismissRequest: ((Boolean)->Unit)?,
+    onDismissRequest: ((Boolean) -> Unit)?,
     onClicked: ((Boolean) -> Unit)?,
-    sellAction:()->Unit,
-    yenViewModel: YenViewModel
+    sellAction: () -> Unit,
+    yenViewModel: YenViewModel,
+    buyRecord: YenBuyRecord
 ) {
 
 
@@ -189,23 +214,35 @@ fun YenSellResultDialog(
     ) {
         Column(
             modifier = Modifier
-                .wrapContentSize()
+                .fillMaxWidth()
                 .background(
                     color = SellPopColor,
-                    shape = RoundedCornerShape(5.dp))
+                    shape = RoundedCornerShape(5.dp)
+                )
         ) {
             Row(
                 modifier = Modifier
-                    .wrapContentSize()
-                    .padding(top = 20.dp, start = 20.dp),
+                    .fillMaxWidth()
+                    .padding(top = 20.dp, start = 20.dp, end = 20.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.Start
             ) {
 
-                Text(
-                    text = "수익:",
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.padding(5.dp))
+                Box(
+                    modifier = Modifier
+                        .background(
+                            color = Color.White,
+                            shape = RoundedCornerShape(5.dp)
+                        )
+                        .wrapContentHeight()
+                        .weight(0.2f),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = "수익",
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.padding(5.dp).padding(vertical = 5.dp))
+                }
 
                 Spacer(modifier = Modifier.width(10.dp))
 
@@ -213,15 +250,17 @@ fun YenSellResultDialog(
                     modifier = Modifier
                         .background(
                             color = Color.White,
-                            shape = RoundedCornerShape(5.dp))
-                        .wrapContentSize(),
+                            shape = RoundedCornerShape(5.dp)
+                        )
+                        .wrapContentHeight()
+                        .weight(0.8f),
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
                         text = "${inputMoney.value.toFloat().toWon()}",
                         color = Color.Red,
                         textAlign = TextAlign.Center,
-                        modifier = Modifier.padding(5.dp)
+                        modifier = Modifier.padding(5.dp).padding(vertical = 5.dp)
                     )
                 }
 
@@ -230,13 +269,26 @@ fun YenSellResultDialog(
             Row(
                 modifier = Modifier
                     .wrapContentSize()
-                    .padding(top = 20.dp, start = 20.dp),
+                    .padding(top = 20.dp, start = 20.dp, end = 20.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.Start
             ) {
-                Text(text = "수익률:",
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.padding(5.dp))
+
+                Box(
+                    modifier = Modifier
+                        .background(
+                            color = Color.White,
+                            shape = RoundedCornerShape(5.dp)
+                        )
+                        .wrapContentHeight()
+                        .weight(0.2f),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(text = "수익률",
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.padding(5.dp).padding(vertical = 5.dp))
+                }
+
 
                 Spacer(modifier = Modifier.width(10.dp))
 
@@ -244,15 +296,17 @@ fun YenSellResultDialog(
                     modifier = Modifier
                         .background(
                             color = Color.White,
-                            shape = RoundedCornerShape(5.dp))
-                        .wrapContentSize(),
+                            shape = RoundedCornerShape(5.dp)
+                        )
+                        .wrapContentHeight()
+                        .weight(0.8f),
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
                         text = "${percent.value.toPer()} %",
                         color = Color.Red,
                         textAlign = TextAlign.Center,
-                        modifier = Modifier.padding(5.dp)
+                        modifier = Modifier.padding(5.dp).padding(vertical = 5.dp)
                     )
                 }
 
@@ -264,7 +318,7 @@ fun YenSellResultDialog(
             Row(
                 modifier =
                 Modifier
-                    .wrapContentSize()
+                    .fillMaxWidth()
                     .padding(bottom = 20.dp)
                     .padding(horizontal = 20.dp),
                 horizontalArrangement = Arrangement.Center
@@ -273,7 +327,7 @@ fun YenSellResultDialog(
                     label = "기록",
                     onClicked = {
                         sellAction()
-                        yenViewModel.sellRecordValue()
+                        yenViewModel.sellRecordValue(buyRecord)
                         yenViewModel.selectedCheckBoxId.value = 2
                     },
                     color = SellButtonColor,
@@ -336,7 +390,8 @@ fun WonSellResultDialog(
                 .wrapContentSize()
                 .background(
                     color = SellPopColor,
-                    shape = RoundedCornerShape(5.dp))
+                    shape = RoundedCornerShape(5.dp)
+                )
         ) {
             Row(
                 modifier = Modifier
@@ -357,7 +412,8 @@ fun WonSellResultDialog(
                     modifier = Modifier
                         .background(
                             color = Color.White,
-                            shape = RoundedCornerShape(5.dp))
+                            shape = RoundedCornerShape(5.dp)
+                        )
                         .wrapContentSize(),
                     contentAlignment = Alignment.Center
                 ) {
@@ -388,7 +444,8 @@ fun WonSellResultDialog(
                     modifier = Modifier
                         .background(
                             color = Color.White,
-                            shape = RoundedCornerShape(5.dp))
+                            shape = RoundedCornerShape(5.dp)
+                        )
                         .wrapContentSize(),
                     contentAlignment = Alignment.Center
                 ) {

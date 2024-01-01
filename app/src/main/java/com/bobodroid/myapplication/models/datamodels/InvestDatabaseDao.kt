@@ -60,7 +60,7 @@ interface YenBuyDatabaseDao {
     fun getRecords(): Flow<List<YenBuyRecord>>
 
     @Query("SELECT * from buyYen_table where id=:id")
-    suspend fun getRecordById(id: String): YenBuyRecord
+    suspend fun getRecordById(id: UUID): YenBuyRecord
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(yenBuyRecord: YenBuyRecord)

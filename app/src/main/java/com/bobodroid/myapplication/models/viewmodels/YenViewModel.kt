@@ -300,13 +300,17 @@ class YenViewModel @Inject constructor(private val investRepository: InvestRepos
     }
 
 
-    fun sellRecordValue() {
+    fun sellRecordValue(buyRecord: YenBuyRecord) {
         viewModelScope.launch {
+
+            val buyRecordId = buyRecord.id
+
             investRepository
                 .addRecord(
                     YenSellRecord(
+                        id = buyRecordId,
                         date = sellDateFlow.value,
-                        money = haveMoney.value.toString(),
+                        money = haveMoney.value,
                         rate = sellRateFlow.value,
                         exchangeMoney = sellDollarFlow.value,
                         sellYenMemo = "",
@@ -417,6 +421,48 @@ class YenViewModel @Inject constructor(private val investRepository: InvestRepos
             }
 
         }
+    }
+
+    fun buyYenMemoUpdate(updateData: YenBuyRecord, result:(Boolean) -> Unit){
+
+        var success: Boolean = false
+        viewModelScope.launch {
+            val successValue = investRepository.updateRecord(updateData)
+
+            Log.d(TAG, "업데이트 성공 ${successValue}")
+            success = if(successValue > 0) true else false
+            result(success)
+
+        }
+    }
+
+    fun sellYenMemoUpdate(updateData: YenSellRecord, result:(Boolean) -> Unit){
+
+        var success: Boolean = false
+        viewModelScope.launch {
+            val successValue = investRepository.updateRecord(updateData)
+
+            Log.d(TAG, "업데이트 성공 ${successValue}")
+            success = if(successValue > 0) true else false
+            result(success)
+
+        }
+    }
+
+    suspend fun cancelSellRecord(id: UUID): Boolean {
+
+        val searchBuyRecord = investRepository.getYenRecordId(id)
+
+        Log.d(TAG, "cancelSellRecord: ${searchBuyRecord}, sellId: ${id}")
+
+        if(searchBuyRecord == null) {
+            return false
+        } else {
+            val updateData = searchBuyRecord.copy(recordColor = false)
+
+            investRepository.updateRecord(updateData)
+
+            return true}
     }
 
 

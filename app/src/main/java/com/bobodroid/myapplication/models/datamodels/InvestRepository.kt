@@ -33,6 +33,7 @@ class InvestRepository @Inject constructor(
 
     //엔화
     suspend fun addRecord(yenBuyRecord: YenBuyRecord) = yenBuyDatabaseDao.insert(yenBuyRecord)
+    suspend fun getYenRecordId(yenBuyId: UUID): YenBuyRecord = yenBuyDatabaseDao.getRecordById(yenBuyId)
     suspend fun updateRecord(yenBuyRecord: YenBuyRecord) = yenBuyDatabaseDao.update(yenBuyRecord)
     suspend fun deleteRecord(yenBuyRecord: YenBuyRecord) = yenBuyDatabaseDao.deleteNote(yenBuyRecord)
     suspend fun deleteAllRecord(yenBuyRecord: YenBuyRecord) = yenBuyDatabaseDao.deleteAll()

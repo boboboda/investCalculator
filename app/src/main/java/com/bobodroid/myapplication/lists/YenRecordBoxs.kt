@@ -92,7 +92,8 @@ fun BuyYenRecordBox(yenViewModel: YenViewModel, snackbarHostState: SnackbarHostS
 
 @OptIn(ExperimentalMaterialApi::class)
 @Composable
-fun SellYenRecordBox(yenViewModel: YenViewModel) {
+fun SellYenRecordBox(yenViewModel: YenViewModel,
+                     snackbarHostState: SnackbarHostState) {
 
     val sellRecordHistory : State<List<YenSellRecord>> = yenViewModel.filterSellRecordFlow.collectAsState()
 
@@ -141,7 +142,8 @@ fun SellYenRecordBox(yenViewModel: YenViewModel) {
                         yenViewModel.sellRateFlow.value = recordBox.rate
                         yenViewModel.sellDollarFlow.value = recordBox.money
                     },
-                    yenViewModel)
+                    yenViewModel,
+                    snackbarHostState)
                 Divider()
             }
         }

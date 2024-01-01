@@ -1,6 +1,5 @@
 package com.bobodroid.myapplication.components.Dialogs
 
-import android.util.Log
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -23,7 +22,6 @@ import com.bobodroid.myapplication.components.Caldenders.YenSellDatePickerDialog
 import com.bobodroid.myapplication.models.viewmodels.DollarViewModel
 import com.bobodroid.myapplication.models.viewmodels.WonViewModel
 import com.bobodroid.myapplication.models.viewmodels.YenViewModel
-import com.bobodroid.myapplication.screens.TAG
 import com.bobodroid.myapplication.ui.theme.SellButtonColor
 import java.time.LocalDate
 import androidx.compose.material.SnackbarHostState
@@ -34,6 +32,7 @@ import com.bobodroid.myapplication.components.SellResultDialog
 import com.bobodroid.myapplication.components.WonSellResultDialog
 import com.bobodroid.myapplication.components.YenSellResultDialog
 import com.bobodroid.myapplication.models.datamodels.DrBuyRecord
+import com.bobodroid.myapplication.models.datamodels.YenBuyRecord
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -66,7 +65,8 @@ fun SellDialog(
                 .wrapContentSize()
                 .background(
                     color = Color.White,
-                    shape = RoundedCornerShape(16.dp))
+                    shape = RoundedCornerShape(16.dp)
+                )
                 .padding(top = 20.dp, bottom = 20.dp)
                 .padding(horizontal = 20.dp),
             horizontalAlignment = Alignment.CenterHorizontally
@@ -173,7 +173,9 @@ fun YenSellDialog(
     onClicked: ((Boolean) -> Unit)?,
     sellAction: () -> Unit,
     yenViewModel: YenViewModel,
-    snackbarHostState: SnackbarHostState) {
+    snackbarHostState: SnackbarHostState,
+    buyRecord: YenBuyRecord
+) {
 
     val isDialogOpen = remember { mutableStateOf(false) }
 
@@ -197,7 +199,8 @@ fun YenSellDialog(
                 .wrapContentSize()
                 .background(
                     color = Color.White,
-                    shape = RoundedCornerShape(16.dp))
+                    shape = RoundedCornerShape(16.dp)
+                )
                 .padding(top = 20.dp, bottom = 20.dp)
                 .padding(horizontal = 20.dp),
             horizontalAlignment = Alignment.CenterHorizontally
@@ -278,13 +281,14 @@ fun YenSellDialog(
 
             if (openDialog.value) {
                 YenSellResultDialog(
+                    buyRecord = buyRecord,
                     sellAction = sellAction,
                     onDismissRequest = {
                         openDialog.value = it
                         onDismissRequest
-                        yenViewModel.resetValue() },
-                    onClicked = { onClicked?.invoke(false) }
-                    , yenViewModel = yenViewModel)
+                        yenViewModel.resetValue()
+                    },
+                    onClicked = { onClicked?.invoke(false) }, yenViewModel = yenViewModel)
 
             }
 
@@ -325,7 +329,8 @@ fun WonSellDialog(
                 .wrapContentSize()
                 .background(
                     color = Color.White,
-                    shape = RoundedCornerShape(16.dp))
+                    shape = RoundedCornerShape(16.dp)
+                )
                 .padding(top = 20.dp, bottom = 20.dp)
                 .padding(horizontal = 20.dp),
             horizontalAlignment = Alignment.CenterHorizontally

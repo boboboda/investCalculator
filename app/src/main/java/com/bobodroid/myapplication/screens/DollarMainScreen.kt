@@ -104,7 +104,8 @@ fun DollarMainScreen
             //snackBar
             Row(modifier = Modifier
                 .fillMaxWidth()
-                .wrapContentHeight()) {
+                .wrapContentHeight()
+            ) {
                 SnackbarHost(
                     hostState = snackBarHostState, modifier = Modifier,
                     snackbar = { snackBarData ->

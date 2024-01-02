@@ -3,28 +3,25 @@ package com.bobodroid.myapplication.models.viewmodels
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import androidx.lifecycle.viewmodel.compose.viewModel
-import com.bobodroid.myapplication.MainActivity
 import com.bobodroid.myapplication.MainActivity.Companion.TAG
 import com.bobodroid.myapplication.models.datamodels.ExchangeRate
 import com.bobodroid.myapplication.models.datamodels.InvestRepository
 import com.bobodroid.myapplication.models.datamodels.LocalUserData
-import com.bobodroid.myapplication.models.datamodels.Rate
 import com.bobodroid.myapplication.models.datamodels.service.NoticeApi
 import com.google.firebase.Firebase
 import com.google.firebase.firestore.Query
 import com.google.firebase.firestore.firestore
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.time.LocalDate
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
 import java.util.Calendar
 import java.util.GregorianCalendar
-import java.util.UUID
 import javax.inject.Inject
 
 @HiltViewModel
@@ -40,35 +37,42 @@ class AllViewModel @Inject constructor(
 
     val noticeShowDialog = MutableStateFlow(false)
 
-    init {
-        noticeApi()
-    }
+    val todayDateFlow = MutableStateFlow("${LocalDate.now()}")
 
-    fun noticeApi() {
+    private val noticeDateFlow = MutableStateFlow("")
+
+    val noticeContent = MutableStateFlow("")
+    private fun noticeApi( noticeDate:(String) -> Unit) {
         viewModelScope.launch {
             val noticeResponse = NoticeApi.noticeService.noticeRequest()
 
-            Log.d(TAG, "공지사항${noticeResponse.data}")
+            val res = noticeResponse.data.first()
+
+            noticeContent.emit(res.content)
+            noticeDate.invoke(res.createdAt)
+            noticeDateFlow.emit(res.createdAt)
         }
     }
-    fun noticeDialogState(localUserDate: LocalUserData) {
+
+    fun noticeDialogState(localUserDate: LocalUserData, noticeDate: String) {
+
+
         // 저장한 날짜와 같으면 실행
-        Log.d(
-            com.bobodroid.myapplication.screens.TAG,
-            "튜터리얼 날짜\n 오늘날짜: ${dateFlow.value},  연기날짜: ${localUserDate.userShowNoticeDate}"
+        Log.d(TAG, "공지사항 날짜: ${noticeDate},  연기날짜: ${localUserDate.userShowNoticeDate} 오늘날짜 ${LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))}"
         )
 
-        if (noticeState.value) {
             if (!localUserDate.userShowNoticeDate.isNullOrEmpty()) {
-                if (dateFlow.value >= localUserDate.userShowNoticeDate!!) {
-                    Log.d(com.bobodroid.myapplication.screens.TAG, "오늘 날짜가 더 큽니다.")
+                if (noticeDate > localUserDate.userShowNoticeDate!!) {
+                    Log.d(TAG, "공지사항 날짜가 더 큽니다.")
                     noticeShowDialog.value = true
-                } else return
+                } else {
+                    Log.d(TAG, "로컬에 저장된 날짜가 더 큽니다.")
+                }
             } else {
-                Log.d(com.bobodroid.myapplication.screens.TAG, "날짜 값이 없습니다.")
+                Log.d(TAG, "날짜 값이 없습니다.")
                 noticeShowDialog.value = true
             }
-        } else return
+
     }
 
 
@@ -78,7 +82,7 @@ class AllViewModel @Inject constructor(
             Log.d(TAG, "로컬 유저 생성 실행")
 
             val createLocalUser = LocalUserData(
-                userResetDate = dateFlow.value,
+                userResetDate = todayDateFlow.value,
                 rateAdCount = 0,
                 rateResetCount = 3
             )
@@ -97,7 +101,7 @@ class AllViewModel @Inject constructor(
         }
     }
 
-    fun dateUpdate() {
+    fun dateReset() {
         viewModelScope.launch {
             Log.d(TAG, "날짜 초기화")
 
@@ -114,35 +118,26 @@ class AllViewModel @Inject constructor(
         }
     }
 
-    fun deleteLocalUser() {
+    fun selectDelayDate(localUser: LocalUserData) {
         viewModelScope.launch {
-            investRepository.localUserDataDelete()
-        }
-    }
-
-
-    fun selectDelayDate() {
-        viewModelScope.launch {
-            if (localUserData.value != null) {
+            if (localUser != null) {
 
                 Log.d(TAG, "날짜 연기 신청")
 
-                val user = localUserData.value
-
-                val updateUserData = user.copy(
-                    userShowNoticeDate = delayDayFlow.value
+                val updateUserData = localUser.copy(
+                    userShowNoticeDate = noticeDateFlow.value
                 )
 
                 investRepository.localUserUpdate(updateUserData)
 
-                Log.d(TAG, "날짜 수정 실행, ${delayDayFlow.value}")
+                Log.d(TAG, "날짜 수정 실행, ${noticeDateFlow.value}")
             }
         }
     }
 
-    val dateFlow = MutableStateFlow("${LocalDate.now()}")
 
-    val noticeState = MutableStateFlow(true)
+
+
     fun dateWeek(week: Int): String? {
         val c = GregorianCalendar()
         c.add(Calendar.DAY_OF_WEEK, +week)
@@ -154,13 +149,14 @@ class AllViewModel @Inject constructor(
 
     val delayDayFlow = MutableStateFlow("${delayDay}")
 
+    fun deleteLocalUser() {
+        viewModelScope.launch {
+            investRepository.localUserDataDelete()
+        }
+    }
 
-    // 20개 범위 최신 환율 가지고 있음
-    val exChangeRateListFlow = MutableStateFlow<List<ExchangeRate>>(emptyList())
 
 
-    // 최신 값 마지막 값 변동성 있는 값
-    val exChangeRateFlow = MutableStateFlow(ExchangeRate())
 
     // 항상 최신 값 가지고 있음
     val recentExChangeRateFlow = MutableStateFlow(ExchangeRate())
@@ -179,7 +175,11 @@ class AllViewModel @Inject constructor(
 
                 resetChance(localData)
 
-                noticeDialogState(localData)
+                noticeApi { noticeDate ->
+                    noticeDialogState(localData, noticeDate)
+                }
+
+
 
                 viewModelScope.launch {
                     refreshDateFlow.emit(localData.reFreshCreateAt ?: "새로고침 정보가 없습니다.")
@@ -237,7 +237,7 @@ class AllViewModel @Inject constructor(
         return diffHours >= 1
     }
 
-    fun localExistCheck(localData: (LocalUserData) -> Unit) {
+    private fun localExistCheck(localData: (LocalUserData) -> Unit) {
 
         viewModelScope.launch(Dispatchers.IO) {
             investRepository.localUserDataGet().distinctUntilChanged()
@@ -365,24 +365,24 @@ class AllViewModel @Inject constructor(
         }
     }
 
-    fun resetChance(localUser: LocalUserData) {
+    private fun resetChance(localUser: LocalUserData) {
 
         val resetDate = localUser.userResetDate
 
         val resetState = localUser.userResetState
 
 
-        if (dateFlow.value >= resetDate!!) {
+        if (todayDateFlow.value >= resetDate!!) {
             Log.w(TAG, "리셋 받을 날짜가 오늘이랑 같거나 큰 경우")
-            if (dateFlow.value == resetState) {
+            if (todayDateFlow.value == resetState) {
                 Log.w(TAG, "무료기회가 리셋된 기기입니다.")
             } else {
 
                 Log.w(TAG, "무료기회 리셋 진행")
                 viewModelScope.launch {
                     val updateData = localUser.copy(
-                        userResetDate = dateFlow.value,
-                        userResetState = dateFlow.value,
+                        userResetDate = todayDateFlow.value,
+                        userResetState = todayDateFlow.value,
                         rateResetCount = 3
                     )
 

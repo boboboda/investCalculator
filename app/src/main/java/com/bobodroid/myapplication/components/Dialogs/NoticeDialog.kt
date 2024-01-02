@@ -6,16 +6,20 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.layout.wrapContentSize
+import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.Button
 import androidx.compose.material.ButtonDefaults
@@ -31,6 +35,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.TextUnitType
 import androidx.compose.ui.unit.dp
@@ -43,93 +48,64 @@ import com.bobodroid.myapplication.models.viewmodels.AllViewModel
 
 @Composable
 fun NoticeDialog(
+    content: String,
     onDismissRequest: (Boolean) -> Unit,
-    dateDelaySelected:() -> Unit,
-    allViewModel: AllViewModel){
+    dateDelaySelected: () -> Unit,
+    allViewModel: AllViewModel
+) {
 
     Dialog(
         onDismissRequest = { },
         properties = DialogProperties()
-    ){
+    ) {
         Column(
             modifier = Modifier
                 .clip(shape = RoundedCornerShape(20.dp))
                 .background(Color.White)
-                .fillMaxHeight(0.8f)
+                .wrapContentHeight()
                 .fillMaxWidth(1f)
         ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .wrapContentHeight(),
+                horizontalArrangement = Arrangement.End
+            ) {
+                CardIconButton(
+                    imageVector = Icons.Filled.Close,
+                    onClicked = { onDismissRequest.invoke(false) },
+                    modifier = Modifier,
+                    buttonColor = Color.White
+                )
+            }
+
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .weight(0.8f)
+                    .heightIn(min = 200.dp, max = 500.dp)
+                    .wrapContentHeight(),
+                verticalArrangement = Arrangement.Top,
+                horizontalAlignment = Alignment.Start
             ) {
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.TopEnd
-                ) {
-
-                    CardIconButton(
-                        imageVector = Icons.Filled.Close,
-                        onClicked = { onDismissRequest.invoke(false)},
-                        modifier = Modifier,
-                        buttonColor = Color.White
-                    )
-                    Column(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(top = 30.dp),
-                        verticalArrangement = Arrangement.Top,
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        Row(Modifier
-                            .fillMaxWidth(),
-                            horizontalArrangement = Arrangement.Center) {
-                            Text(fontSize = 25.sp,text = "개발 노트")
-                        }
-                        Spacer(modifier = Modifier.height(20.dp))
-                        Column(
-                            Modifier
-                                .fillMaxWidth()
-                                .padding(start = 20.dp),
-                            horizontalAlignment = Alignment.Start) {
-
-                            Text(fontSize = 20.sp, text = "업데이트 내용")
-
-                            Text(fontSize = 15.sp,
-                                lineHeight = 25.sp,
-                                text = "1. 실시간 무료 환율 제공\n" +
-                                        "2. 새로고침 예상수익 확인 시 적용\n")
-                        }
-                        
-                        Spacer(modifier = Modifier.height(20.dp))
-
-                        Column(
-                            Modifier
-                                .fillMaxWidth()
-                                .padding(start = 20.dp),
-                            horizontalAlignment = Alignment.Start) {
-                            Text(fontSize = 20.sp, text = "업데이트 계획")
-
-                            Text(fontSize = 15.sp,
-                                lineHeight = 25.sp,
-                                text = "1. 목표 환율 도달 알람 메시지 추가 예정\n" +
-                                        "2. 스프레드 설정 추가 예정\n" +
-                                        "3. 기록 수정 추가 예정\n")
-                        }
-
-
-
-
-
-
-
-
-                    }
-
-                }
-
+                Text(
+                    text = content,
+                    lineHeight = 25.sp,
+                    fontSize = 15.sp,
+                    fontWeight = FontWeight.Medium,
+                    modifier = Modifier
+                        .height(IntrinsicSize.Max)
+                        .padding(end = 10.dp)
+                        .padding(top = 5.dp)
+                        .padding(horizontal = 15.dp)
+                )
             }
-            Row() {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(min = 60.dp)
+                    .wrapContentHeight(),
+                horizontalArrangement = Arrangement.End
+            ) {
                 BasicCheckBox {
                     onDismissRequest(false)
                     dateDelaySelected.invoke()
@@ -141,16 +117,19 @@ fun NoticeDialog(
 
 
 @Composable
-fun BasicCheckBox(clicked:()-> Unit){
+fun BasicCheckBox(clicked: () -> Unit) {
     Row(
-        horizontalArrangement = Arrangement.Center,
-        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier
+            .wrapContentSize(),
+        verticalAlignment = Alignment.CenterVertically
     ) {
+        Text(text = "다시 보지 않기", fontSize = 15.sp)
 
-        Spacer(modifier = Modifier.width(1.dp))
+
+        Spacer(modifier = Modifier.width(5.dp))
 
         Image(
-            painter = painterResource(id = R.drawable.ic_unchecked) ,
+            painter = painterResource(id = R.drawable.ic_unchecked),
             contentDescription = null,
             modifier = Modifier
                 .size(45.dp)
@@ -158,9 +137,7 @@ fun BasicCheckBox(clicked:()-> Unit){
                     clicked.invoke()
                 })
 
-        Spacer(modifier = Modifier.width(5.dp))
 
-        Text(text = "일주일 동안 보지 않기")
     }
 
 }

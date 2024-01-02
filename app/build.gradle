@@ -21,8 +21,8 @@ android {
         applicationId "com.bobodroid.myapplication"
         minSdk 26
         targetSdk 33
-        versionCode 23
-        versionName "22.1.1"
+        versionCode 24
+        versionName "22.2.1"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {

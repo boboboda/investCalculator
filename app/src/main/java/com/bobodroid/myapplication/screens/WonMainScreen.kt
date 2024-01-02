@@ -17,6 +17,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material3.*
+import androidx.compose.material3.Card
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Divider
@@ -29,6 +30,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.PlatformTextStyle
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.LineHeightStyle
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.*
@@ -134,7 +136,56 @@ fun WonMainScreen(wonViewModel: WonViewModel, routeAction: InvestRouteAction, al
                     BuyWonRecordBox(wonViewModel, snackbarHostState = snackbarHostState)
                 else
 
-                    SellWonRecordBox(wonViewModel)
+                    SellWonRecordBox(wonViewModel, snackbarHostState = snackbarHostState)
+            }
+
+            //snackBar
+            Row(modifier = Modifier
+                .fillMaxWidth()
+                .wrapContentHeight()
+            ) {
+                SnackbarHost(
+                    hostState = snackbarHostState, modifier = Modifier,
+                    snackbar = { snackBarData ->
+
+
+                        Card(
+                            shape = RoundedCornerShape(8.dp),
+                            border = BorderStroke(1.5.dp, Color.Black),
+                            modifier = Modifier
+                                .padding(10.dp)
+                                .fillMaxWidth(),
+                        ) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(8.dp)
+                                    .padding(start = 10.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.Start
+                            ) {
+
+                                Text(
+                                    text = snackBarData.message,
+                                    fontSize = 15.sp,
+                                    lineHeight = 20.sp,
+                                    fontWeight = FontWeight.Medium
+                                )
+
+                                Spacer(modifier = Modifier.weight(1f))
+
+                                Text(
+                                    modifier = Modifier
+                                        .padding(8.dp)
+                                        .clickable {
+                                            snackbarHostState.currentSnackbarData?.dismiss()
+                                        },
+                                    text = "닫기",
+                                    fontWeight = FontWeight.Medium
+                                )
+                            }
+                        }
+                    })
             }
 
 //            Row(modifier = Modifier

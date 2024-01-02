@@ -10,6 +10,7 @@ import com.bobodroid.myapplication.models.datamodels.ExchangeRate
 import com.bobodroid.myapplication.models.datamodels.InvestRepository
 import com.bobodroid.myapplication.models.datamodels.LocalUserData
 import com.bobodroid.myapplication.models.datamodels.Rate
+import com.bobodroid.myapplication.models.datamodels.service.NoticeApi
 import com.google.firebase.Firebase
 import com.google.firebase.firestore.Query
 import com.google.firebase.firestore.firestore
@@ -39,6 +40,17 @@ class AllViewModel @Inject constructor(
 
     val noticeShowDialog = MutableStateFlow(false)
 
+    init {
+        noticeApi()
+    }
+
+    fun noticeApi() {
+        viewModelScope.launch {
+            val noticeResponse = NoticeApi.noticeService.noticeRequest()
+
+            Log.d(TAG, "공지사항${noticeResponse.data}")
+        }
+    }
     fun noticeDialogState(localUserDate: LocalUserData) {
         // 저장한 날짜와 같으면 실행
         Log.d(

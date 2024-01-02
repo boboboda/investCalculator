@@ -11,7 +11,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
@@ -20,6 +19,7 @@ import com.bobodroid.myapplication.extensions.toPer
 import com.bobodroid.myapplication.extensions.toWon
 import com.bobodroid.myapplication.extensions.toYen
 import com.bobodroid.myapplication.models.datamodels.DrBuyRecord
+import com.bobodroid.myapplication.models.datamodels.WonBuyRecord
 import com.bobodroid.myapplication.models.datamodels.YenBuyRecord
 import com.bobodroid.myapplication.models.viewmodels.DollarViewModel
 import com.bobodroid.myapplication.models.viewmodels.WonViewModel
@@ -359,10 +359,11 @@ fun YenSellResultDialog(
 
 @Composable
 fun WonSellResultDialog(
-    onDismissRequest: ((Boolean)->Unit)?,
+    onDismissRequest: ((Boolean) -> Unit)?,
     onClicked: ((Boolean) -> Unit)?,
-    sellAction:()->Unit,
-    wonViewModel: WonViewModel
+    sellAction: () -> Unit,
+    wonViewModel: WonViewModel,
+    buyRecord: WonBuyRecord
 ) {
 
 
@@ -387,7 +388,7 @@ fun WonSellResultDialog(
     ) {
         Column(
             modifier = Modifier
-                .wrapContentSize()
+                .fillMaxWidth()
                 .background(
                     color = SellPopColor,
                     shape = RoundedCornerShape(5.dp)
@@ -395,16 +396,27 @@ fun WonSellResultDialog(
         ) {
             Row(
                 modifier = Modifier
-                    .wrapContentSize()
-                    .padding(top = 20.dp, start = 20.dp),
+                    .fillMaxWidth()
+                    .padding(top = 20.dp, start = 20.dp, end = 20.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.Start
             ) {
 
-                Text(
-                    text = "수익:",
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.padding(5.dp))
+                Box(
+                    modifier = Modifier
+                        .background(
+                            color = Color.White,
+                            shape = RoundedCornerShape(5.dp)
+                        )
+                        .wrapContentHeight()
+                        .weight(0.2f),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = "수익",
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.padding(5.dp).padding(vertical = 5.dp))
+                }
 
                 Spacer(modifier = Modifier.width(10.dp))
 
@@ -414,14 +426,15 @@ fun WonSellResultDialog(
                             color = Color.White,
                             shape = RoundedCornerShape(5.dp)
                         )
-                        .wrapContentSize(),
+                        .wrapContentHeight()
+                        .weight(0.8f),
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
-                        text = "${inputMoney.value.toFloat().toWon()}",
+                        text = "${moneyCg}",
                         color = Color.Red,
                         textAlign = TextAlign.Center,
-                        modifier = Modifier.padding(5.dp)
+                        modifier = Modifier.padding(5.dp).padding(vertical = 5.dp)
                     )
                 }
 
@@ -430,13 +443,26 @@ fun WonSellResultDialog(
             Row(
                 modifier = Modifier
                     .wrapContentSize()
-                    .padding(top = 20.dp, start = 20.dp),
+                    .padding(top = 20.dp, start = 20.dp, end = 20.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.Start
             ) {
-                Text(text = "수익률:",
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.padding(5.dp))
+
+                Box(
+                    modifier = Modifier
+                        .background(
+                            color = Color.White,
+                            shape = RoundedCornerShape(5.dp)
+                        )
+                        .wrapContentHeight()
+                        .weight(0.2f),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(text = "수익률",
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.padding(5.dp).padding(vertical = 5.dp))
+                }
+
 
                 Spacer(modifier = Modifier.width(10.dp))
 
@@ -446,14 +472,15 @@ fun WonSellResultDialog(
                             color = Color.White,
                             shape = RoundedCornerShape(5.dp)
                         )
-                        .wrapContentSize(),
+                        .wrapContentHeight()
+                        .weight(0.8f),
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
                         text = "${percent.value.toPer()} %",
                         color = Color.Red,
                         textAlign = TextAlign.Center,
-                        modifier = Modifier.padding(5.dp)
+                        modifier = Modifier.padding(5.dp).padding(vertical = 5.dp)
                     )
                 }
 
@@ -465,7 +492,7 @@ fun WonSellResultDialog(
             Row(
                 modifier =
                 Modifier
-                    .wrapContentSize()
+                    .fillMaxWidth()
                     .padding(bottom = 20.dp)
                     .padding(horizontal = 20.dp),
                 horizontalArrangement = Arrangement.Center
@@ -474,7 +501,7 @@ fun WonSellResultDialog(
                     label = "기록",
                     onClicked = {
                         sellAction()
-                        wonViewModel.sellRecordValue()
+                        wonViewModel.sellRecordValue(buyRecord)
                         wonViewModel.selectedCheckBoxId.value = 2
                     },
                     color = SellButtonColor,

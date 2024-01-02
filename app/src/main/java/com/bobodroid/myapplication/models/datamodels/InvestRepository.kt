@@ -48,6 +48,8 @@ class InvestRepository @Inject constructor(
 
     //원화
     suspend fun addRecord(wonBuyRecord: WonBuyRecord) = wonBuyDatabaseDao.insert(wonBuyRecord)
+
+    suspend fun getWonRecordId(yenBuyId: UUID): WonBuyRecord = wonBuyDatabaseDao.getRecordById(yenBuyId)
     suspend fun updateRecord(wonBuyRecord: WonBuyRecord) = wonBuyDatabaseDao.update(wonBuyRecord)
     suspend fun deleteRecord(wonBuyRecord: WonBuyRecord) = wonBuyDatabaseDao.deleteNote(wonBuyRecord)
     suspend fun deleteAllRecord(wonBuyRecord: WonBuyRecord) = wonBuyDatabaseDao.deleteAll()

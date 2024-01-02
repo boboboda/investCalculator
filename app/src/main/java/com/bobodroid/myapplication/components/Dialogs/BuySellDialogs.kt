@@ -32,6 +32,7 @@ import com.bobodroid.myapplication.components.SellResultDialog
 import com.bobodroid.myapplication.components.WonSellResultDialog
 import com.bobodroid.myapplication.components.YenSellResultDialog
 import com.bobodroid.myapplication.models.datamodels.DrBuyRecord
+import com.bobodroid.myapplication.models.datamodels.WonBuyRecord
 import com.bobodroid.myapplication.models.datamodels.YenBuyRecord
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -305,7 +306,9 @@ fun WonSellDialog(
     onClicked: ((Boolean) -> Unit)?,
     sellAction: () -> Unit,
     wonViewModel: WonViewModel,
-    snackbarHostState: SnackbarHostState) {
+    snackbarHostState: SnackbarHostState,
+    buyRecord: WonBuyRecord
+) {
 
     val isDialogOpen = remember { mutableStateOf(false) }
 
@@ -411,6 +414,7 @@ fun WonSellDialog(
 
             if (openDialog.value) {
                 WonSellResultDialog(
+                    buyRecord = buyRecord,
                     onDismissRequest = {
                         openDialog.value = it
                         onDismissRequest

@@ -330,11 +330,15 @@ class WonViewModel @Inject constructor(private val investRepository: InvestRepos
     }
 
 
-    fun sellRecordValue() {
+    fun sellRecordValue(buyRecord: WonBuyRecord) {
+
+        val buyRecordId = buyRecord.id
+
         viewModelScope.launch {
             investRepository
                 .addRecord(
                     WonSellRecord(
+                        id = buyRecordId,
                         date = sellDateFlow.value,
                         money = haveMoney.value.toString(),
                         rate = sellRateFlow.value,
@@ -452,6 +456,50 @@ class WonViewModel @Inject constructor(private val investRepository: InvestRepos
             wonResentRateStateFlow.emit(exchangeRate)
         }
     }
+
+    fun buyWonMemoUpdate(updateData: WonBuyRecord, result:(Boolean) -> Unit){
+
+        var success: Boolean = false
+        viewModelScope.launch {
+            val successValue = investRepository.updateRecord(updateData)
+
+            Log.d(TAG, "업데이트 성공 ${successValue}")
+            success = if(successValue > 0) true else false
+            result(success)
+
+        }
+    }
+
+    fun sellWonMemoUpdate(updateData: WonSellRecord, result:(Boolean) -> Unit){
+
+        var success: Boolean = false
+        viewModelScope.launch {
+            val successValue = investRepository.updateRecord(updateData)
+
+            Log.d(TAG, "업데이트 성공 ${successValue}")
+            success = if(successValue > 0) true else false
+            result(success)
+
+        }
+    }
+
+    suspend fun cancelSellRecord(id: UUID): Boolean {
+
+        val searchBuyRecord = investRepository.getWonRecordId(id)
+
+        Log.d(TAG, "cancelSellRecord: ${searchBuyRecord}, sellId: ${id}")
+
+        if(searchBuyRecord == null) {
+            return false
+        } else {
+            val updateData = searchBuyRecord.copy(recordColor = false)
+
+            investRepository.updateRecord(updateData)
+
+            return true}
+    }
+
+
 
 
     fun expectSellValue(): String {

@@ -159,5 +159,27 @@ dependencies {
 
     //스프래쉬 화면
     implementation 'androidx.core:core-splashscreen:1.0.0-rc01'
+
+    // retrofit
+    def retrofit_version = "2.9.0"
+    implementation "com.squareup.retrofit2:retrofit:$retrofit_version"
+
+    // retrofit - moshi
+    implementation("com.squareup.moshi:moshi:1.14.0")
+    implementation "com.squareup.retrofit2:converter-moshi:$retrofit_version"
+
+    // moshi
+    def moshi_version = "1.14.0"
+    implementation "com.squareup.moshi:moshi-kotlin:$moshi_version"
+    kapt "com.squareup.moshi:moshi-kotlin-codegen:$moshi_version"
+
+    //OKHttp
+    implementation platform('com.squareup.okhttp3:okhttp-bom:4.9.0')
+    implementation 'com.squareup.okhttp3:okhttp'
+    implementation 'com.squareup.okhttp3:logging-interceptor'
+
+    //interceptorRandomUserApiService.kt
+    implementation("com.squareup.okhttp3:logging-interceptor:4.11.0")
+
 }
 

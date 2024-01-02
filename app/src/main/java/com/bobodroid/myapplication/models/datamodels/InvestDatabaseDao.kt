@@ -107,7 +107,7 @@ interface WonBuyDatabaseDao {
     fun getRecords(): Flow<List<WonBuyRecord>>
 
     @Query("SELECT * from buyWon_table where id=:id")
-    suspend fun getRecordById(id: String): WonBuyRecord
+    suspend fun getRecordById(id: UUID): WonBuyRecord
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(wonBuyRecord: WonBuyRecord)

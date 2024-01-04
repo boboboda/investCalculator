@@ -79,18 +79,22 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    override fun onStart() {
+        super.onStart()
+        // 앱 초기 실행 및 백그라운드에서 포그라운드로 전환될 때 실행
+        allViewModel.recentRateHotListener { recentRate, localData->
+            Log.d(TAG, "실시간 데이터 수신 ${recentRate}, ${localData}")
+
+            dollarViewModel.requestRate(recentRate)
+
+            yenViewModel.requestRate(recentRate)
+
+            wonViewModel.requestRate(recentRate)
+        }
+    }
+
     private fun startSplash() {
         splashScreen.setOnExitAnimationListener { splashScreenView ->
-
-            allViewModel.recentRateHotListener { recentRate, localData->
-                Log.d(TAG, "실시간 데이터 수신 ${recentRate}, ${localData}")
-
-                dollarViewModel.requestRate(recentRate)
-
-                yenViewModel.requestRate(recentRate)
-
-                wonViewModel.requestRate(recentRate)
-            }
 
             val translateY = PropertyValuesHolder.ofFloat(View.TRANSLATION_Y, 0f, -50f, 0f) // 위아래로 이동
 

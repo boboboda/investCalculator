@@ -237,7 +237,7 @@ class AllViewModel @Inject constructor(
         return diffHours >= 1
     }
 
-    private fun localExistCheck(localData: (LocalUserData) -> Unit) {
+   private fun localExistCheck(localData: (LocalUserData) -> Unit) {
 
         viewModelScope.launch(Dispatchers.IO) {
             investRepository.localUserDataGet().distinctUntilChanged()
@@ -394,5 +394,24 @@ class AllViewModel @Inject constructor(
             return
         }
     }
+
+    fun localIdCustom(customId: String) {
+
+        val localUser = localUserData.value
+
+        viewModelScope.launch {
+            Log.d(TAG, "localId custom 실행")
+
+            val updateDate = localUser.copy(
+                customId = customId
+            )
+
+            investRepository.localUserUpdate(updateDate)
+        }
+
+    }
+
+
+
 
 }

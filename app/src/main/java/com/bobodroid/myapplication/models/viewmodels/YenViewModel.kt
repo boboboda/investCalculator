@@ -155,6 +155,7 @@ class YenViewModel @Inject constructor(private val investRepository: InvestRepos
 
                         val endFilterSellRecord = startFilterSellRecord.filter { it.date <= endDate}
 
+                        Log.d(TAG, "조회 ${endFilterSellRecord}")
 
                         _filterSellRecordFlow.emit(endFilterSellRecord)
 
@@ -163,8 +164,6 @@ class YenViewModel @Inject constructor(private val investRepository: InvestRepos
                             buyList = null, sellList = endFilterSellRecord)
 
                         totalSellProfit.emit(totalProfit)
-
-
                     }
                 }
             }
@@ -197,21 +196,33 @@ class YenViewModel @Inject constructor(private val investRepository: InvestRepos
                 if(result.isNullOrEmpty()) {
                     return ""
                 } else {
-                    return result.reduce {first, end ->
-                        first + end }.toBigDecimalWon()
+                    if(result.size > 1) {
+                        return result.reduce {first, end ->
+                            first + end }.toBigDecimalWon()
+                    } else {
+                        return "${result.first().toBigDecimalWon()}"
+                    }
                 }
+
             }
 
             YenAction.Sell -> {
                 val result = sellList?.map { BigDecimal(it.exchangeMoney) }
 
+                Log.d(TAG, "엔화 ${result}")
+
                 if(result.isNullOrEmpty()) {
                     return ""
                 } else {
-                    result.reduceOrNull { first, end ->
-                        first!! + end!!
+                    if(result.size > 1) {
+                        return result.reduce { first, end ->
+                            first + end
+                        }.toBigDecimalWon()
+
+                    } else {
+                        return "${result.first().toBigDecimalWon()}"
                     }
-                    return result.toString()
+
                 }
             }
         }
@@ -364,12 +375,12 @@ class YenViewModel @Inject constructor(private val investRepository: InvestRepos
 
             if (yenBuyRecord.profit == null) {
 
-                Log.d(MainActivity.TAG, "기존 데이터 profit 추가 실행")
+                Log.d(TAG, "기존 데이터 profit 추가 실행")
 
                 val resentRate = exchangeRate.exchangeRates?.jpy
 
                 if (resentRate.isNullOrEmpty()) {
-                    Log.d(MainActivity.TAG, "calculateProfit 최신 값 받아오기 실패")
+                    Log.d(TAG, "calculateProfit 최신 값 받아오기 실패")
 
                 } else {
                     val exChangeMoney = yenBuyRecord.exchangeMoney
@@ -381,7 +392,7 @@ class YenViewModel @Inject constructor(private val investRepository: InvestRepos
                     val profit = (((BigDecimal(exChangeMoney).times(BigDecimal(resentRate).times(BigDecimal("100"))))
                         .setScale(20, RoundingMode.HALF_UP)) - BigDecimal(koreaMoney)).toString()
 
-                    Log.d(MainActivity.TAG, "예상 수익 ${profit}")
+                    Log.d(TAG, "예상 수익 ${profit}")
 
                     val updateDate = yenBuyRecord.copy(profit = profit)
 

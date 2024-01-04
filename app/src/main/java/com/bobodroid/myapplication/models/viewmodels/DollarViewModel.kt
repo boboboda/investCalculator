@@ -26,6 +26,7 @@ import com.bobodroid.myapplication.models.datamodels.ExchangeRate
 import com.bobodroid.myapplication.models.datamodels.InvestRepository
 import com.bobodroid.myapplication.models.datamodels.LocalUserData
 import dagger.hilt.android.lifecycle.HiltViewModel
+import io.reactivex.internal.operators.maybe.MaybeDoAfterSuccess
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
@@ -93,6 +94,7 @@ class DollarViewModel @Inject constructor(private val investRepository: InvestRe
     val exchangeMoney = MutableStateFlow("")
 
     val selectedCheckBoxId = MutableStateFlow(1)
+
 
     // 날짜 관련
     val time = Calendar.getInstance().time
@@ -207,21 +209,33 @@ class DollarViewModel @Inject constructor(private val investRepository: InvestRe
                 if(result.isNullOrEmpty()) {
                     return ""
                 } else {
-                    return result.reduce {first, end ->
-                        first + end }.toBigDecimalWon()
+                    if(result.size > 1) {
+                        return result.reduce {first, end ->
+                            first + end }.toBigDecimalWon()
+                    } else {
+                        return "${result.first().toBigDecimalWon()}"
                     }
+                    }
+
                 }
 
             DrAction.Sell -> {
                 val result = sellList?.map { BigDecimal(it.exchangeMoney) }
 
+                Log.d(TAG, "달러 ${result}")
+
                 if(result.isNullOrEmpty()) {
                     return ""
                 } else {
-                    result.reduceOrNull { first, end ->
-                        first!! + end!!
+                    if(result.size > 1) {
+                        return result.reduce { first, end ->
+                            first + end
+                        }.toBigDecimalWon()
+
+                    } else {
+                        return "${result.first().toBigDecimalWon()}"
                     }
-                    return result.toString()
+
                 }
             }
         }
@@ -519,6 +533,3 @@ class DollarViewModel @Inject constructor(private val investRepository: InvestRe
     private fun sellPercent(): Float = (sellDollarFlow.value.toFloat() / recordInputMoney.value.toFloat()) * 100f
 
 }
-
-
-

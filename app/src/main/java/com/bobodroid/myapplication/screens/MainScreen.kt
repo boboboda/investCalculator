@@ -102,7 +102,11 @@ fun MainScreen(dollarViewModel: DollarViewModel,
 
     var callEndDate = allViewModel.endDateFlow.collectAsState()
 
-    val checkBoxState = dollarViewModel.selectedCheckBoxId.collectAsState()
+    val drCheckBoxState = dollarViewModel.selectedCheckBoxId.collectAsState()
+
+    val yenCheckBoxState = yenViewModel.selectedCheckBoxId.collectAsState()
+
+    val wonCheckBoxState = wonViewModel.selectedCheckBoxId.collectAsState()
 
     val coroutineScope = rememberCoroutineScope()
 
@@ -314,7 +318,9 @@ fun MainScreen(dollarViewModel: DollarViewModel,
                             yenViewModel,
                             wonViewModel,
                             rowViewController.value,
-                            checkboxController = checkBoxState.value
+                            drCheckboxController = drCheckBoxState.value,
+                            yenCheckboxController = yenCheckBoxState.value,
+                            wonCheckboxController = wonCheckBoxState.value,
                         ) {
                             bottomMenuButton = true
                         }
@@ -381,7 +387,7 @@ fun MainScreen(dollarViewModel: DollarViewModel,
 
                             when(rowViewController.value) {
                                 1-> {
-                                    when(checkBoxState.value) {
+                                    when(drCheckBoxState.value) {
                                         1-> {
                                             dollarViewModel.dateRangeInvoke(
                                                 DollarViewModel.DrAction.Buy,
@@ -400,7 +406,7 @@ fun MainScreen(dollarViewModel: DollarViewModel,
                                     }
                                 }
                                 2-> {
-                                    when(checkBoxState.value) {
+                                    when(yenCheckBoxState.value) {
                                         1-> {
                                             yenViewModel.dateRangeInvoke(
                                                 YenViewModel.YenAction.Buy,
@@ -419,7 +425,7 @@ fun MainScreen(dollarViewModel: DollarViewModel,
                                     }
                                 }
                                 3-> {
-                                    when(checkBoxState.value) {
+                                    when(wonCheckBoxState.value) {
                                         1-> {
                                             wonViewModel.dateRangeInvoke(
                                                 WonViewModel.WonAction.Buy,
@@ -499,6 +505,8 @@ fun DrawerCustom(
 
     val context = LocalContext.current
 
+    val id = if(localUser.value.customId == "") localUser.value.id else localUser.value.customId
+
     val webIntent = Intent(Intent.ACTION_VIEW)
     webIntent.data = Uri.parse("https://cobusil.vercel.app")
 
@@ -525,7 +533,7 @@ fun DrawerCustom(
             horizontalAlignment = Alignment.Start) {
             Text(
                 modifier = Modifier.padding(start = 10.dp, end = 20.dp),
-                text = "디바이스 ID: ${userData.value.id}",
+                text = "디바이스 ID: ${id}",
                 overflow = TextOverflow.Ellipsis,
                 maxLines = 1)
 
@@ -563,13 +571,20 @@ fun DrawerCustom(
                 CardButton(
                     label = "클라우드 저장",
                     onClicked = {
-                        coroutineScope.launch {
-                            drawerState.close()
-                            mainScreenSnackBarHostState.showSnackbar(
-                                "업데이트 예정입니다.",
-                                actionLabel = "닫기", SnackbarDuration.Short
-                            )
+
+                        if(localUser.value.customId == "") {
+                            coroutineScope.launch {
+                                drawerState.close()
+                                mainScreenSnackBarHostState.showSnackbar(
+                                    "아이디 수정 후 진행해 주세요",
+                                    actionLabel = "닫기", SnackbarDuration.Short
+                                )
+                            }
+                        } else {
+
                         }
+
+
                     },
                     buttonColor = TopButtonColor,
                     fontColor = Color.Black,
@@ -981,13 +996,17 @@ fun MainBottomView(
 }
 
 @Composable
-fun ContentIcon(allViewModel: AllViewModel,
-                dollarViewModel: DollarViewModel,
-                yenViewModel: YenViewModel,
-                wonViewModel: WonViewModel,
-                rowViewController: Int,
-                checkboxController: Int,
-                onClicked: ()-> Unit ) {
+fun ContentIcon(
+    allViewModel: AllViewModel,
+    dollarViewModel: DollarViewModel,
+    yenViewModel: YenViewModel,
+    wonViewModel: WonViewModel,
+    rowViewController: Int,
+    drCheckboxController: Int,
+    yenCheckboxController: Int,
+    wonCheckboxController: Int,
+    onClicked: () -> Unit,
+) {
 
     val scope = rememberCoroutineScope()
 
@@ -1028,7 +1047,7 @@ fun ContentIcon(allViewModel: AllViewModel,
 
             when(rowViewController) {
                 1 ->{
-                    when(checkboxController){
+                    when(drCheckboxController){
                         1-> {
                             GetMoneyView(
                                 getMoney = "${totalDrExpectProfit.value}",
@@ -1046,7 +1065,7 @@ fun ContentIcon(allViewModel: AllViewModel,
                     }
                 }
                 2 ->{
-                    when(checkboxController){
+                    when(yenCheckboxController){
                         1-> {
                             GetMoneyView(
                                 getMoney = "${totalYenExpectProfit.value}",
@@ -1064,7 +1083,7 @@ fun ContentIcon(allViewModel: AllViewModel,
                     }
                 }
                 3 ->{
-                    when(checkboxController){
+                    when(wonCheckboxController){
                         1-> {}
                         2-> {}
                     }

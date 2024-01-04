@@ -13,14 +13,25 @@ data class LocalUserData(
     @ColumnInfo(name = "id")
     var id: UUID = UUID.randomUUID(),
 
+    @ColumnInfo(name = "customId", defaultValue = "")
+    var customId: String? = null,
+
+    // 목표환율 설정
+    @ColumnInfo(name = "max_target_Us_Rate", defaultValue = "")
+    val maxTargetUsRate: String? = null,
+
+    @ColumnInfo(name = "min_target_Us_Rate", defaultValue = "")
+    val minTargetUsRate: String? = null,
+
+    @ColumnInfo(name = "max_target_Yen_Rate", defaultValue = "")
+    val maxTargetYenRate: String? = null,
+
+    @ColumnInfo(name = "min_target_Yen_Rate", defaultValue = "")
+    val minTargetYenRate: String? = null,
+
+    // 광고 리셋
     @ColumnInfo(name = "rate_Reset_Count")
     val rateResetCount: Int? = null,
-
-    @ColumnInfo(name = "recent_Us_Rate", defaultValue = "")
-    val recentUsRate: String? = null,
-
-    @ColumnInfo(name = "recent_Yen_Rate", defaultValue = "")
-    val recentYenRate: String? = null,
 
     @ColumnInfo(name = "reFresh_CreateAt", defaultValue = "")
     val reFreshCreateAt: String? = null,
@@ -34,9 +45,11 @@ data class LocalUserData(
     @ColumnInfo(name = "user_Reset_Date")
     var userResetDate: String? = null,
 
+    // 공지사항 날짜
     @ColumnInfo(name = "user_Show_Notice_Date")
     var userShowNoticeDate: String? = null,
 
+    // 스프레드 설정
     @ColumnInfo(name = "dr_Buy_Spread")
     var drBuySpread: Int? = null,
 

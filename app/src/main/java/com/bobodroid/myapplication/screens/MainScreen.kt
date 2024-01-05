@@ -57,6 +57,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.core.content.ContextCompat.startActivity
 import com.bobodroid.myapplication.components.Dialogs.ChargeDialog
+import com.bobodroid.myapplication.components.Dialogs.CustomIdDialog
 import com.bobodroid.myapplication.components.Dialogs.NoticeDialog
 import com.bobodroid.myapplication.components.Dialogs.RateRefreshDialog
 import com.bobodroid.myapplication.components.admobs.BannerAd
@@ -503,6 +504,8 @@ fun DrawerCustom(
 
     val payChance = localUser.value.rateAdCount
 
+    var customDialog by remember { mutableStateOf(false) }
+
     val context = LocalContext.current
 
     val id = if(localUser.value.customId == "") localUser.value.id else localUser.value.customId
@@ -537,21 +540,25 @@ fun DrawerCustom(
                 overflow = TextOverflow.Ellipsis,
                 maxLines = 1)
 
-            Row(Modifier
-                .fillMaxWidth()
-                .padding(top = 5.dp, start = 10.dp, end = 20.dp),
+            Row(
+                Modifier
+                    .fillMaxWidth()
+                    .padding(top = 5.dp, start = 10.dp, end = 20.dp),
                 horizontalArrangement = Arrangement.spacedBy(5.dp, Alignment.End)) {
 
                 CardButton(
                     label = "아이디 수정",
                     onClicked = {
-                        coroutineScope.launch {
-                            drawerState.close()
-                            mainScreenSnackBarHostState.showSnackbar(
-                                "업데이트 예정입니다.",
-                                actionLabel = "닫기", SnackbarDuration.Short
-                            )
-                        }
+
+                        customDialog = true
+
+//                        coroutineScope.launch {
+//                            drawerState.close()
+//                            mainScreenSnackBarHostState.showSnackbar(
+//                                "업데이트 예정입니다.",
+//                                actionLabel = "닫기", SnackbarDuration.Short
+//                            )
+//                        }
                     },
                     buttonColor = TopButtonColor,
                     fontColor = Color.Black,
@@ -563,9 +570,10 @@ fun DrawerCustom(
 
             }
 
-            Row(Modifier
-                .fillMaxWidth()
-                .padding(top = 5.dp, start = 10.dp, end = 20.dp),
+            Row(
+                Modifier
+                    .fillMaxWidth()
+                    .padding(top = 5.dp, start = 10.dp, end = 20.dp),
                 horizontalArrangement = Arrangement.spacedBy(5.dp, Alignment.End)) {
 
                 CardButton(
@@ -691,6 +699,14 @@ fun DrawerCustom(
                     chargeDialog.value = false
                 }
             }
+        }
+
+        if(customDialog) {
+            CustomIdDialog(
+                onDismissRequest = {
+                                   customDialog = it
+                },
+                allViewModel)
         }
         
         Spacer(modifier = Modifier.height(10.dp))

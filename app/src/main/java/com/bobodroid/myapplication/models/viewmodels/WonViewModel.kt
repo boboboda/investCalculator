@@ -110,9 +110,9 @@ class WonViewModel @Inject constructor(private val investRepository: InvestRepos
                         _filterBuyRecordFlow.emit(_buyRecordFlow.value)
 
                     } else {
-                        val startFilterBuyRecord= buyRecordFlow.value.filter { it.date >= startDate}
+                        val startFilterBuyRecord= buyRecordFlow.value.filter { it.date!! >= startDate}
 
-                        var endFilterBuyRecord = startFilterBuyRecord.filter { it.date <= endDate}
+                        var endFilterBuyRecord = startFilterBuyRecord.filter { it.date!! <= endDate}
 
 
 
@@ -133,9 +133,9 @@ class WonViewModel @Inject constructor(private val investRepository: InvestRepos
                         _filterSellRecordFlow.emit(_sellRecordFlow.value)
 
                     } else {
-                        val startFilterSellRecord= sellRecordFlow.value.filter { it.date >= startDate}
+                        val startFilterSellRecord= sellRecordFlow.value.filter { it.date!! >= startDate}
 
-                        val endFilterSellRecord = startFilterSellRecord.filter { it.date <= endDate}
+                        val endFilterSellRecord = startFilterSellRecord.filter { it.date!! <= endDate}
 
 
                         _filterSellRecordFlow.emit(endFilterSellRecord)
@@ -390,9 +390,9 @@ class WonViewModel @Inject constructor(private val investRepository: InvestRepos
                     Log.d(TAG, "계산해보자 원화: ${exChangeMoney} 외화:${foreignCurrencyMoney}")
 
                     val profit = when(wonBuyRecord.moneyType) {
-                        1-> {  foreignCurrencyMoney.toBigDecimal() -(exChangeMoney.toBigDecimal() / (resentRateUs.toBigDecimal()))   }
+                        1-> {  foreignCurrencyMoney!!.toBigDecimal() -(exChangeMoney!!.toBigDecimal() / (resentRateUs.toBigDecimal()))   }
 
-                        2-> {  foreignCurrencyMoney.toBigDecimal() - (exChangeMoney.toBigDecimal() / (resentRateYen!!.toBigDecimal())) }
+                        2-> {  foreignCurrencyMoney!!.toBigDecimal() - (exChangeMoney!!.toBigDecimal() / (resentRateYen!!.toBigDecimal())) }
 
                         else -> { "" }
                     }
@@ -424,9 +424,9 @@ class WonViewModel @Inject constructor(private val investRepository: InvestRepos
                     Log.d(TAG, "계산해보자 원화: ${exChangeMoney} 외화:${foreignCurrencyMoney}")
 
                     val profit = when(wonBuyRecord.moneyType) {
-                        1-> {  foreignCurrencyMoney.toBigDecimal() -(exChangeMoney.toBigDecimal() / (resentRateUs.toBigDecimal()))   }
+                        1-> {  foreignCurrencyMoney!!.toBigDecimal() -(exChangeMoney!!.toBigDecimal() / (resentRateUs.toBigDecimal()))   }
 
-                        2-> {  foreignCurrencyMoney.toBigDecimal() - (exChangeMoney.toBigDecimal() / (resentRateYen!!.toBigDecimal())) }
+                        2-> {  foreignCurrencyMoney!!.toBigDecimal() - (exChangeMoney!!.toBigDecimal() / (resentRateYen!!.toBigDecimal())) }
 
                         else -> { "" }
                     }
@@ -497,6 +497,19 @@ class WonViewModel @Inject constructor(private val investRepository: InvestRepos
             investRepository.updateRecord(updateData)
 
             return true}
+    }
+
+    fun wonCloudLoad(buyRecord: List<WonBuyRecord>, sellRecord: List<WonSellRecord>) {
+
+        viewModelScope.launch {
+            viewModelScope.launch {
+
+                investRepository.wonBuyAddListRecord(buyRecord)
+
+                investRepository.wonSellAddListRecord(sellRecord)
+
+            }
+        }
     }
 
 

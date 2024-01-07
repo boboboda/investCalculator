@@ -50,11 +50,6 @@ data class Rate(
         this.usd = (data as? Map<String, String>)?.get("USD")
     }
 
-//    constructor(querySnapshotData: String): this() {
-//        this.jpy = (querySnapshotData as Map<String, String>)?.get("JPY")
-//        this.usd = (querySnapshotData as Map<String, String>)?.get("USD")
-//    }
-
     fun asHasMap(): HashMap<String, Any?> {
         return hashMapOf(
             "USD" to this.usd,
@@ -62,8 +57,3 @@ data class Rate(
         )
     }
 }
-
-//private operator fun Any.get(s: String): Any {
-//    return s
-//}
-

@@ -3,6 +3,9 @@ package com.bobodroid.myapplication
 import android.animation.ObjectAnimator
 import android.animation.PropertyValuesHolder
 import android.annotation.SuppressLint
+import android.content.Intent
+import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Bundle
 import android.util.Log
 import android.view.View
@@ -10,6 +13,7 @@ import android.view.animation.AnticipateInterpolator
 import android.view.animation.LinearInterpolator
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.DrawerState
@@ -18,6 +22,7 @@ import androidx.compose.material.rememberDrawerState
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.core.animation.doOnEnd
+import androidx.core.content.ContextCompat
 import androidx.core.splashscreen.SplashScreen
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.navigation.NavHostController
@@ -26,6 +31,8 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.bobodroid.myapplication.components.MainTopBar
 import com.bobodroid.myapplication.components.admobs.loadInterstitial
+import com.bobodroid.myapplication.components.admobs.loadRewardedAdvertisement
+import com.bobodroid.myapplication.fcm.RateFirebaseMessagingService
 import com.bobodroid.myapplication.models.viewmodels.AllViewModel
 import com.bobodroid.myapplication.models.viewmodels.DollarViewModel
 import com.bobodroid.myapplication.models.viewmodels.WonViewModel
@@ -57,11 +64,19 @@ class MainActivity : ComponentActivity() {
     private val allViewModel: AllViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-
-
         splashScreen = installSplashScreen()
+
+
+        super.onCreate(savedInstanceState)
+        Log.w(TAG, "onCreate 실행")
         startSplash()
+
+        /** FCM설정, Token값 가져오기 */
+
+//        RateFirebaseMessagingService().deleteFirebaseToken()
+
+
+
         setContent {
             MobileAds.initialize(this)
 
@@ -69,19 +84,23 @@ class MainActivity : ComponentActivity() {
 
             loadInterstitial(this)
 
-
+            loadRewardedAdvertisement(this)
             AppScreen(
                     dollarViewModel,
                     yenViewModel,
                     wonViewModel,
                     allViewModel)
-
         }
     }
 
     override fun onStart() {
         super.onStart()
         // 앱 초기 실행 및 백그라운드에서 포그라운드로 전환될 때 실행
+
+        Log.w(TAG, "onStart 실행")
+
+        checkAppPushNotification()
+
         allViewModel.recentRateHotListener { recentRate, localData->
             Log.d(TAG, "실시간 데이터 수신 ${recentRate}, ${localData}")
 
@@ -109,9 +128,42 @@ class MainActivity : ComponentActivity() {
                 start()
             }
         }
-
-
     }
+
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+
+        if (requestCode == 1 && resultCode == RESULT_OK) {
+            Log.w(TAG, "보상형 액티비티에서 넘어옴")
+        }
+    }
+
+
+    // 알람 권한 스테이트 값으로 저장하여 유저가 확인할 수 있도록 안내
+    private fun checkAppPushNotification() {
+        //Android 13 이상 && 푸시권한 없음
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU
+            && PackageManager.PERMISSION_DENIED == ContextCompat.checkSelfPermission(this, android.Manifest.permission.POST_NOTIFICATIONS)) {
+            Log.w(TAG, "알람 권한 없음.")
+
+            permissionPostNotification.launch(android.Manifest.permission.POST_NOTIFICATIONS)
+            return
+        }
+        Log.w(TAG, "알람 권한 있음")
+        //권한이 있을때
+    }
+
+
+
+    /** 권한 요청 */
+    private val permissionPostNotification = registerForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted ->
+        if (isGranted) {
+            //권한 허용
+        } else {
+            //권한 비허용
+        }
+    }
+
 }
 
 @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
@@ -215,6 +267,7 @@ fun InvestNavHost(
        }
    }
 }
+
 
 
 

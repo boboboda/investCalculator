@@ -64,7 +64,7 @@ fun BuyYenRecordBox(yenViewModel: YenViewModel, snackbarHostState: SnackbarHostS
 
                 LineYenRecordText(
                     Buy,
-                    sellAction = Buy.recordColor
+                    sellAction = Buy.recordColor!!
                     ,
                     sellActed = { buyRecord ->
                         // 매도시 컬러 변경
@@ -76,9 +76,9 @@ fun BuyYenRecordBox(yenViewModel: YenViewModel, snackbarHostState: SnackbarHostS
                     onClicked = { recordBox ->
                         // 매도시 값 인계
                         selectedId = recordBox .id
-                        yenViewModel.dateFlow.value = recordBox.date
-                        yenViewModel.haveMoney.value = recordBox.exchangeMoney
-                        yenViewModel.recordInputMoney.value = recordBox.money },
+                        yenViewModel.dateFlow.value = recordBox.date!!
+                        yenViewModel.haveMoney.value = recordBox.exchangeMoney!!
+                        yenViewModel.recordInputMoney.value = recordBox.money!!},
                     yenViewModel,
                     snackbarHostState = snackbarHostState)
                 Divider()
@@ -138,9 +138,9 @@ fun SellYenRecordBox(yenViewModel: YenViewModel,
                 }
                 SellLineYenRecordText(Sell,
                     onClicked = { recordBox ->
-                        yenViewModel.exchangeMoney.value = recordBox.exchangeMoney
-                        yenViewModel.sellRateFlow.value = recordBox.rate
-                        yenViewModel.sellDollarFlow.value = recordBox.money
+                        yenViewModel.exchangeMoney.value = recordBox.exchangeMoney!!
+                        yenViewModel.sellRateFlow.value = recordBox.rate!!
+                        yenViewModel.sellDollarFlow.value = recordBox.money!!
                     },
                     yenViewModel,
                     snackbarHostState)

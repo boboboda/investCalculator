@@ -21,8 +21,9 @@ android {
         applicationId "com.bobodroid.myapplication"
         minSdk 26
         targetSdk 33
-        versionCode 24
-        versionName "22.2.1"
+        compileSdk 33
+        versionCode 25
+        versionName "23.1.1"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
@@ -32,6 +33,7 @@ android {
         buildConfigField("String", "BANNER_AD_KEY", properties['banner_ad_key'])
         buildConfigField("String", "BUY_BANNER_AD_KEY", properties['buy_banner_ad_key'])
         buildConfigField("String", "FONT_AD_KEY", properties['font_ad_key'])
+        buildConfigField("String", "REWARD_FRONT_AD_KEY", properties['reward_font_ad_key'])
 
 
 
@@ -48,7 +50,9 @@ android {
         release {
 
             buildConfigField("String", "BANNER_AD_KEY", properties['banner_ad_key'])
+            buildConfigField("String", "BUY_BANNER_AD_KEY", properties['buy_banner_ad_key'])
             buildConfigField("String", "FONT_AD_KEY", properties['font_ad_key'])
+            buildConfigField("String", "REWARD_FRONT_AD_KEY", properties['reward_font_ad_key'])
 
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
@@ -89,8 +93,8 @@ dependencies {
     implementation 'com.google.android.material:material:1.9.0'
     implementation 'com.google.android.gms:play-services-ads-lite:22.3.0'
     implementation 'com.google.firebase:firebase-crashlytics-buildtools:2.9.9'
-    implementation 'com.google.firebase:firebase-firestore:24.9.1'
-    implementation 'com.google.firebase:firebase-common-ktx:20.4.2'
+//    implementation 'com.google.firebase:firebase-firestore:24.9.1'
+//    implementation 'com.google.firebase:firebase-common-ktx:20.4.2'
     implementation 'androidx.appcompat:appcompat:1.6.1'
     implementation 'androidx.constraintlayout:constraintlayout:2.1.4'
     testImplementation 'junit:junit:4.13.2'
@@ -148,17 +152,21 @@ dependencies {
     testImplementation 'com.google.dagger:hilt-android-testing:2.40'
     kaptTest 'com.google.dagger:hilt-compiler:2.40'
 
-    // 광고
-
-//    implementation 'com.google.android.gms:play-services-ads:21.5.0'
 
     // 파이어베이스
-    implementation platform('com.google.firebase:firebase-bom:32.6.0')
+    implementation platform('com.google.firebase:firebase-bom:32.3.1')
     implementation("com.google.firebase:firebase-firestore")
+    implementation("com.google.firebase:firebase-firestore-ktx")
     implementation("com.google.firebase:firebase-database")
+    implementation("com.google.firebase:firebase-messaging")
+    implementation("com.google.firebase:firebase-messaging-ktx")
+    implementation("com.google.firebase:firebase-analytics")
+    implementation("com.google.firebase:firebase-analytics-ktx")
+
+
 
     //스프래쉬 화면
-    implementation 'androidx.core:core-splashscreen:1.0.0-rc01'
+    implementation 'androidx.core:core-splashscreen:1.0.0-beta02'
 
     // retrofit
     def retrofit_version = "2.9.0"

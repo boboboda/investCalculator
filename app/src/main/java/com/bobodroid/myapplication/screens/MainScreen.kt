@@ -56,12 +56,14 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.core.content.ContextCompat.startActivity
+import com.bobodroid.myapplication.components.Dialogs.AskTriggerDialog
 import com.bobodroid.myapplication.components.Dialogs.ChargeDialog
 import com.bobodroid.myapplication.components.Dialogs.CustomIdDialog
 import com.bobodroid.myapplication.components.Dialogs.NoticeDialog
 import com.bobodroid.myapplication.components.Dialogs.RateRefreshDialog
 import com.bobodroid.myapplication.components.admobs.BannerAd
 import com.bobodroid.myapplication.components.admobs.showInterstitial
+import com.bobodroid.myapplication.components.admobs.showRewardedAdvertisement
 import kotlinx.coroutines.delay
 import java.math.BigDecimal
 import java.math.MathContext
@@ -133,6 +135,9 @@ fun MainScreen(dollarViewModel: DollarViewModel,
 
     val mainScreenSnackBarHostState = remember { SnackbarHostState() }
 
+
+
+
     LaunchedEffect(key1 = Unit, block = {
 
         coroutineScope.launch {
@@ -148,7 +153,13 @@ fun MainScreen(dollarViewModel: DollarViewModel,
         gesturesEnabled = false,
         drawerShape = customShape(),
         drawerContent = {
-            DrawerCustom(allViewModel = allViewModel, drawerState = drawerState,  mainScreenSnackBarHostState =  mainScreenSnackBarHostState)
+            DrawerCustom(
+                allViewModel,
+                dollarViewModel,
+                yenViewModel,
+                wonViewModel,
+                drawerState,
+                mainScreenSnackBarHostState)
         },
     ) {
 
@@ -460,14 +471,14 @@ fun MainScreen(dollarViewModel: DollarViewModel,
                     content = noticeContent.value,
                     onDismissRequest = { close ->
                         allViewModel.noticeShowDialog.value = close
+                        allViewModel.openAppNoticeDateState.value = close
                     },
                     dateDelaySelected = {
                         coroutineScope.launch {
                             allViewModel.selectDelayDate(localUser.value)
                             delay(1000)
                         }
-                    },
-                    allViewModel)
+                    })
 
             Column(
                 modifier = Modifier
@@ -480,277 +491,6 @@ fun MainScreen(dollarViewModel: DollarViewModel,
 
 
         }
-    }
-}
-
-
-
-
-@Composable
-fun DrawerCustom(
-    allViewModel: AllViewModel,
-    drawerState: DrawerState,
-    mainScreenSnackBarHostState: SnackbarHostState) {
-
-    val coroutineScope = rememberCoroutineScope()
-
-    val userData = allViewModel.localUserData.collectAsState()
-
-    val chargeDialog = remember { mutableStateOf(false) }
-
-    val localUser = allViewModel.localUserData.collectAsState()
-
-    val freeChance = localUser.value.rateResetCount
-
-    val payChance = localUser.value.rateAdCount
-
-    var customDialog by remember { mutableStateOf(false) }
-
-    val context = LocalContext.current
-
-    val id = if(localUser.value.customId == "") localUser.value.id else localUser.value.customId
-
-    val webIntent = Intent(Intent.ACTION_VIEW)
-    webIntent.data = Uri.parse("https://cobusil.vercel.app")
-
-    val webPostIntent = Intent(Intent.ACTION_VIEW)
-    webPostIntent.data = Uri.parse("https://cobusil.vercel.app/release/postBoard/dollarRecord")
-
-    Column(
-        modifier = Modifier
-            .fillMaxHeight()
-            .fillMaxWidth(2.3f / 3)
-    ) {
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-            CardIconButton(imageVector = Icons.Rounded.Close, onClicked = {
-                coroutineScope.launch {
-                    drawerState.close()
-                }
-            }, modifier = Modifier, buttonColor = Color.White)
-        }
-
-        Column(
-            Modifier
-                .fillMaxWidth()
-                .padding(bottom = 20.dp),
-            horizontalAlignment = Alignment.Start) {
-            Text(
-                modifier = Modifier.padding(start = 10.dp, end = 20.dp),
-                text = "디바이스 ID: ${id}",
-                overflow = TextOverflow.Ellipsis,
-                maxLines = 1)
-
-            Row(
-                Modifier
-                    .fillMaxWidth()
-                    .padding(top = 5.dp, start = 10.dp, end = 20.dp),
-                horizontalArrangement = Arrangement.spacedBy(5.dp, Alignment.End)) {
-
-                CardButton(
-                    label = "아이디 수정",
-                    onClicked = {
-
-                        customDialog = true
-
-//                        coroutineScope.launch {
-//                            drawerState.close()
-//                            mainScreenSnackBarHostState.showSnackbar(
-//                                "업데이트 예정입니다.",
-//                                actionLabel = "닫기", SnackbarDuration.Short
-//                            )
-//                        }
-                    },
-                    buttonColor = TopButtonColor,
-                    fontColor = Color.Black,
-                    modifier = Modifier
-                        .height(30.dp)
-                        .width(80.dp),
-                    fontSize = 15
-                )
-
-            }
-
-            Row(
-                Modifier
-                    .fillMaxWidth()
-                    .padding(top = 5.dp, start = 10.dp, end = 20.dp),
-                horizontalArrangement = Arrangement.spacedBy(5.dp, Alignment.End)) {
-
-                CardButton(
-                    label = "클라우드 저장",
-                    onClicked = {
-
-                        if(localUser.value.customId == "") {
-                            coroutineScope.launch {
-                                drawerState.close()
-                                mainScreenSnackBarHostState.showSnackbar(
-                                    "아이디 수정 후 진행해 주세요",
-                                    actionLabel = "닫기", SnackbarDuration.Short
-                                )
-                            }
-                        } else {
-
-                        }
-
-
-                    },
-                    buttonColor = TopButtonColor,
-                    fontColor = Color.Black,
-                    modifier = Modifier
-                        .height(30.dp)
-                        .width(80.dp),
-                    fontSize = 15
-                )
-
-                CardButton(
-                    label = "클라우드 불러오기",
-                    onClicked = {
-                        coroutineScope.launch {
-                            drawerState.close()
-                            mainScreenSnackBarHostState.showSnackbar(
-                                "업데이트 예정입니다.",
-                                actionLabel = "닫기", SnackbarDuration.Short
-                            )
-                        }
-                    },
-                    buttonColor = TopButtonColor,
-                    fontColor = Color.Black,
-                    modifier = Modifier
-                        .height(30.dp)
-                        .width(100.dp),
-                    fontSize = 15
-                )
-
-            }
-        }
-
-        Divider(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(bottom = 20.dp)
-        )
-
-        Row(modifier = Modifier
-            .fillMaxWidth()
-            .padding(start = 10.dp),
-            horizontalArrangement = Arrangement.Start) {
-            Text(text = "새로고침 업데이트 횟수: ${freeChance}(${payChance})회")
-
-            Spacer(modifier = Modifier.width(10.dp))
-            CardButton(
-                label = "충전",
-                onClicked = {
-                            chargeDialog.value = true
-                },
-                buttonColor = TopButtonColor,
-                fontColor = Color.Black,
-                modifier = Modifier
-                    .height(20.dp)
-                    .width(40.dp),
-                fontSize = 15
-            )
-        }
-
-        Spacer(
-            modifier = Modifier
-                .height(10.dp)
-        )
-
-        Row(modifier = Modifier
-            .fillMaxWidth()
-            .padding(start = 10.dp),
-            horizontalArrangement = Arrangement.Start) {
-            Text(text = "스프레드: {}")
-
-            Spacer(modifier = Modifier.width(10.dp))
-            CardButton(
-                label = "설정",
-                onClicked = {
-                    coroutineScope.launch {
-                        drawerState.close()
-                        mainScreenSnackBarHostState.showSnackbar(
-                            "업데이트 예정입니다.",
-                            actionLabel = "닫기", SnackbarDuration.Short
-                        )
-                    }
-                },
-                buttonColor = TopButtonColor,
-                fontColor = Color.Black,
-                modifier = Modifier
-                    .height(20.dp)
-                    .width(40.dp),
-                fontSize = 15
-            )
-        }
-
-        Divider(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(top = 10.dp)
-        )
-
-        if(chargeDialog.value) {
-            ChargeDialog(onDismissRequest = {
-                chargeDialog.value = it
-            }) {
-                showInterstitial(context) {
-                    allViewModel.chargeChance()
-
-                    chargeDialog.value = false
-                }
-            }
-        }
-
-        if(customDialog) {
-            CustomIdDialog(
-                onDismissRequest = {
-                                   customDialog = it
-                },
-                allViewModel)
-        }
-        
-        Spacer(modifier = Modifier.height(10.dp))
-
-
-
-        Column(modifier = Modifier
-            .wrapContentSize()
-            .padding(start = 5.dp, bottom = 20.dp)) {
-            Column(modifier = Modifier
-                .fillMaxWidth()
-                .padding(),
-                horizontalAlignment = Alignment.Start,
-                verticalArrangement = Arrangement.spacedBy(5.dp)) {
-                CardButton(
-                    label = "공식사이트 가기",
-                    onClicked = {
-                        startActivity(context, webIntent, null)
-                    },
-                    fontSize = 15,
-                    modifier = Modifier
-                        .height(30.dp)
-                        .width(120.dp),
-                    fontColor = Color.Black,
-                    buttonColor = TopButtonColor
-                )
-
-                CardButton(
-                    label = "문의게시판 가기",
-                    onClicked = {
-                        startActivity(context, webPostIntent, null)
-                    },
-                    fontSize = 15,
-                    modifier = Modifier
-                        .height(30.dp)
-                        .width(120.dp),
-                    fontColor = Color.Black,
-                    buttonColor = TopButtonColor
-                )
-            }
-
-        }
-
-
     }
 }
 

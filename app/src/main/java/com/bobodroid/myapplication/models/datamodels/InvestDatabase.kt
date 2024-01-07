@@ -34,8 +34,12 @@ import com.bobodroid.myapplication.models.datamodels.DrBuyRecord
             to = 12,
             spec = InvestDatabase.MyAutoMigration::class
         ),
+        AutoMigration(from = 12, to = 13),
+        AutoMigration(from = 13, to = 14),
+        AutoMigration(from = 14, to = 15),
                      ],
-    version = 12, exportSchema = true)
+
+    version = 15, exportSchema = true)
 abstract class InvestDatabase: RoomDatabase() {
     abstract fun DrBuyDao() : DollarBuyDatabaseDao
 

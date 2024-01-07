@@ -17,6 +17,9 @@ interface DollarBuyDatabaseDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(drBuyRecord: DrBuyRecord)
 
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertAll(drBuyRecord: List<DrBuyRecord>)
+
     @Update(onConflict = OnConflictStrategy.REPLACE)
     suspend fun update(drBuyRecord: DrBuyRecord) : Int
 
@@ -40,6 +43,9 @@ interface DollarSellDatabaseDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(drSellRecord: DrSellRecord)
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertAll(drSellRecord: List<DrSellRecord>)
 
     @Update(onConflict = OnConflictStrategy.REPLACE)
     suspend fun update(drSellRecord: DrSellRecord): Int
@@ -65,6 +71,9 @@ interface YenBuyDatabaseDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(yenBuyRecord: YenBuyRecord)
 
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertAll(yenBuyRecord: List<YenBuyRecord>)
+
     @Update(onConflict = OnConflictStrategy.REPLACE)
     suspend fun update(yenBuyRecord: YenBuyRecord): Int
 
@@ -87,6 +96,9 @@ interface YenSellDatabaseDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(yenSellRecord: YenSellRecord)
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertAll(yenSellRecord: List<YenSellRecord>)
 
     @Update(onConflict = OnConflictStrategy.REPLACE)
     suspend fun update(yenSellRecord: YenSellRecord): Int
@@ -112,6 +124,9 @@ interface WonBuyDatabaseDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(wonBuyRecord: WonBuyRecord)
 
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertAll(wonBuyRecord: List<WonBuyRecord>)
+
     @Update(onConflict = OnConflictStrategy.REPLACE)
     suspend fun update(wonBuyRecord: WonBuyRecord): Int
 
@@ -134,6 +149,9 @@ interface WonSellDatabaseDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(wonSellRecord: WonSellRecord)
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertAll(wonSellRecord: List<WonSellRecord>)
 
     @Update(onConflict = OnConflictStrategy.REPLACE)
     suspend fun update(wonSellRecord: WonSellRecord): Int

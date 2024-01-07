@@ -34,7 +34,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.unit.Dp
-import com.bobodroid.myapplication.components.Dialogs.DeleteDialog
 import com.bobodroid.myapplication.components.Dialogs.SellDialog
 import com.bobodroid.myapplication.components.Dialogs.WonSellDialog
 import com.bobodroid.myapplication.components.Dialogs.YenSellDialog
@@ -58,6 +57,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.sp
 import com.bobodroid.myapplication.MainActivity.Companion.TAG
+import com.bobodroid.myapplication.components.Dialogs.AskTriggerDialog
 import com.bobodroid.myapplication.components.RecordTextView
 import com.bobodroid.myapplication.ui.theme.TopButtonColor
 import kotlinx.coroutines.delay
@@ -114,7 +114,7 @@ fun LineDrRecordText(
     }
 
     LaunchedEffect(key1 = data.buyDrMemo, block = {
-        memoTextInput = data.buyDrMemo
+        memoTextInput = data.buyDrMemo ?: ""
     })
 
     if(dismissState.isDismissed(DismissDirection.StartToEnd))
@@ -287,7 +287,7 @@ fun LineDrRecordText(
                                                     fontSize = 13.sp)
                                             }
                                         }, onClick = {
-                                            if(!data.recordColor) {
+                                            if(!data.recordColor!!) {
                                                 onClicked?.invoke(data)
                                                 if(!openDialog) openDialog = true else openDialog = false
                                             } else {
@@ -407,7 +407,7 @@ fun LineDrRecordText(
                                     itemRowVisible = false
                                     coroutineScope.launch {
                                         delay(500)
-                                        memoTextInput = data.buyDrMemo
+                                        memoTextInput = data.buyDrMemo!!
                                     }
 
                                 }) {
@@ -440,7 +440,9 @@ fun LineDrRecordText(
 
                 Log.d(TAG, "다이로그 오픈")
 
-                DeleteDialog(onDismissRequest ={
+                AskTriggerDialog(
+                    title = "삭제하시겠습니까?",
+                    onDismissRequest ={
                     deleteAskDialog.value = it
                 }) {
                     dollarViewModel.removeBuyRecord(data)
@@ -491,7 +493,7 @@ fun SellLineDrRecordText(data: DrSellRecord,
     var isTextFieldFocused = false
 
     LaunchedEffect(key1 = data.sellDrMemo, block = {
-        memoTextInput = data.sellDrMemo
+        memoTextInput = data.sellDrMemo!!
     })
 
     val focusRequester by remember { mutableStateOf(FocusRequester()) }
@@ -795,7 +797,9 @@ fun SellLineDrRecordText(data: DrSellRecord,
 
                 Log.d(TAG, "다이로그 오픈")
 
-                DeleteDialog(onDismissRequest ={
+                AskTriggerDialog(
+                    title = "삭제하시겠습니까?",
+                    onDismissRequest ={
                     deleteAskDialog.value = it
                 }) {
                     dollarViewModel.removeSellRecord(data)
@@ -812,7 +816,7 @@ fun SellLineDrRecordText(data: DrSellRecord,
 @Composable
 fun LineYenRecordText(
     data: YenBuyRecord,
-    sellAction: Boolean = data.recordColor,
+    sellAction: Boolean = data.recordColor!!,
     sellActed: (YenBuyRecord) -> Unit,
     onClicked: ((YenBuyRecord)-> Unit)?,
     yenViewModel: YenViewModel,
@@ -841,7 +845,7 @@ fun LineYenRecordText(
     val focusRequester by remember { mutableStateOf(FocusRequester()) }
 
     LaunchedEffect(key1 = data.buyYenMemo, block = {
-        memoTextInput = data.buyYenMemo
+        memoTextInput = data.buyYenMemo!!
     })
 
     val profitColor = if(data.profit == "") {
@@ -1027,7 +1031,7 @@ fun LineYenRecordText(
                                                     fontSize = 13.sp)
                                             }
                                         }, onClick = {
-                                            if(!data.recordColor) {
+                                            if(!data.recordColor!!) {
                                                 onClicked?.invoke(data)
                                                 if(!openDialog) openDialog = true else openDialog = false
                                             } else {
@@ -1147,7 +1151,7 @@ fun LineYenRecordText(
                                     itemRowVisible = false
                                     coroutineScope.launch {
                                         delay(500)
-                                        memoTextInput = data.buyYenMemo
+                                        memoTextInput = data.buyYenMemo!!
                                     }
 
                                 }) {
@@ -1182,7 +1186,9 @@ fun LineYenRecordText(
 
                 Log.d(TAG, "다이로그 오픈")
 
-                DeleteDialog(onDismissRequest ={
+                AskTriggerDialog(
+                    title = "삭제하시겠습니까?",
+                    onDismissRequest ={
                     deleteAskDialog.value = it
                 }) {
                     yenViewModel.removeBuyRecord(data)
@@ -1221,7 +1227,7 @@ fun SellLineYenRecordText(data: YenSellRecord,
     var isTextFieldFocused = false
 
     LaunchedEffect(key1 = data.sellYenMemo, block = {
-        memoTextInput = data.sellYenMemo
+        memoTextInput = data.sellYenMemo!!
     })
 
     val focusRequester by remember { mutableStateOf(FocusRequester()) }
@@ -1506,7 +1512,9 @@ fun SellLineYenRecordText(data: YenSellRecord,
 
                 Log.d(TAG, "다이로그 오픈")
 
-                DeleteDialog(onDismissRequest ={
+                AskTriggerDialog(
+                    title = "삭제하시겠습니까?",
+                    onDismissRequest ={
                     deleteAskDialog.value = it
                 }) {
                     yenViewModel.removeSellRecord(data)
@@ -1526,7 +1534,7 @@ fun SellLineYenRecordText(data: YenSellRecord,
 @Composable
 fun WonLineRecordText(
     data: WonBuyRecord,
-    sellAction: Boolean = data.recordColor,
+    sellAction: Boolean = data.recordColor!!,
     sellActed: (WonBuyRecord) -> Unit,
     onClicked: ((WonBuyRecord)-> Unit)?,
     wonViewModel: WonViewModel,
@@ -1575,7 +1583,7 @@ fun WonLineRecordText(
     val focusRequester by remember { mutableStateOf(FocusRequester()) }
 
     LaunchedEffect(key1 = data.buyWonMemo, block = {
-        memoTextInput = data.buyWonMemo
+        memoTextInput = data.buyWonMemo!!
     })
 
     val profitColor = if(data.profit == "") {
@@ -1726,7 +1734,7 @@ fun WonLineRecordText(
                                                     fontSize = 13.sp)
                                             }
                                         }, onClick = {
-                                            if(!data.recordColor) {
+                                            if(!data.recordColor!!) {
                                                 onClicked?.invoke(data)
                                                 if(!openDialog) openDialog = true else openDialog = false
                                             } else {
@@ -1846,7 +1854,7 @@ fun WonLineRecordText(
                                     itemRowVisible = false
                                     coroutineScope.launch {
                                         delay(500)
-                                        memoTextInput = data.buyWonMemo
+                                        memoTextInput = data.buyWonMemo!!
                                     }
 
                                 }) {
@@ -1878,7 +1886,9 @@ fun WonLineRecordText(
 
                 Log.d(TAG, "다이로그 오픈")
 
-                DeleteDialog(onDismissRequest ={
+                AskTriggerDialog(
+                    title = "삭제하시겠습니까?",
+                    onDismissRequest ={
                     deleteAskDialog.value = it
                 }) {
                     wonViewModel.removeBuyRecord(data)
@@ -1928,7 +1938,7 @@ fun WonSellLineRecordText(
     var isTextFieldFocused = false
 
     LaunchedEffect(key1 = data.sellWonMemo, block = {
-        memoTextInput = data.sellWonMemo
+        memoTextInput = data.sellWonMemo!!
     })
 
     val focusRequester by remember { mutableStateOf(FocusRequester()) }
@@ -2210,7 +2220,9 @@ fun WonSellLineRecordText(
 
                 Log.d(TAG, "다이로그 오픈")
 
-                DeleteDialog(onDismissRequest ={
+                AskTriggerDialog(
+                    title = "삭제하시겠습니까?",
+                    onDismissRequest ={
                     deleteAskDialog.value = it
                 }) {
                     wonViewModel.removeSellRecord(data)

@@ -4,13 +4,21 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.bobodroid.myapplication.MainActivity.Companion.TAG
+import com.bobodroid.myapplication.models.datamodels.CloudUserData
+import com.bobodroid.myapplication.models.datamodels.DrBuyRecord
+import com.bobodroid.myapplication.models.datamodels.DrSellRecord
 import com.bobodroid.myapplication.models.datamodels.ExchangeRate
 import com.bobodroid.myapplication.models.datamodels.InvestRepository
 import com.bobodroid.myapplication.models.datamodels.LocalUserData
+import com.bobodroid.myapplication.models.datamodels.WonBuyRecord
+import com.bobodroid.myapplication.models.datamodels.WonSellRecord
+import com.bobodroid.myapplication.models.datamodels.YenBuyRecord
+import com.bobodroid.myapplication.models.datamodels.YenSellRecord
 import com.bobodroid.myapplication.models.datamodels.service.NoticeApi
-import com.google.firebase.Firebase
+import com.bobodroid.myapplication.util.InvestApplication
 import com.google.firebase.firestore.Query
-import com.google.firebase.firestore.firestore
+import com.google.firebase.firestore.ktx.firestore
+import com.google.firebase.ktx.Firebase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -29,6 +37,8 @@ class AllViewModel @Inject constructor(
     private val investRepository: InvestRepository
 ) : ViewModel() {
 
+
+
     var changeMoney = MutableStateFlow(1)
 
     val db = Firebase.firestore
@@ -39,10 +49,12 @@ class AllViewModel @Inject constructor(
 
     val todayDateFlow = MutableStateFlow("${LocalDate.now()}")
 
+    val openAppNoticeDateState = MutableStateFlow(true)
+
     private val noticeDateFlow = MutableStateFlow("")
 
     val noticeContent = MutableStateFlow("")
-    private fun noticeApi( noticeDate:(String) -> Unit) {
+    private fun noticeApi(noticeDate: (String) -> Unit) {
         viewModelScope.launch {
             val noticeResponse = NoticeApi.noticeService.noticeRequest()
 
@@ -58,9 +70,15 @@ class AllViewModel @Inject constructor(
 
 
         // 저장한 날짜와 같으면 실행
-        Log.d(TAG, "공지사항 날짜: ${noticeDate},  연기날짜: ${localUserDate.userShowNoticeDate} 오늘날짜 ${LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))}"
+        Log.d(
+            TAG,
+            "공지사항 날짜: ${noticeDate},  연기날짜: ${localUserDate.userShowNoticeDate} 오늘날짜 ${
+                LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))
+            }"
         )
 
+        // 닫기 후 호출 방지
+        if (openAppNoticeDateState.value) {
             if (!localUserDate.userShowNoticeDate.isNullOrEmpty()) {
                 if (noticeDate > localUserDate.userShowNoticeDate!!) {
                     Log.d(TAG, "공지사항 날짜가 더 큽니다.")
@@ -72,7 +90,9 @@ class AllViewModel @Inject constructor(
                 Log.d(TAG, "날짜 값이 없습니다.")
                 noticeShowDialog.value = true
             }
-
+        } else {
+            return
+        }
     }
 
 
@@ -136,8 +156,6 @@ class AllViewModel @Inject constructor(
     }
 
 
-
-
     fun dateWeek(week: Int): String? {
         val c = GregorianCalendar()
         c.add(Calendar.DAY_OF_WEEK, +week)
@@ -147,15 +165,11 @@ class AllViewModel @Inject constructor(
 
     val delayDay = dateWeek(7)
 
-    val delayDayFlow = MutableStateFlow("${delayDay}")
-
     fun deleteLocalUser() {
         viewModelScope.launch {
             investRepository.localUserDataDelete()
         }
     }
-
-
 
 
     // 항상 최신 값 가지고 있음
@@ -171,7 +185,7 @@ class AllViewModel @Inject constructor(
 
                 localUserData.value = localData
 
-                Log.d(TAG, "localData ${localUserData.value}")
+                Log.d(TAG, "localData = ${localUserData.value}")
 
                 resetChance(localData)
 
@@ -179,7 +193,7 @@ class AllViewModel @Inject constructor(
                     noticeDialogState(localData, noticeDate)
                 }
 
-
+                fcmTokenUpdate(localData)
 
                 viewModelScope.launch {
                     refreshDateFlow.emit(localData.reFreshCreateAt ?: "새로고침 정보가 없습니다.")
@@ -237,7 +251,7 @@ class AllViewModel @Inject constructor(
         return diffHours >= 1
     }
 
-   private fun localExistCheck(localData: (LocalUserData) -> Unit) {
+    private fun localExistCheck(localData: (LocalUserData) -> Unit) {
 
         viewModelScope.launch(Dispatchers.IO) {
             investRepository.localUserDataGet().distinctUntilChanged()
@@ -265,8 +279,6 @@ class AllViewModel @Inject constructor(
     val endDateFlow = MutableStateFlow("")
 
     val dateStringFlow = MutableStateFlow("모두")
-
-    val mainDateState = MutableStateFlow(true)
 
     val refreshDateFlow = MutableStateFlow("")
 
@@ -395,23 +407,134 @@ class AllViewModel @Inject constructor(
         }
     }
 
-    fun localIdCustom(customId: String) {
+    fun idCustom(customId: String, pin: String, resultMessage:(String) ->Unit) {
+        // 파이어스토어 id 생성
+        // 중복 생성 방지
+        val userDocument = db.collection("user").document(customId)
+        val checkUserdata = userDocument.get()
+
+        checkUserdata.addOnSuccessListener { docSnapShot ->
+
+            if (docSnapShot.exists()) {
+                resultMessage.invoke("이미 생성된 아이디 입니다.")
+            } else {
+                //파이어 베이스에 생성
+                val makeCustomId = LocalUserData(
+                    customId = customId,
+                    pin = pin
+                )
+
+                userDocument.set(makeCustomId)
+
+                // 로컬에 생성
+                val localUser = localUserData.value
+
+                viewModelScope.launch {
+                    Log.d(TAG, "localId custom 실행")
+
+                    val updateDate = localUser.copy(
+                        customId = customId
+                    )
+
+                    investRepository.localUserUpdate(updateDate)
+
+                    resultMessage.invoke("서버에 아이디가 생성되었습니다.")
+                }
+            }
+        }
+    }
+
+    fun findCustomId(id: String, pin: String, successFind: (message: String) -> Unit) {
 
         val localUser = localUserData.value
 
-        viewModelScope.launch {
-            Log.d(TAG, "localId custom 실행")
+        val userDocument = db.collection("user").document(id)
+        val checkUserdata = userDocument.get()
 
-            val updateDate = localUser.copy(
-                customId = customId
-            )
+        checkUserdata.addOnSuccessListener { docSnapShot ->
 
-            investRepository.localUserUpdate(updateDate)
+            val userData = LocalUserData(docSnapShot)
+
+            Log.w(TAG, "${userData}")
+
+            if (docSnapShot.exists()) {
+                if (userData.pin != pin) {
+                    successFind.invoke("핀이 틀렸습니다.")
+                } else {
+
+                    viewModelScope.launch {
+                        Log.d(TAG, "localId custom 실행")
+
+                        val updateDate = localUser.copy(
+                            customId = id
+                        )
+                        investRepository.localUserUpdate(updateDate)
+
+                        successFind.invoke("아이디 찾기가 성공되었습니다.")
+                    }
+
+                }
+            } else {
+                successFind.invoke("아이디가 없습니다.")
+            }
+
         }
 
     }
 
+    private val formatTodayFlow = MutableStateFlow(
+        LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))
+    )
 
+
+    fun cloudSave(
+        drBuyRecord: List<DrBuyRecord>,
+        drSellRecord: List<DrSellRecord>,
+        yenBuyRecord: List<YenBuyRecord>,
+        yenSellRecord: List<YenSellRecord>,
+        wonBuyRecord: List<WonBuyRecord>,
+        wonSellRecord: List<WonSellRecord>
+    ) {
+        val localUser = localUserData.value
+
+        val uploadCloudData = CloudUserData(
+            id = localUser.id.toString(),
+            customId = localUser.customId,
+            createAt = formatTodayFlow.value,
+            drBuyRecord = drBuyRecord,
+            drSellRecord = drSellRecord,
+            yenBuyRecord = yenBuyRecord,
+            yenSellRecord = yenSellRecord,
+            wonBuyRecord = wonBuyRecord,
+            wonSellRecord = wonSellRecord
+
+        )
+
+        db.collection("userCloud").document(localUser.customId!!)
+            .set(uploadCloudData.asHasMap())
+    }
+
+
+    fun cloudLoad(cloudId: String, cloudData:(CloudUserData, resultMessage:String) -> Unit ) {
+        db.collection("userCloud")
+            .whereEqualTo("customId", cloudId)
+            .get()
+            .addOnSuccessListener { querySnapShot ->
+                val data = CloudUserData(querySnapShot)
+
+                cloudData.invoke(data, "클라우드 불러오기가 성공하였습니다.")
+            }
+    }
+
+    private fun fcmTokenUpdate(localUser: LocalUserData) {
+
+        val haveToken = localUser.fcmToken
+
+        val updateToken = InvestApplication.prefs.getData("fcm_token", "")
+
+        Log.d(TAG, "올뷰모델 토큰값${updateToken}")
+
+    }
 
 
 }

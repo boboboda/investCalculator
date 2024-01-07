@@ -185,18 +185,19 @@ fun PopupNumberView(
                                     return@launch
                                 }
                             } else {
-                                if(UserInput == "0")
+                                if(UserInput == "")
                                 {
-                                    if(snackBarHostState.currentSnackbarData == null) {
-                                        snackBarHostState.showSnackbar(
-                                            "0원은 입력할 수 없습니다.",
-                                            actionLabel = "닫기", SnackbarDuration.Short
-                                        )
-                                        UserInput = ""
-                                    } else {
-                                        return@launch
+                                    if(aButtons == "0") {
+                                        if(snackBarHostState.currentSnackbarData == null) {
+                                            snackBarHostState.showSnackbar(
+                                                "0원은 입력할 수 없습니다.",
+                                                actionLabel = "닫기", SnackbarDuration.Short
+                                            )
+                                            UserInput = ""
+                                        } else {
+                                            return@launch
+                                        }
                                     }
-
                                 } else UserInput += aButtons
                             }
                         }
@@ -543,18 +544,19 @@ fun FloatPopupNumberView(onClicked: ((String) -> Unit)?) {
                                    return@launch
                                }
                             } else {
-                                if(UserInput == "0")
+                                if(UserInput == "")
                                 {
-                                    if(snackBarHostState.currentSnackbarData == null) {
-                                        snackBarHostState.showSnackbar(
-                                            "0원은 입력할 수 없습니다.",
-                                            actionLabel = "닫기", SnackbarDuration.Short
-                                        )
-                                        UserInput = ""
-                                    } else {
-                                        return@launch
+                                    if(aButtons == "0") {
+                                        if(snackBarHostState.currentSnackbarData == null) {
+                                            snackBarHostState.showSnackbar(
+                                                "0원은 입력할 수 없습니다.",
+                                                actionLabel = "닫기", SnackbarDuration.Short
+                                            )
+                                            UserInput = ""
+                                        } else {
+                                            return@launch
+                                        }
                                     }
-
                                 } else UserInput += aButtons
                             }
                         }

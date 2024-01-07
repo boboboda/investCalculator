@@ -116,9 +116,9 @@ class YenViewModel @Inject constructor(private val investRepository: InvestRepos
                         totalExpectProfit.emit(totalProfit)
 
                     } else {
-                        val startFilterBuyRecord= buyRecordFlow.value.filter { it.date >= startDate}
+                        val startFilterBuyRecord= buyRecordFlow.value.filter { it.date!! >= startDate}
 
-                        var endFilterBuyRecord = startFilterBuyRecord.filter { it.date <= endDate}
+                        var endFilterBuyRecord = startFilterBuyRecord.filter { it.date!! <= endDate}
 
 
 
@@ -151,9 +151,9 @@ class YenViewModel @Inject constructor(private val investRepository: InvestRepos
                         totalSellProfit.emit(totalProfit)
 
                     } else {
-                        val startFilterSellRecord= sellRecordFlow.value.filter { it.date >= startDate}
+                        val startFilterSellRecord= sellRecordFlow.value.filter { it.date!! >= startDate}
 
-                        val endFilterSellRecord = startFilterSellRecord.filter { it.date <= endDate}
+                        val endFilterSellRecord = startFilterSellRecord.filter { it.date!! <= endDate}
 
                         Log.d(TAG, "조회 ${endFilterSellRecord}")
 
@@ -474,6 +474,18 @@ class YenViewModel @Inject constructor(private val investRepository: InvestRepos
             investRepository.updateRecord(updateData)
 
             return true}
+    }
+
+    fun yenCloudLoad(buyRecord: List<YenBuyRecord>, sellRecord: List<YenSellRecord>) {
+
+        viewModelScope.launch {
+
+                investRepository.yenBuyAddListRecord(buyRecord)
+
+                investRepository.yenSellAddListRecord(sellRecord)
+
+        }
+
     }
 
 

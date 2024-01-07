@@ -51,7 +51,6 @@ fun NoticeDialog(
     content: String,
     onDismissRequest: (Boolean) -> Unit,
     dateDelaySelected: () -> Unit,
-    allViewModel: AllViewModel
 ) {
 
     Dialog(

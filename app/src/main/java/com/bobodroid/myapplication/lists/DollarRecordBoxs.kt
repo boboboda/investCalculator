@@ -142,9 +142,9 @@ fun SellRecordBox(dollarViewModel: DollarViewModel, snackBarHostState: SnackbarH
 
                 SellLineDrRecordText(Sell,
                     onClicked = { recordBox ->
-                        dollarViewModel.exchangeMoney.value = recordBox.exchangeMoney
-                        dollarViewModel.sellRateFlow.value = recordBox.rate
-                        dollarViewModel.sellDollarFlow.value = recordBox.money
+                        dollarViewModel.exchangeMoney.value = recordBox.exchangeMoney ?: ""
+                        dollarViewModel.sellRateFlow.value = recordBox.rate ?: ""
+                        dollarViewModel.sellDollarFlow.value = recordBox.money ?: ""
                     }, dollarViewModel, snackBarHostState)
 
                 Divider()

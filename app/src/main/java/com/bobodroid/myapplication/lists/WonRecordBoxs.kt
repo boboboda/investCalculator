@@ -72,7 +72,7 @@ fun BuyWonRecordBox(wonViewModel: WonViewModel, snackbarHostState: SnackbarHostS
 
                 WonLineRecordText(
                     Buy,
-                    sellAction = Buy.recordColor
+                    sellAction = Buy.recordColor!!
                     ,
                     sellActed = { buyRecord ->
                         selectedId = buyRecord.id
@@ -82,10 +82,10 @@ fun BuyWonRecordBox(wonViewModel: WonViewModel, snackbarHostState: SnackbarHostS
                     },
                     onClicked = { recordbox ->
                         selectedId = recordbox.id
-                        wonViewModel.dateFlow.value = recordbox.date
-                        wonViewModel.recordInputMoney.value = recordbox.money.toInt()
-                        wonViewModel.moneyType.value = recordbox.moneyType
-                        wonViewModel.haveMoney.value = recordbox.exchangeMoney
+                        wonViewModel.dateFlow.value = recordbox.date!!
+                        wonViewModel.recordInputMoney.value = recordbox.money!!.toInt()
+                        wonViewModel.moneyType.value = recordbox.moneyType!!
+                        wonViewModel.haveMoney.value = recordbox.exchangeMoney!!
 
                         Log.d(TAG, " ${recordbox.money}, ${recordbox.exchangeMoney}")
 
@@ -147,9 +147,9 @@ fun SellWonRecordBox(wonViewModel: WonViewModel, snackbarHostState: SnackbarHost
 
                 WonSellLineRecordText(Sell,
                     onClicked = { recordBox ->
-                        wonViewModel.exchangeMoney.value = recordBox.exchangeMoney
-                        wonViewModel.sellRateFlow.value = recordBox.rate
-                        wonViewModel.sellDollarFlow.value = recordBox.money
+                        wonViewModel.exchangeMoney.value = recordBox.exchangeMoney!!
+                        wonViewModel.sellRateFlow.value = recordBox.rate!!
+                        wonViewModel.sellDollarFlow.value = recordBox.money!!
                     }, wonViewModel,
                     snackbarHostState)
 

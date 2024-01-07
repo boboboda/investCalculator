@@ -2,20 +2,6 @@ package com.bobodroid.myapplication.models.viewmodels
 
 
 import android.util.Log
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Slider
-import androidx.compose.material3.SliderDefaults
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.bobodroid.myapplication.MainActivity.Companion.TAG
@@ -24,9 +10,7 @@ import com.bobodroid.myapplication.models.datamodels.DrBuyRecord
 import com.bobodroid.myapplication.models.datamodels.DrSellRecord
 import com.bobodroid.myapplication.models.datamodels.ExchangeRate
 import com.bobodroid.myapplication.models.datamodels.InvestRepository
-import com.bobodroid.myapplication.models.datamodels.LocalUserData
 import dagger.hilt.android.lifecycle.HiltViewModel
-import io.reactivex.internal.operators.maybe.MaybeDoAfterSuccess
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
@@ -138,9 +122,9 @@ class DollarViewModel @Inject constructor(private val investRepository: InvestRe
                         totalExpectProfit.emit(totalProfit)
 
                     } else {
-                        val startFilterBuyRecord= buyRecordFlow.value.filter { it.date >= startDate}
+                        val startFilterBuyRecord= buyRecordFlow.value.filter { it.date!! >= startDate}
 
-                        var endFilterBuyRecord = startFilterBuyRecord.filter { it.date <= endDate}
+                        var endFilterBuyRecord = startFilterBuyRecord.filter { it.date!! <= endDate}
 
                             _filterBuyRecordFlow.emit(endFilterBuyRecord)
 
@@ -169,9 +153,9 @@ class DollarViewModel @Inject constructor(private val investRepository: InvestRe
                         totalSellProfit.emit(totalProfit)
 
                     } else {
-                        val startFilterSellRecord= sellRecordFlow.value.filter { it.date >= startDate}
+                        val startFilterSellRecord= sellRecordFlow.value.filter { it.date!! >= startDate}
 
-                        val endFilterSellRecord = startFilterSellRecord.filter { it.date <= endDate}
+                        val endFilterSellRecord = startFilterSellRecord.filter { it.date!! <= endDate}
 
 
                         _filterSellRecordFlow.emit(endFilterSellRecord)
@@ -501,6 +485,23 @@ class DollarViewModel @Inject constructor(private val investRepository: InvestRe
            investRepository.updateRecord(updateData)
 
            return true}
+    }
+
+    fun drCloudLoad(buyRecord: List<DrBuyRecord>, sellRecord: List<DrSellRecord>) {
+
+        viewModelScope.launch {
+
+            investRepository.drBuyAddListRecord(buyRecord)
+
+            investRepository.drSellAddListRecord(sellRecord)
+        }
+
+    }
+
+    fun convertFirebaseUuidToKotlinUuid(firebaseUuid: List<Map<String, String>>): UUID {
+        val mostSignificantBits = firebaseUuid[0]["mostSignificantBits"]
+        val leastSignificantBits = firebaseUuid[0]["leastSignificantBits"]
+        return UUID.fromString(String.format("%016x-%016x", mostSignificantBits, leastSignificantBits))
     }
 
 

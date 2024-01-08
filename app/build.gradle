@@ -15,15 +15,16 @@ properties.load(project.rootProject.file('local.properties').newDataInputStream(
 
 android {
     namespace 'com.bobodroid.myapplication'
-    compileSdk 33
+    compileSdk 34
 
     defaultConfig {
         applicationId "com.bobodroid.myapplication"
         minSdk 26
         targetSdk 33
-        compileSdk 33
-        versionCode 25
-        versionName "23.1.1"
+        compileSdk 34
+        versionCode 26
+        compileSdkPreview "UpsideDownCake"
+        versionName "23.2.1"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
@@ -80,8 +81,7 @@ android {
 }
 
 dependencies {
-
-    implementation 'androidx.core:core-ktx:1.8.0'
+    implementation 'androidx.core:core-ktx:1.9.0'
     implementation platform('org.jetbrains.kotlin:kotlin-bom:1.8.0')
     implementation 'androidx.lifecycle:lifecycle-runtime-ktx:2.3.1'
     implementation 'androidx.activity:activity-compose:1.5.1'
@@ -93,8 +93,6 @@ dependencies {
     implementation 'com.google.android.material:material:1.9.0'
     implementation 'com.google.android.gms:play-services-ads-lite:22.3.0'
     implementation 'com.google.firebase:firebase-crashlytics-buildtools:2.9.9'
-//    implementation 'com.google.firebase:firebase-firestore:24.9.1'
-//    implementation 'com.google.firebase:firebase-common-ktx:20.4.2'
     implementation 'androidx.appcompat:appcompat:1.6.1'
     implementation 'androidx.constraintlayout:constraintlayout:2.1.4'
     testImplementation 'junit:junit:4.13.2'
@@ -166,7 +164,7 @@ dependencies {
 
 
     //스프래쉬 화면
-    implementation 'androidx.core:core-splashscreen:1.0.0-beta02'
+    implementation 'androidx.core:core-splashscreen:1.1.0-alpha01'
 
     // retrofit
     def retrofit_version = "2.9.0"

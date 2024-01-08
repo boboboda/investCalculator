@@ -7,15 +7,13 @@
     <style name="Theme.App.Starting" parent="Theme.SplashScreen">
         <item name="windowSplashScreenBackground">@color/white</item>
         <item name="windowSplashScreenAnimatedIcon">@mipmap/ic_main_round</item>
+        <item name="windowSplashScreenAnimationDuration">0</item>
         <item name="postSplashScreenTheme">@style/Theme.Splash</item>
+
     </style>
 
     <style name="Theme.Splash" parent="android:Theme.Material.Light.NoActionBar">
         <item name="android:windowSplashScreenBackground" tools:targetApi="S">@color/white</item>
-        <item name="android:windowSplashScreenAnimatedIcon" tools:targetApi="S">@mipmap/ic_main_round</item>
-        <item name="android:windowSplashScreenIconBackgroundColor" tools:targetApi="S">@color/white</item>
-        <item name="android:windowSplashScreenAnimationDuration" tools:targetApi="S">1000</item>
-<!--        <item name="android:windowSplashScreenBrandingImage" tools:targetApi="S">@mipmap/ic_main_round</item>-->
     </style>
 
     <style name="RewardedAdTheme" parent="Theme.AppCompat.Light.NoActionBar">

@@ -197,7 +197,10 @@ fun PopupNumberView(
                                         } else {
                                             return@launch
                                         }
+                                    } else {
+                                        UserInput += aButtons
                                     }
+
                                 } else UserInput += aButtons
                             }
                         }
@@ -556,6 +559,8 @@ fun FloatPopupNumberView(onClicked: ((String) -> Unit)?) {
                                         } else {
                                             return@launch
                                         }
+                                    } else {
+                                        UserInput += aButtons
                                     }
                                 } else UserInput += aButtons
                             }

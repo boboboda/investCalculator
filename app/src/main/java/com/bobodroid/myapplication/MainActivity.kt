@@ -49,7 +49,7 @@ import java.util.*
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
 
-    private lateinit var splashScreen: SplashScreen
+
 
     companion object {
         const val TAG = "메인"
@@ -63,12 +63,23 @@ class MainActivity : ComponentActivity() {
 
     private val allViewModel: AllViewModel by viewModels()
 
+    private lateinit var splashScreen: SplashScreen
     override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        Log.w(TAG, "onCreate 실행")
         splashScreen = installSplashScreen()
 
 
-        super.onCreate(savedInstanceState)
-        Log.w(TAG, "onCreate 실행")
+
+        // 아이콘이 초기화되었는지 확인합니다.
+        if(splashScreen == null) {
+            Log.w(TAG, "${splashScreen}값 없음")
+        } else {
+            Log.w(TAG, "${splashScreen}값 있음")
+        }
+
+
+
         startSplash()
 
         /** FCM설정, Token값 가져오기 */
@@ -99,7 +110,7 @@ class MainActivity : ComponentActivity() {
 
         Log.w(TAG, "onStart 실행")
 
-        checkAppPushNotification()
+
 
         allViewModel.recentRateHotListener { recentRate, localData->
             Log.d(TAG, "실시간 데이터 수신 ${recentRate}, ${localData}")
@@ -112,8 +123,15 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    override fun onStop() {
+        super.onStop()
+
+    }
+
     private fun startSplash() {
         splashScreen.setOnExitAnimationListener { splashScreenView ->
+
+            Log.w(TAG,"${splashScreenView.iconView}")
 
             val translateY = PropertyValuesHolder.ofFloat(View.TRANSLATION_Y, 0f, -50f, 0f) // 위아래로 이동
 
@@ -124,6 +142,7 @@ class MainActivity : ComponentActivity() {
                 repeatMode = ObjectAnimator.REVERSE
                 doOnEnd {
                     splashScreenView.remove()
+
                 }
                 start()
             }
@@ -152,6 +171,13 @@ class MainActivity : ComponentActivity() {
         Log.w(TAG, "알람 권한 있음")
         //권한이 있을때
     }
+
+    override fun onDestroy() {
+        super.onDestroy()
+
+
+        }
+
 
 
 

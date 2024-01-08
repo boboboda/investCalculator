@@ -2,6 +2,8 @@ package com.bobodroid.myapplication.components
 
 import android.content.Intent
 import android.net.Uri
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -12,11 +14,15 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentSize
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.DrawerState
 import androidx.compose.material.SnackbarDuration
 import androidx.compose.material.SnackbarHostState
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.rounded.Close
+import androidx.compose.material3.Card
 import androidx.compose.material3.Divider
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -43,6 +49,7 @@ import com.bobodroid.myapplication.models.viewmodels.AllViewModel
 import com.bobodroid.myapplication.models.viewmodels.DollarViewModel
 import com.bobodroid.myapplication.models.viewmodels.WonViewModel
 import com.bobodroid.myapplication.models.viewmodels.YenViewModel
+import com.bobodroid.myapplication.ui.theme.TitleCardColor
 import com.bobodroid.myapplication.ui.theme.TopButtonColor
 import kotlinx.coroutines.launch
 
@@ -76,9 +83,14 @@ fun DrawerCustom(
 
     var cloudSaveAskDialog by remember { mutableStateOf(false) }
 
+    var targetWindowsExpandVisible by remember { mutableStateOf(false) }
+
+    val expandIcon =
+        if (targetWindowsExpandVisible) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown
+
     val context = LocalContext.current
 
-    val id = if(localUser.value.customId == null) localUser.value.id else localUser.value.customId
+    val id = if (localUser.value.customId == null) localUser.value.id else localUser.value.customId
 
     val webIntent = Intent(Intent.ACTION_VIEW)
     webIntent.data = Uri.parse("https://cobusil.vercel.app")
@@ -103,20 +115,26 @@ fun DrawerCustom(
             Modifier
                 .fillMaxWidth()
                 .padding(bottom = 20.dp),
-            horizontalAlignment = Alignment.Start) {
+            horizontalAlignment = Alignment.Start
+        ) {
 
             Text(
                 modifier = Modifier.padding(start = 10.dp, end = 20.dp, bottom = 5.dp),
                 text = "ID: ${id}",
                 fontSize = 15.sp,
                 overflow = TextOverflow.Ellipsis,
-                maxLines = 1)
+                maxLines = 1
+            )
             Row(
                 Modifier
                     .fillMaxWidth()
                     .padding(top = 5.dp, start = 10.dp, end = 20.dp, bottom = 10.dp),
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(space = 5.dp, alignment = Alignment.Start)) {
+                horizontalArrangement = Arrangement.spacedBy(
+                    space = 5.dp,
+                    alignment = Alignment.Start
+                )
+            ) {
 
                 CardButton(
                     label = "아이디 만들기",
@@ -152,13 +170,14 @@ fun DrawerCustom(
                 Modifier
                     .fillMaxWidth()
                     .padding(top = 5.dp, start = 10.dp, end = 20.dp),
-                horizontalArrangement = Arrangement.spacedBy(5.dp, Alignment.Start)) {
+                horizontalArrangement = Arrangement.spacedBy(5.dp, Alignment.Start)
+            ) {
 
                 CardButton(
                     label = "클라우드 저장",
                     onClicked = {
 
-                        if(localUser.value.customId == null) {
+                        if (localUser.value.customId == null) {
                             coroutineScope.launch {
                                 drawerState.close()
                                 mainScreenSnackBarHostState.showSnackbar(
@@ -184,7 +203,7 @@ fun DrawerCustom(
                     label = "클라우드 불러오기",
                     onClicked = {
 
-                        if(localUser.value.customId == null) {
+                        if (localUser.value.customId == null) {
                             coroutineScope.launch {
                                 drawerState.close()
                                 mainScreenSnackBarHostState.showSnackbar(
@@ -213,10 +232,12 @@ fun DrawerCustom(
                 .padding(bottom = 20.dp)
         )
 
-        Row(modifier = Modifier
-            .fillMaxWidth()
-            .padding(start = 10.dp),
-            horizontalArrangement = Arrangement.Start) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(start = 10.dp),
+            horizontalArrangement = Arrangement.Start
+        ) {
             Text(text = "새로고침 업데이트 횟수: ${freeChance}(${payChance})회")
 
             Spacer(modifier = Modifier.width(10.dp))
@@ -239,10 +260,147 @@ fun DrawerCustom(
                 .height(10.dp)
         )
 
-        Row(modifier = Modifier
-            .fillMaxWidth()
-            .padding(start = 10.dp),
-            horizontalArrangement = Arrangement.Start) {
+
+
+        Column(
+            modifier = Modifier
+                .fillMaxWidth(),
+            horizontalAlignment = Alignment.Start
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(start = 10.dp, end = 20.dp),
+                horizontalArrangement = Arrangement.Start
+            ) {
+                Text(text = "목표 환율 알람설정")
+
+                Spacer(modifier = Modifier.width(10.dp))
+                CardButton(
+                    label = "설정",
+                    onClicked = {
+                        coroutineScope.launch {
+                            drawerState.close()
+                            mainScreenSnackBarHostState.showSnackbar(
+                                "업데이트 예정입니다.",
+                                actionLabel = "닫기", SnackbarDuration.Short
+                            )
+                        }
+                    },
+                    buttonColor = TopButtonColor,
+                    fontColor = Color.Black,
+                    modifier = Modifier
+                        .height(20.dp)
+                        .width(40.dp),
+                    fontSize = 15
+                )
+
+                Spacer(modifier = Modifier.weight(1f))
+
+                IconButton(
+                    imageVector = expandIcon,
+                    onClicked = {
+                    if (!targetWindowsExpandVisible) targetWindowsExpandVisible = true
+                    else
+                        targetWindowsExpandVisible = false
+                }, modifier = Modifier)
+            }
+
+            AnimatedVisibility(visible = targetWindowsExpandVisible) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(10.dp)
+                        .border(width = 1.dp, color = Color.Black, shape = RoundedCornerShape(10.dp)),
+                    horizontalAlignment = Alignment.Start
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(start = 10.dp, top = 10.dp),
+                        horizontalAlignment = Alignment.Start
+                    ) {
+
+                        CustomCard(
+                            label = "달러",
+                            fontSize = 15,
+                            modifier = Modifier
+                                .height(20.dp)
+                                .width(40.dp),
+                            fontColor = Color.Black,
+                            cardColor = TitleCardColor
+                        )
+
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(start = 10.dp, bottom = 10.dp, top = 10.dp),
+                            horizontalArrangement = Arrangement.spacedBy(
+                                10.dp,
+                                alignment = Alignment.Start
+                            )
+                        ) {
+                            Text(text = "최대환율: 1200")
+
+                            Text(text = "최소환율: 1000")
+                        }
+                    }
+
+
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(start = 10.dp),
+                        horizontalAlignment = Alignment.Start
+                    ) {
+
+                        CustomCard(
+                            label = "엔화",
+                            fontSize = 15,
+                            modifier = Modifier
+                                .height(20.dp)
+                                .width(40.dp),
+                            fontColor = Color.Black,
+                            cardColor = TitleCardColor
+                        )
+
+
+
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(start = 10.dp, bottom = 10.dp, top = 10.dp),
+                            horizontalArrangement = Arrangement.spacedBy(
+                                10.dp,
+                                alignment = Alignment.Start
+                            )
+                        ) {
+                            Text(text = "최대환율: 1200")
+
+                            Text(text = "최소환율: 1000")
+                        }
+
+                    }
+                }
+            }
+
+        }
+
+
+
+
+
+        Spacer(
+            modifier = Modifier
+                .height(10.dp)
+        )
+
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(start = 10.dp),
+            horizontalArrangement = Arrangement.Start
+        ) {
             Text(text = "스프레드: {}")
 
             Spacer(modifier = Modifier.width(10.dp))
@@ -272,7 +430,7 @@ fun DrawerCustom(
                 .padding(top = 10.dp)
         )
 
-        if(chargeDialog.value) {
+        if (chargeDialog.value) {
             ChargeDialog(onDismissRequest = {
                 chargeDialog.value = it
             }) {
@@ -284,15 +442,15 @@ fun DrawerCustom(
             }
         }
 
-        if(customDialog) {
+        if (customDialog) {
             CustomIdDialog(
                 onDismissRequest = {
                     customDialog = it
                 },
                 placeholder = "커스텀 아이디를 입력해주세요",
                 buttonLabel = "확인",
-                onClicked = {customId, pin->
-                    allViewModel.idCustom(customId, pin) { resultMessage->
+                onClicked = { customId, pin ->
+                    allViewModel.idCustom(customId, pin) { resultMessage ->
 
                         coroutineScope.launch {
                             customDialog = false
@@ -309,7 +467,7 @@ fun DrawerCustom(
             )
         }
 
-        if(cloudLoadDialog) {
+        if (cloudLoadDialog) {
             AskTriggerDialog(
                 title = "현재 아이디:${localUser.value.customId} \n" +
                         "저장된 클라우드를 불러오시겠습니까?",
@@ -318,7 +476,7 @@ fun DrawerCustom(
                 },
                 onClicked = {
 
-                    allViewModel.cloudLoad(localUser.value.customId!!) { cloudData, resultMessage->
+                    allViewModel.cloudLoad(localUser.value.customId!!) { cloudData, resultMessage ->
 
                         dollarViewModel.drCloudLoad(
                             cloudData.drBuyRecord ?: emptyList(),
@@ -349,7 +507,7 @@ fun DrawerCustom(
             )
         }
 
-        if(cloudSaveAskDialog) {
+        if (cloudSaveAskDialog) {
             AskTriggerDialog(
                 title = "현재 아이디:${localUser.value.customId} \n" +
                         "광고를 시청하고 클라우드에 저장하시겠습니까?",
@@ -379,15 +537,15 @@ fun DrawerCustom(
             )
         }
 
-        if(findIdDialog) {
+        if (findIdDialog) {
             CustomIdDialog(
                 onDismissRequest = {
                     findIdDialog = it
                 },
                 placeholder = "아이디를 입력해주세요",
                 buttonLabel = "확인",
-                onClicked = { cloudId, pin->
-                    allViewModel.findCustomId(cloudId, pin) { resultMessage->
+                onClicked = { cloudId, pin ->
+                    allViewModel.findCustomId(cloudId, pin) { resultMessage ->
                         coroutineScope.launch {
                             findIdDialog = false
                             drawerState.close()
@@ -409,14 +567,18 @@ fun DrawerCustom(
 
 
 
-        Column(modifier = Modifier
-            .wrapContentSize()
-            .padding(start = 5.dp, bottom = 20.dp)) {
-            Column(modifier = Modifier
-                .fillMaxWidth()
-                .padding(),
+        Column(
+            modifier = Modifier
+                .wrapContentSize()
+                .padding(start = 5.dp, bottom = 20.dp)
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(),
                 horizontalAlignment = Alignment.Start,
-                verticalArrangement = Arrangement.spacedBy(5.dp)) {
+                verticalArrangement = Arrangement.spacedBy(5.dp)
+            ) {
                 CardButton(
                     label = "공식사이트 가기",
                     onClicked = {

@@ -267,3 +267,38 @@ fun IconButton(imageVector: ImageVector,
 
 }
 
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun CustomCard(label: String,
+               fontSize: Int,
+               modifier: Modifier,
+               fontColor: Color,
+               cardColor: Color,
+) {
+    
+    Card(colors = CardDefaults.cardColors(cardColor),
+        elevation = CardDefaults.cardElevation(8.dp),
+        modifier = modifier,
+        shape = RoundedCornerShape(2.dp)) {
+        Row(Modifier
+            .fillMaxSize(),
+            horizontalArrangement = Arrangement.Center,
+            verticalAlignment = Alignment.CenterVertically) {
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
+            ) {
+                AutoSizeText(
+                    value = "$label",
+                    modifier = Modifier,
+                    fontSize = fontSize.sp,
+                    maxLines = 1,
+                    minFontSize = 10.sp,
+                    color = fontColor)
+            }
+
+        }
+
+    }
+}

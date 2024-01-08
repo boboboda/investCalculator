@@ -535,6 +535,4 @@ class AllViewModel @Inject constructor(
         Log.d(TAG, "올뷰모델 토큰값${updateToken}")
 
     }
-
-
 }

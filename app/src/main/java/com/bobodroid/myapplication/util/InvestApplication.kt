@@ -10,8 +10,6 @@ class InvestApplication: Application() {
 
     companion object {
         lateinit var prefs: PreferenceUtil
-
-
     }
     override fun onCreate() {
 

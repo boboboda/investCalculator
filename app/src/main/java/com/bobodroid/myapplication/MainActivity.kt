@@ -9,6 +9,7 @@ import android.os.Build
 import android.os.Bundle
 import android.util.Log
 import android.view.View
+import android.view.ViewTreeObserver
 import android.view.animation.AnticipateInterpolator
 import android.view.animation.LinearInterpolator
 import androidx.activity.ComponentActivity
@@ -42,13 +43,13 @@ import com.bobodroid.myapplication.screens.*
 import com.google.android.gms.ads.MobileAds
 //import com.google.android.gms.ads.MobileAds
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.util.*
 
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
-
 
 
     companion object {
@@ -69,23 +70,24 @@ class MainActivity : ComponentActivity() {
         Log.w(TAG, "onCreate 실행")
         splashScreen = installSplashScreen()
 
+//        startSplash()
 
-
-        // 아이콘이 초기화되었는지 확인합니다.
-        if(splashScreen == null) {
-            Log.w(TAG, "${splashScreen}값 없음")
-        } else {
-            Log.w(TAG, "${splashScreen}값 있음")
-        }
-
-
-
-        startSplash()
+        val content: View = findViewById(android.R.id.content)
+        content.viewTreeObserver.addOnPreDrawListener(
+            object : ViewTreeObserver.OnPreDrawListener {
+                override fun onPreDraw(): Boolean {
+                    // Check whether the initial data is ready.
+                    Thread.sleep(2000)
+                    // The content is ready. Start drawing.
+                    content.viewTreeObserver.removeOnPreDrawListener(this)
+                    return true
+                }
+            }
+        )
 
         /** FCM설정, Token값 가져오기 */
 
 //        RateFirebaseMessagingService().deleteFirebaseToken()
-
 
 
         setContent {
@@ -97,10 +99,11 @@ class MainActivity : ComponentActivity() {
 
             loadRewardedAdvertisement(this)
             AppScreen(
-                    dollarViewModel,
-                    yenViewModel,
-                    wonViewModel,
-                    allViewModel)
+                dollarViewModel,
+                yenViewModel,
+                wonViewModel,
+                allViewModel
+            )
         }
     }
 
@@ -110,9 +113,7 @@ class MainActivity : ComponentActivity() {
 
         Log.w(TAG, "onStart 실행")
 
-
-
-        allViewModel.recentRateHotListener { recentRate, localData->
+        allViewModel.recentRateHotListener { recentRate, localData ->
             Log.d(TAG, "실시간 데이터 수신 ${recentRate}, ${localData}")
 
             dollarViewModel.requestRate(recentRate)
@@ -128,12 +129,14 @@ class MainActivity : ComponentActivity() {
 
     }
 
+    // 스플래쉬 애니메이션
     private fun startSplash() {
         splashScreen.setOnExitAnimationListener { splashScreenView ->
 
-            Log.w(TAG,"${splashScreenView.iconView}")
+            Log.w(TAG, "${splashScreenView.iconView}")
 
-            val translateY = PropertyValuesHolder.ofFloat(View.TRANSLATION_Y, 0f, -50f, 0f) // 위아래로 이동
+            val translateY =
+                PropertyValuesHolder.ofFloat(View.TRANSLATION_Y, 0f, -50f, 0f) // 위아래로 이동
 
             ObjectAnimator.ofPropertyValuesHolder(splashScreenView.iconView, translateY).run {
                 duration = 1500L
@@ -162,7 +165,11 @@ class MainActivity : ComponentActivity() {
     private fun checkAppPushNotification() {
         //Android 13 이상 && 푸시권한 없음
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU
-            && PackageManager.PERMISSION_DENIED == ContextCompat.checkSelfPermission(this, android.Manifest.permission.POST_NOTIFICATIONS)) {
+            && PackageManager.PERMISSION_DENIED == ContextCompat.checkSelfPermission(
+                this,
+                android.Manifest.permission.POST_NOTIFICATIONS
+            )
+        ) {
             Log.w(TAG, "알람 권한 없음.")
 
             permissionPostNotification.launch(android.Manifest.permission.POST_NOTIFICATIONS)
@@ -176,19 +183,18 @@ class MainActivity : ComponentActivity() {
         super.onDestroy()
 
 
-        }
-
-
+    }
 
 
     /** 권한 요청 */
-    private val permissionPostNotification = registerForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted ->
-        if (isGranted) {
-            //권한 허용
-        } else {
-            //권한 비허용
+    private val permissionPostNotification =
+        registerForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted ->
+            if (isGranted) {
+                //권한 허용
+            } else {
+                //권한 비허용
+            }
         }
-    }
 
 }
 
@@ -208,17 +214,26 @@ fun AppScreen(
 
     Column(
         modifier = Modifier
-            .fillMaxSize()) {
+            .fillMaxSize()
+    ) {
         MainTopBar(menuBarClinked = {
             scope.launch {
                 drawerState.open()
             }
         })
 
-        Column(modifier = Modifier.weight(1f),
-            verticalArrangement = Arrangement.Bottom) {
+        Column(
+            modifier = Modifier.weight(1f),
+            verticalArrangement = Arrangement.Bottom
+        ) {
 
-            InvestAppScreen(dollarViewModel, yenViewModel, wonViewModel , allViewModel, drawerState = drawerState)
+            InvestAppScreen(
+                dollarViewModel,
+                yenViewModel,
+                wonViewModel,
+                allViewModel,
+                drawerState = drawerState
+            )
         }
 
     }
@@ -233,7 +248,8 @@ fun InvestAppScreen(
     yenViewModel: YenViewModel,
     wonViewModel: WonViewModel,
     allViewModel: AllViewModel,
-    drawerState: DrawerState) {
+    drawerState: DrawerState
+) {
 
 
     val investNavController = rememberNavController()
@@ -252,8 +268,6 @@ fun InvestAppScreen(
     )
 
 
-
-
 }
 
 
@@ -268,30 +282,34 @@ fun InvestNavHost(
     allViewModel: AllViewModel,
     drawerState: DrawerState
 ) {
-   NavHost(navController = investNavController, startDestination = startRouter.routeName!!) {
-       composable(InvestRoute.MAIN.routeName!!) {
-           MainScreen(
-               dollarViewModel = dollarViewModel,
-               yenViewModel = yenViewModel,
-               wonViewModel = wonViewModel,
-               routeAction = routeAction,
-               allViewModel = allViewModel,
-               drawerState = drawerState
+    NavHost(navController = investNavController, startDestination = startRouter.routeName!!) {
+        composable(InvestRoute.MAIN.routeName!!) {
+            MainScreen(
+                dollarViewModel = dollarViewModel,
+                yenViewModel = yenViewModel,
+                wonViewModel = wonViewModel,
+                routeAction = routeAction,
+                allViewModel = allViewModel,
+                drawerState = drawerState
 
-           )
-       }
-       composable(InvestRoute.DOLLAR_BUY.routeName!!) {
-           DollarInvestScreen(dollarViewModel = dollarViewModel, routeAction = routeAction, allViewModel)
-       }
+            )
+        }
+        composable(InvestRoute.DOLLAR_BUY.routeName!!) {
+            DollarInvestScreen(
+                dollarViewModel = dollarViewModel,
+                routeAction = routeAction,
+                allViewModel
+            )
+        }
 
-       composable(InvestRoute.YEN_BUY.routeName!!) {
-           YenInvestScreen(yenViewModel = yenViewModel, routeAction = routeAction, allViewModel)
-       }
+        composable(InvestRoute.YEN_BUY.routeName!!) {
+            YenInvestScreen(yenViewModel = yenViewModel, routeAction = routeAction, allViewModel)
+        }
 
-       composable(InvestRoute.WON_BUY.routeName!!) {
-           WonInvestScreen(wonViewModel = wonViewModel, routeAction = routeAction, allViewModel)
-       }
-   }
+        composable(InvestRoute.WON_BUY.routeName!!) {
+            WonInvestScreen(wonViewModel = wonViewModel, routeAction = routeAction, allViewModel)
+        }
+    }
 }
 
 

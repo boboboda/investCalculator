@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:tools="http://schemas.android.com/tools">
+
+    <style name="Theme.App.Starting" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:windowSplashScreenBackground" tools:targetApi="S">@color/white</item>
+        <item name="android:windowSplashScreenAnimatedIcon" tools:targetApi="S">
+            @mipmap/ic_main_round
+        </item>
+        <item name="android:windowSplashScreenIconBackgroundColor" tools:targetApi="S">
+            @color/white
+        </item>
+        <item name="android:windowSplashScreenAnimationDuration" tools:targetApi="S">3000</item>
+        <item name="android:windowSplashScreenBrandingImage" tools:targetApi="S">@drawable/splash_branding_image</item>
+        <!--        <item name="postSplashScreenTheme">@style/Theme.Splash</item>-->
+    </style>
+</resources>

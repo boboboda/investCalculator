@@ -53,7 +53,7 @@ class RateFirebaseMessagingService: FirebaseMessagingService() {
 
         // Notification 메시지를 수신할 경우
         // remoteMessage.notification?.body!! 여기에 내용이 저장되있음
-        // Log.d(TAG, "Notification Message Body: " + remoteMessage.notification?.body!!)
+//         Log.d(TAG, "Notification Message Body: " + remoteMessage.notification?.body!!)
 
         //받은 remoteMessage의 값 출력해보기. 데이터메세지 / 알림메세지
         Log.d(TAG, "Message data : ${remoteMessage.data}")
@@ -100,9 +100,10 @@ class RateFirebaseMessagingService: FirebaseMessagingService() {
         // 알림 소리
         val soundUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
 
+
         // 알림에 대한 UI 정보, 작업
         val notificationBuilder = NotificationCompat.Builder(this, channelId)
-            .setSmallIcon(R.mipmap.ic_main_round)
+            .setSmallIcon(R.mipmap.ic_main_foreground)
             .setContentTitle(remoteMessage.data["title"].toString()) // 제목
             .setContentText(remoteMessage.data["body"].toString()) // 메시지 내용
             .setAutoCancel(true)

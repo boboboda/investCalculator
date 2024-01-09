@@ -26,6 +26,7 @@ import com.bobodroid.myapplication.ui.theme.SellButtonColor
 fun AskTriggerDialog(
     onDismissRequest: (Boolean) -> Unit,
     title: String,
+    onClickedLabel: String,
     onClicked: () -> Unit,
 ) {
 
@@ -55,7 +56,7 @@ fun AskTriggerDialog(
                     .fillMaxWidth(),
                 horizontalArrangement = Arrangement.Center
             ) {
-                Buttons(label = "예",
+                Buttons(label = onClickedLabel,
                     onClicked = onClicked,
 
                     color = SellButtonColor,

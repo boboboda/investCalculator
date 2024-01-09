@@ -44,7 +44,7 @@ import java.time.ZoneId
 import java.util.GregorianCalendar
 
 @Composable
-fun TargetDialog(
+fun TargetRateDialog(
     onDismissRequest: (Boolean) -> Unit,
     onClicked: (() -> Unit)? = null,
     allViewModel: AllViewModel
@@ -60,10 +60,6 @@ fun TargetDialog(
     val scope = rememberCoroutineScope()
 
     val selectCardLabel = remember { mutableStateOf("달러") }
-
-
-
-
 
     Dialog(onDismissRequest = {
         onDismissRequest(false)

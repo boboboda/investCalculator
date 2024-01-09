@@ -54,6 +54,9 @@ class AllViewModel @Inject constructor(
     private val noticeDateFlow = MutableStateFlow("")
 
     val noticeContent = MutableStateFlow("")
+
+    val alarmPermissionState = MutableStateFlow(false)
+
     private fun noticeApi(noticeDate: (String) -> Unit) {
         viewModelScope.launch {
             val noticeResponse = NoticeApi.noticeService.noticeRequest()

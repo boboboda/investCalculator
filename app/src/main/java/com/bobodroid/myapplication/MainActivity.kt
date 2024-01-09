@@ -3,6 +3,7 @@ package com.bobodroid.myapplication
 import android.animation.ObjectAnimator
 import android.animation.PropertyValuesHolder
 import android.annotation.SuppressLint
+import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
@@ -23,6 +24,7 @@ import androidx.compose.material.rememberDrawerState
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.core.animation.doOnEnd
+import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
 import androidx.core.splashscreen.SplashScreen
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
@@ -122,11 +124,16 @@ class MainActivity : ComponentActivity() {
 
             wonViewModel.requestRate(recentRate)
         }
+
+        checkAppPushNotification()
     }
 
-    override fun onStop() {
-        super.onStop()
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
 
+        if (requestCode == 1 && resultCode == RESULT_OK) {
+            Log.w(TAG, "보상형 액티비티에서 넘어옴")
+        }
     }
 
     // 스플래쉬 애니메이션
@@ -152,13 +159,6 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
-        super.onActivityResult(requestCode, resultCode, data)
-
-        if (requestCode == 1 && resultCode == RESULT_OK) {
-            Log.w(TAG, "보상형 액티비티에서 넘어옴")
-        }
-    }
 
 
     // 알람 권한 스테이트 값으로 저장하여 유저가 확인할 수 있도록 안내
@@ -170,19 +170,17 @@ class MainActivity : ComponentActivity() {
                 android.Manifest.permission.POST_NOTIFICATIONS
             )
         ) {
-            Log.w(TAG, "알람 권한 없음.")
+            allViewModel.alarmPermissionState.value = false
 
             permissionPostNotification.launch(android.Manifest.permission.POST_NOTIFICATIONS)
             return
         }
-        Log.w(TAG, "알람 권한 있음")
+        allViewModel.alarmPermissionState.value = true
         //권한이 있을때
     }
 
     override fun onDestroy() {
         super.onDestroy()
-
-
     }
 
 

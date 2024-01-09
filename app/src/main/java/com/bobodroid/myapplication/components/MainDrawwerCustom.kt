@@ -41,11 +41,14 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
 import com.bobodroid.myapplication.MainActivity.Companion.TAG
 import com.bobodroid.myapplication.components.Dialogs.AskTriggerDialog
 import com.bobodroid.myapplication.components.Dialogs.ChargeDialog
 import com.bobodroid.myapplication.components.Dialogs.CustomIdDialog
+import com.bobodroid.myapplication.components.Dialogs.PermissionGuideDialog
+import com.bobodroid.myapplication.components.Dialogs.TargetRateDialog
 import com.bobodroid.myapplication.components.admobs.showInterstitial
 import com.bobodroid.myapplication.components.admobs.showRewardedAdvertisement
 import com.bobodroid.myapplication.models.viewmodels.AllViewModel
@@ -86,6 +89,12 @@ fun DrawerCustom(
 
     var alarmPermissionDialog by remember { mutableStateOf(false) }
 
+    var targetRateDialog by remember { mutableStateOf(false) }
+
+    var permissionGuideDialog by remember { mutableStateOf(false) }
+
+    val alarmPermissionState = allViewModel.alarmPermissionState.collectAsState()
+
     var cloudSaveAskDialog by remember { mutableStateOf(false) }
 
     var targetWindowsExpandVisible by remember { mutableStateOf(false) }
@@ -95,7 +104,8 @@ fun DrawerCustom(
 
     val context = LocalContext.current
 
-    val id = if (localUser.value.customId.isNullOrEmpty()) localUser.value.id else localUser.value.customId
+    val id =
+        if (localUser.value.customId.isNullOrEmpty()) localUser.value.id else localUser.value.customId
 
     val webIntent = Intent(Intent.ACTION_VIEW)
     webIntent.data = Uri.parse("https://cobusil.vercel.app")
@@ -293,10 +303,10 @@ fun DrawerCustom(
                                 )
                             }
                         } else {
-                            if(PackageManager.PERMISSION_DENIED == PackageManager.PERMISSION_GRANTED) {
-                                Log.d(TAG, "알람 권한 허용")
+                            if (alarmPermissionState.value) {
+                                targetRateDialog = true
                             } else {
-                                Log.d(TAG, "알람 권한 비허용")
+                                alarmPermissionDialog = true
                             }
                         }
                     },
@@ -313,10 +323,11 @@ fun DrawerCustom(
                 IconButton(
                     imageVector = expandIcon,
                     onClicked = {
-                    if (!targetWindowsExpandVisible) targetWindowsExpandVisible = true
-                    else
-                        targetWindowsExpandVisible = false
-                }, modifier = Modifier)
+                        if (!targetWindowsExpandVisible) targetWindowsExpandVisible = true
+                        else
+                            targetWindowsExpandVisible = false
+                    }, modifier = Modifier
+                )
             }
 
             AnimatedVisibility(visible = targetWindowsExpandVisible) {
@@ -488,6 +499,7 @@ fun DrawerCustom(
             AskTriggerDialog(
                 title = "현재 아이디:${localUser.value.customId} \n" +
                         "저장된 클라우드를 불러오시겠습니까?",
+                onClickedLabel = "예",
                 onDismissRequest = {
                     cloudLoadDialog = it
                 },
@@ -528,6 +540,7 @@ fun DrawerCustom(
             AskTriggerDialog(
                 title = "현재 아이디:${localUser.value.customId} \n" +
                         "광고를 시청하고 클라우드에 저장하시겠습니까?",
+                onClickedLabel = "예",
                 onDismissRequest = {
                     cloudSaveAskDialog = it
                 },
@@ -576,6 +589,29 @@ fun DrawerCustom(
                     findIdDialog = false
                 },
             )
+        }
+
+        if (alarmPermissionDialog) {
+            AskTriggerDialog(onDismissRequest = {
+                alarmPermissionDialog = it
+            }, title = "알람 권한이 없습니다.\n" +
+                    "권한 허용 후 다시 시도해주세요",
+                onClickedLabel = "설정") {
+                permissionGuideDialog = true
+                alarmPermissionDialog = false
+            }
+        }
+
+        if (targetRateDialog) {
+            TargetRateDialog(onDismissRequest = {}, allViewModel = allViewModel)
+        }
+
+        if (permissionGuideDialog) {
+            PermissionGuideDialog(closeClicked = {
+                permissionGuideDialog = it
+            }) {
+
+            }
         }
 
 

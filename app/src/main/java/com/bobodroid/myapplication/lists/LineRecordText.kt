@@ -442,6 +442,7 @@ fun LineDrRecordText(
 
                 AskTriggerDialog(
                     title = "삭제하시겠습니까?",
+                    onClickedLabel = "예",
                     onDismissRequest ={
                     deleteAskDialog.value = it
                 }) {
@@ -799,6 +800,7 @@ fun SellLineDrRecordText(data: DrSellRecord,
 
                 AskTriggerDialog(
                     title = "삭제하시겠습니까?",
+                    onClickedLabel = "예",
                     onDismissRequest ={
                     deleteAskDialog.value = it
                 }) {
@@ -1188,6 +1190,7 @@ fun LineYenRecordText(
 
                 AskTriggerDialog(
                     title = "삭제하시겠습니까?",
+                    onClickedLabel = "예",
                     onDismissRequest ={
                     deleteAskDialog.value = it
                 }) {
@@ -1514,6 +1517,7 @@ fun SellLineYenRecordText(data: YenSellRecord,
 
                 AskTriggerDialog(
                     title = "삭제하시겠습니까?",
+                    onClickedLabel = "예",
                     onDismissRequest ={
                     deleteAskDialog.value = it
                 }) {
@@ -1888,6 +1892,7 @@ fun WonLineRecordText(
 
                 AskTriggerDialog(
                     title = "삭제하시겠습니까?",
+                    onClickedLabel = "예",
                     onDismissRequest ={
                     deleteAskDialog.value = it
                 }) {
@@ -2222,6 +2227,7 @@ fun WonSellLineRecordText(
 
                 AskTriggerDialog(
                     title = "삭제하시겠습니까?",
+                    onClickedLabel = "예",
                     onDismissRequest ={
                     deleteAskDialog.value = it
                 }) {

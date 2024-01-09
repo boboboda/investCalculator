@@ -1,7 +1,9 @@
 package com.bobodroid.myapplication.components
 
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.net.Uri
+import android.util.Log
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -40,6 +42,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
+import com.bobodroid.myapplication.MainActivity.Companion.TAG
 import com.bobodroid.myapplication.components.Dialogs.AskTriggerDialog
 import com.bobodroid.myapplication.components.Dialogs.ChargeDialog
 import com.bobodroid.myapplication.components.Dialogs.CustomIdDialog
@@ -81,6 +84,8 @@ fun DrawerCustom(
 
     var findIdDialog by remember { mutableStateOf(false) }
 
+    var alarmPermissionDialog by remember { mutableStateOf(false) }
+
     var cloudSaveAskDialog by remember { mutableStateOf(false) }
 
     var targetWindowsExpandVisible by remember { mutableStateOf(false) }
@@ -90,7 +95,7 @@ fun DrawerCustom(
 
     val context = LocalContext.current
 
-    val id = if (localUser.value.customId == null) localUser.value.id else localUser.value.customId
+    val id = if (localUser.value.customId.isNullOrEmpty()) localUser.value.id else localUser.value.customId
 
     val webIntent = Intent(Intent.ACTION_VIEW)
     webIntent.data = Uri.parse("https://cobusil.vercel.app")
@@ -177,7 +182,7 @@ fun DrawerCustom(
                     label = "클라우드 저장",
                     onClicked = {
 
-                        if (localUser.value.customId == null) {
+                        if (localUser.value.customId.isNullOrEmpty()) {
                             coroutineScope.launch {
                                 drawerState.close()
                                 mainScreenSnackBarHostState.showSnackbar(
@@ -203,7 +208,7 @@ fun DrawerCustom(
                     label = "클라우드 불러오기",
                     onClicked = {
 
-                        if (localUser.value.customId == null) {
+                        if (localUser.value.customId.isNullOrEmpty()) {
                             coroutineScope.launch {
                                 drawerState.close()
                                 mainScreenSnackBarHostState.showSnackbar(
@@ -279,12 +284,20 @@ fun DrawerCustom(
                 CardButton(
                     label = "설정",
                     onClicked = {
-                        coroutineScope.launch {
-                            drawerState.close()
-                            mainScreenSnackBarHostState.showSnackbar(
-                                "업데이트 예정입니다.",
-                                actionLabel = "닫기", SnackbarDuration.Short
-                            )
+                        if (localUser.value.customId.isNullOrEmpty()) {
+                            coroutineScope.launch {
+                                drawerState.close()
+                                mainScreenSnackBarHostState.showSnackbar(
+                                    "아이디를 새로 만든 후 진행해 주세요",
+                                    actionLabel = "닫기", SnackbarDuration.Short
+                                )
+                            }
+                        } else {
+                            if(PackageManager.PERMISSION_DENIED == PackageManager.PERMISSION_GRANTED) {
+                                Log.d(TAG, "알람 권한 허용")
+                            } else {
+                                Log.d(TAG, "알람 권한 비허용")
+                            }
                         }
                     },
                     buttonColor = TopButtonColor,
@@ -311,7 +324,11 @@ fun DrawerCustom(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(10.dp)
-                        .border(width = 1.dp, color = Color.Black, shape = RoundedCornerShape(10.dp)),
+                        .border(
+                            width = 1.dp,
+                            color = Color.Black,
+                            shape = RoundedCornerShape(10.dp)
+                        ),
                     horizontalAlignment = Alignment.Start
                 ) {
                     Column(

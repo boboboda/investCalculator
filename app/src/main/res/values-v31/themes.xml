@@ -10,7 +10,7 @@
             @color/white
         </item>
         <item name="android:windowSplashScreenAnimationDuration" tools:targetApi="S">3000</item>
-        <item name="android:windowSplashScreenBrandingImage" tools:targetApi="S">@drawable/splash_branding_image</item>
+<!--        <item name="android:windowSplashScreenBrandingImage" tools:targetApi="S">@drawable/data_loading_image</item>-->
         <!--        <item name="postSplashScreenTheme">@style/Theme.Splash</item>-->
     </style>
 </resources>

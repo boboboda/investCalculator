@@ -77,7 +77,7 @@ class MainActivity : ComponentActivity() {
             object : ViewTreeObserver.OnPreDrawListener {
                 override fun onPreDraw(): Boolean {
                     // Check whether the initial data is ready.
-                    Thread.sleep(2000)
+                    Thread.sleep(1500)
                     // The content is ready. Start drawing.
                     content.viewTreeObserver.removeOnPreDrawListener(this)
                     return true

@@ -22,23 +22,9 @@ data class LocalUserData(
     var pin: String? = null,
 
     // 목표환율 설정 //FCM
-    @ColumnInfo(name = "rateAlarmUseState", defaultValue = "")
-    var rateAlarmUseState: Boolean? = false,
 
     @ColumnInfo(name = "fcm_Token", defaultValue = "")
     var fcmToken: String? = null,
-
-    @ColumnInfo(name = "max_target_Us_Rate", defaultValue = "")
-    var maxTargetUsRate: String? = null,
-
-    @ColumnInfo(name = "min_target_Us_Rate", defaultValue = "")
-    var minTargetUsRate: String? = null,
-
-    @ColumnInfo(name = "max_target_Yen_Rate", defaultValue = "")
-    var maxTargetYenRate: String? = null,
-
-    @ColumnInfo(name = "min_target_Yen_Rate", defaultValue = "")
-    var minTargetYenRate: String? = null,
 
     // 광고 리셋
     @ColumnInfo(name = "rate_Reset_Count", defaultValue = "")
@@ -76,25 +62,13 @@ data class LocalUserData(
     constructor(data: DocumentSnapshot) : this() {
         this.customId = data["customId"] as String? ?: ""
         this.pin = data["pin"] as String? ?: ""
-        this.rateAlarmUseState = data["rateAlarmUseState"] as Boolean? ?: false
-        this.fcmToken = data["fcmToken"] as String? ?: ""
-        this.maxTargetUsRate = data["maxTargetUsRate"] as String? ?: ""
-        this.minTargetUsRate = data["minTargetUsRate"] as String? ?: ""
-        this.maxTargetYenRate = data["maxTargetYenRate"] as String? ?: ""
-        this.minTargetYenRate = data["minTargetYenRate"] as String? ?: ""
-
-
-    }
+        this.fcmToken = data["fcmToken"] as String? ?: "" }
 
     fun asHasMap(): HashMap<String, Any?> {
         return hashMapOf(
             "customId" to this.customId,
             "pin" to this.pin,
             "fcmToken" to this.fcmToken,
-            "maxTargetUsRate" to this.maxTargetUsRate,
-            "minTargetUsRate" to this.minTargetUsRate,
-            "maxTargetYenRate" to this.maxTargetYenRate,
-            "minTargetYenRate" to this.minTargetYenRate
         )
     }
 }

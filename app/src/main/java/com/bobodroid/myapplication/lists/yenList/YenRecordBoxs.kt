@@ -1,10 +1,10 @@
-package com.bobodroid.myapplication.lists
+package com.bobodroid.myapplication.lists.yenList
 
 import android.annotation.SuppressLint
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.*
 import androidx.compose.material3.Divider
@@ -16,18 +16,25 @@ import androidx.compose.ui.unit.dp
 import com.bobodroid.myapplication.components.*
 import com.bobodroid.myapplication.models.datamodels.*
 import com.bobodroid.myapplication.models.viewmodels.*
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import java.util.UUID
 
 @ExperimentalMaterialApi
 @OptIn(ExperimentalMaterialApi::class)
 @SuppressLint("StateFlowValueCalledInComposition")
 @Composable
-fun BuyYenRecordBox(yenViewModel: YenViewModel, snackbarHostState: SnackbarHostState) {
+fun BuyYenRecordBox(yenViewModel: YenViewModel,
+                    snackbarHostState: SnackbarHostState) {
 
     val buyRecordHistory : State<List<YenBuyRecord>> = yenViewModel.filterBuyRecordFlow.collectAsState()
     val buySortRecord = buyRecordHistory.value.sortedBy { it.date }
 
     var selectedId by remember { mutableStateOf(UUID.randomUUID()) }
+
+    var lazyScrollState = rememberLazyListState()
+
+    val coroutineScope = rememberCoroutineScope()
 
 
     Row(modifier = Modifier
@@ -57,13 +64,21 @@ fun BuyYenRecordBox(yenViewModel: YenViewModel, snackbarHostState: SnackbarHostS
 
 
 
-        LazyColumn(modifier = Modifier, state = rememberLazyListState()) {
+        LazyColumn(modifier = Modifier, state = lazyScrollState) {
 
             //  Buy -> 라인리코드텍스트에 넣지 말고 바로 데이터 전달 -> 리팩토리
-            items(buySortRecord, {item -> item.id}) {Buy ->
+
+            val listSize = buySortRecord.size
+            itemsIndexed(
+                items = buySortRecord,
+                key = { index: Int, item: YenBuyRecord -> item.id}) { index, Buy ->
+
+
 
                 LineYenRecordText(
                     Buy,
+                    listSize = listSize,
+                    index = index,
                     sellAction = Buy.recordColor!!
                     ,
                     sellActed = { buyRecord ->
@@ -80,7 +95,19 @@ fun BuyYenRecordBox(yenViewModel: YenViewModel, snackbarHostState: SnackbarHostS
                         yenViewModel.haveMoney.value = recordBox.exchangeMoney!!
                         yenViewModel.recordInputMoney.value = recordBox.money!!},
                     yenViewModel,
-                    snackbarHostState = snackbarHostState)
+                    snackbarHostState = snackbarHostState,
+                    recordSelected =  {
+                        coroutineScope.launch {
+                            if(index <= listSize - 7) {
+                                delay(300)
+                                lazyScrollState.animateScrollToItem(index)
+                            } else {
+                                delay(300)
+                                lazyScrollState.animateScrollToItem(index, 0)
+                            }
+
+                        }
+                    })
                 Divider()
             }
         }
@@ -98,6 +125,10 @@ fun SellYenRecordBox(yenViewModel: YenViewModel,
     val sellRecordHistory : State<List<YenSellRecord>> = yenViewModel.filterSellRecordFlow.collectAsState()
 
     val sellSortRecord = sellRecordHistory.value.sortedBy { it.date }
+
+    var lazyScrollState = rememberLazyListState()
+
+    val coroutineScope = rememberCoroutineScope()
 
     Row(modifier = Modifier
         .fillMaxWidth()
@@ -127,23 +158,37 @@ fun SellYenRecordBox(yenViewModel: YenViewModel,
 
 
 
-        LazyColumn(modifier = Modifier) {
+        LazyColumn(modifier = Modifier, state = lazyScrollState) {
 
-            items(sellSortRecord, {item -> item.id}) { Sell ->
+            val listSize = sellSortRecord.size
+
+            itemsIndexed(
+                items = sellSortRecord,
+                key = { index: Int, item: YenSellRecord -> item.id}) { index, Sell ->
 
                 val dismissState = rememberDismissState()
 
                 if (dismissState.isDismissed(DismissDirection.EndToStart)) {
                     yenViewModel.removeSellRecord(Sell)
                 }
-                SellLineYenRecordText(Sell,
-                    onClicked = { recordBox ->
-                        yenViewModel.exchangeMoney.value = recordBox.exchangeMoney!!
-                        yenViewModel.sellRateFlow.value = recordBox.rate!!
-                        yenViewModel.sellDollarFlow.value = recordBox.money!!
-                    },
-                    yenViewModel,
-                    snackbarHostState)
+                SellLineYenRecordText(
+                    Sell,
+                    index = index,
+                    listSize = listSize,
+                    yenViewModel = yenViewModel,
+                    snackbarHostState = snackbarHostState
+                ) {
+                    coroutineScope.launch {
+                        if(index <= listSize - 7) {
+                            delay(300)
+                            lazyScrollState.animateScrollToItem(index)
+                        } else {
+                            delay(300)
+                            lazyScrollState.animateScrollToItem(index, 0)
+                        }
+
+                    }
+                }
                 Divider()
             }
         }

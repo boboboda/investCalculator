@@ -58,6 +58,8 @@ fun RangeDateDialog(
     onDismissRequest: (Boolean) -> Unit,
     callStartDate: String,
     callEndDate: String,
+    startDateSelected: ((String) -> Unit)? = null,
+    endDateSelected: ((String) -> Unit)? = null,
     onClicked: ((selectedStartDate: String, selectedEndDate: String) -> Unit)? = null,
     allViewModel: AllViewModel
 ) {
@@ -358,6 +360,8 @@ fun RangeDateDialog(
                             selectedStartDate.value = Instant.ofEpochMilli(startDate).atZone(
                                 ZoneId.systemDefault()).toLocalDate().toString()
 
+                            startDateSelected?.invoke(selectedStartDate.value)
+
                             isStartDateOpen.value = false
                         },
                         onDismissRequest = {
@@ -379,6 +383,9 @@ fun RangeDateDialog(
 
                           selectedEndDate.value = Instant.ofEpochMilli(endDate).atZone(
                                 ZoneId.systemDefault()).toLocalDate().toString()
+
+                            endDateSelected?.invoke(Instant.ofEpochMilli(endDate).atZone(
+                                ZoneId.systemDefault()).toLocalDate().toString())
 
                             isEndDateOpen.value = false
                         },

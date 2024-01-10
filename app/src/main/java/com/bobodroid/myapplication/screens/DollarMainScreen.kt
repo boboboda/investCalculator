@@ -19,10 +19,9 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.*
 import com.bobodroid.myapplication.components.*
 import com.bobodroid.myapplication.models.viewmodels.DollarViewModel
-import com.bobodroid.myapplication.ui.theme.TopButtonColor
-import com.bobodroid.myapplication.lists.BuyRecordBox
-import com.bobodroid.myapplication.lists.SellRecordBox
-import com.bobodroid.myapplication.lists.addFocusCleaner
+import com.bobodroid.myapplication.lists.dollorList.BuyRecordBox
+import com.bobodroid.myapplication.lists.dollorList.SellRecordBox
+import com.bobodroid.myapplication.lists.dollorList.addFocusCleaner
 import com.bobodroid.myapplication.models.viewmodels.AllViewModel
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalUnitApi::class, ExperimentalMaterialApi::class)
@@ -98,7 +97,8 @@ fun DollarMainScreen
                 {
                     BuyRecordBox(dollarViewModel, snackBarHostState)
                 } else {
-                    SellRecordBox(dollarViewModel, snackBarHostState)}
+                    SellRecordBox(dollarViewModel, snackBarHostState)
+                }
             }
 
             //snackBar

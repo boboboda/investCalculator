@@ -1,11 +1,11 @@
-package com.bobodroid.myapplication.lists
+package com.bobodroid.myapplication.lists.wonList
 
 import android.annotation.SuppressLint
 import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.*
 import androidx.compose.material3.Divider
@@ -18,6 +18,8 @@ import com.bobodroid.myapplication.components.*
 import com.bobodroid.myapplication.models.datamodels.*
 import com.bobodroid.myapplication.models.viewmodels.*
 import com.bobodroid.myapplication.screens.TAG
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import java.util.UUID
 
 
@@ -30,6 +32,10 @@ fun BuyWonRecordBox(wonViewModel: WonViewModel, snackbarHostState: SnackbarHostS
     val buyRecordHistory : State<List<WonBuyRecord>> = wonViewModel.filterBuyRecordFlow.collectAsState()
 
     val buySortRecord = buyRecordHistory.value.sortedBy { it.date }
+
+    var lazyScrollState = rememberLazyListState()
+
+    val coroutineScope = rememberCoroutineScope()
 
 
     var selectedId by remember { mutableStateOf(UUID.randomUUID()) }
@@ -65,13 +71,18 @@ fun BuyWonRecordBox(wonViewModel: WonViewModel, snackbarHostState: SnackbarHostS
 
 
 
-        LazyColumn(modifier = Modifier, state = rememberLazyListState()) {
+        LazyColumn(modifier = Modifier, state = lazyScrollState) {
 
             //  Buy -> 라인리코드텍스트에 넣지 말고 바로 데이터 전달 -> 리팩토리
-            items(buySortRecord, {item -> item.id}) {Buy ->
+            val listSize = buySortRecord.size
+            itemsIndexed(
+                items = buySortRecord,
+                key = { index: Int, item: WonBuyRecord -> item.id}) {index, Buy ->
 
                 WonLineRecordText(
                     Buy,
+                    index = index,
+                    listSize = listSize,
                     sellAction = Buy.recordColor!!
                     ,
                     sellActed = { buyRecord ->
@@ -92,7 +103,18 @@ fun BuyWonRecordBox(wonViewModel: WonViewModel, snackbarHostState: SnackbarHostS
                     }
                     ,
                     wonViewModel,
-                    snackbarHostState = snackbarHostState)
+                    snackbarHostState = snackbarHostState) {
+                    coroutineScope.launch {
+                        if(index <= listSize - 7) {
+                            delay(300)
+                            lazyScrollState.animateScrollToItem(index)
+                        } else {
+                            delay(300)
+                            lazyScrollState.animateScrollToItem(index, 0)
+                        }
+
+                    }
+                }
                 Divider()
             }
         }
@@ -101,13 +123,15 @@ fun BuyWonRecordBox(wonViewModel: WonViewModel, snackbarHostState: SnackbarHostS
     }
 }
 
-
-@OptIn(ExperimentalMaterialApi::class)
 @Composable
 fun SellWonRecordBox(wonViewModel: WonViewModel, snackbarHostState: SnackbarHostState) {
 
     val sellRecordHistory : State<List<WonSellRecord>> = wonViewModel.filterSellRecordFlow.collectAsState()
 
+
+    var lazyScrollState = rememberLazyListState()
+
+    val coroutineScope = rememberCoroutineScope()
 
     val sellSortRecord = sellRecordHistory.value.sortedBy { it.date }
 
@@ -141,17 +165,31 @@ fun SellWonRecordBox(wonViewModel: WonViewModel, snackbarHostState: SnackbarHost
 
 
 
-        LazyColumn(modifier = Modifier) {
+        LazyColumn(modifier = Modifier, state = lazyScrollState) {
 
-            items(sellSortRecord, {item -> item.id}) { Sell ->
+            val listSize = sellSortRecord.size
 
-                WonSellLineRecordText(Sell,
-                    onClicked = { recordBox ->
-                        wonViewModel.exchangeMoney.value = recordBox.exchangeMoney!!
-                        wonViewModel.sellRateFlow.value = recordBox.rate!!
-                        wonViewModel.sellDollarFlow.value = recordBox.money!!
-                    }, wonViewModel,
-                    snackbarHostState)
+            itemsIndexed(
+                items = sellSortRecord,
+                key = { index: Int, item: WonSellRecord -> item.id}) { index, Sell ->
+
+                WonSellLineRecordText(
+                    Sell,
+                    index = index,
+                    listSize = listSize,
+                    wonViewModel = wonViewModel,
+                    snackbarHostState = snackbarHostState) {
+                    coroutineScope.launch {
+                        if(index <= listSize - 7) {
+                            delay(300)
+                            lazyScrollState.animateScrollToItem(index)
+                        } else {
+                            delay(300)
+                            lazyScrollState.animateScrollToItem(index, 0)
+                        }
+
+                    }
+                }
 
                 Divider()
             }

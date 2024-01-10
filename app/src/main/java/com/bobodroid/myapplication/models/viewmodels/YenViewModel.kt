@@ -191,7 +191,8 @@ class YenViewModel @Inject constructor(private val investRepository: InvestRepos
 
         when(action) {
             YenAction.Buy ->  {
-                val result = buyList?.map { BigDecimal(it.profit) }
+
+                val result = buyList?.filter { it.profit != "" }?.map { BigDecimal(it.profit) }
 
                 if(result.isNullOrEmpty()) {
                     return ""
@@ -300,7 +301,7 @@ class YenViewModel @Inject constructor(private val investRepository: InvestRepos
                     yenBuyRecord.date,
                     yenBuyRecord.money,
                     yenBuyRecord.rate,
-                    yenBuyRecord.profit,
+                    "",
                     yenBuyRecord.exchangeMoney,
                     true,
                     "",
@@ -373,63 +374,73 @@ class YenViewModel @Inject constructor(private val investRepository: InvestRepos
 
         _buyRecordFlow.value.forEach { yenBuyRecord ->
 
-            if (yenBuyRecord.profit == null) {
+            if(yenBuyRecord.recordColor == true) {
+                val updateDate = yenBuyRecord.copy(profit = "")
 
-                Log.d(TAG, "기존 데이터 profit 추가 실행")
-
-                val resentRate = exchangeRate.exchangeRates?.jpy
-
-                if (resentRate.isNullOrEmpty()) {
-                    Log.d(TAG, "calculateProfit 최신 값 받아오기 실패")
-
-                } else {
-                    val exChangeMoney = yenBuyRecord.exchangeMoney
-
-                    val koreaMoney = yenBuyRecord.money
-
-                    Log.d(MainActivity.TAG, "값을 받아왔니? ${resentRate}")
-
-                    val profit = (((BigDecimal(exChangeMoney).times(BigDecimal(resentRate).times(BigDecimal("100"))))
-                        .setScale(20, RoundingMode.HALF_UP)) - BigDecimal(koreaMoney)).toString()
-
-                    Log.d(TAG, "예상 수익 ${profit}")
-
-                    val updateDate = yenBuyRecord.copy(profit = profit)
-
-                    viewModelScope.launch {
-                        investRepository.updateRecord(updateDate)
-                    }
+                viewModelScope.launch {
+                    investRepository.updateRecord(updateDate)
                 }
             } else {
+                if (yenBuyRecord.profit == null) {
 
-                Log.d(MainActivity.TAG, "업데이트 데이터 profit 실행")
+                    Log.d(TAG, "기존 데이터 profit 추가 실행")
 
-                val resentRate = exchangeRate.exchangeRates?.jpy
+                    val resentRate = exchangeRate.exchangeRates?.jpy
 
-                if (resentRate.isNullOrEmpty()) {
-                    Log.d(MainActivity.TAG, "calculateProfit 최신 값 받아오기 실패")
+                    if (resentRate.isNullOrEmpty()) {
+                        Log.d(TAG, "calculateProfit 최신 값 받아오기 실패")
 
-                } else {
-                    val exChangeMoney = yenBuyRecord.exchangeMoney
+                    } else {
+                        val exChangeMoney = yenBuyRecord.exchangeMoney
 
-                    val koreaMoney = yenBuyRecord.money
+                        val koreaMoney = yenBuyRecord.money
 
-                    Log.d(MainActivity.TAG, "값을 받아왔니? ${resentRate}")
+                        Log.d(MainActivity.TAG, "값을 받아왔니? ${resentRate}")
 
-                    val profit = (((BigDecimal(exChangeMoney).times(BigDecimal(resentRate)))
-                        .setScale(20, RoundingMode.HALF_UP)) - BigDecimal(koreaMoney)).toString()
+                        val profit = (((BigDecimal(exChangeMoney).times(BigDecimal(resentRate).times(BigDecimal("100"))))
+                            .setScale(20, RoundingMode.HALF_UP)) - BigDecimal(koreaMoney)).toString()
 
-                    Log.d(MainActivity.TAG, "예상 수익 ${profit}")
+                        Log.d(TAG, "예상 수익 ${profit}")
 
-                    val updateDate = yenBuyRecord.copy(profit = profit)
+                        val updateDate = yenBuyRecord.copy(profit = profit)
 
-                    viewModelScope.launch {
-                        investRepository.updateRecord(updateDate)
+                        viewModelScope.launch {
+                            investRepository.updateRecord(updateDate)
+                        }
                     }
+                } else {
+
+                    Log.d(MainActivity.TAG, "업데이트 데이터 profit 실행")
+
+                    val resentRate = exchangeRate.exchangeRates?.jpy
+
+                    if (resentRate.isNullOrEmpty()) {
+                        Log.d(MainActivity.TAG, "calculateProfit 최신 값 받아오기 실패")
+
+                    } else {
+                        val exChangeMoney = yenBuyRecord.exchangeMoney
+
+                        val koreaMoney = yenBuyRecord.money
+
+                        Log.d(MainActivity.TAG, "값을 받아왔니? ${resentRate}")
+
+                        val profit = (((BigDecimal(exChangeMoney).times(BigDecimal(resentRate)))
+                            .setScale(20, RoundingMode.HALF_UP)) - BigDecimal(koreaMoney)).toString()
+
+                        Log.d(MainActivity.TAG, "예상 수익 ${profit}")
+
+                        val updateDate = yenBuyRecord.copy(profit = profit)
+
+                        viewModelScope.launch {
+                            investRepository.updateRecord(updateDate)
+                        }
+                    }
+
+
                 }
-
-
             }
+
+
 
         }
     }

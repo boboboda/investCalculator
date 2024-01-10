@@ -391,12 +391,19 @@ fun MainScreen(dollarViewModel: DollarViewModel,
                     },
                     callStartDate.value,
                     callEndDate.value,
+                    startDateSelected = {
+                        scope.launch {
+                            allViewModel.startDateFlow.emit(it)
+                        }
+                    },
+                    endDateSelected = {
+                        scope.launch {
+                            allViewModel.endDateFlow.emit(it)
+                        }
+                    },
                     onClicked = { selectedStartDate, selectedEndDate ->
 
                         scope.launch {
-                            allViewModel.startDateFlow.emit(selectedStartDate)
-                            allViewModel.endDateFlow.emit(selectedEndDate)
-
                             when(rowViewController.value) {
                                 1-> {
                                     when(drCheckBoxState.value) {
@@ -457,8 +464,8 @@ fun MainScreen(dollarViewModel: DollarViewModel,
                                 }
                             }
 
-
-
+                            allViewModel.startDateFlow.emit("")
+                            allViewModel.endDateFlow.emit("")
                         }
 
                     },
@@ -899,7 +906,7 @@ fun GetMoneyView(
     var endDate = allViewModel.endDateFlow.collectAsState()
 
     val date = if(startDate.value == "" && endDate.value == "")
-        "조회기간: 달력해서 조회 해주세요" else "조회기간: ${startDate.value}~${endDate.value}"
+        "조회기간: 달력에서 조회 해주세요" else "조회기간: ${startDate.value}~${endDate.value}"
 
     val profitColor = if(getMoney == ""){
         Color.Black

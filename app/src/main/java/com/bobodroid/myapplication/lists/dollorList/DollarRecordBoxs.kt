@@ -1,14 +1,13 @@
-package com.bobodroid.myapplication.lists
+package com.bobodroid.myapplication.lists.dollorList
 
 import android.annotation.SuppressLint
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.*
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Divider
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -18,7 +17,8 @@ import androidx.compose.ui.unit.dp
 import com.bobodroid.myapplication.components.*
 import com.bobodroid.myapplication.models.datamodels.*
 import com.bobodroid.myapplication.models.viewmodels.*
-import com.bobodroid.myapplication.ui.theme.DollarColor
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import java.util.UUID
 
 
@@ -34,6 +34,10 @@ fun BuyRecordBox(dollarViewModel: DollarViewModel,
     val buySortRecord = buyRecordHistory.value.sortedBy { it.date }
 
     var selectedId by remember { mutableStateOf(UUID.randomUUID()) }
+
+    var lazyScrollState = rememberLazyListState()
+
+    val coroutineScope = rememberCoroutineScope()
 
     // 리스트 헤더
     Row(modifier = Modifier
@@ -61,13 +65,19 @@ fun BuyRecordBox(dollarViewModel: DollarViewModel,
 
         LazyColumn(
             modifier = Modifier.fillMaxWidth(),
-            state = rememberLazyListState()) {
+            state = lazyScrollState) {
 
             //  Buy -> 라인리코드텍스트에 넣지 말고 바로 데이터 전달 -> 리팩토리
-            items(buySortRecord, {item -> item.id}) { Buy ->
+            val listSize = buySortRecord.size
+
+            itemsIndexed(
+                items = buySortRecord,
+                key = { index: Int, item: DrBuyRecord -> item.id}) { index, Buy ->
 
                 LineDrRecordText(
                     Buy,
+                    index = index,
+                    listSize = listSize,
                     sellAction = Buy.recordColor!!
                     ,
                     sellActed = { buyRecord ->
@@ -81,8 +91,19 @@ fun BuyRecordBox(dollarViewModel: DollarViewModel,
                         dollarViewModel.dateFlow.value = recordbox.date!!
                         dollarViewModel.haveMoneyDollar.value = recordbox.exchangeMoney!!
                         dollarViewModel.recordInputMoney.value = recordbox.money!! },
-                    dollarViewModel,
-                    snackBarHostState = snackBarHostState)
+                    dollarViewModel = dollarViewModel,
+                    snackBarHostState = snackBarHostState) {
+                    coroutineScope.launch {
+                        if(index <= listSize - 7) {
+                            delay(300)
+                            lazyScrollState.animateScrollToItem(index)
+                        } else {
+                            delay(300)
+                            lazyScrollState.animateScrollToItem(index, 0)
+                        }
+
+                    }
+                }
 
                 Divider()
             }
@@ -104,6 +125,10 @@ fun SellRecordBox(dollarViewModel: DollarViewModel, snackBarHostState: SnackbarH
     val sellRecordHistory = dollarViewModel.filterSellRecordFlow.collectAsState()
 
     val sellSortRecord = sellRecordHistory.value.sortedBy { it.date }
+
+    var lazyScrollState = rememberLazyListState()
+
+    val coroutineScope = rememberCoroutineScope()
 
     val deleteAskDialog = remember { mutableStateOf(false) }
 
@@ -136,16 +161,31 @@ fun SellRecordBox(dollarViewModel: DollarViewModel, snackBarHostState: SnackbarH
 
 
 
-        LazyColumn(modifier = Modifier) {
+        LazyColumn(modifier = Modifier, state = lazyScrollState) {
 
-            items(sellSortRecord, {item -> item.id}) { Sell ->
+            val listSize = sellSortRecord.size
 
-                SellLineDrRecordText(Sell,
-                    onClicked = { recordBox ->
-                        dollarViewModel.exchangeMoney.value = recordBox.exchangeMoney ?: ""
-                        dollarViewModel.sellRateFlow.value = recordBox.rate ?: ""
-                        dollarViewModel.sellDollarFlow.value = recordBox.money ?: ""
-                    }, dollarViewModel, snackBarHostState)
+            itemsIndexed(
+                items = sellSortRecord,
+                key = { index: Int, item: DrSellRecord -> item.id}) { index, Sell ->
+
+                SellLineDrRecordText(
+                    Sell,
+                    index = index,
+                    listSize = listSize,
+                    dollarViewModel = dollarViewModel,
+                    snackbarHostState = snackBarHostState) {
+                    coroutineScope.launch {
+                        if(index <= listSize - 7) {
+                            delay(300)
+                            lazyScrollState.animateScrollToItem(index)
+                        } else {
+                            delay(300)
+                            lazyScrollState.animateScrollToItem(index, 0)
+                        }
+
+                    }
+                }
 
                 Divider()
             }

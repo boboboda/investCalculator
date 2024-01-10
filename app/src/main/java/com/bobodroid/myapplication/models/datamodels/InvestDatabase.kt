@@ -37,7 +37,10 @@ import com.bobodroid.myapplication.models.datamodels.DrBuyRecord
         AutoMigration(from = 12, to = 13),
         AutoMigration(from = 13, to = 14),
         AutoMigration(from = 14, to = 15),
-        AutoMigration(from = 15, to = 16, spec = InvestDatabase.MyAutoMigration::class),
+        AutoMigration(
+            from = 15,
+            to = 16,
+            spec = InvestDatabase.MyAutoMigration::class),
                      ],
 
     version = 16, exportSchema = true)

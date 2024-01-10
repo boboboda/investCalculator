@@ -188,16 +188,16 @@ class DollarViewModel @Inject constructor(private val investRepository: InvestRe
 
         when(action) {
             DrAction.Buy ->  {
-                val result = buyList?.map { BigDecimal(it.profit) }
+                val result = buyList?.filter { it.profit != "" }?.map { BigDecimal(it.profit) }
 
                 if(result.isNullOrEmpty()) {
                     return ""
                 } else {
                     if(result.size > 1) {
                         return result.reduce {first, end ->
-                            first + end }.toBigDecimalWon()
+                            first!! + end!! }!!.toBigDecimalWon()
                     } else {
-                        return "${result.first().toBigDecimalWon()}"
+                        return "${result.first()!!.toBigDecimalWon()}"
                     }
                     }
 
@@ -290,6 +290,8 @@ class DollarViewModel @Inject constructor(private val investRepository: InvestRe
         }
     }
 
+
+    //매도 시 컬러색 변경 예상 수익 초기화
     fun updateBuyRecord(drBuyrecord: DrBuyRecord) {
         viewModelScope.launch {
             investRepository.updateRecord(
@@ -298,7 +300,7 @@ class DollarViewModel @Inject constructor(private val investRepository: InvestRe
                     drBuyrecord.date,
                     drBuyrecord.money,
                     drBuyrecord.rate,
-                    drBuyrecord.profit,
+                    "",
                     drBuyrecord.exchangeMoney,
                     true,
                     "",
@@ -385,62 +387,71 @@ class DollarViewModel @Inject constructor(private val investRepository: InvestRe
 
             _buyRecordFlow.value.forEach {drBuyRecord->
 
-                if(drBuyRecord.profit == null) {
+                //매도 상태
+                if(drBuyRecord.recordColor == true) {
+                    val updateDate = drBuyRecord.copy(profit = "")
 
-                    Log.d(TAG, "기존 데이터 profit 추가 실행")
-
-                    val resentRate = exchangeRate.exchangeRates?.usd
-
-                    if(resentRate.isNullOrEmpty()) {
-                        Log.d(TAG, "calculateProfit 최신 값 받아오기 실패")
-
-                    } else {
-                        val exChangeMoney = drBuyRecord.exchangeMoney
-
-                        val koreaMoney = drBuyRecord.money
-
-                        Log.d(TAG, "값을 받아왔니? ${resentRate}")
-
-                        val profit = (((BigDecimal(exChangeMoney).times(BigDecimal(resentRate)))
-                            .setScale(20, RoundingMode.HALF_UP)) - BigDecimal(koreaMoney)).toString()
-
-                        Log.d(TAG, "예상 수익 ${profit}")
-
-                        val updateDate = drBuyRecord.copy(profit = profit)
-
-                        viewModelScope.launch {
-                            investRepository.updateRecord(updateDate)
-                        }
+                    viewModelScope.launch {
+                        investRepository.updateRecord(updateDate)
                     }
                 } else {
-                    Log.d(TAG, "업데이트 데이터 profit 실행")
+                    if(drBuyRecord.profit == null) {
 
-                    val resentRate = exchangeRate.exchangeRates?.usd
+                        Log.d(TAG, "기존 데이터 profit 추가 실행")
 
-                    if(resentRate.isNullOrEmpty()) {
-                        Log.d(TAG, "calculateProfit 최신 값 받아오기 실패")
+                        val resentRate = exchangeRate.exchangeRates?.usd
 
+                        if(resentRate.isNullOrEmpty()) {
+                            Log.d(TAG, "calculateProfit 최신 값 받아오기 실패")
+
+                        } else {
+                            val exChangeMoney = drBuyRecord.exchangeMoney
+
+                            val koreaMoney = drBuyRecord.money
+
+                            Log.d(TAG, "값을 받아왔니? ${resentRate}")
+
+                            val profit = (((BigDecimal(exChangeMoney).times(BigDecimal(resentRate)))
+                                .setScale(20, RoundingMode.HALF_UP)) - BigDecimal(koreaMoney)).toString()
+
+                            Log.d(TAG, "예상 수익 ${profit}")
+
+                            val updateDate = drBuyRecord.copy(profit = profit)
+
+                            viewModelScope.launch {
+                                investRepository.updateRecord(updateDate)
+                            }
+                        }
                     } else {
-                        val exChangeMoney = drBuyRecord.exchangeMoney
+                        Log.d(TAG, "업데이트 데이터 profit 실행")
 
-                        val koreaMoney = drBuyRecord.money
+                        val resentRate = exchangeRate.exchangeRates?.usd
 
-                        Log.d(TAG, "값을 받아왔니? ${resentRate}")
+                        if(resentRate.isNullOrEmpty()) {
+                            Log.d(TAG, "calculateProfit 최신 값 받아오기 실패")
 
-                        val profit = (((BigDecimal(exChangeMoney).times(BigDecimal(resentRate)))
-                            .setScale(20, RoundingMode.HALF_UP)) - BigDecimal(koreaMoney)).toString()
+                        } else {
+                            val exChangeMoney = drBuyRecord.exchangeMoney
 
-                        Log.d(TAG, "예상 수익 ${profit}")
+                            val koreaMoney = drBuyRecord.money
 
-                        val updateDate = drBuyRecord.copy(profit = profit)
+                            Log.d(TAG, "값을 받아왔니? ${resentRate}")
 
-                        viewModelScope.launch {
-                            investRepository.updateRecord(updateDate)
+                            val profit = (((BigDecimal(exChangeMoney).times(BigDecimal(resentRate)))
+                                .setScale(20, RoundingMode.HALF_UP)) - BigDecimal(koreaMoney)).toString()
+
+                            Log.d(TAG, "예상 수익 ${profit}")
+
+                            val updateDate = drBuyRecord.copy(profit = profit)
+
+                            viewModelScope.launch {
+                                investRepository.updateRecord(updateDate)
+                            }
                         }
                     }
-
-
                 }
+
+
 
             }
     }

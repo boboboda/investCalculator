@@ -32,35 +32,45 @@ import com.bobodroid.myapplication.ui.theme.TopButtonInColor
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun Buttons(label: String,
-            onClicked:(()->Unit)?,
-            color: Color, fontColor: Color,
-            enabled: Boolean = true, modifier: Modifier,
-            fontSize: Int) {
+fun Buttons(
+    label: String,
+    onClicked: (() -> Unit)?,
+    color: Color, fontColor: Color,
+    enabled: Boolean = true, modifier: Modifier,
+    fontSize: Int
+) {
     Button(
         colors = ButtonDefaults.buttonColors(
             containerColor = color,
             contentColor = fontColor,
             disabledContentColor = Color.White,
-            disabledContainerColor = Color.Gray),
+            disabledContainerColor = Color.Gray
+        ),
         modifier = modifier,
         shape = RoundedCornerShape(5.dp),
         enabled = enabled,
-        onClick = {onClicked?.invoke()})
+        onClick = { onClicked?.invoke() })
     {
-        Text(text = label, fontSize = fontSize.sp, textAlign = TextAlign.Center, modifier = Modifier.padding(0.dp))
+        Text(
+            text = label,
+            fontSize = fontSize.sp,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.padding(0.dp)
+        )
     }
 }
 
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun DateButtonView(mainText: String,
-                   id: Int,
-                   selectedId: Int,
-                   selectAction: (Int) -> Unit) {
+fun DateButtonView(
+    mainText: String,
+    id: Int,
+    selectedId: Int,
+    selectAction: (Int) -> Unit
+) {
 
-    var currentCardId : Int = id
+    var currentCardId: Int = id
 
     var color = if (selectedId == currentCardId) TopButtonInColor else TopButtonColor
 
@@ -83,7 +93,8 @@ fun DateButtonView(mainText: String,
                 fontSize = 18.sp,
                 maxLines = 2,
                 minFontSize = 10.sp,
-                color = Color.Black)
+                color = Color.Black
+            )
         }
     }
 }
@@ -91,17 +102,19 @@ fun DateButtonView(mainText: String,
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterialApi::class)
 @Composable
-fun MoneyChButtonView(mainText: String,
-                      id: Int,
-                      selectedId: Int,
-                      selectAction: (Int) -> Unit) {
+fun MoneyChButtonView(
+    mainText: String,
+    id: Int,
+    selectedId: Int,
+    selectAction: (Int) -> Unit
+) {
 
-    var currentCardId : Int = id
+    var currentCardId: Int = id
 
     var color = if (selectedId == currentCardId) TopButtonInColor else TopButtonColor
 
     androidx.compose.material.Card(
-        backgroundColor = color ,
+        backgroundColor = color,
         elevation = 8.dp,
         modifier = Modifier
             .padding(top = 5.dp, bottom = 10.dp)
@@ -111,40 +124,40 @@ fun MoneyChButtonView(mainText: String,
             Log.d(MainActivity.TAG, "클릭되었습니다.")
             selectAction(currentCardId)
         }) {
-            Box(
-                modifier = Modifier.fillMaxSize(),
-                contentAlignment = Alignment.Center
-            ) {
-                AutoSizeText(
-                    value = "$mainText",
-                    modifier = Modifier,
-                    fontSize = 18.sp,
-                    maxLines = 2,
-                    minFontSize = 10.sp,
-                    color = Color.Black)
-            }
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center
+        ) {
+            AutoSizeText(
+                value = "$mainText",
+                modifier = Modifier,
+                fontSize = 18.sp,
+                maxLines = 2,
+                minFontSize = 10.sp,
+                color = Color.Black
+            )
         }
     }
+}
 
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun CardButton(label: String,
-               selectedLabel: String? = null,
-               onClicked: (String) -> Unit,
-               fontSize: Int,
-               modifier: Modifier,
-               fontColor: Color,
-               buttonColor: Color,
-               disableColor: Color? = null
+fun CardButton(
+    label: String,
+    selectedLabel: String? = null,
+    onClicked: (String) -> Unit,
+    fontSize: Int,
+    modifier: Modifier,
+    fontColor: Color,
+    buttonColor: Color,
+    disableColor: Color? = null
 ) {
 
-    var cardLabel : String = label
+    var cardLabel: String = label
 
 
-
-
-    var color = if(disableColor != null) {
+    var color = if (disableColor != null) {
         if (cardLabel == selectedLabel) fontColor else disableColor
     } else {
         fontColor
@@ -158,10 +171,12 @@ fun CardButton(label: String,
         onClick = {
             onClicked(label)
         }) {
-        Row(Modifier
-            .fillMaxSize(),
+        Row(
+            Modifier
+                .fillMaxSize(),
             horizontalArrangement = Arrangement.Center,
-            verticalAlignment = Alignment.CenterVertically) {
+            verticalAlignment = Alignment.CenterVertically
+        ) {
             Box(
                 modifier = Modifier.fillMaxSize(),
                 contentAlignment = Alignment.Center
@@ -172,7 +187,8 @@ fun CardButton(label: String,
                     fontSize = fontSize.sp,
                     maxLines = 1,
                     minFontSize = 10.sp,
-                    color = color!!)
+                    color = color!!
+                )
             }
 
         }
@@ -183,14 +199,15 @@ fun CardButton(label: String,
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun CardTextIconButton(label: String,
-               onClicked: () -> Unit,
-               fontSize: Int,
-               modifier: Modifier,
-               fontColor: Color,
-               buttonColor: Color,
+fun CardTextIconButton(
+    label: String,
+    onClicked: () -> Unit,
+    fontSize: Int,
+    modifier: Modifier,
+    fontColor: Color,
+    buttonColor: Color,
 ) {
-    Card(colors = CardDefaults.cardColors( buttonColor),
+    Card(colors = CardDefaults.cardColors(buttonColor),
         elevation = CardDefaults.cardElevation(8.dp),
         shape = RoundedCornerShape(2.dp),
         modifier = modifier,
@@ -198,13 +215,16 @@ fun CardTextIconButton(label: String,
             Log.d(MainActivity.TAG, "클릭되었습니다.")
             onClicked.invoke()
         }) {
-        Row(Modifier.fillMaxSize(), horizontalArrangement = Arrangement.Center,
-            verticalAlignment = Alignment.CenterVertically) {
+        Row(
+            Modifier.fillMaxSize(), horizontalArrangement = Arrangement.Center,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
 
             Icon(
                 imageVector = Icons.Rounded.Refresh,
                 contentDescription = "",
-                tint = Color.Black)
+                tint = Color.Black
+            )
             Box(
                 modifier = Modifier.fillMaxSize(),
                 contentAlignment = Alignment.Center
@@ -215,7 +235,8 @@ fun CardTextIconButton(label: String,
                     fontSize = fontSize.sp,
                     maxLines = 1,
                     minFontSize = 10.sp,
-                    color = fontColor)
+                    color = fontColor
+                )
             }
         }
 
@@ -225,12 +246,13 @@ fun CardTextIconButton(label: String,
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun CardIconButton(imageVector: ImageVector,
-                   onClicked: () -> Unit,
-                   modifier: Modifier,
-                   buttonColor: Color,
+fun CardIconButton(
+    imageVector: ImageVector,
+    onClicked: () -> Unit,
+    modifier: Modifier,
+    buttonColor: Color,
 ) {
-    Card(colors = CardDefaults.cardColors( buttonColor ),
+    Card(colors = CardDefaults.cardColors(buttonColor),
         elevation = CardDefaults.cardElevation(8.dp),
         shape = RoundedCornerShape(2.dp),
         modifier = modifier,
@@ -238,31 +260,38 @@ fun CardIconButton(imageVector: ImageVector,
             Log.d(MainActivity.TAG, "클릭되었습니다.")
             onClicked.invoke()
         }) {
-        Row(Modifier.wrapContentSize(), horizontalArrangement = Arrangement.Center,
-            verticalAlignment = Alignment.CenterVertically) {
+        Row(
+            Modifier.wrapContentSize(), horizontalArrangement = Arrangement.Center,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
             Icon(
                 imageVector = imageVector,
                 contentDescription = "",
-                tint = Color.Black)
+                tint = Color.Black
+            )
         }
 
     }
 }
 
 @Composable
-fun IconButton(imageVector: ImageVector,
-                   onClicked: () -> Unit,
-               modifier: Modifier,
+fun IconButton(
+    imageVector: ImageVector,
+    onClicked: () -> Unit,
+    modifier: Modifier,
 ) {
-    Row(modifier.wrapContentSize(), horizontalArrangement = Arrangement.Center,
-        verticalAlignment = Alignment.CenterVertically) {
+    Row(
+        modifier.wrapContentSize(), horizontalArrangement = Arrangement.Center,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
         Icon(
             imageVector = imageVector,
             modifier = Modifier.clickable {
                 onClicked.invoke()
             },
             contentDescription = "",
-            tint = Color.Black)
+            tint = Color.Black
+        )
     }
 
 }
@@ -270,21 +299,26 @@ fun IconButton(imageVector: ImageVector,
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun CustomCard(label: String,
-               fontSize: Int,
-               modifier: Modifier,
-               fontColor: Color,
-               cardColor: Color,
+fun CustomCard(
+    label: String,
+    fontSize: Int,
+    modifier: Modifier,
+    fontColor: Color,
+    cardColor: Color,
 ) {
-    
-    Card(colors = CardDefaults.cardColors(cardColor),
+
+    Card(
+        colors = CardDefaults.cardColors(cardColor),
         elevation = CardDefaults.cardElevation(8.dp),
         modifier = modifier,
-        shape = RoundedCornerShape(2.dp)) {
-        Row(Modifier
-            .fillMaxSize(),
+        shape = RoundedCornerShape(2.dp)
+    ) {
+        Row(
+            Modifier
+                .fillMaxSize(),
             horizontalArrangement = Arrangement.Center,
-            verticalAlignment = Alignment.CenterVertically) {
+            verticalAlignment = Alignment.CenterVertically
+        ) {
             Box(
                 modifier = Modifier.fillMaxSize(),
                 contentAlignment = Alignment.Center
@@ -295,7 +329,8 @@ fun CustomCard(label: String,
                     fontSize = fontSize.sp,
                     maxLines = 1,
                     minFontSize = 10.sp,
-                    color = fontColor)
+                    color = fontColor
+                )
             }
 
         }

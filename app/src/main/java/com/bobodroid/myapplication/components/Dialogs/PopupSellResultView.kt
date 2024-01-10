@@ -1,4 +1,4 @@
-package com.bobodroid.myapplication.components
+package com.bobodroid.myapplication.components.Dialogs
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -14,6 +14,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import com.bobodroid.myapplication.components.Buttons
 import com.bobodroid.myapplication.extensions.toDecUs
 import com.bobodroid.myapplication.extensions.toPer
 import com.bobodroid.myapplication.extensions.toWon

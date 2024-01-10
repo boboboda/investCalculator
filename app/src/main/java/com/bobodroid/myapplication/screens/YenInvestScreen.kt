@@ -27,6 +27,8 @@ import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.util.*
 import androidx.compose.material.SnackbarHostState
+import com.bobodroid.myapplication.components.Dialogs.NumberField
+import com.bobodroid.myapplication.components.Dialogs.RateNumberField
 import com.bobodroid.myapplication.components.admobs.BuyBannerAd
 import com.bobodroid.myapplication.models.viewmodels.AllViewModel
 import com.bobodroid.myapplication.routes.InvestRoute

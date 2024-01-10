@@ -1,6 +1,8 @@
 package com.bobodroid.myapplication.lists.dollorList
 
 import android.annotation.SuppressLint
+import android.util.Log
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -14,6 +16,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import com.bobodroid.myapplication.MainActivity.Companion.TAG
 import com.bobodroid.myapplication.components.*
 import com.bobodroid.myapplication.models.datamodels.*
 import com.bobodroid.myapplication.models.viewmodels.*
@@ -23,15 +26,13 @@ import java.util.UUID
 
 
 @ExperimentalMaterialApi
-@OptIn(ExperimentalMaterialApi::class)
+@OptIn(ExperimentalMaterialApi::class, ExperimentalFoundationApi::class)
 @SuppressLint("StateFlowValueCalledInComposition")
 @Composable
 fun BuyRecordBox(dollarViewModel: DollarViewModel,
                  snackBarHostState: SnackbarHostState) {
 
-    val buyRecordHistory : State<List<DrBuyRecord>> = dollarViewModel.filterBuyRecordFlow.collectAsState()
-
-    val buySortRecord = buyRecordHistory.value.sortedBy { it.date }
+    val buyRecordHistory : State<Map<String, List<DrBuyRecord>>> = dollarViewModel.filterBuyRecordFlow.collectAsState()
 
     var selectedId by remember { mutableStateOf(UUID.randomUUID()) }
 
@@ -68,45 +69,71 @@ fun BuyRecordBox(dollarViewModel: DollarViewModel,
             state = lazyScrollState) {
 
             //  Buy -> 라인리코드텍스트에 넣지 말고 바로 데이터 전달 -> 리팩토리
-            val listSize = buySortRecord.size
 
-            itemsIndexed(
-                items = buySortRecord,
-                key = { index: Int, item: DrBuyRecord -> item.id}) { index, Buy ->
+            val listSize = getBuyRecordCount(buyRecordHistory.value)
 
-                LineDrRecordText(
-                    Buy,
-                    index = index,
-                    listSize = listSize,
-                    sellAction = Buy.recordColor!!
-                    ,
-                    sellActed = { buyRecord ->
-                        selectedId = buyRecord.id
+            buyRecordHistory.value.forEach { key, items->
 
-                        dollarViewModel.updateBuyRecord(buyRecord)
 
-                    },
-                    onClicked = { recordbox ->
-                        selectedId = recordbox.id
-                        dollarViewModel.dateFlow.value = recordbox.date!!
-                        dollarViewModel.haveMoneyDollar.value = recordbox.exchangeMoney!!
-                        dollarViewModel.recordInputMoney.value = recordbox.money!! },
-                    dollarViewModel = dollarViewModel,
-                    snackBarHostState = snackBarHostState) {
-                    coroutineScope.launch {
-                        if(index <= listSize - 7) {
-                            delay(300)
-                            lazyScrollState.animateScrollToItem(index)
-                        } else {
-                            delay(300)
-                            lazyScrollState.animateScrollToItem(index, 0)
-                        }
-
-                    }
+                stickyHeader {
+                    drRecordHeader(key = key)
                 }
 
-                Divider()
+                
+                itemsIndexed(
+                    items = items,
+                    key = { index: Int, item: DrBuyRecord -> item.id }) { index, Buy ->
+
+                    LineDrRecordText(
+                        Buy,
+                        index = index,
+                        listSize = listSize,
+                        sellAction = Buy.recordColor!!
+                        ,
+                        sellActed = { buyRecord ->
+                            selectedId = buyRecord.id
+
+                            dollarViewModel.updateBuyRecord(buyRecord)
+
+                        },
+                        onClicked = { recordbox ->
+                            selectedId = recordbox.id
+                            dollarViewModel.dateFlow.value = recordbox.date!!
+                            dollarViewModel.haveMoneyDollar.value = recordbox.exchangeMoney!!
+                            dollarViewModel.recordInputMoney.value = recordbox.money!! },
+                        dollarViewModel = dollarViewModel,
+                        snackBarHostState = snackBarHostState) {
+                        coroutineScope.launch {
+
+
+                            Log.d(TAG, "아이템 사이즈 사이즈${items.size}")
+
+                            Log.d(TAG, "리스트 사이즈${listSize}")
+
+                            Log.d(TAG, "인덱스 ${index}")
+
+                            val currentKey = items[index].buyDrCategoryName
+                            if (currentKey == key) {
+                                // 같은 키를 가진 아이템일 경우 이벤트 처리
+                                if (index <= listSize - 7) {
+                                    delay(300)
+                                    lazyScrollState.animateScrollToItem(index)
+                                } else {
+                                    delay(300)
+                                    lazyScrollState.animateScrollToItem(index)
+                                }
+                            } else {
+                                // 다른 키를 가진 아이템일 경우 이벤트 처리하지 않음
+                            }
+
+                        }
+                    }
+
+                    Divider()
+                }
             }
+
+
         }
 
 
@@ -115,6 +142,10 @@ fun BuyRecordBox(dollarViewModel: DollarViewModel,
     }
 
 
+}
+
+fun getBuyRecordCount(buyRecordHistory: Map<String, List<DrBuyRecord>>): Int {
+    return buyRecordHistory.values.flatten().size
 }
 
 

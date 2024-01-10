@@ -27,10 +27,6 @@ import java.time.LocalDate
 import androidx.compose.material.SnackbarHostState
 import com.bobodroid.myapplication.components.Buttons
 import com.bobodroid.myapplication.components.DrSellDatePickerDialog
-import com.bobodroid.myapplication.components.RateNumberField
-import com.bobodroid.myapplication.components.SellResultDialog
-import com.bobodroid.myapplication.components.WonSellResultDialog
-import com.bobodroid.myapplication.components.YenSellResultDialog
 import com.bobodroid.myapplication.models.datamodels.DrBuyRecord
 import com.bobodroid.myapplication.models.datamodels.WonBuyRecord
 import com.bobodroid.myapplication.models.datamodels.YenBuyRecord

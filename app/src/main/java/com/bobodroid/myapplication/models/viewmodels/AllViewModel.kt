@@ -1,6 +1,8 @@
 package com.bobodroid.myapplication.models.viewmodels
 
 import android.util.Log
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.bobodroid.myapplication.MainActivity.Companion.TAG
@@ -56,6 +58,8 @@ class AllViewModel @Inject constructor(
     val noticeContent = MutableStateFlow("")
 
     val alarmPermissionState = MutableStateFlow(false)
+
+
 
     private fun noticeApi(noticeDate: (String) -> Unit) {
         viewModelScope.launch {
@@ -538,4 +542,6 @@ class AllViewModel @Inject constructor(
         Log.d(TAG, "올뷰모델 토큰값${updateToken}")
 
     }
+
+
 }

@@ -1,4 +1,4 @@
-package com.bobodroid.myapplication.components
+package com.bobodroid.myapplication.components.Dialogs
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.*
@@ -15,7 +15,6 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Popup
-import com.bobodroid.myapplication.extensions.toUs
 import com.bobodroid.myapplication.extensions.toYen
 import com.bobodroid.myapplication.models.viewmodels.WonViewModel
 import java.text.NumberFormat

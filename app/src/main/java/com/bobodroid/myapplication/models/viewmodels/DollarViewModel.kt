@@ -14,6 +14,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+import java.lang.reflect.Array.set
 import java.math.BigDecimal
 import java.math.BigInteger
 import java.math.MathContext
@@ -25,12 +26,13 @@ import javax.inject.Inject
 
 
 @HiltViewModel
-class DollarViewModel @Inject constructor(private val investRepository: InvestRepository): ViewModel() {
+class DollarViewModel @Inject constructor(private val investRepository: InvestRepository) :
+    ViewModel() {
 
     private val _buyRecordFlow = MutableStateFlow<List<DrBuyRecord>>(emptyList())
     val buyRecordFlow = _buyRecordFlow.asStateFlow()
 
-    private val _filterBuyRecordFlow = MutableStateFlow<List<DrBuyRecord>>(emptyList())
+    private val _filterBuyRecordFlow = MutableStateFlow<Map<String, List<DrBuyRecord>>>(emptyMap())
     val filterBuyRecordFlow = _filterBuyRecordFlow.asStateFlow()
 
     private val _sellRecordFlow = MutableStateFlow<List<DrSellRecord>>(emptyList())
@@ -40,23 +42,40 @@ class DollarViewModel @Inject constructor(private val investRepository: InvestRe
     private val _filterSellRecordFlow = MutableStateFlow<List<DrSellRecord>>(emptyList())
     val filterSellRecordFlow = _filterSellRecordFlow.asStateFlow()
 
-    init{
+
+
+
+    val groupList = MutableStateFlow<List<String>>(emptyList())
+
+    init {
         viewModelScope.launch(Dispatchers.IO) {
             investRepository.getAllBuyRecords().distinctUntilChanged()
-                .collect {listOfRecord ->
-                    if(listOfRecord.isNullOrEmpty()) {
-                    Log.d(TAG, "Empty Buy list")
+                .collect { listOfRecord ->
+                    if (listOfRecord.isNullOrEmpty()) {
+                        Log.d(TAG, "Empty Buy list")
                     } else {
-                        _buyRecordFlow.value = listOfRecord
-                        _filterBuyRecordFlow.value = listOfRecord
 
+
+                        listOfRecord.forEach {
+                            if (it.buyDrCategoryName.isNullOrEmpty()) it.buyDrCategoryName = "기본"
+                        }
+
+
+                        val groupName = listOfRecord.map { it.buyDrCategoryName ?: "기본" }
+
+
+                        groupList.value = groupName.distinct()
+                        _buyRecordFlow.value = listOfRecord
+                        _filterBuyRecordFlow.value = setGroup(listOfRecord)
+
+                        Log.w(TAG, "${_buyRecordFlow.value}")
                     }
                 }
         }
         viewModelScope.launch(Dispatchers.IO) {
             investRepository.getAllSellRecords().distinctUntilChanged()
-                .collect {listOfRecord ->
-                    if(listOfRecord.isNullOrEmpty()) {
+                .collect { listOfRecord ->
+                    if (listOfRecord.isNullOrEmpty()) {
                         Log.d(TAG, "Empty Sell list")
                     } else {
                         _sellRecordFlow.value = listOfRecord
@@ -66,6 +85,25 @@ class DollarViewModel @Inject constructor(private val investRepository: InvestRe
         }
 
 
+    }
+
+    fun groupAdd(newGroupName: String) {
+
+        val updateGroupList = groupList.value.toMutableList().apply {
+            add(newGroupName)
+        }.toList()
+
+        viewModelScope.launch {
+            groupList.emit(updateGroupList)
+        }
+
+    }
+
+    fun setGroup(recordList: List<DrBuyRecord>): Map<String, List<DrBuyRecord>> {
+
+        val makeGroup = recordList.sortedBy { it.date }.groupBy { it.buyDrCategoryName!! }
+
+        return makeGroup
     }
 
     //사용자 기록
@@ -94,8 +132,6 @@ class DollarViewModel @Inject constructor(private val investRepository: InvestRe
     val sellDateFlow = MutableStateFlow("${LocalDate.now()}")
 
 
-
-
     enum class DrAction {
         Buy, Sell
     }
@@ -103,34 +139,39 @@ class DollarViewModel @Inject constructor(private val investRepository: InvestRe
     fun dateRangeInvoke(
         action: DrAction = DrAction.Buy,
         startDate: String,
-        endDate: String) {
+        endDate: String
+    ) {
 
         Log.d(TAG, "전체 데이터 : ${buyRecordFlow.value}")
 
-        when(action) {
+        when (action) {
             DrAction.Buy -> {
 
                 viewModelScope.launch {
-                    if(startDate == "" && endDate == "") {
+                    if (startDate == "" && endDate == "") {
 
-                        _filterBuyRecordFlow.emit(_buyRecordFlow.value)
+                        _filterBuyRecordFlow.emit(_buyRecordFlow.value.groupBy { it.buyDrCategoryName!! })
 
                         val totalProfit = sumProfit(
                             action = DrAction.Buy,
-                            buyList = _buyRecordFlow.value, sellList = null)
+                            buyList = _buyRecordFlow.value, sellList = null
+                        )
 
                         totalExpectProfit.emit(totalProfit)
 
                     } else {
-                        val startFilterBuyRecord= buyRecordFlow.value.filter { it.date!! >= startDate}
+                        val startFilterBuyRecord =
+                            buyRecordFlow.value.filter { it.date!! >= startDate }
 
-                        var endFilterBuyRecord = startFilterBuyRecord.filter { it.date!! <= endDate}
+                        var endFilterBuyRecord =
+                            startFilterBuyRecord.filter { it.date!! <= endDate }
 
-                            _filterBuyRecordFlow.emit(endFilterBuyRecord)
+                        _filterBuyRecordFlow.emit(setGroup(endFilterBuyRecord))
 
-                       val totalProfit = sumProfit(
-                           action = DrAction.Buy,
-                           buyList = endFilterBuyRecord, sellList = null)
+                        val totalProfit = sumProfit(
+                            action = DrAction.Buy,
+                            buyList = endFilterBuyRecord, sellList = null
+                        )
 
                         totalExpectProfit.emit(totalProfit)
 
@@ -142,27 +183,31 @@ class DollarViewModel @Inject constructor(private val investRepository: InvestRe
             DrAction.Sell -> {
 
                 viewModelScope.launch {
-                    if(startDate == "" && endDate == "") {
+                    if (startDate == "" && endDate == "") {
 
                         _filterSellRecordFlow.emit(_sellRecordFlow.value)
 
                         val totalProfit = sumProfit(
                             action = DrAction.Sell,
-                            buyList = null, sellList = _sellRecordFlow.value)
+                            buyList = null, sellList = _sellRecordFlow.value
+                        )
 
                         totalSellProfit.emit(totalProfit)
 
                     } else {
-                        val startFilterSellRecord= sellRecordFlow.value.filter { it.date!! >= startDate}
+                        val startFilterSellRecord =
+                            sellRecordFlow.value.filter { it.date!! >= startDate }
 
-                        val endFilterSellRecord = startFilterSellRecord.filter { it.date!! <= endDate}
+                        val endFilterSellRecord =
+                            startFilterSellRecord.filter { it.date!! <= endDate }
 
 
                         _filterSellRecordFlow.emit(endFilterSellRecord)
 
                         val totalProfit = sumProfit(
                             action = DrAction.Sell,
-                            buyList = null, sellList = endFilterSellRecord)
+                            buyList = null, sellList = endFilterSellRecord
+                        )
 
                         totalSellProfit.emit(totalProfit)
                     }
@@ -179,39 +224,39 @@ class DollarViewModel @Inject constructor(private val investRepository: InvestRe
     val totalExpectProfit = MutableStateFlow("")
 
 
-
     fun sumProfit(
         action: DrAction = DrAction.Buy,
         buyList: List<DrBuyRecord>?,
         sellList: List<DrSellRecord>?
-    ) : String {
+    ): String {
 
-        when(action) {
-            DrAction.Buy ->  {
+        when (action) {
+            DrAction.Buy -> {
                 val result = buyList?.filter { it.profit != "" }?.map { BigDecimal(it.profit) }
 
-                if(result.isNullOrEmpty()) {
+                if (result.isNullOrEmpty()) {
                     return ""
                 } else {
-                    if(result.size > 1) {
-                        return result.reduce {first, end ->
-                            first!! + end!! }!!.toBigDecimalWon()
+                    if (result.size > 1) {
+                        return result.reduce { first, end ->
+                            first!! + end!!
+                        }!!.toBigDecimalWon()
                     } else {
                         return "${result.first()!!.toBigDecimalWon()}"
                     }
-                    }
-
                 }
+
+            }
 
             DrAction.Sell -> {
                 val result = sellList?.map { BigDecimal(it.exchangeMoney) }
 
                 Log.d(TAG, "달러 ${result}")
 
-                if(result.isNullOrEmpty()) {
+                if (result.isNullOrEmpty()) {
                     return ""
                 } else {
-                    if(result.size > 1) {
+                    if (result.size > 1) {
                         return result.reduce { first, end ->
                             first + end
                         }.toBigDecimalWon()
@@ -241,22 +286,23 @@ class DollarViewModel @Inject constructor(private val investRepository: InvestRe
     val sellRecordActionFlow = MutableStateFlow(false)
 
 
-
-    fun buyDollarAdd() {
+    fun buyDollarAdd(groupName: String) {
         viewModelScope.launch {
             exchangeMoney.emit("${lastValue()}")
             Log.d(TAG, "매수 달러 ${exchangeMoney.value}")
             investRepository
-                .addRecord(DrBuyRecord(
-                    date = dateFlow.value,
-                    money = moneyInputFlow.value,
-                    rate = rateInputFlow.value,
-                    exchangeMoney = "${exchangeMoney.value}",
-                    recordColor = sellRecordActionFlow.value,
-                    profit = expectSellValue(),
-                    buyDrCategoryName = "",
-                    buyDrMemo = ""
-                ))
+                .addRecord(
+                    DrBuyRecord(
+                        date = dateFlow.value,
+                        money = moneyInputFlow.value,
+                        rate = rateInputFlow.value,
+                        exchangeMoney = "${exchangeMoney.value}",
+                        recordColor = sellRecordActionFlow.value,
+                        profit = expectSellValue(),
+                        buyDrCategoryName = groupName,
+                        buyDrMemo = ""
+                    )
+                )
 
             // 데이터 값 초기화
             buyRecordFlow.collectLatest {
@@ -274,13 +320,13 @@ class DollarViewModel @Inject constructor(private val investRepository: InvestRe
 
             val buyRecordState = _buyRecordFlow.value
             val filterRecord = _filterBuyRecordFlow.value
-            val buyItems = buyRecordState.toMutableList().apply{
+            val buyItems = buyRecordState.toMutableList().apply {
                 remove(drBuyrecord)
             }.toList()
 
-            val filterBuyItems = filterRecord.toMutableList().apply{
-                remove(drBuyrecord)
-            }.toList()
+            val filterBuyItems = filterRecord.toMutableMap().apply {
+                remove(drBuyrecord.buyDrCategoryName)
+            }.toMap()
 
 
             _buyRecordFlow.value = buyItems
@@ -305,7 +351,8 @@ class DollarViewModel @Inject constructor(private val investRepository: InvestRe
                     true,
                     "",
                     ""
-                    ))
+                )
+            )
         }
     }
 
@@ -325,7 +372,7 @@ class DollarViewModel @Inject constructor(private val investRepository: InvestRe
                         exchangeMoney = sellDollarFlow.value,
                         sellDrMemo = "",
                         sellDrCategoryName = ""
-            )
+                    )
                 )
         }
     }
@@ -336,11 +383,11 @@ class DollarViewModel @Inject constructor(private val investRepository: InvestRe
 
             val sellRecordState = _sellRecordFlow.value
             val filterSellRecord = _filterSellRecordFlow.value
-            val sellItems = sellRecordState.toMutableList().apply{
+            val sellItems = sellRecordState.toMutableList().apply {
                 remove(drSellRecord)
             }.toList()
 
-            val filterSellItems = filterSellRecord.toMutableList().apply{
+            val filterSellItems = filterSellRecord.toMutableList().apply {
                 remove(drSellRecord)
             }.toList()
 
@@ -371,7 +418,6 @@ class DollarViewModel @Inject constructor(private val investRepository: InvestRe
     val drResentRateStateFlow = MutableStateFlow<ExchangeRate>(ExchangeRate())
 
 
-
     fun requestRate(exchangeRate: ExchangeRate) {
         viewModelScope.launch {
             drResentRateStateFlow.emit(exchangeRate)
@@ -385,117 +431,123 @@ class DollarViewModel @Inject constructor(private val investRepository: InvestRe
 
         Log.d(TAG, "dollarBuyList 불러온 profit 값 : ${buyRecordProfit}")
 
-            _buyRecordFlow.value.forEach {drBuyRecord->
+        _buyRecordFlow.value.forEach { drBuyRecord ->
 
-                //매도 상태
-                if(drBuyRecord.recordColor == true) {
-                    val updateDate = drBuyRecord.copy(profit = "")
+            //매도 상태
+            if (drBuyRecord.recordColor == true) {
+                val updateDate = drBuyRecord.copy(profit = "")
 
-                    viewModelScope.launch {
-                        investRepository.updateRecord(updateDate)
+                viewModelScope.launch {
+                    investRepository.updateRecord(updateDate)
+                }
+            } else {
+                if (drBuyRecord.profit == null) {
+
+                    Log.d(TAG, "기존 데이터 profit 추가 실행")
+
+                    val resentRate = exchangeRate.exchangeRates?.usd
+
+                    if (resentRate.isNullOrEmpty()) {
+                        Log.d(TAG, "calculateProfit 최신 값 받아오기 실패")
+
+                    } else {
+                        val exChangeMoney = drBuyRecord.exchangeMoney
+
+                        val koreaMoney = drBuyRecord.money
+
+                        Log.d(TAG, "값을 받아왔니? ${resentRate}")
+
+                        val profit = (((BigDecimal(exChangeMoney).times(BigDecimal(resentRate)))
+                            .setScale(
+                                20,
+                                RoundingMode.HALF_UP
+                            )) - BigDecimal(koreaMoney)).toString()
+
+                        Log.d(TAG, "예상 수익 ${profit}")
+
+                        val updateDate = drBuyRecord.copy(profit = profit)
+
+                        viewModelScope.launch {
+                            investRepository.updateRecord(updateDate)
+                        }
                     }
                 } else {
-                    if(drBuyRecord.profit == null) {
+                    Log.d(TAG, "업데이트 데이터 profit 실행")
 
-                        Log.d(TAG, "기존 데이터 profit 추가 실행")
+                    val resentRate = exchangeRate.exchangeRates?.usd
 
-                        val resentRate = exchangeRate.exchangeRates?.usd
+                    if (resentRate.isNullOrEmpty()) {
+                        Log.d(TAG, "calculateProfit 최신 값 받아오기 실패")
 
-                        if(resentRate.isNullOrEmpty()) {
-                            Log.d(TAG, "calculateProfit 최신 값 받아오기 실패")
-
-                        } else {
-                            val exChangeMoney = drBuyRecord.exchangeMoney
-
-                            val koreaMoney = drBuyRecord.money
-
-                            Log.d(TAG, "값을 받아왔니? ${resentRate}")
-
-                            val profit = (((BigDecimal(exChangeMoney).times(BigDecimal(resentRate)))
-                                .setScale(20, RoundingMode.HALF_UP)) - BigDecimal(koreaMoney)).toString()
-
-                            Log.d(TAG, "예상 수익 ${profit}")
-
-                            val updateDate = drBuyRecord.copy(profit = profit)
-
-                            viewModelScope.launch {
-                                investRepository.updateRecord(updateDate)
-                            }
-                        }
                     } else {
-                        Log.d(TAG, "업데이트 데이터 profit 실행")
+                        val exChangeMoney = drBuyRecord.exchangeMoney
 
-                        val resentRate = exchangeRate.exchangeRates?.usd
+                        val koreaMoney = drBuyRecord.money
 
-                        if(resentRate.isNullOrEmpty()) {
-                            Log.d(TAG, "calculateProfit 최신 값 받아오기 실패")
+                        Log.d(TAG, "값을 받아왔니? ${resentRate}")
 
-                        } else {
-                            val exChangeMoney = drBuyRecord.exchangeMoney
+                        val profit = (((BigDecimal(exChangeMoney).times(BigDecimal(resentRate)))
+                            .setScale(
+                                20,
+                                RoundingMode.HALF_UP
+                            )) - BigDecimal(koreaMoney)).toString()
 
-                            val koreaMoney = drBuyRecord.money
+                        Log.d(TAG, "예상 수익 ${profit}")
 
-                            Log.d(TAG, "값을 받아왔니? ${resentRate}")
+                        val updateDate = drBuyRecord.copy(profit = profit)
 
-                            val profit = (((BigDecimal(exChangeMoney).times(BigDecimal(resentRate)))
-                                .setScale(20, RoundingMode.HALF_UP)) - BigDecimal(koreaMoney)).toString()
-
-                            Log.d(TAG, "예상 수익 ${profit}")
-
-                            val updateDate = drBuyRecord.copy(profit = profit)
-
-                            viewModelScope.launch {
-                                investRepository.updateRecord(updateDate)
-                            }
+                        viewModelScope.launch {
+                            investRepository.updateRecord(updateDate)
                         }
                     }
                 }
-
-
-
             }
-    }
 
-    fun buyDrMemoUpdate(updateData: DrBuyRecord, result:(Boolean) -> Unit){
-
-        var success: Boolean = false
-        viewModelScope.launch {
-           val successValue = investRepository.updateRecord(updateData)
-
-            Log.d(TAG, "업데이트 성공 ${successValue}")
-            success = if(successValue > 0) true else false
-            result(success)
 
         }
     }
 
-    fun sellDrMemoUpdate(updateData: DrSellRecord, result:(Boolean) -> Unit){
+    fun buyDrMemoUpdate(updateData: DrBuyRecord, result: (Boolean) -> Unit) {
 
         var success: Boolean = false
         viewModelScope.launch {
             val successValue = investRepository.updateRecord(updateData)
 
             Log.d(TAG, "업데이트 성공 ${successValue}")
-            success = if(successValue > 0) true else false
+            success = if (successValue > 0) true else false
             result(success)
 
         }
     }
 
-   suspend fun cancelSellRecord(id: UUID): Boolean {
+    fun sellDrMemoUpdate(updateData: DrSellRecord, result: (Boolean) -> Unit) {
 
-       val searchBuyRecord = investRepository.getRecordId(id)
+        var success: Boolean = false
+        viewModelScope.launch {
+            val successValue = investRepository.updateRecord(updateData)
 
-       Log.d(TAG, "cancelSellRecord: ${searchBuyRecord}, sellId: ${id}")
+            Log.d(TAG, "업데이트 성공 ${successValue}")
+            success = if (successValue > 0) true else false
+            result(success)
 
-       if(searchBuyRecord == null) {
-           return false
-       } else {
-           val updateData = searchBuyRecord.copy(recordColor = false)
+        }
+    }
 
-           investRepository.updateRecord(updateData)
+    suspend fun cancelSellRecord(id: UUID): Boolean {
 
-           return true}
+        val searchBuyRecord = investRepository.getRecordId(id)
+
+        Log.d(TAG, "cancelSellRecord: ${searchBuyRecord}, sellId: ${id}")
+
+        if (searchBuyRecord == null) {
+            return false
+        } else {
+            val updateData = searchBuyRecord.copy(recordColor = false)
+
+            investRepository.updateRecord(updateData)
+
+            return true
+        }
     }
 
     fun drCloudLoad(buyRecord: List<DrBuyRecord>, sellRecord: List<DrSellRecord>) {
@@ -512,17 +564,24 @@ class DollarViewModel @Inject constructor(private val investRepository: InvestRe
     fun convertFirebaseUuidToKotlinUuid(firebaseUuid: List<Map<String, String>>): UUID {
         val mostSignificantBits = firebaseUuid[0]["mostSignificantBits"]
         val leastSignificantBits = firebaseUuid[0]["leastSignificantBits"]
-        return UUID.fromString(String.format("%016x-%016x", mostSignificantBits, leastSignificantBits))
+        return UUID.fromString(
+            String.format(
+                "%016x-%016x",
+                mostSignificantBits,
+                leastSignificantBits
+            )
+        )
     }
-
-
 
 
     fun expectSellValue(): String {
 
         val resentUsRate = drResentRateStateFlow.value.exchangeRates?.usd
 
-        Log.d(TAG, "개별 profit 실행 exchangeMoney:${exchangeMoney.value} 최신환율: ${resentUsRate} 원화: ${moneyInputFlow.value}")
+        Log.d(
+            TAG,
+            "개별 profit 실행 exchangeMoney:${exchangeMoney.value} 최신환율: ${resentUsRate} 원화: ${moneyInputFlow.value}"
+        )
 
         val profit = ((BigDecimal(exchangeMoney.value).times(BigDecimal(resentUsRate)))
             .setScale(20, RoundingMode.HALF_UP)
@@ -533,15 +592,20 @@ class DollarViewModel @Inject constructor(private val investRepository: InvestRe
     }
 
 
-
 //    private fun lastValue() = (moneyInputFlow.value.toBigDecimal() / rateInputFlow.value.toBigDecimal()).setScale(2)
 
-    private fun lastValue() = BigDecimal(moneyInputFlow.value).divide(BigDecimal(rateInputFlow.value), 20, RoundingMode.HALF_UP)
+    private fun lastValue() = BigDecimal(moneyInputFlow.value).divide(
+        BigDecimal(rateInputFlow.value),
+        20,
+        RoundingMode.HALF_UP
+    )
+
     private fun sellValue() = (
             (BigDecimal(haveMoneyDollar.value).times(BigDecimal(sellRateFlow.value)))
                 .setScale(20, RoundingMode.HALF_UP)
             ) - BigDecimal(recordInputMoney.value)
 
-    private fun sellPercent(): Float = (sellDollarFlow.value.toFloat() / recordInputMoney.value.toFloat()) * 100f
+    private fun sellPercent(): Float =
+        (sellDollarFlow.value.toFloat() / recordInputMoney.value.toFloat()) * 100f
 
 }

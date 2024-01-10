@@ -19,6 +19,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.bobodroid.myapplication.components.*
 import com.bobodroid.myapplication.components.Caldenders.WonMyDatePickerDialog
+import com.bobodroid.myapplication.components.Dialogs.RateNumberField
+import com.bobodroid.myapplication.components.Dialogs.WonNumberField
 import com.bobodroid.myapplication.components.admobs.BuyBannerAd
 import com.bobodroid.myapplication.models.viewmodels.AllViewModel
 import com.bobodroid.myapplication.models.viewmodels.WonViewModel

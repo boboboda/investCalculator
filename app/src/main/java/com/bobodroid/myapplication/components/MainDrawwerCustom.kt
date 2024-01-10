@@ -603,7 +603,9 @@ fun DrawerCustom(
         }
 
         if (targetRateDialog) {
-            TargetRateDialog(onDismissRequest = {}, allViewModel = allViewModel)
+            TargetRateDialog(onDismissRequest = {
+
+            }, allViewModel = allViewModel)
         }
 
         if (permissionGuideDialog) {

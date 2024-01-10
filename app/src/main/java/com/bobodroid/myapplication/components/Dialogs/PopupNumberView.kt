@@ -1,8 +1,7 @@
 @file:OptIn(ExperimentalMaterial3Api::class)
 
-package com.bobodroid.myapplication.components
+package com.bobodroid.myapplication.components.Dialogs
 
-import android.util.Log
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.GridCells
@@ -30,8 +29,7 @@ import com.bobodroid.myapplication.ui.theme.ActionButtonBgColor
 import com.bobodroid.myapplication.ui.theme.DollarColor
 import java.text.NumberFormat
 import androidx.compose.material.SnackbarHostState
-import com.bobodroid.myapplication.screens.TAG
-import com.google.android.material.snackbar.Snackbar
+import com.bobodroid.myapplication.components.AutoSizeText
 import kotlinx.coroutines.launch
 import java.util.*
 

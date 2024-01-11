@@ -414,7 +414,7 @@ fun WonLineRecordText(
                         Spacer(modifier = Modifier.width(1.dp))
                         RecordTextView(recordText = "${BigDecimal(data.exchangeMoney, mathContext).toBigDecimalWon()}\n (${moneyCg})", TextHeight = 40.dp, 13, 2.5f, bottonPpaing = 0.dp, color = Color.Black)
                         Spacer(modifier = Modifier.width(1.dp))
-                        RecordTextView(recordText = "${data.rate}", TextHeight = 40.dp,13, 2.5f, bottonPpaing = 0.dp, color = Color.Black)
+                        RecordTextView(recordText = "${data.buyRate}", TextHeight = 40.dp,13, 2.5f, bottonPpaing = 0.dp, color = Color.Black)
                         Spacer(modifier = Modifier.width(1.dp))
                         RecordTextView(recordText = "${profitMoneyCg}", TextHeight = 40.dp, 13, 2.5f, bottonPpaing = 0.dp, color = profitColor)
                     }

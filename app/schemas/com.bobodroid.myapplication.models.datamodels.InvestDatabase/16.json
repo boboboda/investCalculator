@@ -2,11 +2,11 @@
   "formatVersion": 1,
   "database": {
     "version": 16,
-    "identityHash": "ea262be081a408ef7c8005ff7b82660e",
+    "identityHash": "5a57e4196c2263786c13d1da8eb81d91",
     "entities": [
       {
         "tableName": "buyDollar_table",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` BLOB NOT NULL, `date` TEXT DEFAULT '', `money` TEXT DEFAULT '', `rate` TEXT DEFAULT '', `profit` TEXT DEFAULT '', `exchangeMoney` TEXT DEFAULT '', `usingRecord` INTEGER, `buyDrMemo` TEXT DEFAULT '', `buyDrCategoryName` TEXT DEFAULT '', PRIMARY KEY(`id`))",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` BLOB NOT NULL, `date` TEXT DEFAULT '', `sell_Date` TEXT DEFAULT '', `money` TEXT DEFAULT '', `rate` TEXT DEFAULT '', `buy_rate` TEXT DEFAULT '', `sell_rate` TEXT DEFAULT '', `profit` TEXT DEFAULT '', `sell_profit` TEXT DEFAULT '', `expect_profit` TEXT DEFAULT '', `exchangeMoney` TEXT DEFAULT '', `usingRecord` INTEGER, `buyDrMemo` TEXT DEFAULT '', `buyDrCategoryName` TEXT DEFAULT '', PRIMARY KEY(`id`))",
         "fields": [
           {
             "fieldPath": "id",
@@ -17,6 +17,13 @@
           {
             "fieldPath": "date",
             "columnName": "date",
+            "affinity": "TEXT",
+            "notNull": false,
+            "defaultValue": "''"
+          },
+          {
+            "fieldPath": "sellDate",
+            "columnName": "sell_Date",
             "affinity": "TEXT",
             "notNull": false,
             "defaultValue": "''"
@@ -36,8 +43,36 @@
             "defaultValue": "''"
           },
           {
+            "fieldPath": "buyRate",
+            "columnName": "buy_rate",
+            "affinity": "TEXT",
+            "notNull": false,
+            "defaultValue": "''"
+          },
+          {
+            "fieldPath": "sellRate",
+            "columnName": "sell_rate",
+            "affinity": "TEXT",
+            "notNull": false,
+            "defaultValue": "''"
+          },
+          {
             "fieldPath": "profit",
             "columnName": "profit",
+            "affinity": "TEXT",
+            "notNull": false,
+            "defaultValue": "''"
+          },
+          {
+            "fieldPath": "sellProfit",
+            "columnName": "sell_profit",
+            "affinity": "TEXT",
+            "notNull": false,
+            "defaultValue": "''"
+          },
+          {
+            "fieldPath": "expectProfit",
+            "columnName": "expect_profit",
             "affinity": "TEXT",
             "notNull": false,
             "defaultValue": "''"
@@ -143,7 +178,7 @@
       },
       {
         "tableName": "buyYen_table",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` BLOB NOT NULL, `date` TEXT DEFAULT '', `money` TEXT DEFAULT '', `rate` TEXT DEFAULT '', `profit` TEXT DEFAULT '', `exchangeMoney` TEXT DEFAULT '', `usingRecord` INTEGER, `buyYenMemo` TEXT DEFAULT '', `buyYenCategoryName` TEXT DEFAULT '', PRIMARY KEY(`id`))",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` BLOB NOT NULL, `date` TEXT DEFAULT '', `sell_Date` TEXT DEFAULT '', `money` TEXT DEFAULT '', `rate` TEXT DEFAULT '', `buy_rate` TEXT DEFAULT '', `sell_rate` TEXT DEFAULT '', `profit` TEXT DEFAULT '', `sell_profit` TEXT DEFAULT '', `expect_profit` TEXT DEFAULT '', `exchangeMoney` TEXT DEFAULT '', `usingRecord` INTEGER, `buyYenMemo` TEXT DEFAULT '', `buyYenCategoryName` TEXT DEFAULT '', PRIMARY KEY(`id`))",
         "fields": [
           {
             "fieldPath": "id",
@@ -154,6 +189,13 @@
           {
             "fieldPath": "date",
             "columnName": "date",
+            "affinity": "TEXT",
+            "notNull": false,
+            "defaultValue": "''"
+          },
+          {
+            "fieldPath": "sellDate",
+            "columnName": "sell_Date",
             "affinity": "TEXT",
             "notNull": false,
             "defaultValue": "''"
@@ -173,8 +215,36 @@
             "defaultValue": "''"
           },
           {
+            "fieldPath": "buyRate",
+            "columnName": "buy_rate",
+            "affinity": "TEXT",
+            "notNull": false,
+            "defaultValue": "''"
+          },
+          {
+            "fieldPath": "sellRate",
+            "columnName": "sell_rate",
+            "affinity": "TEXT",
+            "notNull": false,
+            "defaultValue": "''"
+          },
+          {
             "fieldPath": "profit",
             "columnName": "profit",
+            "affinity": "TEXT",
+            "notNull": false,
+            "defaultValue": "''"
+          },
+          {
+            "fieldPath": "sellProfit",
+            "columnName": "sell_profit",
+            "affinity": "TEXT",
+            "notNull": false,
+            "defaultValue": "''"
+          },
+          {
+            "fieldPath": "expectProfit",
+            "columnName": "expect_profit",
             "affinity": "TEXT",
             "notNull": false,
             "defaultValue": "''"
@@ -280,7 +350,7 @@
       },
       {
         "tableName": "buyWon_table",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` BLOB NOT NULL, `date` TEXT DEFAULT '', `money` TEXT DEFAULT '', `rate` TEXT DEFAULT '', `profit` TEXT DEFAULT '', `exchangeMoney` TEXT DEFAULT '', `usingRecord` INTEGER, `moneyType` INTEGER, `buyWonMemo` TEXT DEFAULT '', `buyWonCategoryName` TEXT DEFAULT '', PRIMARY KEY(`id`))",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` BLOB NOT NULL, `date` TEXT DEFAULT '', `sell_Date` TEXT DEFAULT '', `money` TEXT DEFAULT '', `rate` TEXT DEFAULT '', `buy_rate` TEXT DEFAULT '', `sell_rate` TEXT DEFAULT '', `profit` TEXT DEFAULT '', `sell_profit` TEXT DEFAULT '', `expect_profit` TEXT DEFAULT '', `exchangeMoney` TEXT DEFAULT '', `usingRecord` INTEGER, `moneyType` INTEGER, `buyWonMemo` TEXT DEFAULT '', `buyWonCategoryName` TEXT DEFAULT '', PRIMARY KEY(`id`))",
         "fields": [
           {
             "fieldPath": "id",
@@ -291,6 +361,13 @@
           {
             "fieldPath": "date",
             "columnName": "date",
+            "affinity": "TEXT",
+            "notNull": false,
+            "defaultValue": "''"
+          },
+          {
+            "fieldPath": "sellDate",
+            "columnName": "sell_Date",
             "affinity": "TEXT",
             "notNull": false,
             "defaultValue": "''"
@@ -310,8 +387,36 @@
             "defaultValue": "''"
           },
           {
+            "fieldPath": "buyRate",
+            "columnName": "buy_rate",
+            "affinity": "TEXT",
+            "notNull": false,
+            "defaultValue": "''"
+          },
+          {
+            "fieldPath": "sellRate",
+            "columnName": "sell_rate",
+            "affinity": "TEXT",
+            "notNull": false,
+            "defaultValue": "''"
+          },
+          {
             "fieldPath": "profit",
             "columnName": "profit",
+            "affinity": "TEXT",
+            "notNull": false,
+            "defaultValue": "''"
+          },
+          {
+            "fieldPath": "sellProfit",
+            "columnName": "sell_profit",
+            "affinity": "TEXT",
+            "notNull": false,
+            "defaultValue": "''"
+          },
+          {
+            "fieldPath": "expectProfit",
+            "columnName": "expect_profit",
             "affinity": "TEXT",
             "notNull": false,
             "defaultValue": "''"
@@ -536,7 +641,7 @@
     "views": [],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'ea262be081a408ef7c8005ff7b82660e')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '5a57e4196c2263786c13d1da8eb81d91')"
     ]
   }
 }

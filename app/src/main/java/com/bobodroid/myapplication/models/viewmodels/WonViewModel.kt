@@ -42,6 +42,10 @@ class WonViewModel @Inject constructor(private val investRepository: InvestRepos
                     if(listOfRecord.isNullOrEmpty()) {
                         Log.d(MainActivity.TAG, "Empty buy list")
                     } else {
+
+                        listOfRecord.forEach {
+                            it.buyRate = it.rate
+                        }
                         _buyRecordFlow.value = listOfRecord
                         _filterBuyRecordFlow.value = listOfRecord
                     }
@@ -194,7 +198,7 @@ class WonViewModel @Inject constructor(private val investRepository: InvestRepos
 
     val sellRateFlow = MutableStateFlow("")
 
-    val sellDollarFlow = MutableStateFlow("")
+    val sellWonFlow = MutableStateFlow("")
 
     val getPercentFlow = MutableStateFlow(0f)
 
@@ -226,10 +230,14 @@ class WonViewModel @Inject constructor(private val investRepository: InvestRepos
                         date = dateFlow.value,
                         money = moneyInputFlow.value,
                         rate = rateInputFlow.value,
+                        buyRate = rateInputFlow.value,
+                        sellRate = "",
                         exchangeMoney = "${exchangeMoney.value}",
                         recordColor = sellRecordActionFlow.value,
                         moneyType = moneyType.value,
                         profit = expectSellValue(),
+                        sellProfit = "",
+                        expectProfit = expectSellValue(),
                         buyWonCategoryName = "",
                         buyWonMemo = ""
                     )
@@ -249,10 +257,10 @@ class WonViewModel @Inject constructor(private val investRepository: InvestRepos
         viewModelScope.launch {
             when(moneyType.value) {
                 1 -> {
-                    sellDollarFlow.emit(dollarSellValue().toString())
+                    sellWonFlow.emit(dollarSellValue().toString())
                     getPercentFlow.emit(sellPercent())}
                 2 -> {
-                    sellDollarFlow.emit(yenSellValue().toString())
+                    sellWonFlow.emit(yenSellValue().toString())
                     getPercentFlow.emit(sellPercent())
                 }
 
@@ -318,13 +326,16 @@ class WonViewModel @Inject constructor(private val investRepository: InvestRepos
                     wonBuyRecord.id,
                     wonBuyRecord.date,
                     wonBuyRecord.money,
-                    wonBuyRecord.rate,
-                    "",
-                    wonBuyRecord.exchangeMoney,
-                    true,
-                    wonBuyRecord.moneyType,
-                    buyWonMemo = "",
-                    buyWonCategoryName = "")
+                    rate = wonBuyRecord.rate,
+                    sellRate = sellRateFlow.value,
+                    profit = wonBuyRecord.profit,
+                    expectProfit = wonBuyRecord.expectProfit,
+                    exchangeMoney = wonBuyRecord.exchangeMoney,
+                    recordColor = true,
+                    moneyType = wonBuyRecord.moneyType,
+                    sellProfit = sellWonFlow.value,
+                    buyWonMemo = wonBuyRecord.buyWonMemo,
+                    buyWonCategoryName = wonBuyRecord.buyWonCategoryName)
             )
         }
     }
@@ -342,7 +353,7 @@ class WonViewModel @Inject constructor(private val investRepository: InvestRepos
                         date = sellDateFlow.value,
                         money = haveMoney.value.toString(),
                         rate = sellRateFlow.value,
-                        exchangeMoney = sellDollarFlow.value,
+                        exchangeMoney = sellWonFlow.value,
                         moneyType = moneyType.value,
                         sellWonMemo = "",
                         sellWonCategoryName = "")
@@ -563,7 +574,7 @@ class WonViewModel @Inject constructor(private val investRepository: InvestRepos
         BigDecimal("100"))).minus(BigDecimal(recordInputMoney.value))
 
 
-    private fun sellPercent(): Float = (sellDollarFlow.value.toFloat() / recordInputMoney.value.toFloat()) * 100f
+    private fun sellPercent(): Float = (sellWonFlow.value.toFloat() / recordInputMoney.value.toFloat()) * 100f
 
 }
 

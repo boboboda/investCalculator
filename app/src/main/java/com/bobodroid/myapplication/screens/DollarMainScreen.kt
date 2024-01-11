@@ -1,39 +1,50 @@
 package com.bobodroid.myapplication.screens
 
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.*
-import androidx.compose.material.SnackbarHostState
 import androidx.compose.material3.*
-import androidx.compose.material3.Card
-import androidx.compose.material3.Text
+import androidx.compose.material.Card
+import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalFocusManager
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.*
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.bobodroid.myapplication.components.*
 import com.bobodroid.myapplication.models.viewmodels.DollarViewModel
+import com.bobodroid.myapplication.ui.theme.*
+import java.util.*
+import androidx.compose.material.SnackbarHostState
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.KeyboardArrowDown
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.DpOffset
 import com.bobodroid.myapplication.lists.dollorList.BuyRecordBox
 import com.bobodroid.myapplication.lists.dollorList.SellRecordBox
+import com.bobodroid.myapplication.lists.dollorList.TotalDrRecordBox
 import com.bobodroid.myapplication.lists.dollorList.addFocusCleaner
 import com.bobodroid.myapplication.models.viewmodels.AllViewModel
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalUnitApi::class, ExperimentalMaterialApi::class)
+
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterialApi::class)
 @Composable
 fun DollarMainScreen
             (dollarViewModel: DollarViewModel,
              allViewModel: AllViewModel) {
 
 
-    var selectedCheckBoxId = dollarViewModel.selectedCheckBoxId.collectAsState()
+    var selectedBoxId = dollarViewModel.selectedBoxId.collectAsState()
 
     val recentExchangeRate = allViewModel.recentExChangeRateFlow.collectAsState()
+
+    var dropdownExpanded by remember { mutableStateOf(false) }
 
     val reFreshDate = allViewModel.refreshDateFlow.collectAsState()
 
@@ -43,6 +54,14 @@ fun DollarMainScreen
 
     val focusManager = LocalFocusManager.current
 
+    val dropdownMenuName = when(selectedBoxId.value) {
+        1-> {"종합형"}
+        2-> {"편집형"}
+        3-> {"매수"}
+        4-> {"매도"}
+        else -> {"오류"}
+    }
+
 
 
 
@@ -51,25 +70,138 @@ fun DollarMainScreen
         .addFocusCleaner(focusManager),
         horizontalAlignment = Alignment.CenterHorizontally)
     {
-        Row(
+        Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 25.dp),
-            horizontalArrangement = Arrangement.Start,
-            verticalAlignment = Alignment.CenterVertically,
+                .padding(start = 30.dp, bottom = 5.dp),
+            horizontalAlignment = Alignment.Start,
+            verticalArrangement = Arrangement.Center,
         ) {
-            InvestCheckBox(title = "매수",
-                1, selectedCheckId = selectedCheckBoxId.value,
-                selectCheckBoxAction = {
-                    dollarViewModel.selectedCheckBoxId.value = it
-                })
+            Box(
+                modifier = Modifier
+                    .wrapContentSize(Alignment.TopEnd)
+            ) {
+                Card(
+                    colors = CardDefaults.cardColors(WelcomeScreenBackgroundColor),
+                    elevation = CardDefaults.cardElevation(8.dp),
+                    shape = RoundedCornerShape(1.dp),
+                    modifier = Modifier
+                        .height(40.dp)
+                        .wrapContentWidth(),
+                    onClick = {
+                        if (!dropdownExpanded) dropdownExpanded = true else dropdownExpanded = false
+                    }) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxHeight()
+                            .wrapContentWidth()
+                            .padding(horizontal = 10.dp),
+                        horizontalArrangement = Arrangement.Center,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(text = dropdownMenuName)
 
-            InvestCheckBox(title = "매도",
-                2, selectedCheckId = selectedCheckBoxId.value,
-                selectCheckBoxAction = {
-                    dollarViewModel.selectedCheckBoxId.value = it
+                        Icon(imageVector = Icons.Rounded.KeyboardArrowDown, contentDescription = "")
+                    }
                 }
-            )
+                DropdownMenu(
+                    scrollState = rememberScrollState(),
+                    modifier = Modifier
+                        .wrapContentHeight()
+                        .background(Color.White)
+                        .heightIn(max = 200.dp)
+                        .width(100.dp),
+                    offset = DpOffset(x = 0.dp, y = 10.dp),
+                    expanded = dropdownExpanded,
+                    onDismissRequest = {
+                        dropdownExpanded = false
+                    }
+                ) {
+                    DropdownMenuItem(
+                        modifier = Modifier
+                            .fillMaxWidth(),
+                        text = {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth(),
+                                contentAlignment = Alignment.TopStart
+                            ) {
+                                Text(
+                                    text = "종합형",
+                                    color = Color.Black,
+                                    fontSize = 13.sp
+                                )
+                            }
+                        }, onClick = {
+                            dollarViewModel.selectedBoxId.value = 1
+                            dropdownExpanded = false
+                        })
+
+                    DropdownMenuItem(
+                        modifier = Modifier
+                            .fillMaxWidth(),
+                        text = {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth(),
+                                contentAlignment = Alignment.TopStart
+                            ) {
+                                Text(
+                                    text = "반응형",
+                                    color = Color.Black,
+                                    fontSize = 13.sp
+                                )
+                            }
+                        }, onClick = {
+                            dollarViewModel.selectedBoxId.value = 2
+                            dropdownExpanded = false
+                        })
+
+
+                    DropdownMenuItem(
+                        modifier = Modifier
+                            .fillMaxWidth(),
+                        text = {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth(),
+                                contentAlignment = Alignment.TopStart
+                            ) {
+                                Text(
+                                    text = "매수",
+                                    color = Color.Black,
+                                    fontSize = 13.sp
+                                )
+                            }
+                        }, onClick = {
+                            dollarViewModel.selectedBoxId.value = 3
+                            dropdownExpanded = false
+                        })
+
+                    DropdownMenuItem(
+                        modifier = Modifier
+                            .fillMaxWidth(),
+                        text = {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth(),
+                                contentAlignment = Alignment.TopStart
+                            ) {
+                                Text(
+                                    text = "매도",
+                                    color = Color.Black,
+                                    fontSize = 13.sp
+                                )
+                            }
+                        }, onClick = {
+                            dollarViewModel.selectedBoxId.value = 4
+                            dropdownExpanded = false
+                        })
+
+                }
+
+            }
+
         }
 
         Row(
@@ -93,11 +225,16 @@ fun DollarMainScreen
                 modifier = Modifier
                     .fillMaxSize()
             ) {
-                if (selectedCheckBoxId.value == 1)
-                {
-                    BuyRecordBox(dollarViewModel, snackBarHostState)
-                } else {
-                    SellRecordBox(dollarViewModel, snackBarHostState)
+                when (selectedBoxId.value) {
+                    1-> { TotalDrRecordBox(dollarViewModel = dollarViewModel, snackBarHostState = snackBarHostState)}
+                    2-> {}
+                    3-> {BuyRecordBox(dollarViewModel, snackBarHostState)}
+                    4-> {SellRecordBox(dollarViewModel, snackBarHostState)}
+                    else-> {
+                        Column(Modifier.fillMaxSize()) {
+
+                        }
+                    }
                 }
             }
 
@@ -106,7 +243,9 @@ fun DollarMainScreen
                 .fillMaxWidth()
                 .wrapContentHeight()
             ) {
-                SnackbarHost(
+
+
+                androidx.compose.material.SnackbarHost(
                     hostState = snackBarHostState, modifier = Modifier,
                     snackbar = { snackBarData ->
 

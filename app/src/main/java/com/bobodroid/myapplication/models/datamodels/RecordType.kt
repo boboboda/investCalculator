@@ -83,14 +83,29 @@ data class DrBuyRecord(
     @ColumnInfo(name = "date", defaultValue = "")
     var date: String? = null,
 
+    @ColumnInfo(name = "sell_Date", defaultValue = "")
+    var sellDate: String? = null,
+
     @ColumnInfo(name = "money", defaultValue = "")
     var money: String? = null,
 
     @ColumnInfo(name = "rate", defaultValue = "")
     var rate: String? = null,
 
+    @ColumnInfo(name = "buy_rate", defaultValue = "")
+    var buyRate: String? = null,
+
+    @ColumnInfo(name = "sell_rate", defaultValue = "")
+    var sellRate: String? = null,
+
     @ColumnInfo(name = "profit", defaultValue = "")
     var profit: String? = null,
+
+    @ColumnInfo(name = "sell_profit", defaultValue = "")
+    var sellProfit: String? = null,
+
+    @ColumnInfo(name = "expect_profit", defaultValue = "")
+    var expectProfit: String? = null,
 
     @ColumnInfo(name = "exchangeMoney", defaultValue = "")
     var exchangeMoney: String? = null,
@@ -108,9 +123,14 @@ data class DrBuyRecord(
     constructor(data: Map<String, Any>) : this(
         id = UUID.fromString(data["id"] as String?) ?: UUID.randomUUID(),
         date = data["date"] as String?,
+        sellDate = data["sellDate"] as String?,
         money = data["money"] as String?,
         rate = data["rate"] as String?,
-        profit = data["profit"] as String,
+        buyRate = data["buyRate"] as String?,
+        sellRate = data["sellRate"] as String?,
+        profit = data["profit"] as String?,
+        sellProfit = data["sellProfit"] as String?,
+        expectProfit = data["expectProfit"] as String?,
         exchangeMoney = data["exchangeMoney"] as String,
         recordColor = data["recordColor"] as Boolean,
         buyDrMemo = data["buyDrMemo"] as String,
@@ -122,9 +142,14 @@ data class DrBuyRecord(
         return hashMapOf(
             "id" to this.id.toString(),
             "date" to this.date,
+            "sellDate" to this.sellDate,
             "money" to this.money,
             "rate" to this.rate,
             "profit" to this.profit,
+            "buyRate" to this.buyRate,
+            "sellRate" to this.sellRate,
+            "sellProfit" to this.sellProfit,
+            "expectProfit" to this.expectProfit,
             "exchangeMoney" to this.exchangeMoney,
             "recordColor" to this.recordColor,
             "buyDrMemo" to this.buyDrMemo,
@@ -193,14 +218,29 @@ data class YenBuyRecord(
     @ColumnInfo(name = "date", defaultValue = "")
     var date: String? = null,
 
+    @ColumnInfo(name = "sell_Date", defaultValue = "")
+    var sellDate: String? = null,
+
     @ColumnInfo(name = "money", defaultValue = "")
     var money: String? = null,
 
     @ColumnInfo(name = "rate", defaultValue = "")
     var rate: String? = null,
 
+    @ColumnInfo(name = "buy_rate", defaultValue = "")
+    var buyRate: String? = null,
+
+    @ColumnInfo(name = "sell_rate", defaultValue = "")
+    var sellRate: String? = null,
+
     @ColumnInfo(name = "profit", defaultValue = "")
     var profit: String? = null,
+
+    @ColumnInfo(name = "sell_profit", defaultValue = "")
+    var sellProfit: String? = null,
+
+    @ColumnInfo(name = "expect_profit", defaultValue = "")
+    var expectProfit: String? = null,
 
     @ColumnInfo(name = "exchangeMoney", defaultValue = "")
     var exchangeMoney: String? = null,
@@ -217,9 +257,14 @@ data class YenBuyRecord(
     constructor(data: Map<String, Any>) : this(
         id = UUID.fromString(data["id"] as String?) ?: UUID.randomUUID(),
         date = data["date"] as String?,
+        sellDate = data["sellDate"] as String?,
         money = data["money"] as String?,
         rate = data["rate"] as String?,
-        profit = data["profit"] as String,
+        buyRate = data["buyRate"] as String?,
+        sellRate = data["sellRate"] as String?,
+        profit = data["profit"] as String?,
+        sellProfit = data["sellProfit"] as String?,
+        expectProfit = data["expectProfit"] as String?,
         exchangeMoney = data["exchangeMoney"] as String,
         recordColor = data["recordColor"] as Boolean,
         buyYenMemo = data["buyYenMemo"] as String,
@@ -231,9 +276,14 @@ data class YenBuyRecord(
         return hashMapOf(
             "id" to this.id.toString(),
             "date" to this.date,
+            "sellDate" to this.sellDate,
             "money" to this.money,
             "rate" to this.rate,
+            "buyRate" to this.buyRate,
+            "sellRate" to this.sellRate,
             "profit" to this.profit,
+            "sellProfit" to this.sellProfit,
+            "expectProfit" to this.expectProfit,
             "exchangeMoney" to this.exchangeMoney,
             "recordColor" to this.recordColor,
             "buyYenMemo" to this.buyYenMemo,
@@ -300,14 +350,29 @@ data class WonBuyRecord(
     @ColumnInfo(name = "date", defaultValue = "")
     var date: String? = null,
 
+    @ColumnInfo(name = "sell_Date", defaultValue = "")
+    var sellDate: String? = null,
+
     @ColumnInfo(name = "money", defaultValue = "")
     var money: String? = null,
 
     @ColumnInfo(name = "rate", defaultValue = "")
     var rate: String? = null,
 
+    @ColumnInfo(name = "buy_rate", defaultValue = "")
+    var buyRate: String? = null,
+
+    @ColumnInfo(name = "sell_rate", defaultValue = "")
+    var sellRate: String? = null,
+
     @ColumnInfo(name = "profit", defaultValue = "")
     var profit: String? = null,
+
+    @ColumnInfo(name = "sell_profit", defaultValue = "")
+    var sellProfit: String? = null,
+
+    @ColumnInfo(name = "expect_profit", defaultValue = "")
+    var expectProfit: String? = null,
 
     @ColumnInfo(name = "exchangeMoney", defaultValue = "")
     var exchangeMoney: String? = null,
@@ -329,9 +394,15 @@ data class WonBuyRecord(
     constructor(data: Map<String, Any>) : this(
         id = UUID.fromString(data["id"] as String?) ?: UUID.randomUUID(),
         date = data["date"] as String?,
+        sellDate = data["sellDate"] as String?,
         money = data["money"] as String?,
+        moneyType = data["moneyType"] as Int?,
         rate = data["rate"] as String?,
-        profit = data["profit"] as String,
+        buyRate = data["buyRate"] as String?,
+        sellRate = data["sellRate"] as String?,
+        profit = data["profit"] as String?,
+        sellProfit = data["sellProfit"] as String?,
+        expectProfit = data["expectProfit"] as String?,
         exchangeMoney = data["exchangeMoney"] as String,
         recordColor = data["recordColor"] as Boolean,
         buyWonMemo = data["buyWonMemo"] as String,
@@ -343,9 +414,15 @@ data class WonBuyRecord(
         return hashMapOf(
             "id" to this.id.toString(),
             "date" to this.date,
+            "sellDate" to this.sellDate,
             "money" to this.money,
+            "moneyType" to this.moneyType,
             "rate" to this.rate,
+            "buyRate" to this.buyRate,
+            "sellRate" to this.sellRate,
             "profit" to this.profit,
+            "sellProfit" to this.sellProfit,
+            "expectProfit" to this.expectProfit,
             "exchangeMoney" to this.exchangeMoney,
             "recordColor" to this.recordColor,
             "buyWonMemo" to this.buyWonMemo,

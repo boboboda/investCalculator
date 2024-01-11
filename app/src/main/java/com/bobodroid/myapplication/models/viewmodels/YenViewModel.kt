@@ -47,6 +47,11 @@ class YenViewModel @Inject constructor(private val investRepository: InvestRepos
                     if (listOfRecord.isNullOrEmpty()) {
                         Log.d(MainActivity.TAG, "Empty buy list")
                     } else {
+
+                        listOfRecord.forEach {
+                            it.buyRate = it.rate
+                        }
+
                         _buyRecordFlow.value = listOfRecord
                         _filterBuyRecordFlow.value = listOfRecord
                     }
@@ -238,7 +243,7 @@ class YenViewModel @Inject constructor(private val investRepository: InvestRepos
 
     val sellRateFlow = MutableStateFlow("")
 
-    val sellDollarFlow = MutableStateFlow("")
+    val sellYenFlow = MutableStateFlow("")
 
     val getPercentFlow = MutableStateFlow(0f)
 
@@ -254,9 +259,13 @@ class YenViewModel @Inject constructor(private val investRepository: InvestRepos
                         date = dateFlow.value,
                         money = moneyInputFlow.value,
                         rate = rateInputFlow.value,
+                        buyRate = rateInputFlow.value,
+                        sellRate = "",
+                        sellProfit = "",
                         exchangeMoney = "${exchangeMoney.value}",
                         recordColor = sellRecordActionFlow.value,
                         profit = expectSellValue(),
+                        expectProfit = expectSellValue(),
                         buyYenMemo = "",
                         buyYenCategoryName = ""
                     )
@@ -300,12 +309,16 @@ class YenViewModel @Inject constructor(private val investRepository: InvestRepos
                     yenBuyRecord.id,
                     yenBuyRecord.date,
                     yenBuyRecord.money,
-                    yenBuyRecord.rate,
-                    "",
-                    yenBuyRecord.exchangeMoney,
-                    true,
-                    "",
-                    ""
+                    rate = yenBuyRecord.rate,
+                    buyRate = yenBuyRecord.buyRate,
+                    sellRate = sellRateFlow.value,
+                    exchangeMoney = yenBuyRecord.exchangeMoney,
+                    profit = yenBuyRecord.profit,
+                    expectProfit = yenBuyRecord.expectProfit,
+                    sellProfit = sellYenFlow.value,
+                    recordColor = true,
+                    buyYenMemo = "",
+                    buyYenCategoryName = yenBuyRecord.buyYenCategoryName
                 )
             )
         }
@@ -324,7 +337,7 @@ class YenViewModel @Inject constructor(private val investRepository: InvestRepos
                         date = sellDateFlow.value,
                         money = haveMoney.value,
                         rate = sellRateFlow.value,
-                        exchangeMoney = sellDollarFlow.value,
+                        exchangeMoney = sellYenFlow.value,
                         sellYenMemo = "",
                         sellYenCategoryName = "",
                     )
@@ -359,7 +372,7 @@ class YenViewModel @Inject constructor(private val investRepository: InvestRepos
 
     fun sellCalculation() {
         viewModelScope.launch {
-            sellDollarFlow.emit(sellValue().toString())
+            sellYenFlow.emit(sellValue().toString())
             getPercentFlow.emit(sellPercent().toFloat())
 
         }
@@ -542,6 +555,6 @@ class YenViewModel @Inject constructor(private val investRepository: InvestRepos
             ) / BigDecimal("100") - BigDecimal(recordInputMoney.value)
 
     private fun sellPercent(): Float =
-        ((sellDollarFlow.value.toFloat() / recordInputMoney.value.toFloat()) * 100f)
+        ((sellYenFlow.value.toFloat() / recordInputMoney.value.toFloat()) * 100f)
 
 }

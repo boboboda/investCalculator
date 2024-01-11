@@ -105,7 +105,7 @@ fun MainScreen(dollarViewModel: DollarViewModel,
 
     var callEndDate = allViewModel.endDateFlow.collectAsState()
 
-    val drCheckBoxState = dollarViewModel.selectedCheckBoxId.collectAsState()
+    val drBoxState = dollarViewModel.selectedBoxId.collectAsState()
 
     val yenCheckBoxState = yenViewModel.selectedCheckBoxId.collectAsState()
 
@@ -330,7 +330,7 @@ fun MainScreen(dollarViewModel: DollarViewModel,
                             yenViewModel,
                             wonViewModel,
                             rowViewController.value,
-                            drCheckboxController = drCheckBoxState.value,
+                            drCheckboxController = drBoxState.value,
                             yenCheckboxController = yenCheckBoxState.value,
                             wonCheckboxController = wonCheckBoxState.value,
                         ) {
@@ -406,7 +406,7 @@ fun MainScreen(dollarViewModel: DollarViewModel,
                         scope.launch {
                             when(rowViewController.value) {
                                 1-> {
-                                    when(drCheckBoxState.value) {
+                                    when(drBoxState.value) {
                                         1-> {
                                             dollarViewModel.dateRangeInvoke(
                                                 DollarViewModel.DrAction.Buy,

@@ -165,7 +165,7 @@ fun SellResultDialog(
                     onClicked = {
                         sellAction()
                         dollarViewModel.sellRecordValue(buyRecord)
-                        dollarViewModel.selectedCheckBoxId.value = 2
+                        dollarViewModel.selectedBoxId.value = 1
                     },
                     color = SellButtonColor,
                     fontColor = Color.White,
@@ -206,7 +206,7 @@ fun YenSellResultDialog(
 
     val percent: State<Float> = yenViewModel.getPercentFlow.collectAsState()
 
-    val inputMoney: State<String> = yenViewModel.sellDollarFlow.collectAsState()
+    val inputMoney: State<String> = yenViewModel.sellYenFlow.collectAsState()
 
 
     Dialog(
@@ -371,7 +371,7 @@ fun WonSellResultDialog(
 
     val percent: State<Float> = wonViewModel.getPercentFlow.collectAsState()
 
-    val inputMoney: State<String> = wonViewModel.sellDollarFlow.collectAsState()
+    val inputMoney: State<String> = wonViewModel.sellWonFlow.collectAsState()
 
     val moneyType = wonViewModel.moneyType.collectAsState()
 

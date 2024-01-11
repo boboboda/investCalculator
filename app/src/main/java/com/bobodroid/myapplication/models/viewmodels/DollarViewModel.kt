@@ -43,8 +43,6 @@ class DollarViewModel @Inject constructor(private val investRepository: InvestRe
     val filterSellRecordFlow = _filterSellRecordFlow.asStateFlow()
 
 
-
-
     val groupList = MutableStateFlow<List<String>>(emptyList())
 
     init {
@@ -55,20 +53,35 @@ class DollarViewModel @Inject constructor(private val investRepository: InvestRe
                         Log.d(TAG, "Empty Buy list")
                     } else {
 
+                        if (!_sellRecordFlow.value.isNullOrEmpty()) {
+                            Log.d(TAG, "매도 리스트 ${_sellRecordFlow.value}")
+                            listOfRecord.forEach { buy ->
+                                if (buy.buyDrCategoryName.isNullOrEmpty()) buy.buyDrCategoryName =
+                                    "기본"
+                                buy.buyRate = buy.rate
+                                buy.sellDate =
+                                    _sellRecordFlow.value.filter { it.id == buy.id }.map { it.date }
+                                        .first() ?: "값없음"
+                                buy.sellProfit = _sellRecordFlow.value.filter { it.id == buy.id }
+                                    .map { it.exchangeMoney }.first() ?: "값없음"
+                                buy.sellRate =
+                                    _sellRecordFlow.value.filter { it.id == buy.id }.map { it.rate }
+                                        .first() ?: "값없음"
 
-                        listOfRecord.forEach {
-                            if (it.buyDrCategoryName.isNullOrEmpty()) it.buyDrCategoryName = "기본"
+                                _buyRecordFlow.value = listOfRecord
+                                _filterBuyRecordFlow.value = setGroup(listOfRecord)
+                            }
+                        } else {
+                            Log.d(TAG, "여기가 실행됨")
                         }
-
 
                         val groupName = listOfRecord.map { it.buyDrCategoryName ?: "기본" }
 
-
                         groupList.value = groupName.distinct()
-                        _buyRecordFlow.value = listOfRecord
-                        _filterBuyRecordFlow.value = setGroup(listOfRecord)
 
                         Log.w(TAG, "${_buyRecordFlow.value}")
+
+
                     }
                 }
         }
@@ -115,7 +128,7 @@ class DollarViewModel @Inject constructor(private val investRepository: InvestRe
 
     val exchangeMoney = MutableStateFlow("")
 
-    val selectedCheckBoxId = MutableStateFlow(1)
+    val selectedBoxId = MutableStateFlow(1)
 
 
     // 날짜 관련
@@ -296,9 +309,13 @@ class DollarViewModel @Inject constructor(private val investRepository: InvestRe
                         date = dateFlow.value,
                         money = moneyInputFlow.value,
                         rate = rateInputFlow.value,
+                        buyRate = rateInputFlow.value,
+                        sellRate = "",
+                        sellProfit = "",
                         exchangeMoney = "${exchangeMoney.value}",
                         recordColor = sellRecordActionFlow.value,
                         profit = expectSellValue(),
+                        expectProfit = expectSellValue(),
                         buyDrCategoryName = groupName,
                         buyDrMemo = ""
                     )
@@ -345,12 +362,15 @@ class DollarViewModel @Inject constructor(private val investRepository: InvestRe
                     drBuyrecord.id,
                     drBuyrecord.date,
                     drBuyrecord.money,
-                    drBuyrecord.rate,
-                    "",
-                    drBuyrecord.exchangeMoney,
-                    true,
-                    "",
-                    ""
+                    rate = drBuyrecord.rate,
+                    buyRate = drBuyrecord.buyRate,
+                    sellRate = sellRateFlow.value,
+                    exchangeMoney = drBuyrecord.exchangeMoney,
+                    profit = drBuyrecord.profit,
+                    expectProfit = drBuyrecord.expectProfit,
+                    sellProfit = sellDollarFlow.value,
+                    buyDrMemo = drBuyrecord.buyDrMemo,
+                    buyDrCategoryName = drBuyrecord.buyDrCategoryName
                 )
             )
         }
@@ -434,6 +454,7 @@ class DollarViewModel @Inject constructor(private val investRepository: InvestRe
         _buyRecordFlow.value.forEach { drBuyRecord ->
 
             //매도 상태
+            //수정 필요
             if (drBuyRecord.recordColor == true) {
                 val updateDate = drBuyRecord.copy(profit = "")
 

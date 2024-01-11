@@ -330,7 +330,7 @@ fun DollarInvestScreen(
                     dollarViewModel.buyDollarAdd(
                         groupName = group.value
                     )
-                    dollarViewModel.selectedCheckBoxId.value = 1
+                    dollarViewModel.selectedBoxId.value = 1
                     routeAction.navTo(InvestRoute.MAIN)
                     allViewModel.changeMoney.value = 1
                     group.value = "기본"
@@ -345,7 +345,7 @@ fun DollarInvestScreen(
             Buttons(
                 "닫기",
                 onClicked = {
-                    dollarViewModel.selectedCheckBoxId.value = 1
+                    dollarViewModel.selectedBoxId.value = 1
                     routeAction.navTo(InvestRoute.MAIN)
                     allViewModel.changeMoney.value = 1
                     dollarViewModel.moneyInputFlow.value = ""

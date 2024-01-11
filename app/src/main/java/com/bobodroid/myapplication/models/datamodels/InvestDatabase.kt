@@ -1,6 +1,7 @@
 package com.bobodroid.myapplication.models.datamodels
 
 import androidx.room.AutoMigration
+import androidx.room.ColumnInfo
 import androidx.room.Database
 import androidx.room.DeleteColumn
 import androidx.room.RenameColumn
@@ -40,8 +41,7 @@ import com.bobodroid.myapplication.models.datamodels.DrBuyRecord
         AutoMigration(
             from = 15,
             to = 16,
-            spec = InvestDatabase.MyAutoMigration::class),
-                     ],
+            spec = InvestDatabase.MyAutoMigration::class),],
 
     version = 16, exportSchema = true)
 abstract class InvestDatabase: RoomDatabase() {

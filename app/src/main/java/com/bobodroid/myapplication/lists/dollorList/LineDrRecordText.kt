@@ -69,25 +69,14 @@ fun LineDrRecordText(
     onClicked: ((DrBuyRecord) -> Unit)?,
     dollarViewModel: DollarViewModel,
     snackBarHostState: SnackbarHostState,
-    index: Int,
-    listSize: Int,
-    recordSelected: () -> Unit
 
-) {
+    ) {
 
     val mathContext = MathContext(28, RoundingMode.HALF_UP)
 
     var openDialog by remember { mutableStateOf(false) }
 
     var itemRowVisible by remember { mutableStateOf(false) }
-
-    var itemRowPosition by remember { mutableStateOf(false) }
-
-    if (index <= listSize - 7) {
-        itemRowPosition = true
-    } else {
-        itemRowPosition = false
-    }
 
     val focusManager = LocalFocusManager.current
 
@@ -106,14 +95,17 @@ fun LineDrRecordText(
     val focusRequester by remember { mutableStateOf(FocusRequester()) }
 
 
-
-    val profitColor = if(data.profit == "") {
+    val profitColor = if (data.profit == "") {
         Color.Black
     } else {
-        if(BigDecimal(data.profit, mathContext).signum() == -1) { Color.Blue} else {Color.Red}
+        if (BigDecimal(data.profit, mathContext).signum() == -1) {
+            Color.Blue
+        } else {
+            Color.Red
+        }
     }
 
-    val profit = if(data.profit == "") {
+    val profit = if (data.profit == "") {
         "0"
     } else {
         data.profit
@@ -123,7 +115,7 @@ fun LineDrRecordText(
         memoTextInput = data.buyDrMemo ?: ""
     })
 
-    if(dismissState.isDismissed(DismissDirection.StartToEnd))
+    if (dismissState.isDismissed(DismissDirection.StartToEnd))
         LaunchedEffect(key1 = Unit, block = {
             Log.d(TAG, "스와이프 이벤트")
             dismissState.reset()
@@ -171,527 +163,298 @@ fun LineDrRecordText(
                 modifier = Modifier
                     .wrapContentHeight(),
                 shape = RoundedCornerShape(0.dp),
-                colors = CardDefaults.cardColors(containerColor = if(sellAction) SelectedColor else Color.White , contentColor = Color.Black),
+                colors = CardDefaults.cardColors(
+                    containerColor = if (sellAction) SelectedColor else Color.White,
+                    contentColor = Color.Black
+                ),
             ) {
 
-                if (!itemRowPosition) {
 
-                    AnimatedVisibility(visible = itemRowVisible) {
-                        Column(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(start = 32.dp, end = 30.dp)
-                                .wrapContentHeight()) {
-                            Row(modifier = Modifier
-                                .wrapContentSize()) {
-                                Card(modifier = Modifier
-                                    .padding(bottom = 10.dp),
-                                    colors = CardDefaults.cardColors( TopButtonColor ),
-                                    elevation = CardDefaults.cardElevation(8.dp),
-                                    shape = RoundedCornerShape(2.dp)) {
-                                    Text(
-                                        text = "메모",
-                                        modifier = Modifier
-                                            .padding(all = 5.dp)
-                                            .padding(horizontal = 3.dp))
-                                }
-
-                                Spacer(modifier = Modifier.weight(1f))
-
-
-                                Box(
-                                    modifier = Modifier
-                                        .wrapContentSize(Alignment.TopEnd)
-                                ) {
-                                    Icon(
-                                        modifier = Modifier
-                                            .clickable {
-                                                if(!dropdownExpanded) dropdownExpanded = true else dropdownExpanded = false
-                                            },
-                                        imageVector = Icons.Rounded.MoreVert,
-                                        contentDescription = "메뉴",
-                                        tint = Color.Black
-                                    )
-                                    DropdownMenu(
-                                        offset = DpOffset(x = 0.dp, y = 10.dp),
-                                        expanded = dropdownExpanded,
-                                        onDismissRequest = {
-                                            dropdownExpanded = false
-                                        }
-                                    ) {
-
-                                        DropdownMenuItem(
-                                            modifier = Modifier
-                                                .fillMaxWidth(),
-                                            text = {
-                                                Box(modifier = Modifier
-                                                    .fillMaxWidth(),
-                                                    contentAlignment = Alignment.TopStart) {
-                                                    Text(
-                                                        text = "매수 수정",
-                                                        fontSize = 13.sp)
-                                                }
-                                            }, onClick = {
-
-                                            })
-
-                                        DropdownMenuItem(
-                                            modifier = Modifier
-                                                .fillMaxWidth(),
-                                            text = {
-                                                Box(modifier = Modifier
-                                                    .fillMaxWidth(),
-                                                    contentAlignment = Alignment.TopStart) {
-                                                    Text(
-                                                        text = "매도",
-                                                        fontSize = 13.sp)
-                                                }
-                                            }, onClick = {
-                                                if(!data.recordColor!!) {
-                                                    onClicked?.invoke(data)
-                                                    if(!openDialog) openDialog = true else openDialog = false
-                                                } else {
-                                                    if(snackBarHostState.currentSnackbarData == null) {
-                                                        coroutineScope.launch {
-                                                            snackBarHostState.showSnackbar(
-                                                                "매도한 기록입니다.",
-                                                                actionLabel = "닫기", SnackbarDuration.Short
-                                                            )
-                                                        }
-                                                    }
-                                                    dropdownExpanded = false
-                                                }
-                                            })
-                                    }
-                                }
-
-
-
-                            }
-
-                            OutlinedTextField(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .focusRequester(focusRequester = focusRequester)
-                                    .onFocusChanged {
-                                        isTextFieldFocused = it.isFocused
-                                    }
-                                ,
-                                placeholder = {
-                                    Text(
-                                        text = "메모를 입력해주세요",
-                                        fontSize = 15.sp)
-                                },
-                                value = memoTextInput,
-                                onValueChange = {
-
-                                    if(memoTextInput.length > 100) {
-                                        focusManager.clearFocus()
-                                        if(snackBarHostState.currentSnackbarData == null) {
-                                            coroutineScope.launch {
-                                                snackBarHostState.showSnackbar(
-                                                    "100자 이하로 작성해주세요",
-                                                    actionLabel = "닫기", SnackbarDuration.Short
-                                                )
-                                            }
-                                        }
-                                    } else {
-                                        memoTextInput = it
-                                    }
-
-                                },
-                                textStyle = TextStyle(
-                                    baselineShift = BaselineShift.None,
-                                    fontSize = 15.sp,
-                                    fontWeight = FontWeight.Medium,
-                                    textAlign = TextAlign.Start),
-                                colors = TextFieldDefaults.outlinedTextFieldColors(
-                                    focusedBorderColor = Black,
-                                    unfocusedBorderColor = Black)
-                            )
-
-                            Row(modifier = Modifier
-                                .wrapContentSize(),
-                                horizontalArrangement = Arrangement.spacedBy(10.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-
-                                Text(text = "limit: ${memoTextInput.length}/100자")
-
-                                Spacer(modifier = Modifier.weight(1f))
-
-                                Card(modifier = Modifier
-                                    .padding(bottom = 10.dp),
-                                    colors = CardDefaults.cardColors( TopButtonColor ),
-                                    elevation = CardDefaults.cardElevation(8.dp),
-                                    shape = RoundedCornerShape(2.dp),
-                                    onClick = {
-                                        val updateData = data.copy(buyDrMemo = memoTextInput)
-                                        focusManager.clearFocus()
-                                        dollarViewModel.buyDrMemoUpdate(updateData) {result ->
-                                            if(result) {
-                                                if(snackBarHostState.currentSnackbarData == null) {
-                                                    coroutineScope.launch {
-                                                        snackBarHostState.showSnackbar(
-                                                            "성공적으로 저장되었습니다.",
-                                                            actionLabel = "닫기", SnackbarDuration.Short
-                                                        )
-                                                    }
-                                                }
-
-                                            } else {
-                                                if(snackBarHostState.currentSnackbarData == null) {
-                                                    coroutineScope.launch {
-                                                        snackBarHostState.showSnackbar(
-                                                            "저장에 실패하였습니다.",
-                                                            actionLabel = "닫기", SnackbarDuration.Short
-                                                        )
-                                                    }
-                                                }
-                                            }
-                                        }
-                                    }) {
-                                    Text(
-                                        text = "저장",
-                                        modifier = Modifier
-                                            .padding(all = 5.dp)
-                                            .padding(horizontal = 3.dp))
-                                }
-
-                                Card(modifier = Modifier
-                                    .padding(bottom = 10.dp),
-                                    colors = CardDefaults.cardColors( TopButtonColor ),
-                                    elevation = CardDefaults.cardElevation(8.dp),
-                                    shape = RoundedCornerShape(2.dp),
-                                    onClick = {
-                                        itemRowVisible = false
-                                        coroutineScope.launch {
-                                            delay(500)
-                                            memoTextInput = data.buyDrMemo!!
-                                        }
-
-                                    }) {
-                                    Text(
-                                        text = "닫기",
-                                        modifier = Modifier
-                                            .padding(all = 5.dp)
-                                            .padding(horizontal = 3.dp))
-                                }
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable {
+                            if (itemRowVisible == false) {
+                                itemRowVisible = true
+                            } else {
+                                focusManager.clearFocus()
                             }
                         }
-                    }
+                        .padding(top = 7.dp, bottom = 7.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.Center) {
+                    RecordTextView(
+                        recordText = "${data.date}",
+                        TextHeight = 40.dp,
+                        13,
+                        2.5f,
+                        bottonPpaing = 0.dp,
+                        color = Color.Black
+                    )
 
-                    Row(
+                    Spacer(modifier = Modifier.width(1.dp))
+
+                    RecordTextView(
+                        recordText = "${
+                            BigDecimal(
+                                data.exchangeMoney,
+                                mathContext
+                            ).toBigDecimalUs()!!
+                        }\n (${BigDecimal(data.money, mathContext).toBigDecimalWon()})",
+                        TextHeight = 40.dp,
+                        13,
+                        2.5f,
+                        bottonPpaing = 0.dp,
+                        color = Color.Black
+                    )
+
+                    Spacer(modifier = Modifier.width(1.dp))
+
+                    RecordTextView(
+                        recordText = "${data.rate}",
+                        TextHeight = 40.dp,
+                        13,
+                        2.5f,
+                        bottonPpaing = 0.dp,
+                        color = Color.Black
+                    )
+
+                    Spacer(modifier = Modifier.width(1.dp))
+
+                    RecordTextView(
+                        recordText = "${BigDecimal(profit, mathContext).toBigDecimalWon()}",
+                        TextHeight = 40.dp,
+                        13,
+                        2.5f,
+                        bottonPpaing = 0.dp,
+                        color = profitColor
+                    )
+                }
+
+                AnimatedVisibility(visible = itemRowVisible) {
+                    Column(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .clickable {
-                                if (itemRowVisible == false) {
-                                    itemRowVisible = true
-                                    recordSelected.invoke()
-                                } else {
-                                    focusManager.clearFocus()
-                                }
-                            }
-                            .padding(top = 7.dp, bottom = 7.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.Center) {
-                        RecordTextView(
-                            recordText = "${data.date}",
-                            TextHeight = 40.dp,
-                            13,
-                            2.5f,
-                            bottonPpaing = 0.dp,
-                            color = Color.Black)
-
-                        Spacer(modifier = Modifier.width(1.dp))
-
-                        RecordTextView(
-                            recordText = "${BigDecimal(data.exchangeMoney, mathContext).toBigDecimalUs()!!}\n (${BigDecimal(data.money, mathContext).toBigDecimalWon()})",
-                            TextHeight = 40.dp,
-                            13,
-                            2.5f,
-                            bottonPpaing = 0.dp,
-                            color = Color.Black)
-
-                        Spacer(modifier = Modifier.width(1.dp))
-
-                        RecordTextView(
-                            recordText = "${data.rate}",
-                            TextHeight = 40.dp,
-                            13,
-                            2.5f,
-                            bottonPpaing = 0.dp,
-                            color = Color.Black)
-
-                        Spacer(modifier = Modifier.width(1.dp))
-
-                        RecordTextView(
-                            recordText = "${BigDecimal(profit, mathContext).toBigDecimalWon()}",
-                            TextHeight = 40.dp,
-                            13,
-                            2.5f,
-                            bottonPpaing = 0.dp,
-                            color = profitColor)
-                    }
-                } else {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable {
-                                if (itemRowVisible == false) {
-                                    itemRowVisible = true
-                                    recordSelected.invoke()
-                                } else {
-                                    focusManager.clearFocus()
-                                }
-                            }
-                            .padding(top = 7.dp, bottom = 7.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.Center) {
-                        RecordTextView(
-                            recordText = "${data.date}",
-                            TextHeight = 40.dp,
-                            13,
-                            2.5f,
-                            bottonPpaing = 0.dp,
-                            color = Color.Black)
-
-                        Spacer(modifier = Modifier.width(1.dp))
-
-                        RecordTextView(
-                            recordText = "${BigDecimal(data.exchangeMoney, mathContext).toBigDecimalUs()!!}\n (${BigDecimal(data.money, mathContext).toBigDecimalWon()})",
-                            TextHeight = 40.dp,
-                            13,
-                            2.5f,
-                            bottonPpaing = 0.dp,
-                            color = Color.Black)
-
-                        Spacer(modifier = Modifier.width(1.dp))
-
-                        RecordTextView(
-                            recordText = "${data.rate}",
-                            TextHeight = 40.dp,
-                            13,
-                            2.5f,
-                            bottonPpaing = 0.dp,
-                            color = Color.Black)
-
-                        Spacer(modifier = Modifier.width(1.dp))
-
-                        RecordTextView(
-                            recordText = "${BigDecimal(profit, mathContext).toBigDecimalWon()}",
-                            TextHeight = 40.dp,
-                            13,
-                            2.5f,
-                            bottonPpaing = 0.dp,
-                            color = profitColor)
-                    }
-
-                    AnimatedVisibility(visible = itemRowVisible) {
-                        Column(
+                            .padding(start = 32.dp, end = 30.dp)
+                            .wrapContentHeight()
+                    ) {
+                        Row(
                             modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(start = 32.dp, end = 30.dp)
-                                .wrapContentHeight()) {
-                            Row(modifier = Modifier
-                                .wrapContentSize()) {
-                                Card(modifier = Modifier
+                                .wrapContentSize()
+                        ) {
+                            Card(
+                                modifier = Modifier
                                     .padding(bottom = 10.dp),
-                                    colors = CardDefaults.cardColors( TopButtonColor ),
-                                    elevation = CardDefaults.cardElevation(8.dp),
-                                    shape = RoundedCornerShape(2.dp)) {
-                                    Text(
-                                        text = "메모",
-                                        modifier = Modifier
-                                            .padding(all = 5.dp)
-                                            .padding(horizontal = 3.dp))
-                                }
-
-                                Spacer(modifier = Modifier.weight(1f))
-
-
-                                Box(
+                                colors = CardDefaults.cardColors(TopButtonColor),
+                                elevation = CardDefaults.cardElevation(8.dp),
+                                shape = RoundedCornerShape(2.dp)
+                            ) {
+                                Text(
+                                    text = "메모",
                                     modifier = Modifier
-                                        .wrapContentSize(Alignment.TopEnd)
-                                ) {
-                                    Icon(
-                                        modifier = Modifier
-                                            .clickable {
-                                                if(!dropdownExpanded) dropdownExpanded = true else dropdownExpanded = false
-                                            },
-                                        imageVector = Icons.Rounded.MoreVert,
-                                        contentDescription = "메뉴",
-                                        tint = Color.Black
-                                    )
-                                    DropdownMenu(
-                                        offset = DpOffset(x = 0.dp, y = 10.dp),
-                                        expanded = dropdownExpanded,
-                                        onDismissRequest = {
-                                            dropdownExpanded = false
-                                        }
-                                    ) {
-
-                                        DropdownMenuItem(
-                                            modifier = Modifier
-                                                .fillMaxWidth(),
-                                            text = {
-                                                Box(modifier = Modifier
-                                                    .fillMaxWidth(),
-                                                    contentAlignment = Alignment.TopStart) {
-                                                    Text(
-                                                        text = "매수 수정",
-                                                        fontSize = 13.sp)
-                                                }
-                                            }, onClick = {
-
-                                            })
-
-                                        DropdownMenuItem(
-                                            modifier = Modifier
-                                                .fillMaxWidth(),
-                                            text = {
-                                                Box(modifier = Modifier
-                                                    .fillMaxWidth(),
-                                                    contentAlignment = Alignment.TopStart) {
-                                                    Text(
-                                                        text = "매도",
-                                                        fontSize = 13.sp)
-                                                }
-                                            }, onClick = {
-                                                if(!data.recordColor!!) {
-                                                    onClicked?.invoke(data)
-                                                    if(!openDialog) openDialog = true else openDialog = false
-                                                } else {
-                                                    if(snackBarHostState.currentSnackbarData == null) {
-                                                        coroutineScope.launch {
-                                                            snackBarHostState.showSnackbar(
-                                                                "매도한 기록입니다.",
-                                                                actionLabel = "닫기", SnackbarDuration.Short
-                                                            )
-                                                        }
-                                                    }
-                                                    dropdownExpanded = false
-                                                }
-                                            })
-                                    }
-                                }
-
-
-
+                                        .padding(all = 5.dp)
+                                        .padding(horizontal = 3.dp)
+                                )
                             }
 
-                            OutlinedTextField(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .focusRequester(focusRequester = focusRequester)
-                                    .onFocusChanged {
-                                        isTextFieldFocused = it.isFocused
-                                    }
-                                ,
-                                placeholder = {
-                                    Text(
-                                        text = "메모를 입력해주세요",
-                                        fontSize = 15.sp)
-                                },
-                                value = memoTextInput,
-                                onValueChange = {
+                            Spacer(modifier = Modifier.weight(1f))
 
-                                    if(memoTextInput.length > 100) {
-                                        focusManager.clearFocus()
-                                        if(snackBarHostState.currentSnackbarData == null) {
-                                            coroutineScope.launch {
-                                                snackBarHostState.showSnackbar(
-                                                    "100자 이하로 작성해주세요",
-                                                    actionLabel = "닫기", SnackbarDuration.Short
+
+                            Box(
+                                modifier = Modifier
+                                    .wrapContentSize(Alignment.TopEnd)
+                            ) {
+                                Icon(
+                                    modifier = Modifier
+                                        .clickable {
+                                            if (!dropdownExpanded) dropdownExpanded =
+                                                true else dropdownExpanded = false
+                                        },
+                                    imageVector = Icons.Rounded.MoreVert,
+                                    contentDescription = "메뉴",
+                                    tint = Color.Black
+                                )
+                                DropdownMenu(
+                                    offset = DpOffset(x = 0.dp, y = 10.dp),
+                                    expanded = dropdownExpanded,
+                                    onDismissRequest = {
+                                        dropdownExpanded = false
+                                    }
+                                ) {
+
+                                    DropdownMenuItem(
+                                        modifier = Modifier
+                                            .fillMaxWidth(),
+                                        text = {
+                                            Box(
+                                                modifier = Modifier
+                                                    .fillMaxWidth(),
+                                                contentAlignment = Alignment.TopStart
+                                            ) {
+                                                Text(
+                                                    text = "매수 수정",
+                                                    fontSize = 13.sp
                                                 )
                                             }
-                                        }
-                                    } else {
-                                        memoTextInput = it
-                                    }
+                                        }, onClick = {
 
-                                },
-                                textStyle = TextStyle(
-                                    baselineShift = BaselineShift.None,
-                                    fontSize = 15.sp,
-                                    fontWeight = FontWeight.Medium,
-                                    textAlign = TextAlign.Start),
-                                colors = TextFieldDefaults.outlinedTextFieldColors(
-                                    focusedBorderColor = Black,
-                                    unfocusedBorderColor = Black)
-                            )
+                                        })
 
-                            Row(modifier = Modifier
-                                .wrapContentSize(),
-                                horizontalArrangement = Arrangement.spacedBy(10.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-
-                                Text(text = "limit: ${memoTextInput.length}/100자")
-
-                                Spacer(modifier = Modifier.weight(1f))
-
-                                Card(modifier = Modifier
-                                    .padding(bottom = 10.dp),
-                                    colors = CardDefaults.cardColors( TopButtonColor ),
-                                    elevation = CardDefaults.cardElevation(8.dp),
-                                    shape = RoundedCornerShape(2.dp),
-                                    onClick = {
-                                        val updateData = data.copy(buyDrMemo = memoTextInput)
-                                        focusManager.clearFocus()
-                                        dollarViewModel.buyDrMemoUpdate(updateData) {result ->
-                                            if(result) {
-                                                if(snackBarHostState.currentSnackbarData == null) {
+                                    DropdownMenuItem(
+                                        modifier = Modifier
+                                            .fillMaxWidth(),
+                                        text = {
+                                            Box(
+                                                modifier = Modifier
+                                                    .fillMaxWidth(),
+                                                contentAlignment = Alignment.TopStart
+                                            ) {
+                                                Text(
+                                                    text = "매도",
+                                                    fontSize = 13.sp
+                                                )
+                                            }
+                                        }, onClick = {
+                                            if (!data.recordColor!!) {
+                                                onClicked?.invoke(data)
+                                                if (!openDialog) openDialog = true else openDialog =
+                                                    false
+                                            } else {
+                                                if (snackBarHostState.currentSnackbarData == null) {
                                                     coroutineScope.launch {
                                                         snackBarHostState.showSnackbar(
-                                                            "성공적으로 저장되었습니다.",
-                                                            actionLabel = "닫기", SnackbarDuration.Short
+                                                            "매도한 기록입니다.",
+                                                            actionLabel = "닫기",
+                                                            SnackbarDuration.Short
                                                         )
                                                     }
                                                 }
+                                                dropdownExpanded = false
+                                            }
+                                        })
+                                }
+                            }
 
-                                            } else {
-                                                if(snackBarHostState.currentSnackbarData == null) {
-                                                    coroutineScope.launch {
-                                                        snackBarHostState.showSnackbar(
-                                                            "저장에 실패하였습니다.",
-                                                            actionLabel = "닫기", SnackbarDuration.Short
-                                                        )
-                                                    }
+
+                        }
+
+                        OutlinedTextField(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .focusRequester(focusRequester = focusRequester)
+                                .onFocusChanged {
+                                    isTextFieldFocused = it.isFocused
+                                },
+                            placeholder = {
+                                Text(
+                                    text = "메모를 입력해주세요",
+                                    fontSize = 15.sp
+                                )
+                            },
+                            value = memoTextInput,
+                            onValueChange = {
+
+                                if (memoTextInput.length > 100) {
+                                    focusManager.clearFocus()
+                                    if (snackBarHostState.currentSnackbarData == null) {
+                                        coroutineScope.launch {
+                                            snackBarHostState.showSnackbar(
+                                                "100자 이하로 작성해주세요",
+                                                actionLabel = "닫기", SnackbarDuration.Short
+                                            )
+                                        }
+                                    }
+                                } else {
+                                    memoTextInput = it
+                                }
+
+                            },
+                            textStyle = TextStyle(
+                                baselineShift = BaselineShift.None,
+                                fontSize = 15.sp,
+                                fontWeight = FontWeight.Medium,
+                                textAlign = TextAlign.Start
+                            ),
+                            colors = TextFieldDefaults.outlinedTextFieldColors(
+                                focusedBorderColor = Black,
+                                unfocusedBorderColor = Black
+                            )
+                        )
+
+                        Row(
+                            modifier = Modifier
+                                .wrapContentSize(),
+                            horizontalArrangement = Arrangement.spacedBy(10.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+
+                            Text(text = "limit: ${memoTextInput.length}/100자")
+
+                            Spacer(modifier = Modifier.weight(1f))
+
+                            Card(modifier = Modifier
+                                .padding(bottom = 10.dp),
+                                colors = CardDefaults.cardColors(TopButtonColor),
+                                elevation = CardDefaults.cardElevation(8.dp),
+                                shape = RoundedCornerShape(2.dp),
+                                onClick = {
+                                    val updateData = data.copy(buyDrMemo = memoTextInput)
+                                    focusManager.clearFocus()
+                                    dollarViewModel.buyDrMemoUpdate(updateData) { result ->
+                                        if (result) {
+                                            if (snackBarHostState.currentSnackbarData == null) {
+                                                coroutineScope.launch {
+                                                    snackBarHostState.showSnackbar(
+                                                        "성공적으로 저장되었습니다.",
+                                                        actionLabel = "닫기", SnackbarDuration.Short
+                                                    )
+                                                }
+                                            }
+
+                                        } else {
+                                            if (snackBarHostState.currentSnackbarData == null) {
+                                                coroutineScope.launch {
+                                                    snackBarHostState.showSnackbar(
+                                                        "저장에 실패하였습니다.",
+                                                        actionLabel = "닫기", SnackbarDuration.Short
+                                                    )
                                                 }
                                             }
                                         }
-                                    }) {
-                                    Text(
-                                        text = "저장",
-                                        modifier = Modifier
-                                            .padding(all = 5.dp)
-                                            .padding(horizontal = 3.dp))
-                                }
+                                    }
+                                }) {
+                                Text(
+                                    text = "저장",
+                                    modifier = Modifier
+                                        .padding(all = 5.dp)
+                                        .padding(horizontal = 3.dp)
+                                )
+                            }
 
-                                Card(modifier = Modifier
-                                    .padding(bottom = 10.dp),
-                                    colors = CardDefaults.cardColors( TopButtonColor ),
-                                    elevation = CardDefaults.cardElevation(8.dp),
-                                    shape = RoundedCornerShape(2.dp),
-                                    onClick = {
-                                        itemRowVisible = false
-                                        coroutineScope.launch {
-                                            delay(500)
-                                            memoTextInput = data.buyDrMemo!!
-                                        }
+                            Card(modifier = Modifier
+                                .padding(bottom = 10.dp),
+                                colors = CardDefaults.cardColors(TopButtonColor),
+                                elevation = CardDefaults.cardElevation(8.dp),
+                                shape = RoundedCornerShape(2.dp),
+                                onClick = {
+                                    itemRowVisible = false
+                                    coroutineScope.launch {
+                                        delay(500)
+                                        memoTextInput = data.buyDrMemo!!
+                                    }
 
-                                    }) {
-                                    Text(
-                                        text = "닫기",
-                                        modifier = Modifier
-                                            .padding(all = 5.dp)
-                                            .padding(horizontal = 3.dp))
-                                }
+                                }) {
+                                Text(
+                                    text = "닫기",
+                                    modifier = Modifier
+                                        .padding(all = 5.dp)
+                                        .padding(horizontal = 3.dp)
+                                )
                             }
                         }
                     }
                 }
+
 
             }
             if (openDialog) {
@@ -701,19 +464,20 @@ fun LineDrRecordText(
                         sellActed(data)
 
                     },
-                    onDismissRequest = { openDialog = it},
-                    onClicked = {openDialog = it},
-                    dollarViewModel = dollarViewModel)
+                    onDismissRequest = { openDialog = it },
+                    onClicked = { openDialog = it },
+                    dollarViewModel = dollarViewModel
+                )
             }
 
-            if(deleteAskDialog.value) {
+            if (deleteAskDialog.value) {
 
                 Log.d(TAG, "다이로그 오픈")
 
                 AskTriggerDialog(
                     title = "삭제하시겠습니까?",
                     onClickedLabel = "예",
-                    onDismissRequest ={
+                    onDismissRequest = {
                         deleteAskDialog.value = it
                     }) {
                     dollarViewModel.removeBuyRecord(data)
@@ -738,12 +502,14 @@ fun Modifier.addFocusCleaner(focusManager: FocusManager, doOnClear: () -> Unit =
 
 @OptIn(ExperimentalMaterialApi::class, ExperimentalMaterial3Api::class)
 @Composable
-fun SellLineDrRecordText(data: DrSellRecord,
-                         listSize: Int,
-                         index: Int,
-                         dollarViewModel: DollarViewModel,
-                         snackbarHostState: SnackbarHostState,
-                         recordSelected: () -> Unit) {
+fun SellLineDrRecordText(
+    data: DrSellRecord,
+    listSize: Int,
+    index: Int,
+    dollarViewModel: DollarViewModel,
+    snackbarHostState: SnackbarHostState,
+    recordSelected: () -> Unit
+) {
 
     val deleteAskDialog = remember { mutableStateOf(false) }
 
@@ -751,7 +517,11 @@ fun SellLineDrRecordText(data: DrSellRecord,
 
     val mathContext = MathContext(28, RoundingMode.HALF_UP)
 
-    val profitColor = if(BigDecimal(data.exchangeMoney, mathContext).signum() == -1) { Color.Blue} else {Color.Red}
+    val profitColor = if (BigDecimal(data.exchangeMoney, mathContext).signum() == -1) {
+        Color.Blue
+    } else {
+        Color.Red
+    }
 
     var itemRowVisible by remember { mutableStateOf(false) }
 
@@ -779,7 +549,7 @@ fun SellLineDrRecordText(data: DrSellRecord,
 
     val focusRequester by remember { mutableStateOf(FocusRequester()) }
 
-    if(dismissState.isDismissed(DismissDirection.StartToEnd))
+    if (dismissState.isDismissed(DismissDirection.StartToEnd))
         LaunchedEffect(key1 = Unit, block = {
             dismissState.reset()
             deleteAskDialog.value = true
@@ -827,7 +597,10 @@ fun SellLineDrRecordText(data: DrSellRecord,
                     .wrapContentHeight()
                     .focusRequester(focusRequester = focusRequester),
                 shape = RoundedCornerShape(0.dp),
-                colors = CardDefaults.cardColors(containerColor = Color.White, contentColor = Color.Black),
+                colors = CardDefaults.cardColors(
+                    containerColor = Color.White,
+                    contentColor = Color.Black
+                ),
             ) {
 
                 if (!itemRowPosition) {
@@ -837,19 +610,25 @@ fun SellLineDrRecordText(data: DrSellRecord,
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .padding(start = 32.dp, end = 30.dp)
-                                .wrapContentHeight()) {
-                            Row(modifier = Modifier
-                                .wrapContentSize()) {
-                                Card(modifier = Modifier
-                                    .padding(bottom = 10.dp),
-                                    colors = CardDefaults.cardColors( TopButtonColor ),
+                                .wrapContentHeight()
+                        ) {
+                            Row(
+                                modifier = Modifier
+                                    .wrapContentSize()
+                            ) {
+                                Card(
+                                    modifier = Modifier
+                                        .padding(bottom = 10.dp),
+                                    colors = CardDefaults.cardColors(TopButtonColor),
                                     elevation = CardDefaults.cardElevation(8.dp),
-                                    shape = RoundedCornerShape(2.dp)) {
+                                    shape = RoundedCornerShape(2.dp)
+                                ) {
                                     Text(
                                         text = "메모",
                                         modifier = Modifier
                                             .padding(all = 5.dp)
-                                            .padding(horizontal = 3.dp))
+                                            .padding(horizontal = 3.dp)
+                                    )
                                 }
 
                                 Spacer(modifier = Modifier.weight(1f))
@@ -862,7 +641,8 @@ fun SellLineDrRecordText(data: DrSellRecord,
                                     Icon(
                                         modifier = Modifier
                                             .clickable {
-                                                if(!dropdownExpanded) dropdownExpanded = true else dropdownExpanded = false
+                                                if (!dropdownExpanded) dropdownExpanded =
+                                                    true else dropdownExpanded = false
                                             },
                                         imageVector = Icons.Rounded.MoreVert,
                                         contentDescription = "메뉴",
@@ -880,35 +660,43 @@ fun SellLineDrRecordText(data: DrSellRecord,
                                             modifier = Modifier
                                                 .fillMaxWidth(),
                                             text = {
-                                                Box(modifier = Modifier
-                                                    .fillMaxWidth(),
-                                                    contentAlignment = Alignment.TopStart) {
+                                                Box(
+                                                    modifier = Modifier
+                                                        .fillMaxWidth(),
+                                                    contentAlignment = Alignment.TopStart
+                                                ) {
                                                     Text(
                                                         text = "매도 취소",
-                                                        fontSize = 13.sp)
+                                                        fontSize = 13.sp
+                                                    )
                                                 }
                                             }, onClick = {
                                                 coroutineScope.launch {
-                                                    val result = dollarViewModel.cancelSellRecord(data.id)
-                                                    if(result) {
+                                                    val result =
+                                                        dollarViewModel.cancelSellRecord(data.id)
+                                                    if (result) {
                                                         dropdownExpanded = false
-                                                        if(snackbarHostState.currentSnackbarData == null) {
+                                                        if (snackbarHostState.currentSnackbarData == null) {
                                                             coroutineScope.launch {
                                                                 snackbarHostState.showSnackbar(
                                                                     "매도가 취소되었습니다.",
-                                                                    actionLabel = "닫기", SnackbarDuration.Short
+                                                                    actionLabel = "닫기",
+                                                                    SnackbarDuration.Short
                                                                 )
-                                                                dollarViewModel.removeSellRecord(data)
+                                                                dollarViewModel.removeSellRecord(
+                                                                    data
+                                                                )
                                                             }
                                                         }
 
                                                     } else {
                                                         dropdownExpanded = false
-                                                        if(snackbarHostState.currentSnackbarData == null) {
+                                                        if (snackbarHostState.currentSnackbarData == null) {
                                                             coroutineScope.launch {
                                                                 snackbarHostState.showSnackbar(
                                                                     "일치하는 매수기록이 없습니다.",
-                                                                    actionLabel = "닫기", SnackbarDuration.Short
+                                                                    actionLabel = "닫기",
+                                                                    SnackbarDuration.Short
                                                                 )
                                                             }
                                                         }
@@ -917,7 +705,6 @@ fun SellLineDrRecordText(data: DrSellRecord,
                                             })
                                     }
                                 }
-
 
 
                             }
@@ -933,14 +720,15 @@ fun SellLineDrRecordText(data: DrSellRecord,
                                 placeholder = {
                                     Text(
                                         text = "메모를 입력해주세요",
-                                        fontSize = 15.sp)
+                                        fontSize = 15.sp
+                                    )
                                 },
                                 value = memoTextInput,
                                 onValueChange = {
 
-                                    if(memoTextInput.length > 100) {
+                                    if (memoTextInput.length > 100) {
                                         focusManager.clearFocus()
-                                        if(snackbarHostState.currentSnackbarData == null) {
+                                        if (snackbarHostState.currentSnackbarData == null) {
                                             coroutineScope.launch {
                                                 snackbarHostState.showSnackbar(
                                                     "100자 이하로 작성해주세요",
@@ -957,14 +745,17 @@ fun SellLineDrRecordText(data: DrSellRecord,
                                     baselineShift = BaselineShift.None,
                                     fontSize = 15.sp,
                                     fontWeight = FontWeight.Medium,
-                                    textAlign = TextAlign.Start),
+                                    textAlign = TextAlign.Start
+                                ),
                                 colors = TextFieldDefaults.outlinedTextFieldColors(
                                     focusedBorderColor = Black,
-                                    unfocusedBorderColor = Black)
+                                    unfocusedBorderColor = Black
+                                )
                             )
 
-                            Row(modifier = Modifier
-                                .wrapContentSize(),
+                            Row(
+                                modifier = Modifier
+                                    .wrapContentSize(),
                                 horizontalArrangement = Arrangement.spacedBy(10.dp),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
@@ -975,29 +766,31 @@ fun SellLineDrRecordText(data: DrSellRecord,
 
                                 Card(modifier = Modifier
                                     .padding(bottom = 10.dp),
-                                    colors = CardDefaults.cardColors( TopButtonColor ),
+                                    colors = CardDefaults.cardColors(TopButtonColor),
                                     elevation = CardDefaults.cardElevation(8.dp),
                                     shape = RoundedCornerShape(2.dp),
                                     onClick = {
                                         val updateData = data.copy(sellDrMemo = memoTextInput)
                                         focusManager.clearFocus()
-                                        dollarViewModel.sellDrMemoUpdate(updateData) {result ->
-                                            if(result) {
-                                                if(snackbarHostState.currentSnackbarData == null) {
+                                        dollarViewModel.sellDrMemoUpdate(updateData) { result ->
+                                            if (result) {
+                                                if (snackbarHostState.currentSnackbarData == null) {
                                                     coroutineScope.launch {
                                                         snackbarHostState.showSnackbar(
                                                             "성공적으로 저장되었습니다.",
-                                                            actionLabel = "닫기", SnackbarDuration.Short
+                                                            actionLabel = "닫기",
+                                                            SnackbarDuration.Short
                                                         )
                                                     }
                                                 }
 
                                             } else {
-                                                if(snackbarHostState.currentSnackbarData == null) {
+                                                if (snackbarHostState.currentSnackbarData == null) {
                                                     coroutineScope.launch {
                                                         snackbarHostState.showSnackbar(
                                                             "저장에 실패하였습니다.",
-                                                            actionLabel = "닫기", SnackbarDuration.Short
+                                                            actionLabel = "닫기",
+                                                            SnackbarDuration.Short
                                                         )
                                                     }
                                                 }
@@ -1008,12 +801,13 @@ fun SellLineDrRecordText(data: DrSellRecord,
                                         text = "저장",
                                         modifier = Modifier
                                             .padding(all = 5.dp)
-                                            .padding(horizontal = 3.dp))
+                                            .padding(horizontal = 3.dp)
+                                    )
                                 }
 
                                 Card(modifier = Modifier
                                     .padding(bottom = 10.dp),
-                                    colors = CardDefaults.cardColors( TopButtonColor ),
+                                    colors = CardDefaults.cardColors(TopButtonColor),
                                     elevation = CardDefaults.cardElevation(8.dp),
                                     shape = RoundedCornerShape(2.dp),
                                     onClick = {
@@ -1028,7 +822,8 @@ fun SellLineDrRecordText(data: DrSellRecord,
                                         text = "닫기",
                                         modifier = Modifier
                                             .padding(all = 5.dp)
-                                            .padding(horizontal = 3.dp))
+                                            .padding(horizontal = 3.dp)
+                                    )
                                 }
                             }
                         }
@@ -1055,7 +850,8 @@ fun SellLineDrRecordText(data: DrSellRecord,
                             13,
                             2.5f,
                             bottonPpaing = 0.dp,
-                            color = Color.Black)
+                            color = Color.Black
+                        )
                         Spacer(modifier = Modifier.width(1.dp))
                         RecordTextView(
                             recordText = "${BigDecimal(data.money, mathContext).toBigDecimalUs()}",
@@ -1063,7 +859,8 @@ fun SellLineDrRecordText(data: DrSellRecord,
                             13,
                             2.5f,
                             bottonPpaing = 0.dp,
-                            color = Color.Black)
+                            color = Color.Black
+                        )
                         Spacer(modifier = Modifier.width(1.dp))
                         RecordTextView(
                             recordText = "${data.rate}",
@@ -1071,15 +868,22 @@ fun SellLineDrRecordText(data: DrSellRecord,
                             13,
                             2.5f,
                             bottonPpaing = 0.dp,
-                            color = Color.Black)
+                            color = Color.Black
+                        )
                         Spacer(modifier = Modifier.width(1.dp))
                         RecordTextView(
-                            recordText = "${BigDecimal(data.exchangeMoney, mathContext).toBigDecimalWon()}",
+                            recordText = "${
+                                BigDecimal(
+                                    data.exchangeMoney,
+                                    mathContext
+                                ).toBigDecimalWon()
+                            }",
                             TextHeight = 40.dp,
                             13,
                             2.5f,
                             bottonPpaing = 0.dp,
-                            color = profitColor)
+                            color = profitColor
+                        )
                     }
                 } else {
                     Row(
@@ -1103,7 +907,8 @@ fun SellLineDrRecordText(data: DrSellRecord,
                             13,
                             2.5f,
                             bottonPpaing = 0.dp,
-                            color = Color.Black)
+                            color = Color.Black
+                        )
                         Spacer(modifier = Modifier.width(1.dp))
                         RecordTextView(
                             recordText = "${BigDecimal(data.money, mathContext).toBigDecimalUs()}",
@@ -1111,7 +916,8 @@ fun SellLineDrRecordText(data: DrSellRecord,
                             13,
                             2.5f,
                             bottonPpaing = 0.dp,
-                            color = Color.Black)
+                            color = Color.Black
+                        )
                         Spacer(modifier = Modifier.width(1.dp))
                         RecordTextView(
                             recordText = "${data.rate}",
@@ -1119,15 +925,22 @@ fun SellLineDrRecordText(data: DrSellRecord,
                             13,
                             2.5f,
                             bottonPpaing = 0.dp,
-                            color = Color.Black)
+                            color = Color.Black
+                        )
                         Spacer(modifier = Modifier.width(1.dp))
                         RecordTextView(
-                            recordText = "${BigDecimal(data.exchangeMoney, mathContext).toBigDecimalWon()}",
+                            recordText = "${
+                                BigDecimal(
+                                    data.exchangeMoney,
+                                    mathContext
+                                ).toBigDecimalWon()
+                            }",
                             TextHeight = 40.dp,
                             13,
                             2.5f,
                             bottonPpaing = 0.dp,
-                            color = profitColor)
+                            color = profitColor
+                        )
                     }
 
                     AnimatedVisibility(visible = itemRowVisible) {
@@ -1135,19 +948,25 @@ fun SellLineDrRecordText(data: DrSellRecord,
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .padding(start = 32.dp, end = 30.dp)
-                                .wrapContentHeight()) {
-                            Row(modifier = Modifier
-                                .wrapContentSize()) {
-                                Card(modifier = Modifier
-                                    .padding(bottom = 10.dp),
-                                    colors = CardDefaults.cardColors( TopButtonColor ),
+                                .wrapContentHeight()
+                        ) {
+                            Row(
+                                modifier = Modifier
+                                    .wrapContentSize()
+                            ) {
+                                Card(
+                                    modifier = Modifier
+                                        .padding(bottom = 10.dp),
+                                    colors = CardDefaults.cardColors(TopButtonColor),
                                     elevation = CardDefaults.cardElevation(8.dp),
-                                    shape = RoundedCornerShape(2.dp)) {
+                                    shape = RoundedCornerShape(2.dp)
+                                ) {
                                     Text(
                                         text = "메모",
                                         modifier = Modifier
                                             .padding(all = 5.dp)
-                                            .padding(horizontal = 3.dp))
+                                            .padding(horizontal = 3.dp)
+                                    )
                                 }
 
                                 Spacer(modifier = Modifier.weight(1f))
@@ -1160,7 +979,8 @@ fun SellLineDrRecordText(data: DrSellRecord,
                                     Icon(
                                         modifier = Modifier
                                             .clickable {
-                                                if(!dropdownExpanded) dropdownExpanded = true else dropdownExpanded = false
+                                                if (!dropdownExpanded) dropdownExpanded =
+                                                    true else dropdownExpanded = false
                                             },
                                         imageVector = Icons.Rounded.MoreVert,
                                         contentDescription = "메뉴",
@@ -1178,35 +998,43 @@ fun SellLineDrRecordText(data: DrSellRecord,
                                             modifier = Modifier
                                                 .fillMaxWidth(),
                                             text = {
-                                                Box(modifier = Modifier
-                                                    .fillMaxWidth(),
-                                                    contentAlignment = Alignment.TopStart) {
+                                                Box(
+                                                    modifier = Modifier
+                                                        .fillMaxWidth(),
+                                                    contentAlignment = Alignment.TopStart
+                                                ) {
                                                     Text(
                                                         text = "매도 취소",
-                                                        fontSize = 13.sp)
+                                                        fontSize = 13.sp
+                                                    )
                                                 }
                                             }, onClick = {
                                                 coroutineScope.launch {
-                                                    val result = dollarViewModel.cancelSellRecord(data.id)
-                                                    if(result) {
+                                                    val result =
+                                                        dollarViewModel.cancelSellRecord(data.id)
+                                                    if (result) {
                                                         dropdownExpanded = false
-                                                        if(snackbarHostState.currentSnackbarData == null) {
+                                                        if (snackbarHostState.currentSnackbarData == null) {
                                                             coroutineScope.launch {
                                                                 snackbarHostState.showSnackbar(
                                                                     "매도가 취소되었습니다.",
-                                                                    actionLabel = "닫기", SnackbarDuration.Short
+                                                                    actionLabel = "닫기",
+                                                                    SnackbarDuration.Short
                                                                 )
-                                                                dollarViewModel.removeSellRecord(data)
+                                                                dollarViewModel.removeSellRecord(
+                                                                    data
+                                                                )
                                                             }
                                                         }
 
                                                     } else {
                                                         dropdownExpanded = false
-                                                        if(snackbarHostState.currentSnackbarData == null) {
+                                                        if (snackbarHostState.currentSnackbarData == null) {
                                                             coroutineScope.launch {
                                                                 snackbarHostState.showSnackbar(
                                                                     "일치하는 매수기록이 없습니다.",
-                                                                    actionLabel = "닫기", SnackbarDuration.Short
+                                                                    actionLabel = "닫기",
+                                                                    SnackbarDuration.Short
                                                                 )
                                                             }
                                                         }
@@ -1215,7 +1043,6 @@ fun SellLineDrRecordText(data: DrSellRecord,
                                             })
                                     }
                                 }
-
 
 
                             }
@@ -1231,14 +1058,15 @@ fun SellLineDrRecordText(data: DrSellRecord,
                                 placeholder = {
                                     Text(
                                         text = "메모를 입력해주세요",
-                                        fontSize = 15.sp)
+                                        fontSize = 15.sp
+                                    )
                                 },
                                 value = memoTextInput,
                                 onValueChange = {
 
-                                    if(memoTextInput.length > 100) {
+                                    if (memoTextInput.length > 100) {
                                         focusManager.clearFocus()
-                                        if(snackbarHostState.currentSnackbarData == null) {
+                                        if (snackbarHostState.currentSnackbarData == null) {
                                             coroutineScope.launch {
                                                 snackbarHostState.showSnackbar(
                                                     "100자 이하로 작성해주세요",
@@ -1255,14 +1083,17 @@ fun SellLineDrRecordText(data: DrSellRecord,
                                     baselineShift = BaselineShift.None,
                                     fontSize = 15.sp,
                                     fontWeight = FontWeight.Medium,
-                                    textAlign = TextAlign.Start),
+                                    textAlign = TextAlign.Start
+                                ),
                                 colors = TextFieldDefaults.outlinedTextFieldColors(
                                     focusedBorderColor = Black,
-                                    unfocusedBorderColor = Black)
+                                    unfocusedBorderColor = Black
+                                )
                             )
 
-                            Row(modifier = Modifier
-                                .wrapContentSize(),
+                            Row(
+                                modifier = Modifier
+                                    .wrapContentSize(),
                                 horizontalArrangement = Arrangement.spacedBy(10.dp),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
@@ -1273,29 +1104,31 @@ fun SellLineDrRecordText(data: DrSellRecord,
 
                                 Card(modifier = Modifier
                                     .padding(bottom = 10.dp),
-                                    colors = CardDefaults.cardColors( TopButtonColor ),
+                                    colors = CardDefaults.cardColors(TopButtonColor),
                                     elevation = CardDefaults.cardElevation(8.dp),
                                     shape = RoundedCornerShape(2.dp),
                                     onClick = {
                                         val updateData = data.copy(sellDrMemo = memoTextInput)
                                         focusManager.clearFocus()
-                                        dollarViewModel.sellDrMemoUpdate(updateData) {result ->
-                                            if(result) {
-                                                if(snackbarHostState.currentSnackbarData == null) {
+                                        dollarViewModel.sellDrMemoUpdate(updateData) { result ->
+                                            if (result) {
+                                                if (snackbarHostState.currentSnackbarData == null) {
                                                     coroutineScope.launch {
                                                         snackbarHostState.showSnackbar(
                                                             "성공적으로 저장되었습니다.",
-                                                            actionLabel = "닫기", SnackbarDuration.Short
+                                                            actionLabel = "닫기",
+                                                            SnackbarDuration.Short
                                                         )
                                                     }
                                                 }
 
                                             } else {
-                                                if(snackbarHostState.currentSnackbarData == null) {
+                                                if (snackbarHostState.currentSnackbarData == null) {
                                                     coroutineScope.launch {
                                                         snackbarHostState.showSnackbar(
                                                             "저장에 실패하였습니다.",
-                                                            actionLabel = "닫기", SnackbarDuration.Short
+                                                            actionLabel = "닫기",
+                                                            SnackbarDuration.Short
                                                         )
                                                     }
                                                 }
@@ -1306,12 +1139,13 @@ fun SellLineDrRecordText(data: DrSellRecord,
                                         text = "저장",
                                         modifier = Modifier
                                             .padding(all = 5.dp)
-                                            .padding(horizontal = 3.dp))
+                                            .padding(horizontal = 3.dp)
+                                    )
                                 }
 
                                 Card(modifier = Modifier
                                     .padding(bottom = 10.dp),
-                                    colors = CardDefaults.cardColors( TopButtonColor ),
+                                    colors = CardDefaults.cardColors(TopButtonColor),
                                     elevation = CardDefaults.cardElevation(8.dp),
                                     shape = RoundedCornerShape(2.dp),
                                     onClick = {
@@ -1326,7 +1160,8 @@ fun SellLineDrRecordText(data: DrSellRecord,
                                         text = "닫기",
                                         modifier = Modifier
                                             .padding(all = 5.dp)
-                                            .padding(horizontal = 3.dp))
+                                            .padding(horizontal = 3.dp)
+                                    )
                                 }
                             }
                         }
@@ -1334,16 +1169,15 @@ fun SellLineDrRecordText(data: DrSellRecord,
                 }
 
 
-
             }
-            if(deleteAskDialog.value) {
+            if (deleteAskDialog.value) {
 
                 Log.d(TAG, "다이로그 오픈")
 
                 AskTriggerDialog(
                     title = "삭제하시겠습니까?",
                     onClickedLabel = "예",
-                    onDismissRequest ={
+                    onDismissRequest = {
                         deleteAskDialog.value = it
                     }) {
                     dollarViewModel.removeSellRecord(data)

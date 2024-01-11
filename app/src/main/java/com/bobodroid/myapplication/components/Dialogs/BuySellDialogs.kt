@@ -149,7 +149,7 @@ fun SellDialog(
                     sellAction = sellAction,
                     onDismissRequest = {
                         openDialog.value = it
-                        onDismissRequest
+                        onDismissRequest.invoke(it)
                         dollarViewModel.resetValue() },
                     onClicked = { onClicked?.invoke(false) }
                     ,dollarViewModel = dollarViewModel)

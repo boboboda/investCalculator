@@ -813,14 +813,25 @@ fun ContentIcon(
                     when(drCheckboxController){
                         1-> {
                             GetMoneyView(
-                                getMoney = "${totalDrExpectProfit.value}",
+                                getMoney = "${totalDrSellProfit.value}",
                                 onClicked = { Log.d(TAG, "") },
                                 allViewModel
                             )
                         }
                         2-> {
+
+                        }
+                        3-> {
                             GetMoneyView(
                                 getMoney = "${totalDrSellProfit.value}",
+                                onClicked = { Log.d(TAG, "") },
+                                allViewModel
+                            )
+                        }
+
+                        4-> {
+                            GetMoneyView(
+                                getMoney = "${totalDrExpectProfit.value}",
                                 onClicked = { Log.d(TAG, "") },
                                 allViewModel
                             )

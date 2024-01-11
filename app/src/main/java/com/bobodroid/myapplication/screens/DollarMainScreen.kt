@@ -1,6 +1,7 @@
 package com.bobodroid.myapplication.screens
 
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -24,8 +25,10 @@ import androidx.compose.material.SnackbarHostState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.KeyboardArrowDown
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.DpOffset
+import com.bobodroid.myapplication.R
 import com.bobodroid.myapplication.lists.dollorList.BuyRecordBox
 import com.bobodroid.myapplication.lists.dollorList.SellRecordBox
 import com.bobodroid.myapplication.lists.dollorList.TotalDrRecordBox
@@ -35,9 +38,10 @@ import com.bobodroid.myapplication.models.viewmodels.AllViewModel
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterialApi::class)
 @Composable
-fun DollarMainScreen
-            (dollarViewModel: DollarViewModel,
-             allViewModel: AllViewModel) {
+fun DollarMainScreen(
+    dollarViewModel: DollarViewModel,
+    allViewModel: AllViewModel
+) {
 
 
     var selectedBoxId = dollarViewModel.selectedBoxId.collectAsState()
@@ -52,30 +56,51 @@ fun DollarMainScreen
 
     val scope = rememberCoroutineScope()
 
+    var hideSellRecordState by remember { mutableStateOf(false) }
+
+    val visibleIcon = if (hideSellRecordState)  R.drawable.ic_visible  else  R.drawable.ic_invisible
+
     val focusManager = LocalFocusManager.current
 
-    val dropdownMenuName = when(selectedBoxId.value) {
-        1-> {"종합형"}
-        2-> {"편집형"}
-        3-> {"매수"}
-        4-> {"매도"}
-        else -> {"오류"}
+    val dropdownMenuName = when (selectedBoxId.value) {
+        1 -> {
+            "종합형"
+        }
+
+        2 -> {
+            "편집형"
+        }
+
+        3 -> {
+            "매수"
+        }
+
+        4 -> {
+            "매도"
+        }
+
+        else -> {
+            "오류"
+        }
     }
 
 
 
 
-    Column(modifier = Modifier
-        .fillMaxSize()
-        .addFocusCleaner(focusManager),
-        horizontalAlignment = Alignment.CenterHorizontally)
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .addFocusCleaner(focusManager),
+        horizontalAlignment = Alignment.CenterHorizontally
+    )
     {
-        Column(
+        Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(start = 30.dp, bottom = 5.dp),
-            horizontalAlignment = Alignment.Start,
-            verticalArrangement = Arrangement.Center,
+                .padding(horizontal = 30.dp)
+                .padding(bottom = 5.dp),
+            horizontalArrangement = Arrangement.Start,
+            verticalAlignment = Alignment.CenterVertically,
         ) {
             Box(
                 modifier = Modifier
@@ -202,6 +227,35 @@ fun DollarMainScreen
 
             }
 
+            Spacer(modifier = Modifier.weight(1f))
+
+            Card(
+                colors = CardDefaults.cardColors(WelcomeScreenBackgroundColor),
+                elevation = CardDefaults.cardElevation(8.dp),
+                shape = RoundedCornerShape(1.dp),
+                modifier = Modifier
+                    .height(40.dp)
+                    .wrapContentWidth(),
+                onClick = {
+                    if (!hideSellRecordState) hideSellRecordState = true else hideSellRecordState = false
+                }) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxHeight()
+                        .wrapContentWidth()
+                        .padding(horizontal = 10.dp),
+                    horizontalArrangement = Arrangement.Center,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(text = "매도기록")
+
+                    Image(
+                        painter = painterResource(id = visibleIcon),
+                        contentDescription = "매도기록 노출 여부"
+                    )
+                }
+            }
+
         }
 
         Row(
@@ -214,23 +268,39 @@ fun DollarMainScreen
             Text(
                 modifier = Modifier.padding(start = 10.dp),
                 text = "예상수익 새로고침 시간: ${reFreshDate.value}",
-                textAlign = TextAlign.Center)
+                textAlign = TextAlign.Center
+            )
         }
 
-        Box(modifier = Modifier
-            .fillMaxSize(),
-            contentAlignment = Alignment.BottomCenter) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize(),
+            contentAlignment = Alignment.BottomCenter
+        ) {
             // Record item
             Column(
                 modifier = Modifier
                     .fillMaxSize()
             ) {
                 when (selectedBoxId.value) {
-                    1-> { TotalDrRecordBox(dollarViewModel = dollarViewModel, snackBarHostState = snackBarHostState)}
-                    2-> {}
-                    3-> {BuyRecordBox(dollarViewModel, snackBarHostState)}
-                    4-> {SellRecordBox(dollarViewModel, snackBarHostState)}
-                    else-> {
+                    1 -> {
+                        TotalDrRecordBox(
+                            dollarViewModel = dollarViewModel,
+                            snackBarHostState = snackBarHostState,
+                            hideSellRecordState = hideSellRecordState
+                        )
+                    }
+
+                    2 -> {}
+                    3 -> {
+                        BuyRecordBox(dollarViewModel, snackBarHostState)
+                    }
+
+                    4 -> {
+                        SellRecordBox(dollarViewModel, snackBarHostState)
+                    }
+
+                    else -> {
                         Column(Modifier.fillMaxSize()) {
 
                         }
@@ -239,9 +309,10 @@ fun DollarMainScreen
             }
 
             //snackBar
-            Row(modifier = Modifier
-                .fillMaxWidth()
-                .wrapContentHeight()
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .wrapContentHeight()
             ) {
 
 

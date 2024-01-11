@@ -5,6 +5,7 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -14,10 +15,12 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.layout.wrapContentSize
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.DismissDirection
 import androidx.compose.material.DismissValue
@@ -34,6 +37,7 @@ import androidx.compose.material.icons.rounded.MoreVert
 import androidx.compose.material.rememberDismissState
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Divider
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -41,6 +45,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -65,6 +70,7 @@ import androidx.compose.ui.unit.sp
 import com.bobodroid.myapplication.MainActivity
 import com.bobodroid.myapplication.components.Dialogs.AskTriggerDialog
 import com.bobodroid.myapplication.components.Dialogs.SellDialog
+import com.bobodroid.myapplication.components.Dialogs.TextFieldDialog
 import com.bobodroid.myapplication.components.RecordTextView
 import com.bobodroid.myapplication.extensions.toBigDecimalUs
 import com.bobodroid.myapplication.extensions.toBigDecimalWon
@@ -105,22 +111,20 @@ fun TotalLineDrRecord(
 
     var dropdownExpanded by remember { mutableStateOf(false) }
 
+    var groupDropdownExpanded by remember { mutableStateOf(false) }
+
     var memoTextInput by remember { mutableStateOf("") }
 
     val coroutineScope = rememberCoroutineScope()
 
+    val groupList = dollarViewModel.groupList.collectAsState()
+
+    var groupAddDialog by remember { mutableStateOf(false) }
+
     val focusRequester by remember { mutableStateOf(FocusRequester()) }
 
 
-    val profitColor = if (data.profit == "") {
-        Color.Black
-    } else {
-        if (BigDecimal(data.profit, mathContext).signum() == -1) {
-            Color.Blue
-        } else {
-            Color.Red
-        }
-    }
+
 
     val profit = if(!data.recordColor!!) {if (data.profit.isNullOrEmpty()) {
         "0"
@@ -130,6 +134,16 @@ fun TotalLineDrRecord(
             data.sellProfit
         }
 
+    }
+
+    val profitColor = if (profit == "") {
+        Color.Black
+    } else {
+        if (BigDecimal(profit, mathContext).signum() == -1) {
+            Color.Blue
+        } else {
+            Color.Red
+        }
     }
 
     val date = if(data.recordColor!!) { "${data.date}\n (${data.sellDate ?: "데이터없음"})" } else { data.date }
@@ -317,12 +331,26 @@ fun TotalLineDrRecord(
                                                 contentAlignment = Alignment.TopStart
                                             ) {
                                                 Text(
-                                                    text = "매수 수정",
+                                                    text = "매도",
                                                     fontSize = 13.sp
                                                 )
                                             }
                                         }, onClick = {
-
+                                            dropdownExpanded = false
+                                            if (!data.recordColor!!) {
+                                                onClicked?.invoke(data)
+                                                if (!openDialog) openDialog = true else openDialog = false
+                                            } else {
+                                                if (snackBarHostState.currentSnackbarData == null) {
+                                                    coroutineScope.launch {
+                                                        snackBarHostState.showSnackbar(
+                                                            "매도한 기록입니다.",
+                                                            actionLabel = "닫기",
+                                                            SnackbarDuration.Short
+                                                        )
+                                                    }
+                                                }
+                                            }
                                         })
 
                                     DropdownMenuItem(
@@ -335,28 +363,130 @@ fun TotalLineDrRecord(
                                                 contentAlignment = Alignment.TopStart
                                             ) {
                                                 Text(
-                                                    text = "매도",
+                                                    text = "매도 취소",
                                                     fontSize = 13.sp
                                                 )
                                             }
                                         }, onClick = {
-                                            if (!data.recordColor!!) {
-                                                onClicked?.invoke(data)
-                                                if (!openDialog) openDialog = true else openDialog =
-                                                    false
-                                            } else {
-                                                if (snackBarHostState.currentSnackbarData == null) {
-                                                    coroutineScope.launch {
-                                                        snackBarHostState.showSnackbar(
-                                                            "매도한 기록입니다.",
-                                                            actionLabel = "닫기",
-                                                            SnackbarDuration.Short
-                                                        )
+                                            coroutineScope.launch {
+                                                dropdownExpanded = false
+                                                if(data.recordColor == false) {
+                                                    if (snackBarHostState.currentSnackbarData == null) {
+                                                        coroutineScope.launch {
+                                                            snackBarHostState.showSnackbar(
+                                                                "매도한 기록이 없습니다.",
+                                                                actionLabel = "닫기",
+                                                                SnackbarDuration.Short
+                                                            )
+                                                        }
+                                                    }
+                                                } else {
+                                                    val result = dollarViewModel.cancelSellRecord(data.id)
+                                                    if (result.first) {
+                                                        if (snackBarHostState.currentSnackbarData == null) {
+                                                            coroutineScope.launch {
+                                                                snackBarHostState.showSnackbar(
+                                                                    "매도가 취소되었습니다.",
+                                                                    actionLabel = "닫기",
+                                                                    SnackbarDuration.Short
+                                                                )
+                                                                dollarViewModel.removeSellRecord(result.second)
+                                                            }
+                                                        }
+                                                    } else {
+                                                        if (snackBarHostState.currentSnackbarData == null) {
+                                                            coroutineScope.launch {
+                                                                snackBarHostState.showSnackbar(
+                                                                    "일치하는 매수기록이 없습니다.",
+                                                                    actionLabel = "닫기",
+                                                                    SnackbarDuration.Short
+                                                                )
+                                                            }
+                                                        }
                                                     }
                                                 }
-                                                dropdownExpanded = false
+
+
                                             }
                                         })
+
+
+                                    DropdownMenuItem(
+                                        modifier = Modifier
+                                            .fillMaxWidth(),
+                                        text = {
+                                            Box(
+                                                modifier = Modifier
+                                                    .fillMaxWidth(),
+                                                contentAlignment = Alignment.TopStart
+                                            ) {
+                                                Text(
+                                                    text = "그룹 변경",
+                                                    fontSize = 13.sp
+                                                )
+                                            }
+                                        }, onClick = {
+                                            groupDropdownExpanded = true
+                                        })
+                                }
+
+                                DropdownMenu(
+                                    scrollState = rememberScrollState(),
+                                    modifier = Modifier
+                                        .wrapContentHeight()
+                                        .heightIn(max = 160.dp),
+                                    offset = DpOffset(x = 115.dp, y = 10.dp),
+                                    expanded = groupDropdownExpanded,
+                                    onDismissRequest = {
+                                        groupDropdownExpanded = false}) {
+
+                                    DropdownMenuItem(
+                                        modifier = Modifier
+                                            .fillMaxWidth(),
+                                        text = {
+                                            Box(
+                                                modifier = Modifier
+                                                    .fillMaxWidth(),
+                                                contentAlignment = Alignment.TopStart
+                                            ) {
+                                                Text(
+                                                    text = "새그룹",
+                                                    color = Color.Blue,
+                                                    fontSize = 13.sp
+                                                )
+                                            }
+                                        }, onClick = {
+                                            groupAddDialog = true
+                                        })
+
+                                    Divider(
+                                        Modifier
+                                            .fillMaxWidth(),
+                                        color = Color.Gray,
+                                        thickness = 2.dp
+                                    )
+
+                                    groupList.value.forEach { groupName ->
+                                        DropdownMenuItem(
+                                            modifier = Modifier
+                                                .fillMaxWidth(),
+                                            text = {
+                                                Box(
+                                                    modifier = Modifier
+                                                        .fillMaxWidth(),
+                                                    contentAlignment = Alignment.TopStart
+                                                ) {
+                                                    Text(
+                                                        text = groupName,
+                                                        fontSize = 13.sp
+                                                    )
+                                                }
+                                            }, onClick = {
+                                                dollarViewModel.updateRecordGroup(data, groupName)
+                                                dropdownExpanded = false
+                                            })
+                                    }
+
                                 }
                             }
 
@@ -492,6 +622,19 @@ fun TotalLineDrRecord(
                     onClicked = { openDialog = it },
                     dollarViewModel = dollarViewModel
                 )
+            }
+
+            if(groupAddDialog) {
+                TextFieldDialog(
+                    onDismissRequest = {
+                        groupAddDialog = it },
+                    placeholder = "새 그룹명을 작성해주세요",
+                    onClickedLabel = "추가",
+                    closeButtonLabel = "닫기",
+                    onClicked = { name ->
+                        dollarViewModel.groupAdd(name)
+                        groupAddDialog = false
+                    })
             }
 
             if (deleteAskDialog.value) {

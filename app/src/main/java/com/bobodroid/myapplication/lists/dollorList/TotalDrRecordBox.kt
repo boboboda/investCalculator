@@ -29,6 +29,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import com.bobodroid.myapplication.R
 import com.bobodroid.myapplication.components.RecordTextView
 import com.bobodroid.myapplication.components.drRecordHeader
 import com.bobodroid.myapplication.models.datamodels.DrBuyRecord
@@ -41,16 +42,22 @@ import java.util.UUID
 @Composable
 fun TotalDrRecordBox(
     dollarViewModel: DollarViewModel,
-    snackBarHostState: SnackbarHostState
+    snackBarHostState: SnackbarHostState,
+    hideSellRecordState: Boolean
 ) {
 
-    val buyRecordHistory : State<Map<String, List<DrBuyRecord>>> = dollarViewModel.filterBuyRecordFlow.collectAsState()
+    val buyRecordHistory : State<Map<String, List<DrBuyRecord>>> = dollarViewModel.groupBuyRecordFlow.collectAsState()
+
+    val filterRecord  = if(hideSellRecordState)
+    {
+        buyRecordHistory.value.mapValues { it.value.filter { it.recordColor == false } }
+    } else {
+        buyRecordHistory.value
+    }
 
     var selectedId by remember { mutableStateOf(UUID.randomUUID()) }
 
     var lazyScrollState = rememberLazyListState()
-
-    val columnScrollState = rememberScrollState()
 
     val coroutineScope = rememberCoroutineScope()
 
@@ -88,9 +95,7 @@ fun TotalDrRecordBox(
 
             //  Buy -> 라인리코드텍스트에 넣지 말고 바로 데이터 전달 -> 리팩토리
 
-            val listSize = getBuyRecordCount(buyRecordHistory.value)
-
-            buyRecordHistory.value.forEach { key, items->
+            filterRecord.forEach { key, items->
 
 
                 stickyHeader {

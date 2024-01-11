@@ -28,6 +28,8 @@ class InvestRepository @Inject constructor(
 
     suspend fun addRecord(drSellRecord: DrSellRecord) = dollarSellDatabaseDao.insert(drSellRecord)
     suspend fun drSellAddListRecord(drSellRecord: List<DrSellRecord>) = dollarSellDatabaseDao.insertAll(drSellRecord)
+
+    suspend fun getSellRecordId(drSellId: UUID): DrSellRecord = dollarSellDatabaseDao.getRecordById(drSellId)
     suspend fun updateRecord(drSellRecord: DrSellRecord) = dollarSellDatabaseDao.update(drSellRecord)
     suspend fun deleteRecord(drSellRecord: DrSellRecord) = dollarSellDatabaseDao.deleteNote(drSellRecord)
     suspend fun deleteAllRecord(drSellRecord: DrSellRecord) = dollarSellDatabaseDao.deleteAll()

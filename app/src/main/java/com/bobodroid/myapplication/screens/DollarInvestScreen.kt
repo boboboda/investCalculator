@@ -61,7 +61,7 @@ fun DollarInvestScreen(
 
     val snackBarHostState = remember { SnackbarHostState() }
 
-    var group = remember { mutableStateOf("기본") }
+    var group = remember { mutableStateOf("미지정") }
 
     var dropdownExpanded by remember { mutableStateOf(false) }
 

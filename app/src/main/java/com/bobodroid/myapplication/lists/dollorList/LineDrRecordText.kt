@@ -674,7 +674,7 @@ fun SellLineDrRecordText(
                                                 coroutineScope.launch {
                                                     val result =
                                                         dollarViewModel.cancelSellRecord(data.id)
-                                                    if (result) {
+                                                    if (result.first) {
                                                         dropdownExpanded = false
                                                         if (snackbarHostState.currentSnackbarData == null) {
                                                             coroutineScope.launch {
@@ -1012,7 +1012,7 @@ fun SellLineDrRecordText(
                                                 coroutineScope.launch {
                                                     val result =
                                                         dollarViewModel.cancelSellRecord(data.id)
-                                                    if (result) {
+                                                    if (result.first) {
                                                         dropdownExpanded = false
                                                         if (snackbarHostState.currentSnackbarData == null) {
                                                             coroutineScope.launch {
@@ -1021,9 +1021,7 @@ fun SellLineDrRecordText(
                                                                     actionLabel = "닫기",
                                                                     SnackbarDuration.Short
                                                                 )
-                                                                dollarViewModel.removeSellRecord(
-                                                                    data
-                                                                )
+                                                                dollarViewModel.removeSellRecord(data)
                                                             }
                                                         }
 

@@ -165,7 +165,7 @@ fun SellResultDialog(
                     onClicked = {
                         sellAction()
                         dollarViewModel.sellRecordValue(buyRecord)
-                        dollarViewModel.selectedBoxId.value = 1
+                        onClicked?.invoke(false)
                     },
                     color = SellButtonColor,
                     fontColor = Color.White,

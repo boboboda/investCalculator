@@ -39,7 +39,7 @@ interface DollarSellDatabaseDao {
     fun getRecords(): Flow<List<DrSellRecord>>
 
     @Query("SELECT * from sellDollar_table where id=:id")
-    suspend fun getRecordById(id: String): DrSellRecord
+    suspend fun getRecordById(id: UUID): DrSellRecord
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(drSellRecord: DrSellRecord)

@@ -33,7 +33,7 @@ fun BuyRecordBox(
     snackBarHostState: SnackbarHostState
 ) {
 
-    val buyRecordHistory : State<Map<String, List<DrBuyRecord>>> = dollarViewModel.filterBuyRecordFlow.collectAsState()
+    val buyRecordHistory : State<Map<String, List<DrBuyRecord>>> = dollarViewModel.groupBuyRecordFlow.collectAsState()
 
     var selectedId by remember { mutableStateOf(UUID.randomUUID()) }
 

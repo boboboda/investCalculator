@@ -30,10 +30,18 @@ import java.util.UUID
 @Composable
 fun BuyRecordBox(
     dollarViewModel: DollarViewModel,
-    snackBarHostState: SnackbarHostState
+    snackBarHostState: SnackbarHostState,
+    hideSellRecordState: Boolean
 ) {
 
     val buyRecordHistory : State<Map<String, List<DrBuyRecord>>> = dollarViewModel.groupBuyRecordFlow.collectAsState()
+
+    val filterRecord  = if(hideSellRecordState)
+    {
+        buyRecordHistory.value.mapValues { it.value.filter { it.recordColor == false } }
+    } else {
+        buyRecordHistory.value
+    }
 
     var selectedId by remember { mutableStateOf(UUID.randomUUID()) }
 
@@ -74,14 +82,11 @@ fun BuyRecordBox(
             state = lazyScrollState) {
 
             //  Buy -> 라인리코드텍스트에 넣지 말고 바로 데이터 전달 -> 리팩토리
-
-            val listSize = getBuyRecordCount(buyRecordHistory.value)
-
-            buyRecordHistory.value.forEach { key, items->
+            filterRecord.forEach { key, items->
 
 
                 stickyHeader {
-                    drRecordHeader(key = key)
+                    RecordHeader(key = key)
                 }
 
                 itemsIndexed(
@@ -123,14 +128,11 @@ fun BuyRecordBox(
 
 }
 
-fun getBuyRecordCount(buyRecordHistory: Map<String, List<DrBuyRecord>>): Int {
-    return buyRecordHistory.values.flatten().size
-}
 
-
-@OptIn(ExperimentalMaterialApi::class)
 @Composable
-fun SellRecordBox(dollarViewModel: DollarViewModel, snackBarHostState: SnackbarHostState) {
+fun SellRecordBox(
+    dollarViewModel: DollarViewModel,
+    snackBarHostState: SnackbarHostState) {
 
     val sellRecordHistory = dollarViewModel.filterSellRecordFlow.collectAsState()
 

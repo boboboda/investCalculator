@@ -170,7 +170,6 @@ fun YenSellDialog(
     onClicked: ((Boolean) -> Unit)?,
     sellAction: () -> Unit,
     yenViewModel: YenViewModel,
-    snackbarHostState: SnackbarHostState,
     buyRecord: YenBuyRecord
 ) {
 

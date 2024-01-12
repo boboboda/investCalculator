@@ -1,6 +1,7 @@
 package com.bobodroid.myapplication.lists.yenList
 
 import android.annotation.SuppressLint
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -20,15 +21,24 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.util.UUID
 
+@OptIn(ExperimentalFoundationApi::class)
 @ExperimentalMaterialApi
-@OptIn(ExperimentalMaterialApi::class)
 @SuppressLint("StateFlowValueCalledInComposition")
 @Composable
 fun BuyYenRecordBox(yenViewModel: YenViewModel,
-                    snackbarHostState: SnackbarHostState) {
+                    snackbarHostState: SnackbarHostState,
+                    hideSellRecordState: Boolean) {
 
-    val buyRecordHistory : State<List<YenBuyRecord>> = yenViewModel.filterBuyRecordFlow.collectAsState()
-    val buySortRecord = buyRecordHistory.value.sortedBy { it.date }
+    val buyRecordHistory : State<Map<String, List<YenBuyRecord>>> = yenViewModel.groupBuyRecordFlow.collectAsState()
+
+
+    val filterRecord  = if(hideSellRecordState)
+    {
+        buyRecordHistory.value.mapValues { it.value.filter { it.recordColor == false } }
+    } else {
+        buyRecordHistory.value
+    }
+
 
     var selectedId by remember { mutableStateOf(UUID.randomUUID()) }
 
@@ -68,48 +78,43 @@ fun BuyYenRecordBox(yenViewModel: YenViewModel,
 
             //  Buy -> 라인리코드텍스트에 넣지 말고 바로 데이터 전달 -> 리팩토리
 
-            val listSize = buySortRecord.size
-            itemsIndexed(
-                items = buySortRecord,
-                key = { index: Int, item: YenBuyRecord -> item.id}) { index, Buy ->
+            filterRecord.forEach { key, items->
+
+                stickyHeader {
+                    RecordHeader(key = key)
+                }
+
+
+                itemsIndexed(
+                    items = items,
+                    key = { index: Int, item: YenBuyRecord -> item.id}) { index, Buy ->
 
 
 
-                LineYenRecordText(
-                    Buy,
-                    listSize = listSize,
-                    index = index,
-                    sellAction = Buy.recordColor!!
-                    ,
-                    sellActed = { buyRecord ->
-                        // 매도시 컬러 변경
-                        selectedId = buyRecord.id
+                    LineYenRecordText(
+                        Buy,
+                        sellAction = Buy.recordColor!!
+                        ,
+                        sellActed = { buyRecord ->
+                            // 매도시 컬러 변경
+                            selectedId = buyRecord.id
 
-                        yenViewModel.updateBuyRecord(buyRecord)
+                            yenViewModel.updateBuyRecord(buyRecord)
 
-                    },
-                    onClicked = { recordBox ->
-                        // 매도시 값 인계
-                        selectedId = recordBox .id
-                        yenViewModel.dateFlow.value = recordBox.date!!
-                        yenViewModel.haveMoney.value = recordBox.exchangeMoney!!
-                        yenViewModel.recordInputMoney.value = recordBox.money!!},
-                    yenViewModel,
-                    snackbarHostState = snackbarHostState,
-                    recordSelected =  {
-                        coroutineScope.launch {
-                            if(index <= listSize - 7) {
-                                delay(300)
-                                lazyScrollState.animateScrollToItem(index)
-                            } else {
-                                delay(300)
-                                lazyScrollState.animateScrollToItem(index, 0)
-                            }
+                        },
+                        onClicked = { recordBox ->
+                            // 매도시 값 인계
+                            selectedId = recordBox .id
+                            yenViewModel.dateFlow.value = recordBox.date!!
+                            yenViewModel.haveMoney.value = recordBox.exchangeMoney!!
+                            yenViewModel.recordInputMoney.value = recordBox.money!!},
+                        yenViewModel,
+                        snackbarHostState = snackbarHostState)
+                    Divider()
+                }
 
-                        }
-                    })
-                Divider()
             }
+
         }
 
 

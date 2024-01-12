@@ -107,7 +107,7 @@ fun MainScreen(dollarViewModel: DollarViewModel,
 
     val drBoxState = dollarViewModel.selectedBoxId.collectAsState()
 
-    val yenCheckBoxState = yenViewModel.selectedCheckBoxId.collectAsState()
+    val yenCheckBoxState = yenViewModel.selectedBoxId.collectAsState()
 
     val wonCheckBoxState = wonViewModel.selectedCheckBoxId.collectAsState()
 
@@ -222,14 +222,13 @@ fun MainScreen(dollarViewModel: DollarViewModel,
                         2-> {
                             YenMainScreen(
                                 yenViewModel = yenViewModel,
-                                routeAction = routeAction,
                                 allViewModel = allViewModel,
                             )
                         }
 
                         3-> {
-                            WonMainScreen(wonViewModel = wonViewModel,
-                                routeAction = routeAction,
+                            WonMainScreen(
+                                wonViewModel = wonViewModel,
                                 allViewModel = allViewModel)
                         }
                     }
@@ -402,70 +401,26 @@ fun MainScreen(dollarViewModel: DollarViewModel,
                         }
                     },
                     onClicked = { selectedStartDate, selectedEndDate ->
-
                         scope.launch {
-                            when(rowViewController.value) {
-                                1-> {
-                                    when(drBoxState.value) {
-                                        1-> {
-                                            dollarViewModel.dateRangeInvoke(
-                                                DollarViewModel.DrAction.Buy,
-                                                selectedStartDate,
-                                                selectedEndDate
-                                            )
-                                        }
+                            // 메인화면 조회기간
+                            allViewModel.startDateFlow.emit(selectedStartDate)
+                            allViewModel.endDateFlow.emit(selectedEndDate)
 
-                                        2-> {
-                                            dollarViewModel.dateRangeInvoke(
-                                                DollarViewModel.DrAction.Sell,
-                                                selectedStartDate,
-                                                selectedEndDate
-                                            )
-                                        }
-                                    }
-                                }
-                                2-> {
-                                    when(yenCheckBoxState.value) {
-                                        1-> {
-                                            yenViewModel.dateRangeInvoke(
-                                                YenViewModel.YenAction.Buy,
-                                                selectedStartDate,
-                                                selectedEndDate
-                                            )
-                                        }
+                            dollarViewModel.dateRangeInvoke(
+                                selectedStartDate,
+                                selectedEndDate
+                            )
 
-                                        2-> {
-                                            yenViewModel.dateRangeInvoke(
-                                                YenViewModel.YenAction.Sell,
-                                                selectedStartDate,
-                                                selectedEndDate
-                                            )
-                                        }
-                                    }
-                                }
-                                3-> {
-                                    when(wonCheckBoxState.value) {
-                                        1-> {
-                                            wonViewModel.dateRangeInvoke(
-                                                WonViewModel.WonAction.Buy,
-                                                selectedStartDate,
-                                                selectedEndDate
-                                            )
-                                        }
+                            yenViewModel.dateRangeInvoke(
+                                selectedStartDate,
+                                selectedEndDate
+                            )
 
-                                        2-> {
-                                            wonViewModel.dateRangeInvoke(
-                                                WonViewModel.WonAction.Sell,
-                                                selectedStartDate,
-                                                selectedEndDate
-                                            )
-                                        }
-                                    }
-                                }
-                            }
+                            wonViewModel.dateRangeInvoke(
+                                selectedStartDate,
+                                selectedEndDate
+                            )
 
-                            allViewModel.startDateFlow.emit("")
-                            allViewModel.endDateFlow.emit("")
                         }
 
                     },
@@ -810,51 +765,18 @@ fun ContentIcon(
 
             when(rowViewController) {
                 1 ->{
-                    when(drCheckboxController){
-                        1-> {
-                            GetMoneyView(
-                                getMoney = "${totalDrSellProfit.value}",
-                                onClicked = { Log.d(TAG, "") },
-                                allViewModel
-                            )
-                        }
-                        2-> {
-
-                        }
-                        3-> {
-                            GetMoneyView(
-                                getMoney = "${totalDrSellProfit.value}",
-                                onClicked = { Log.d(TAG, "") },
-                                allViewModel
-                            )
-                        }
-
-                        4-> {
-                            GetMoneyView(
-                                getMoney = "${totalDrExpectProfit.value}",
-                                onClicked = { Log.d(TAG, "") },
-                                allViewModel
-                            )
-                        }
-                    }
+                    GetMoneyView(
+                        getMoney = "${totalDrSellProfit.value}",
+                        onClicked = { Log.d(TAG, "") },
+                        allViewModel
+                    )
                 }
                 2 ->{
-                    when(yenCheckboxController){
-                        1-> {
-                            GetMoneyView(
-                                getMoney = "${totalYenExpectProfit.value}",
-                                onClicked = { Log.d(TAG, "") },
-                                allViewModel
-                            )
-                        }
-                        2-> {
-                            GetMoneyView(
-                                getMoney = "${totalYenSellProfit.value}",
-                                onClicked = { Log.d(TAG, "") },
-                                allViewModel
-                            )
-                        }
-                    }
+                    GetMoneyView(
+                        getMoney = "${totalYenSellProfit.value}",
+                        onClicked = { Log.d(TAG, "") },
+                        allViewModel
+                    )
                 }
                 3 ->{
                     when(wonCheckboxController){
@@ -932,7 +854,7 @@ fun GetMoneyView(
         verticalArrangement = Arrangement.spacedBy(5.dp)) {
 
         Row {
-            Text(text = "총 수익: ", fontSize = 15.sp)
+            Text(text = "매도 총 수익: ", fontSize = 15.sp)
 
             Text(text = "${stringGetMoney}",fontSize = 15.sp, color =  profitColor)
         }

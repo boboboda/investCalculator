@@ -35,33 +35,82 @@ class WonViewModel @Inject constructor(private val investRepository: InvestRepos
     private val _filterSellRecordFlow = MutableStateFlow<List<WonSellRecord>>(emptyList())
     val filterSellRecordFlow = _filterSellRecordFlow.asStateFlow()
 
+    private val _groupBuyRecordFlow = MutableStateFlow<Map<String, List<WonBuyRecord>>>(emptyMap())
+    val groupBuyRecordFlow = _groupBuyRecordFlow.asStateFlow()
+
     init{
         viewModelScope.launch(Dispatchers.IO) {
-            investRepository.getAllWonBuyRecords().distinctUntilChanged()
-                .collect {listOfRecord ->
-                    if(listOfRecord.isNullOrEmpty()) {
-                        Log.d(MainActivity.TAG, "Empty buy list")
-                    } else {
 
-                        listOfRecord.forEach {
-                            it.buyRate = it.rate
-                        }
-                        _buyRecordFlow.value = listOfRecord
-                        _filterBuyRecordFlow.value = listOfRecord
-                    }
+            val buyRecordFlow = investRepository.getAllWonBuyRecords().distinctUntilChanged()
+            val sellRecordFlow = investRepository.getAllWonSellRecords().distinctUntilChanged()
+
+            val combinedFlow = buyRecordFlow.combine(sellRecordFlow) { buyRecord, sellRecord ->
+                combineBuyAndSell(sellRecord, buyRecord)
+
+                if (buyRecord.isNullOrEmpty()) {
+                    Log.d(TAG, "Empty Buy list")
+                } else {
+
+                    groupList.emit(buyRecord.map { it.buyWonCategoryName!! }.distinct())
+
+                    _buyRecordFlow.value = buyRecord
+                    _filterBuyRecordFlow.value = buyRecord
+                    _groupBuyRecordFlow.value = setGroup(buyRecord)
                 }
-        }
-        viewModelScope.launch(Dispatchers.IO) {
-            investRepository.getAllWonSellRecords().distinctUntilChanged()
-                .collect {listOfRecord ->
-                    if(listOfRecord.isNullOrEmpty()) {
-                        Log.d(MainActivity.TAG, "Empty sell list")
-                    } else {
-                        _sellRecordFlow.value = listOfRecord
-                        _filterSellRecordFlow.value = listOfRecord
-                    }
+
+
+                if (sellRecord.isNullOrEmpty()) {
+                    Log.d(TAG, "Empty Buy list")
+                } else {
+                    _sellRecordFlow.value = sellRecord
+                    _filterSellRecordFlow.value = sellRecord
                 }
+
+            }
+
+            combinedFlow.collect {
+                Log.d(TAG, "init 완료")
+            }
+
         }
+    }
+
+    val groupList = MutableStateFlow<List<String>>(emptyList())
+
+    fun setGroup(recordList: List<WonBuyRecord>): Map<String, List<WonBuyRecord>> {
+
+        val makeGroup = recordList.sortedBy { it.date }.groupBy { it.buyWonCategoryName!! }
+
+        return makeGroup
+    }
+
+    fun combineBuyAndSell(sellRecord: List<WonSellRecord>, buyRecord: List<WonBuyRecord>) {
+
+
+        if (!sellRecord.isNullOrEmpty() && !buyRecord.isNullOrEmpty()) {
+            Log.d(TAG, "매도 리스트 ${sellRecord}, ${buyRecord}")
+            buyRecord.forEach { buy ->
+                if (buy.buyWonCategoryName.isNullOrEmpty()) buy.buyWonCategoryName =
+                    "미지정"
+                buy.buyRate = buy.rate
+                buy.sellDate =
+                    sellRecord.filter { it.id == buy.id }.map { it.date }
+                        .firstOrNull() ?: "값없음"
+                buy.sellProfit =  sellRecord.filter { it.id == buy.id }
+                    .map { it.exchangeMoney }.firstOrNull() ?: ""
+                buy.sellRate =
+                    sellRecord.filter { it.id == buy.id }.map { it.rate }
+                        .firstOrNull() ?: "값없음"
+
+                _buyRecordFlow.value = buyRecord
+                _filterBuyRecordFlow.value = buyRecord
+                _groupBuyRecordFlow.value = setGroup(buyRecord)
+
+            }
+        } else {
+            Log.d(TAG, "여기가 실행됨")
+        }
+
     }
 
 
@@ -73,7 +122,7 @@ class WonViewModel @Inject constructor(private val investRepository: InvestRepos
 
     val exchangeMoney = MutableStateFlow("")
 
-    val selectedCheckBoxId = MutableStateFlow(1)
+    val selectedBoxId = MutableStateFlow(1)
 
     val moneyCgBtnSelected = MutableStateFlow(1)
 
@@ -100,94 +149,51 @@ class WonViewModel @Inject constructor(private val investRepository: InvestRepos
     }
 
     fun dateRangeInvoke(
-        action: WonAction = WonAction.Buy,
         startDate: String,
         endDate: String) {
+        viewModelScope.launch {
+            if (startDate == "" && endDate == "") {
+
+                _filterBuyRecordFlow.emit(_buyRecordFlow.value)
+                _filterSellRecordFlow.emit(_sellRecordFlow.value)
+                _groupBuyRecordFlow.emit(_buyRecordFlow.value.groupBy { it.buyWonCategoryName!! })
+
+//                val totalProfit = sumProfit(
+//                    action = YenViewModel.YenAction.Sell,
+//                    buyList = null, sellList = _sellRecordFlow.value
+//                )
+//
+//                totalSellProfit.emit(totalProfit)
+
+            } else {
+                val startFilterSellRecord =
+                    sellRecordFlow.value.filter { it.date!! >= startDate }
+
+                val endFilterSellRecord =
+                    startFilterSellRecord.filter { it.date!! <= endDate }
+
+                val startFilterBuyRecord =
+                    buyRecordFlow.value.filter { it.date!! >= startDate }
+
+                var endFilterBuyRecord =
+                    startFilterBuyRecord.filter { it.date!! <= endDate }
 
 
-        when(action) {
-            WonAction.Buy -> {
+                _filterSellRecordFlow.emit(endFilterSellRecord)
 
-                viewModelScope.launch {
-                    if(startDate == "" && endDate == "") {
+                _groupBuyRecordFlow.emit(setGroup(endFilterBuyRecord))
+                _filterBuyRecordFlow.emit(endFilterBuyRecord)
 
-                        _filterBuyRecordFlow.emit(_buyRecordFlow.value)
-
-                    } else {
-                        val startFilterBuyRecord= buyRecordFlow.value.filter { it.date!! >= startDate}
-
-                        var endFilterBuyRecord = startFilterBuyRecord.filter { it.date!! <= endDate}
-
-
-
-                        Log.d(TAG, "데이터 : ${endFilterBuyRecord}")
-
-                        _filterBuyRecordFlow.emit(endFilterBuyRecord)
-
-                    }
-                }
-
-            }
-
-            WonAction.Sell -> {
-
-                viewModelScope.launch {
-                    if(startDate == "" && endDate == "") {
-
-                        _filterSellRecordFlow.emit(_sellRecordFlow.value)
-
-                    } else {
-                        val startFilterSellRecord= sellRecordFlow.value.filter { it.date!! >= startDate}
-
-                        val endFilterSellRecord = startFilterSellRecord.filter { it.date!! <= endDate}
-
-
-                        _filterSellRecordFlow.emit(endFilterSellRecord)
-
-
-                    }
-                }
+//                val totalProfit = sumProfit(
+//                    action = YenViewModel.YenAction.Sell,
+//                    buyList = null, sellList = endFilterSellRecord
+//                )
+//
+//                totalSellProfit.emit(totalProfit)
             }
         }
 
     }
-
-
-
-//    val dollarCgValue = dollarsellGetMoney.filterNot { it.isEmpty() }.map { list ->
-//        val result = list
-//            .map{ it.exchangeMoney }
-//            .reduce{first, end ->
-//                first + end
-//            }
-//        return@map result
-//    }
-//
-//    val dollartotal = dollarCgValue.map { it.toDecUs() }
-
-
-
-
-
-//    val yensellGetMoney =  endFilterRecordFlow.map { list ->
-//        val result = list.filterNot { it.moneyType == 1 }
-//        return@map result
-//    }
-//
-//
-//    val yenCgValue = yensellGetMoney.filterNot { it.isEmpty() }.map { list ->
-//        val result = list
-//            .map{ it.exchangeMoney }
-//            .reduce{first, end ->
-//                first + end
-//            }.apply { this.toYen() }
-//        return@map result
-//    }
-//
-//    val yentotal = yenCgValue.map { it.toYen() }
-
-
-
 
 
     // 리스트 매도 값
@@ -502,20 +508,25 @@ class WonViewModel @Inject constructor(private val investRepository: InvestRepos
         }
     }
 
-    suspend fun cancelSellRecord(id: UUID): Boolean {
+    suspend fun cancelSellRecord(id: UUID): Pair<Boolean, WonSellRecord> {
 
         val searchBuyRecord = investRepository.getWonRecordId(id)
 
-        Log.d(TAG, "cancelSellRecord: ${searchBuyRecord}, sellId: ${id}")
+        val searchSellRecord = investRepository.getWonSellRecordId(id)
 
-        if(searchBuyRecord == null) {
-            return false
+        Log.d(TAG, "cancelBuyRecord: ${searchBuyRecord}, sellId: ${id}")
+
+        Log.d(TAG, "cancelSellRecord: ${searchSellRecord}, sellId: ${id}")
+
+        if (searchBuyRecord == null && searchSellRecord == null) {
+            return Pair(false, WonSellRecord())
         } else {
             val updateData = searchBuyRecord.copy(recordColor = false)
 
             investRepository.updateRecord(updateData)
 
-            return true}
+            return Pair(true, WonSellRecord())
+        }
     }
 
     fun wonCloudLoad(buyRecord: List<WonBuyRecord>, sellRecord: List<WonSellRecord>) {

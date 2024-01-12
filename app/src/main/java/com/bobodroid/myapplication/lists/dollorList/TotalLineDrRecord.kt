@@ -126,7 +126,8 @@ fun TotalLineDrRecord(
 
 
 
-    val profit = if(!data.recordColor!!) {if (data.profit.isNullOrEmpty()) {
+    val profit = if(!data.recordColor!!) {
+        if (data.profit.isNullOrEmpty()) {
         "0"
     } else { data.profit }
     } else {
@@ -438,7 +439,8 @@ fun TotalLineDrRecord(
                                     offset = DpOffset(x = 115.dp, y = 10.dp),
                                     expanded = groupDropdownExpanded,
                                     onDismissRequest = {
-                                        groupDropdownExpanded = false}) {
+                                        groupDropdownExpanded = false}
+                                ) {
 
                                     DropdownMenuItem(
                                         modifier = Modifier

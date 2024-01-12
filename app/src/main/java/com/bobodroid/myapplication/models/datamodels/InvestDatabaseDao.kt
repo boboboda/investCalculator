@@ -92,7 +92,7 @@ interface YenSellDatabaseDao {
     fun getRecords(): Flow<List<YenSellRecord>>
 
     @Query("SELECT * from sellYen_table where id=:id")
-    suspend fun getRecordById(id: String): YenSellRecord
+    suspend fun getRecordById(id: UUID): YenSellRecord
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(yenSellRecord: YenSellRecord)
@@ -145,7 +145,7 @@ interface WonSellDatabaseDao {
     fun getRecords(): Flow<List<WonSellRecord>>
 
     @Query("SELECT * from sellWon_table where id=:id")
-    suspend fun getRecordById(id: String): WonSellRecord
+    suspend fun getRecordById(id: UUID): WonSellRecord
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(wonSellRecord: WonSellRecord)

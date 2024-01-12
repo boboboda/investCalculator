@@ -83,49 +83,11 @@ class DollarViewModel @Inject constructor(private val investRepository: InvestRe
                 Log.d(TAG, "init 완료")
             }
 
-
-
-
-//            investRepository.getAllBuyRecords().distinctUntilChanged()
-//                .collect { listOfRecord ->
-//                    if (listOfRecord.isNullOrEmpty()) {
-//                        Log.d(TAG, "Empty Buy list")
-//                    } else {
-//
-//                        _buyRecordFlow.value = listOfRecord
-//                        _filterBuyRecordFlow.value = setGroup(listOfRecord)
-//
-//                        val groupName = listOfRecord.map { it.buyDrCategoryName ?: "기본" }
-//
-//                        groupList.value = groupName.distinct()
-//
-//                        Log.w(TAG, "${_buyRecordFlow.value}")
-//
-//
-//                    }
-//                }
         }
-//        viewModelScope.launch(Dispatchers.IO) {
-//            investRepository.getAllSellRecords().distinctUntilChanged()
-//                .collect { listOfRecord ->
-//                    if (listOfRecord.isNullOrEmpty()) {
-//                        Log.d(TAG, "Empty Sell list")
-//                    } else {
-//
-//                        _sellRecordFlow.value = listOfRecord
-//                        _filterSellRecordFlow.value = listOfRecord
-//                    }
-//                }
-//        }
-
 
     }
     // 매수매도 통합 작업
     // 예외처리 대비 루프
-
-    fun checkBuyRecordData() {
-
-    }
 
     fun combineBuyAndSell(sellRecord: List<DrSellRecord>, buyRecord: List<DrBuyRecord>) {
 
@@ -206,83 +168,53 @@ class DollarViewModel @Inject constructor(private val investRepository: InvestRe
     }
 
     fun dateRangeInvoke(
-        action: DrAction = DrAction.Buy,
         startDate: String,
         endDate: String
     ) {
-
         Log.d(TAG, "전체 데이터 : ${buyRecordFlow.value}")
 
-        when (action) {
-            DrAction.Buy -> {
 
-                viewModelScope.launch {
-                    if (startDate == "" && endDate == "") {
+        //수정 필요
 
-                        _filterBuyRecordFlow.emit(_buyRecordFlow.value)
-                        _groupBuyRecordFlow.emit(_buyRecordFlow.value.groupBy { it.buyDrCategoryName!! })
+        viewModelScope.launch {
+            if (startDate == "" && endDate == "") {
 
-                        val totalProfit = sumProfit(
-                            action = DrAction.Buy,
-                            buyList = _buyRecordFlow.value, sellList = null
-                        )
+                _filterBuyRecordFlow.emit(_buyRecordFlow.value)
+                _filterSellRecordFlow.emit(_sellRecordFlow.value)
+                _groupBuyRecordFlow.emit(_buyRecordFlow.value.groupBy { it.buyDrCategoryName!! })
 
-                        totalExpectProfit.emit(totalProfit)
+                val totalProfit = sumProfit(
+                    action = DrAction.Sell,
+                    buyList = null, sellList = _sellRecordFlow.value
+                )
 
-                    } else {
-                        val startFilterBuyRecord =
-                            buyRecordFlow.value.filter { it.date!! >= startDate }
+                totalSellProfit.emit(totalProfit)
 
-                        var endFilterBuyRecord =
-                            startFilterBuyRecord.filter { it.date!! <= endDate }
+            } else {
+                val startFilterSellRecord =
+                    sellRecordFlow.value.filter { it.date!! >= startDate }
 
-                        _groupBuyRecordFlow.emit(setGroup(endFilterBuyRecord))
-                        _filterBuyRecordFlow.emit(endFilterBuyRecord)
+                val endFilterSellRecord =
+                    startFilterSellRecord.filter { it.date!! <= endDate }
 
-                        val totalProfit = sumProfit(
-                            action = DrAction.Buy,
-                            buyList = endFilterBuyRecord, sellList = null
-                        )
+                val startFilterBuyRecord =
+                    buyRecordFlow.value.filter { it.date!! >= startDate }
 
-                        totalExpectProfit.emit(totalProfit)
-
-                    }
-                }
-
-            }
-
-            DrAction.Sell -> {
-
-                viewModelScope.launch {
-                    if (startDate == "" && endDate == "") {
-
-                        _filterSellRecordFlow.emit(_sellRecordFlow.value)
-
-                        val totalProfit = sumProfit(
-                            action = DrAction.Sell,
-                            buyList = null, sellList = _sellRecordFlow.value
-                        )
-
-                        totalSellProfit.emit(totalProfit)
-
-                    } else {
-                        val startFilterSellRecord =
-                            sellRecordFlow.value.filter { it.date!! >= startDate }
-
-                        val endFilterSellRecord =
-                            startFilterSellRecord.filter { it.date!! <= endDate }
+                var endFilterBuyRecord =
+                    startFilterBuyRecord.filter { it.date!! <= endDate }
 
 
-                        _filterSellRecordFlow.emit(endFilterSellRecord)
+                _filterSellRecordFlow.emit(endFilterSellRecord)
 
-                        val totalProfit = sumProfit(
-                            action = DrAction.Sell,
-                            buyList = null, sellList = endFilterSellRecord
-                        )
+                _groupBuyRecordFlow.emit(setGroup(endFilterBuyRecord))
+                _filterBuyRecordFlow.emit(endFilterBuyRecord)
 
-                        totalSellProfit.emit(totalProfit)
-                    }
-                }
+                val totalProfit = sumProfit(
+                    action = DrAction.Sell,
+                    buyList = null, sellList = endFilterSellRecord
+                )
+
+                totalSellProfit.emit(totalProfit)
             }
         }
 

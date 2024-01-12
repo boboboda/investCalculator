@@ -113,7 +113,7 @@ fun DollarInvestScreen(
 
             Card(
                 modifier = Modifier
-                    .width(170.dp)
+                    .width(160.dp)
                     .padding(end = 10.dp)
                     .height(40.dp)
                     .background(Color.White),
@@ -124,18 +124,21 @@ fun DollarInvestScreen(
                 ),
                 onClick = {
                     isDialogOpen.value = !isDialogOpen.value
-
                 }) {
-                Text(
-                    text = "$date",
-                    color = Color.Black,
-                    fontSize = 18.sp,
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier
-                        .width(160.dp)
-                        .height(40.dp)
-                        .padding(start = 12.dp, top = 8.dp)
-                )
+
+                Row(modifier = Modifier
+                    .fillMaxSize(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.Center) {
+                    Text(
+                        text = "$date",
+                        color = Color.Black,
+                        fontSize = 18.sp,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier
+                    )
+                }
+
             }
         }
 

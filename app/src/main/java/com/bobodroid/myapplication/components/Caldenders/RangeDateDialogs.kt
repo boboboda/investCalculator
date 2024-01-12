@@ -2,6 +2,7 @@ package com.bobodroid.myapplication.components.Caldenders
 
 import android.icu.util.Calendar
 import android.icu.util.TimeZone
+import android.util.Log
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -38,6 +39,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
+import com.bobodroid.myapplication.MainActivity.Companion.TAG
 import com.bobodroid.myapplication.components.CardButton
 import com.bobodroid.myapplication.models.viewmodels.AllViewModel
 import com.bobodroid.myapplication.ui.theme.DialogBackgroundColor
@@ -72,9 +74,9 @@ fun RangeDateDialog(
 
     val today = formatter.format(time)
 
-    val selectedStartDate = remember{ mutableStateOf("${LocalDate.now()}") }
+    val selectedStartDate = remember { mutableStateOf("${LocalDate.now()}") }
 
-    val selectedEndDate = remember{ mutableStateOf("${LocalDate.now()}") }
+    val selectedEndDate = remember { mutableStateOf("${LocalDate.now()}") }
 
     val isStartDateOpen = remember { mutableStateOf(false) }
 
@@ -84,17 +86,17 @@ fun RangeDateDialog(
 
     fun dateWeek(week: Int): String? {
         val c: java.util.Calendar = GregorianCalendar()
-        c.add(java.util.Calendar.DAY_OF_WEEK, - week)
-        val sdfr = SimpleDateFormat("yyyy-MM-dd")
-        return sdfr.format(c.time).toString()
-    }
-    fun dateMonth(month: Int): String? {
-        val c: java.util.Calendar = GregorianCalendar()
-        c.add(java.util.Calendar.MONTH, - month)
+        c.add(java.util.Calendar.DAY_OF_WEEK, -week)
         val sdfr = SimpleDateFormat("yyyy-MM-dd")
         return sdfr.format(c.time).toString()
     }
 
+    fun dateMonth(month: Int): String? {
+        val c: java.util.Calendar = GregorianCalendar()
+        c.add(java.util.Calendar.MONTH, -month)
+        val sdfr = SimpleDateFormat("yyyy-MM-dd")
+        return sdfr.format(c.time).toString()
+    }
 
 
     val oneWeek = dateWeek(7)
@@ -120,32 +122,38 @@ fun RangeDateDialog(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(5.dp)
         ) {
-            Row(modifier = Modifier
-                .wrapContentHeight()
-                .fillMaxWidth()
-                .padding(vertical = 5.dp)
-                .padding(start = 10.dp),
-                horizontalArrangement = Arrangement.Center) {
+            Row(
+                modifier = Modifier
+                    .wrapContentHeight()
+                    .fillMaxWidth()
+                    .padding(vertical = 5.dp)
+                    .padding(start = 10.dp),
+                horizontalArrangement = Arrangement.Center
+            ) {
 
                 Text(text = "매수내역 조회 설정", fontSize = 25.sp)
             }
             Divider(Modifier.fillMaxWidth())
 
-            Row(modifier = Modifier
-                .wrapContentHeight()
-                .fillMaxWidth()
-                .padding(start = 10.dp),
-                horizontalArrangement = Arrangement.Start) {
+            Row(
+                modifier = Modifier
+                    .wrapContentHeight()
+                    .fillMaxWidth()
+                    .padding(start = 10.dp),
+                horizontalArrangement = Arrangement.Start
+            ) {
 
                 Text(text = "조회기간", fontSize = 15.sp)
             }
 
-            Row(modifier = Modifier
-                .height(50.dp)
-                .fillMaxWidth()
-                .padding(horizontal = 10.dp)
-                .padding(),
-                horizontalArrangement = Arrangement.spacedBy(10.dp),) {
+            Row(
+                modifier = Modifier
+                    .height(50.dp)
+                    .fillMaxWidth()
+                    .padding(horizontal = 10.dp)
+                    .padding(),
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+            ) {
 
                 CardButton(
                     label = "오늘",
@@ -157,7 +165,7 @@ fun RangeDateDialog(
                         selectedEndDate.value = "${LocalDate.now()}"
 
                         datePickerEnableState.value = false
-                                dateCardLabel.value = it
+                        dateCardLabel.value = it
                         scope.launch {
                             allViewModel.dateStringFlow.emit(it)
                         }
@@ -234,11 +242,13 @@ fun RangeDateDialog(
 
             }
 
-            Row(modifier = Modifier
-                .fillMaxWidth()
-                .padding(start = 15.dp, end = 15.dp),
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(start = 15.dp, end = 15.dp),
                 horizontalArrangement = Arrangement.Center,
-                verticalAlignment = Alignment.CenterVertically) {
+                verticalAlignment = Alignment.CenterVertically
+            ) {
 
                 OutlinedButton(
                     modifier = Modifier
@@ -261,43 +271,46 @@ fun RangeDateDialog(
                     )
                 }
 
-                    Text(text = "~")
+                Text(text = "~")
 
-                    OutlinedButton(
-                        modifier = Modifier.weight(1f),
-                        border = BorderStroke(1.dp, color = Color.Black),
-                        enabled = datePickerEnableState.value,
-                        colors = ButtonDefaults.buttonColors(
-                            contentColor = Color.Black,
-                            disabledContainerColor = Color.LightGray,
-                            containerColor = Color.White
-                        ),
-                        shape = RoundedCornerShape(5.dp),
-                        onClick = {
-                            isEndDateOpen.value = true
-                        }) {
-                        Text(
-                            text = "${selectedEndDate.value}",
-                            fontSize = 13.sp,
-                            textAlign = TextAlign.Center,
-                        )
+                OutlinedButton(
+                    modifier = Modifier.weight(1f),
+                    border = BorderStroke(1.dp, color = Color.Black),
+                    enabled = datePickerEnableState.value,
+                    colors = ButtonDefaults.buttonColors(
+                        contentColor = Color.Black,
+                        disabledContainerColor = Color.LightGray,
+                        containerColor = Color.White
+                    ),
+                    shape = RoundedCornerShape(5.dp),
+                    onClick = {
+                        isEndDateOpen.value = true
+                    }) {
+                    Text(
+                        text = "${selectedEndDate.value}",
+                        fontSize = 13.sp,
+                        textAlign = TextAlign.Center,
+                    )
 
-
-                    }
 
                 }
 
+            }
+
             Spacer(modifier = Modifier.height(10.dp))
 
-            Row(modifier = Modifier
-                .fillMaxWidth()
-                .wrapContentSize()
-                .padding(start = 30.dp, end = 10.dp)) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .wrapContentSize()
+                    .padding(start = 30.dp, end = 10.dp)
+            ) {
 
                 Button(
                     shape = RoundedCornerShape(5.dp),
                     onClick = {
                         onClicked?.invoke(selectedStartDate.value, selectedEndDate.value)
+                        Log.d(TAG, "조회날짜 ${selectedStartDate.value} ${selectedEndDate.value}")
                         onDismissRequest(false)
                     },
                     colors = ButtonDefaults.buttonColors(WelcomeScreenBackgroundColor)
@@ -326,7 +339,8 @@ fun RangeDateDialog(
                     onClick = {
                         onDismissRequest(false)
                     },
-                    colors = ButtonDefaults.buttonColors(WelcomeScreenBackgroundColor))
+                    colors = ButtonDefaults.buttonColors(WelcomeScreenBackgroundColor)
+                )
                 {
                     Box(
                         modifier = Modifier
@@ -352,55 +366,65 @@ fun RangeDateDialog(
 
 
 
-                if(isStartDateOpen.value) {
-                    startDatePickerDialog(
-                        selectedStartDate = isStartDateOpen.value,
-                        onDateSelected = {startDate->
+        if (isStartDateOpen.value) {
+            startDatePickerDialog(
+                selectedStartDate = isStartDateOpen.value,
+                onDateSelected = { startDate ->
 
-                            selectedStartDate.value = Instant.ofEpochMilli(startDate).atZone(
-                                ZoneId.systemDefault()).toLocalDate().toString()
+                    selectedStartDate.value = Instant.ofEpochMilli(startDate).atZone(
+                        ZoneId.systemDefault()
+                    ).toLocalDate().toString()
 
-                            startDateSelected?.invoke(selectedStartDate.value)
+                    startDateSelected?.invoke(selectedStartDate.value)
 
-                            isStartDateOpen.value = false
-                        },
-                        onDismissRequest = {
-                            isStartDateOpen.value = false
-                        },
-                        startDate =  if(callStartDate == "") "${LocalDate.now()}" else { callStartDate },
-                        endDate =  if(callEndDate == "") "${LocalDate.now()}" else { callEndDate }
-                    )
+                    isStartDateOpen.value = false
+                },
+                onDismissRequest = {
+                    isStartDateOpen.value = false
+                },
+                startDate = if (callStartDate == "") "${LocalDate.now()}" else {
+                    callStartDate
+                },
+                endDate = if (callEndDate == "") "${LocalDate.now()}" else {
+                    callEndDate
                 }
+            )
+        }
 
 
 
 
 
-                if(isEndDateOpen.value) {
-                    endDatePickerDialog(
-                        selectedEndDate = isEndDateOpen.value,
-                        onDateSelected = {endDate->
+        if (isEndDateOpen.value) {
+            endDatePickerDialog(
+                selectedEndDate = isEndDateOpen.value,
+                onDateSelected = { endDate ->
 
-                          selectedEndDate.value = Instant.ofEpochMilli(endDate).atZone(
-                                ZoneId.systemDefault()).toLocalDate().toString()
+                    selectedEndDate.value = Instant.ofEpochMilli(endDate).atZone(
+                        ZoneId.systemDefault()
+                    ).toLocalDate().toString()
 
-                            endDateSelected?.invoke(Instant.ofEpochMilli(endDate).atZone(
-                                ZoneId.systemDefault()).toLocalDate().toString())
-
-                            isEndDateOpen.value = false
-                        },
-                        onDismissRequest = {
-                            isEndDateOpen.value = false
-                        },
-                        startDate = if(callStartDate == "") "${LocalDate.now()}" else { callStartDate },
-                        endDate = if(callEndDate == "") "${LocalDate.now()}" else { callEndDate }
+                    endDateSelected?.invoke(
+                        Instant.ofEpochMilli(endDate).atZone(
+                            ZoneId.systemDefault()
+                        ).toLocalDate().toString()
                     )
+
+                    isEndDateOpen.value = false
+                },
+                onDismissRequest = {
+                    isEndDateOpen.value = false
+                },
+                startDate = if (callStartDate == "") "${LocalDate.now()}" else {
+                    callStartDate
+                },
+                endDate = if (callEndDate == "") "${LocalDate.now()}" else {
+                    callEndDate
                 }
+            )
         }
     }
-
-
-
+}
 
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -410,8 +434,8 @@ fun startDatePickerDialog(
     onDateSelected: ((Long) -> Unit)?,
     onDismissRequest: () -> Unit,
     endDate: String,
-    startDate: String) {
-
+    startDate: String
+) {
 
 
     val Cgdate: LocalDate = LocalDate.parse(endDate, DateTimeFormatter.ISO_DATE)
@@ -424,7 +448,7 @@ fun startDatePickerDialog(
 
     val today = LocalDate.now()
 //    val today = calendar.get(Calendar.DATE)
-    calendar.set(today.year, today.monthValue , today.dayOfMonth) // add year, month (Jan), date
+    calendar.set(today.year, today.monthValue, today.dayOfMonth) // add year, month (Jan), date
 
     val cgDate = startDate.let {
         val data = LocalDate.parse(it)
@@ -504,7 +528,6 @@ fun endDatePickerDialog(
         val cgData = calendar
         cgData
     }
-
 
 
     // set the initial date

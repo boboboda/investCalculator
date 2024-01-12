@@ -1,4 +1,4 @@
-package com.bobodroid.myapplication.lists.dollorList
+package com.bobodroid.myapplication.lists.yenList
 
 import android.annotation.SuppressLint
 import androidx.compose.foundation.ExperimentalFoundationApi
@@ -13,7 +13,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.SnackbarHostState
 import androidx.compose.material3.Divider
@@ -29,24 +28,25 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
-import com.bobodroid.myapplication.R
 import com.bobodroid.myapplication.components.RecordHeader
 import com.bobodroid.myapplication.components.RecordTextView
 import com.bobodroid.myapplication.models.datamodels.DrBuyRecord
+import com.bobodroid.myapplication.models.datamodels.YenBuyRecord
 import com.bobodroid.myapplication.models.viewmodels.DollarViewModel
+import com.bobodroid.myapplication.models.viewmodels.YenViewModel
 import java.util.UUID
 
 @ExperimentalMaterialApi
 @OptIn(ExperimentalMaterialApi::class, ExperimentalFoundationApi::class)
 @SuppressLint("StateFlowValueCalledInComposition")
 @Composable
-fun TotalDrRecordBox(
-    dollarViewModel: DollarViewModel,
+fun TotalYenRecordBox(
+    yenViewModel: YenViewModel,
     snackBarHostState: SnackbarHostState,
     hideSellRecordState: Boolean
 ) {
 
-    val buyRecordHistory : State<Map<String, List<DrBuyRecord>>> = dollarViewModel.groupBuyRecordFlow.collectAsState()
+    val buyRecordHistory : State<Map<String, List<YenBuyRecord>>> = yenViewModel.groupBuyRecordFlow.collectAsState()
 
     val filterRecord  = if(hideSellRecordState)
     {
@@ -71,7 +71,7 @@ fun TotalDrRecordBox(
     ) {
         RecordTextView(recordText = "매수날짜\n " + "(매도날짜)", 45.dp, 16, 2.5f, 0.dp, color = Color.Black)
         Spacer(modifier = Modifier.width(1.dp))
-        RecordTextView(recordText = "매수달러\n" + "(매수금)", 45.dp, 16, 2.5f,  0.dp, color = Color.Black)
+        RecordTextView(recordText = "매수앤화\n" + "(매수금)", 45.dp, 16, 2.5f,  0.dp, color = Color.Black)
         Spacer(modifier = Modifier.width(1.dp))
         RecordTextView(recordText = "매수환율\n" + "(매도환율)", 45.dp, 16, 2.5f,  0.dp, color = Color.Black)
         Spacer(modifier = Modifier.width(1.dp))
@@ -104,27 +104,25 @@ fun TotalDrRecordBox(
 
                 itemsIndexed(
                     items = items,
-                    key = { index: Int, item: DrBuyRecord -> item.id!! }
+                    key = { index: Int, item: YenBuyRecord -> item.id!! }
                 ) { index, Buy ->
 
-
-
-                    TotalLineDrRecord(
+                    TotalLineYenRecord(
                         Buy,
                         sellAction = Buy.recordColor!!
                         ,
                         sellActed = { buyRecord ->
                             selectedId = buyRecord.id
 
-                            dollarViewModel.updateBuyRecord(buyRecord)
+                            yenViewModel.updateBuyRecord(buyRecord)
 
                         },
                         onClicked = { recordbox ->
                             selectedId = recordbox.id
-                            dollarViewModel.dateFlow.value = recordbox.date!!
-                            dollarViewModel.haveMoneyDollar.value = recordbox.exchangeMoney!!
-                            dollarViewModel.recordInputMoney.value = recordbox.money!! },
-                        dollarViewModel = dollarViewModel,
+                            yenViewModel.dateFlow.value = recordbox.date!!
+                            yenViewModel.haveMoney.value = recordbox.exchangeMoney!!
+                            yenViewModel.recordInputMoney.value = recordbox.money!! },
+                        yenViewModel = yenViewModel,
                         snackBarHostState = snackBarHostState)
 
                     Divider()

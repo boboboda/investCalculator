@@ -30,6 +30,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.DpOffset
 import com.bobodroid.myapplication.R
 import com.bobodroid.myapplication.lists.dollorList.BuyRecordBox
+import com.bobodroid.myapplication.lists.dollorList.EditTypeRecordBox
 import com.bobodroid.myapplication.lists.dollorList.SellRecordBox
 import com.bobodroid.myapplication.lists.dollorList.TotalDrRecordBox
 import com.bobodroid.myapplication.lists.dollorList.addFocusCleaner
@@ -48,7 +49,7 @@ fun DollarMainScreen(
 
     val recentExchangeRate = allViewModel.recentExChangeRateFlow.collectAsState()
 
-    var dropdownExpanded by remember { mutableStateOf(false) }
+
 
     val reFreshDate = allViewModel.refreshDateFlow.collectAsState()
 
@@ -56,11 +57,15 @@ fun DollarMainScreen(
 
     val scope = rememberCoroutineScope()
 
+
+
+    var dropdownExpanded by remember { mutableStateOf(false) }
+
+    val focusManager = LocalFocusManager.current
+
     var hideSellRecordState by remember { mutableStateOf(false) }
 
     val visibleIcon = if (hideSellRecordState)  R.drawable.ic_visible  else  R.drawable.ic_invisible
-
-    val focusManager = LocalFocusManager.current
 
     val dropdownMenuName = when (selectedBoxId.value) {
         1 -> {
@@ -172,7 +177,7 @@ fun DollarMainScreen(
                                 contentAlignment = Alignment.TopStart
                             ) {
                                 Text(
-                                    text = "반응형",
+                                    text = "편집형",
                                     color = Color.Black,
                                     fontSize = 13.sp
                                 )
@@ -285,19 +290,30 @@ fun DollarMainScreen(
                 when (selectedBoxId.value) {
                     1 -> {
                         TotalDrRecordBox(
-                            dollarViewModel = dollarViewModel,
-                            snackBarHostState = snackBarHostState,
-                            hideSellRecordState = hideSellRecordState
+                            dollarViewModel,
+                            snackBarHostState,
+                            hideSellRecordState
                         )
                     }
 
-                    2 -> {}
+                    2 -> {
+                        EditTypeRecordBox(
+                            dollarViewModel,
+                            snackBarHostState,
+                            hideSellRecordState
+                        )
+                    }
                     3 -> {
-                        BuyRecordBox(dollarViewModel, snackBarHostState)
+                        BuyRecordBox(
+                            dollarViewModel,
+                            snackBarHostState,
+                            hideSellRecordState)
                     }
 
                     4 -> {
-                        SellRecordBox(dollarViewModel, snackBarHostState)
+                        SellRecordBox(
+                            dollarViewModel,
+                            snackBarHostState)
                     }
 
                     else -> {

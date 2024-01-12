@@ -1,7 +1,5 @@
 package com.bobodroid.myapplication.lists.dollorList
 
-import android.annotation.SuppressLint
-import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -14,7 +12,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.SnackbarHostState
 import androidx.compose.material3.Divider
 import androidx.compose.runtime.Composable
@@ -29,28 +26,25 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
-import com.bobodroid.myapplication.R
-import com.bobodroid.myapplication.components.RecordHeader
 import com.bobodroid.myapplication.components.RecordTextView
 import com.bobodroid.myapplication.models.datamodels.DrBuyRecord
 import com.bobodroid.myapplication.models.viewmodels.DollarViewModel
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import java.util.UUID
 
-@ExperimentalMaterialApi
-@OptIn(ExperimentalMaterialApi::class, ExperimentalFoundationApi::class)
-@SuppressLint("StateFlowValueCalledInComposition")
 @Composable
-fun TotalDrRecordBox(
+fun EditTypeRecordBox(
     dollarViewModel: DollarViewModel,
     snackBarHostState: SnackbarHostState,
     hideSellRecordState: Boolean
 ) {
 
-    val buyRecordHistory : State<Map<String, List<DrBuyRecord>>> = dollarViewModel.groupBuyRecordFlow.collectAsState()
+    val buyRecordHistory : State<List<DrBuyRecord>> = dollarViewModel.filterBuyRecordFlow.collectAsState()
 
     val filterRecord  = if(hideSellRecordState)
     {
-        buyRecordHistory.value.mapValues { it.value.filter { it.recordColor == false } }
+        buyRecordHistory.value.filter { it.recordColor == false }
     } else {
         buyRecordHistory.value
     }
@@ -59,9 +53,9 @@ fun TotalDrRecordBox(
 
     var lazyScrollState = rememberLazyListState()
 
+    val columnScrollState = rememberScrollState()
+
     val coroutineScope = rememberCoroutineScope()
-
-
 
     Row(modifier = Modifier
         .fillMaxWidth()
@@ -94,42 +88,46 @@ fun TotalDrRecordBox(
             state = lazyScrollState) {
 
             //  Buy -> 라인리코드텍스트에 넣지 말고 바로 데이터 전달 -> 리팩토리
+            val listSize = filterRecord.size
+            itemsIndexed(
+                items = filterRecord,
+                key = { index: Int, item: DrBuyRecord -> item.id!! }
+            ) { index, Buy ->
 
-            filterRecord.forEach { key, items->
+                EditLineDrRecord(
+                    Buy,
+                    index = index,
+                    listSize = listSize,
+                    sellAction = Buy.recordColor!!
+                    ,
+                    sellActed = { buyRecord ->
+                        selectedId = buyRecord.id
 
+                        dollarViewModel.updateBuyRecord(buyRecord)
 
-                stickyHeader {
-                    RecordHeader(key = key)
+                    },
+                    onClicked = { recordbox ->
+                        selectedId = recordbox.id
+                        dollarViewModel.dateFlow.value = recordbox.date!!
+                        dollarViewModel.haveMoneyDollar.value = recordbox.exchangeMoney!!
+                        dollarViewModel.recordInputMoney.value = recordbox.money!! },
+                    dollarViewModel = dollarViewModel,
+                    snackBarHostState = snackBarHostState) {
+                    coroutineScope.launch {
+                        if(index <= listSize - 7) {
+                            delay(300)
+                            lazyScrollState.animateScrollToItem(index)
+                        } else {
+                            delay(300)
+                            lazyScrollState.animateScrollToItem(index, 0)
+                        }
+
+                    }
                 }
 
-                itemsIndexed(
-                    items = items,
-                    key = { index: Int, item: DrBuyRecord -> item.id!! }
-                ) { index, Buy ->
-
-
-
-                    TotalLineDrRecord(
-                        Buy,
-                        sellAction = Buy.recordColor!!
-                        ,
-                        sellActed = { buyRecord ->
-                            selectedId = buyRecord.id
-
-                            dollarViewModel.updateBuyRecord(buyRecord)
-
-                        },
-                        onClicked = { recordbox ->
-                            selectedId = recordbox.id
-                            dollarViewModel.dateFlow.value = recordbox.date!!
-                            dollarViewModel.haveMoneyDollar.value = recordbox.exchangeMoney!!
-                            dollarViewModel.recordInputMoney.value = recordbox.money!! },
-                        dollarViewModel = dollarViewModel,
-                        snackBarHostState = snackBarHostState)
-
-                    Divider()
-                }
+                Divider()
             }
+
 
 
         }

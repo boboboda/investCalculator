@@ -46,6 +46,7 @@ class InvestRepository @Inject constructor(
 
     suspend fun addRecord(yenSellRecord: YenSellRecord) = yenSellDatabaseDao.insert(yenSellRecord)
 
+    suspend fun getYenSellRecordId(yenSellId: UUID): YenSellRecord = yenSellDatabaseDao.getRecordById(yenSellId)
     suspend fun yenSellAddListRecord(yenSellRecord: List<YenSellRecord>) = yenSellDatabaseDao.insertAll(yenSellRecord)
     suspend fun updateRecord(yenSellRecord: YenSellRecord) = yenSellDatabaseDao.update(yenSellRecord)
     suspend fun deleteRecord(yenSellRecord: YenSellRecord) = yenSellDatabaseDao.deleteNote(yenSellRecord)
@@ -59,12 +60,16 @@ class InvestRepository @Inject constructor(
     suspend fun wonBuyAddListRecord(wonBuyRecord: List<WonBuyRecord>) = wonBuyDatabaseDao.insertAll(wonBuyRecord)
 
     suspend fun getWonRecordId(yenBuyId: UUID): WonBuyRecord = wonBuyDatabaseDao.getRecordById(yenBuyId)
+
+    suspend fun getWonSellRecordId(yenSellId: UUID): WonSellRecord = wonSellDatabaseDao.getRecordById(yenSellId)
     suspend fun updateRecord(wonBuyRecord: WonBuyRecord) = wonBuyDatabaseDao.update(wonBuyRecord)
     suspend fun deleteRecord(wonBuyRecord: WonBuyRecord) = wonBuyDatabaseDao.deleteNote(wonBuyRecord)
     suspend fun deleteAllRecord(wonBuyRecord: WonBuyRecord) = wonBuyDatabaseDao.deleteAll()
     fun getAllWonBuyRecords(): Flow<List<WonBuyRecord>> = wonBuyDatabaseDao.getRecords().flowOn(Dispatchers.IO).conflate()
 
     suspend fun addRecord(wonSellRecord: WonSellRecord) = wonSellDatabaseDao.insert(wonSellRecord)
+
+
 
     suspend fun wonSellAddListRecord(wonSellRecord: List<WonSellRecord>) = wonSellDatabaseDao.insertAll(wonSellRecord)
     suspend fun updateRecord(wonSellRecord: WonSellRecord) = wonSellDatabaseDao.update(wonSellRecord)

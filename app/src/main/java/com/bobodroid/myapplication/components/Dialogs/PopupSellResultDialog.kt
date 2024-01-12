@@ -329,7 +329,7 @@ fun YenSellResultDialog(
                     onClicked = {
                         sellAction()
                         yenViewModel.sellRecordValue(buyRecord)
-                        yenViewModel.selectedCheckBoxId.value = 2
+                        yenViewModel.selectedBoxId.value = 2
                     },
                     color = SellButtonColor,
                     fontColor = Color.White,

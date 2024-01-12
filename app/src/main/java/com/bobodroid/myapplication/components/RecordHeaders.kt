@@ -23,7 +23,7 @@ import com.bobodroid.myapplication.models.viewmodels.DollarViewModel
 import kotlin.random.Random
 
 @Composable
-fun drRecordHeader(key: String) {
+fun RecordHeader(key: String) {
 
     GroupDetailHeader(groupName = key)
 }

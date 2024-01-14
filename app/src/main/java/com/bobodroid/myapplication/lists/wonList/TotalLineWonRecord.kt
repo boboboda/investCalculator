@@ -1,11 +1,10 @@
-package com.bobodroid.myapplication.lists.dollorList
+package com.bobodroid.myapplication.lists.wonList
 
 import android.util.Log
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -56,7 +55,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
-import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.TextStyle
@@ -69,13 +67,14 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.bobodroid.myapplication.MainActivity
 import com.bobodroid.myapplication.components.Dialogs.AskTriggerDialog
-import com.bobodroid.myapplication.components.Dialogs.SellDialog
 import com.bobodroid.myapplication.components.Dialogs.TextFieldDialog
+import com.bobodroid.myapplication.components.Dialogs.WonSellDialog
 import com.bobodroid.myapplication.components.RecordTextView
 import com.bobodroid.myapplication.extensions.toBigDecimalUs
 import com.bobodroid.myapplication.extensions.toBigDecimalWon
-import com.bobodroid.myapplication.models.datamodels.DrBuyRecord
-import com.bobodroid.myapplication.models.viewmodels.DollarViewModel
+import com.bobodroid.myapplication.extensions.toBigDecimalYen
+import com.bobodroid.myapplication.models.datamodels.WonBuyRecord
+import com.bobodroid.myapplication.models.viewmodels.WonViewModel
 import com.bobodroid.myapplication.ui.theme.DeleteColor
 import com.bobodroid.myapplication.ui.theme.SelectedColor
 import com.bobodroid.myapplication.ui.theme.TopButtonColor
@@ -85,49 +84,32 @@ import java.math.BigDecimal
 import java.math.MathContext
 import java.math.RoundingMode
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterialApi::class)
+@OptIn(ExperimentalMaterialApi::class, ExperimentalMaterial3Api::class)
 @Composable
-fun TotalLineDrRecord(
-    data: DrBuyRecord,
+fun TotalLineWonRecordText(
+    data: WonBuyRecord,
     sellAction: Boolean = data.recordColor!!,
-    sellActed: (DrBuyRecord) -> Unit,
-    onClicked: ((DrBuyRecord) -> Unit)?,
-    dollarViewModel: DollarViewModel,
-    snackBarHostState: SnackbarHostState,
-
-    ) {
+    sellActed: (WonBuyRecord) -> Unit,
+    onClicked: ((WonBuyRecord)-> Unit)?,
+    wonViewModel: WonViewModel,
+    snackbarHostState: SnackbarHostState
+) {
 
     val mathContext = MathContext(28, RoundingMode.HALF_UP)
 
-    var openDialog by remember { mutableStateOf(false) }
+    val moneyCg = if(data.money.isNullOrEmpty()) {
+        "값없음"
+    } else {
+        when(data.moneyType) {
+            1 -> {
+                BigDecimal(data.money, mathContext).toBigDecimalUs() }
+            2 -> {
+                BigDecimal(data.money, mathContext).toBigDecimalYen() }
+            else -> null
+        }
+    }
 
-    var itemRowVisible by remember { mutableStateOf(false) }
-
-    val focusManager = LocalFocusManager.current
-
-    val deleteAskDialog = remember { mutableStateOf(false) }
-
-    val dismissState = rememberDismissState()
-
-    var dropdownExpanded by remember { mutableStateOf(false) }
-
-    var groupDropdownExpanded by remember { mutableStateOf(false) }
-
-    var memoTextInput by remember { mutableStateOf("") }
-
-    val coroutineScope = rememberCoroutineScope()
-
-    val groupList = dollarViewModel.groupList.collectAsState()
-
-    var groupAddDialog by remember { mutableStateOf(false) }
-
-    val focusRequester by remember { mutableStateOf(FocusRequester()) }
-
-
-
-
-    val profit = if(!data.recordColor!!) {
-        if (data.profit.isNullOrEmpty()) {
+    val profit = if(!data.recordColor!!) {if (data.profit.isNullOrEmpty()) {
         "0"
     } else { data.profit }
     } else {
@@ -137,30 +119,64 @@ fun TotalLineDrRecord(
 
     }
 
-    val profitColor = if (profit == "") {
+    val profitMoneyCg = when(data.moneyType) {
+        1 -> {
+            BigDecimal(profit, mathContext).toBigDecimalUs() }
+        2 -> {
+            BigDecimal(profit, mathContext).toBigDecimalYen() }
+        else -> null
+    }
+
+
+
+
+
+    var openDialog by remember { mutableStateOf(false) }
+
+    val deleteAskDialog = remember { mutableStateOf(false) }
+
+    val dismissState = rememberDismissState()
+
+    var itemRowVisible by remember { mutableStateOf(false) }
+
+    val focusManager = LocalFocusManager.current
+
+    var dropdownExpanded by remember { mutableStateOf(false) }
+
+    var memoTextInput by remember { mutableStateOf("") }
+
+    val coroutineScope = rememberCoroutineScope()
+
+    val focusRequester by remember { mutableStateOf(FocusRequester()) }
+
+    LaunchedEffect(key1 = data.buyWonMemo, block = {
+        memoTextInput = data.buyWonMemo!!
+    })
+
+    val profitColor = if(data.profit == "") {
         Color.Black
     } else {
-        if (BigDecimal(profit, mathContext).signum() == -1) {
-            Color.Blue
-        } else {
-            Color.Red
-        }
+        if(BigDecimal(data.profit, mathContext).signum() == -1) { Color.Blue} else {
+            Color.Red}
     }
+
+    if(dismissState.isDismissed(DismissDirection.StartToEnd))
+
+
+        LaunchedEffect(key1 = Unit, block = {
+            dismissState.reset()
+            deleteAskDialog.value = true
+        })
+
+    var groupDropdownExpanded by remember { mutableStateOf(false) }
+
+    val groupList =wonViewModel.groupList.collectAsState()
+
+    var groupAddDialog by remember { mutableStateOf(false) }
 
     val date = if(data.recordColor!!) { "${data.date}\n (${data.sellDate ?: "데이터없음"})" } else { data.date }
 
     val rate = if(data.recordColor!!) { "${data.rate}\n (${data.sellRate ?: "데이터없음"})" } else { data.rate }
-
-    LaunchedEffect(key1 = data.buyDrMemo, block = {
-        memoTextInput = data.buyDrMemo ?: ""
-    })
-
-    if (dismissState.isDismissed(DismissDirection.StartToEnd))
-        LaunchedEffect(key1 = Unit, block = {
-            Log.d(MainActivity.TAG, "스와이프 이벤트")
-            dismissState.reset()
-            deleteAskDialog.value = true
-        })
 
 
     SwipeToDismiss(
@@ -203,72 +219,55 @@ fun TotalLineDrRecord(
                 modifier = Modifier
                     .wrapContentHeight(),
                 shape = RoundedCornerShape(0.dp),
-                colors = CardDefaults.cardColors(
-                    containerColor = if (sellAction) SelectedColor else Color.White,
-                    contentColor = Color.Black
-                ),
+                colors = CardDefaults.cardColors(containerColor = if(sellAction) SelectedColor else Color.White , contentColor = Color.Black),
             ) {
 
 
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
+                        .padding(top = 7.dp, bottom = 7.dp)
                         .clickable {
                             if (itemRowVisible == false) {
                                 itemRowVisible = true
                             } else {
                                 focusManager.clearFocus()
                             }
-                        }
-                        .padding(top = 7.dp, bottom = 7.dp),
+                        },
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.Center) {
+
                     RecordTextView(
                         recordText = "${date}",
                         TextHeight = 40.dp,
                         13,
                         2.5f,
                         bottonPpaing = 0.dp,
-                        color = Color.Black
-                    )
-
+                        color = Color.Black)
                     Spacer(modifier = Modifier.width(1.dp))
-
                     RecordTextView(
-                        recordText = "${
-                            BigDecimal(
-                                data.exchangeMoney,
-                                mathContext
-                            ).toBigDecimalUs()!!
-                        }\n (${BigDecimal(data.money, mathContext).toBigDecimalWon()})",
+                        recordText = "${BigDecimal(data.exchangeMoney, mathContext).toBigDecimalWon()}\n (${moneyCg})",
                         TextHeight = 40.dp,
                         13,
                         2.5f,
                         bottonPpaing = 0.dp,
-                        color = Color.Black
-                    )
-
+                        color = Color.Black)
                     Spacer(modifier = Modifier.width(1.dp))
-
                     RecordTextView(
                         recordText = "${rate}",
                         TextHeight = 40.dp,
                         13,
                         2.5f,
                         bottonPpaing = 0.dp,
-                        color = Color.Black
-                    )
-
+                        color = Color.Black)
                     Spacer(modifier = Modifier.width(1.dp))
-
                     RecordTextView(
-                        recordText = "${BigDecimal(profit, mathContext).toBigDecimalWon()}",
+                        recordText = "${profitMoneyCg}",
                         TextHeight = 40.dp,
                         13,
                         2.5f,
                         bottonPpaing = 0.dp,
-                        color = profitColor
-                    )
+                        color = profitColor)
                 }
 
                 AnimatedVisibility(visible = itemRowVisible) {
@@ -276,16 +275,12 @@ fun TotalLineDrRecord(
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(start = 32.dp, end = 30.dp)
-                            .wrapContentHeight()
-                    ) {
-                        Row(
-                            modifier = Modifier
-                                .wrapContentSize()
-                        ) {
-                            Card(
-                                modifier = Modifier
-                                    .padding(bottom = 10.dp),
-                                colors = CardDefaults.cardColors(TopButtonColor),
+                            .wrapContentHeight()) {
+                        Row(modifier = Modifier
+                            .wrapContentSize()) {
+                            Card(modifier = Modifier
+                                .padding(bottom = 10.dp),
+                                colors = CardDefaults.cardColors( TopButtonColor ),
                                 elevation = CardDefaults.cardElevation(8.dp),
                                 shape = RoundedCornerShape(2.dp)
                             ) {
@@ -293,8 +288,7 @@ fun TotalLineDrRecord(
                                     text = "메모",
                                     modifier = Modifier
                                         .padding(all = 5.dp)
-                                        .padding(horizontal = 3.dp)
-                                )
+                                        .padding(horizontal = 3.dp))
                             }
 
                             Spacer(modifier = Modifier.weight(1f))
@@ -307,8 +301,7 @@ fun TotalLineDrRecord(
                                 Icon(
                                     modifier = Modifier
                                         .clickable {
-                                            if (!dropdownExpanded) dropdownExpanded =
-                                                true else dropdownExpanded = false
+                                            if(!dropdownExpanded) dropdownExpanded = true else dropdownExpanded = false
                                         },
                                     imageVector = Icons.Rounded.MoreVert,
                                     contentDescription = "메뉴",
@@ -342,9 +335,9 @@ fun TotalLineDrRecord(
                                                 onClicked?.invoke(data)
                                                 if (!openDialog) openDialog = true else openDialog = false
                                             } else {
-                                                if (snackBarHostState.currentSnackbarData == null) {
+                                                if (snackbarHostState.currentSnackbarData == null) {
                                                     coroutineScope.launch {
-                                                        snackBarHostState.showSnackbar(
+                                                        snackbarHostState.showSnackbar(
                                                             "매도한 기록입니다.",
                                                             actionLabel = "닫기",
                                                             SnackbarDuration.Short
@@ -372,9 +365,9 @@ fun TotalLineDrRecord(
                                             coroutineScope.launch {
                                                 dropdownExpanded = false
                                                 if(data.recordColor == false) {
-                                                    if (snackBarHostState.currentSnackbarData == null) {
+                                                    if (snackbarHostState.currentSnackbarData == null) {
                                                         coroutineScope.launch {
-                                                            snackBarHostState.showSnackbar(
+                                                            snackbarHostState.showSnackbar(
                                                                 "매도한 기록이 없습니다.",
                                                                 actionLabel = "닫기",
                                                                 SnackbarDuration.Short
@@ -382,22 +375,22 @@ fun TotalLineDrRecord(
                                                         }
                                                     }
                                                 } else {
-                                                    val result = dollarViewModel.cancelSellRecord(data.id)
+                                                    val result = wonViewModel.cancelSellRecord(data.id)
                                                     if (result.first) {
-                                                        if (snackBarHostState.currentSnackbarData == null) {
+                                                        if (snackbarHostState.currentSnackbarData == null) {
                                                             coroutineScope.launch {
-                                                                snackBarHostState.showSnackbar(
+                                                                snackbarHostState.showSnackbar(
                                                                     "매도가 취소되었습니다.",
                                                                     actionLabel = "닫기",
                                                                     SnackbarDuration.Short
                                                                 )
-                                                                dollarViewModel.removeSellRecord(result.second)
+                                                                wonViewModel.removeSellRecord(result.second)
                                                             }
                                                         }
                                                     } else {
-                                                        if (snackBarHostState.currentSnackbarData == null) {
+                                                        if (snackbarHostState.currentSnackbarData == null) {
                                                             coroutineScope.launch {
-                                                                snackBarHostState.showSnackbar(
+                                                                snackbarHostState.showSnackbar(
                                                                     "일치하는 매수기록이 없습니다.",
                                                                     actionLabel = "닫기",
                                                                     SnackbarDuration.Short
@@ -439,8 +432,8 @@ fun TotalLineDrRecord(
                                     offset = DpOffset(x = 115.dp, y = 10.dp),
                                     expanded = groupDropdownExpanded,
                                     onDismissRequest = {
-                                        groupDropdownExpanded = false}
-                                ) {
+                                        groupDropdownExpanded = false})
+                                {
 
                                     DropdownMenuItem(
                                         modifier = Modifier
@@ -484,7 +477,7 @@ fun TotalLineDrRecord(
                                                     )
                                                 }
                                             }, onClick = {
-                                                dollarViewModel.updateRecordGroup(data, groupName)
+                                                wonViewModel.updateRecordGroup(data, groupName)
                                                 dropdownExpanded = false
                                                 groupDropdownExpanded = false
                                             })
@@ -494,28 +487,27 @@ fun TotalLineDrRecord(
                             }
 
 
+
                         }
 
                         OutlinedTextField(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .focusRequester(focusRequester = focusRequester)
-                                .onFocusChanged {
-                                },
+                            ,
                             placeholder = {
                                 Text(
                                     text = "메모를 입력해주세요",
-                                    fontSize = 15.sp
-                                )
+                                    fontSize = 15.sp)
                             },
                             value = memoTextInput,
                             onValueChange = {
 
-                                if (memoTextInput.length > 100) {
+                                if(memoTextInput.length > 100) {
                                     focusManager.clearFocus()
-                                    if (snackBarHostState.currentSnackbarData == null) {
+                                    if(snackbarHostState.currentSnackbarData == null) {
                                         coroutineScope.launch {
-                                            snackBarHostState.showSnackbar(
+                                            snackbarHostState.showSnackbar(
                                                 "100자 이하로 작성해주세요",
                                                 actionLabel = "닫기", SnackbarDuration.Short
                                             )
@@ -530,17 +522,15 @@ fun TotalLineDrRecord(
                                 baselineShift = BaselineShift.None,
                                 fontSize = 15.sp,
                                 fontWeight = FontWeight.Medium,
-                                textAlign = TextAlign.Start
-                            ),
+                                textAlign = TextAlign.Start),
                             colors = TextFieldDefaults.outlinedTextFieldColors(
                                 focusedBorderColor = Color.Black,
                                 unfocusedBorderColor = Color.Black
                             )
                         )
 
-                        Row(
-                            modifier = Modifier
-                                .wrapContentSize(),
+                        Row(modifier = Modifier
+                            .wrapContentSize(),
                             horizontalArrangement = Arrangement.spacedBy(10.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
@@ -551,17 +541,17 @@ fun TotalLineDrRecord(
 
                             Card(modifier = Modifier
                                 .padding(bottom = 10.dp),
-                                colors = CardDefaults.cardColors(TopButtonColor),
+                                colors = CardDefaults.cardColors( TopButtonColor ),
                                 elevation = CardDefaults.cardElevation(8.dp),
                                 shape = RoundedCornerShape(2.dp),
                                 onClick = {
-                                    val updateData = data.copy(buyDrMemo = memoTextInput)
+                                    val updateData = data.copy(buyWonMemo = memoTextInput)
                                     focusManager.clearFocus()
-                                    dollarViewModel.buyDrMemoUpdate(updateData) { result ->
-                                        if (result) {
-                                            if (snackBarHostState.currentSnackbarData == null) {
+                                    wonViewModel.buyWonMemoUpdate(updateData) {result ->
+                                        if(result) {
+                                            if(snackbarHostState.currentSnackbarData == null) {
                                                 coroutineScope.launch {
-                                                    snackBarHostState.showSnackbar(
+                                                    snackbarHostState.showSnackbar(
                                                         "성공적으로 저장되었습니다.",
                                                         actionLabel = "닫기", SnackbarDuration.Short
                                                     )
@@ -569,9 +559,9 @@ fun TotalLineDrRecord(
                                             }
 
                                         } else {
-                                            if (snackBarHostState.currentSnackbarData == null) {
+                                            if(snackbarHostState.currentSnackbarData == null) {
                                                 coroutineScope.launch {
-                                                    snackBarHostState.showSnackbar(
+                                                    snackbarHostState.showSnackbar(
                                                         "저장에 실패하였습니다.",
                                                         actionLabel = "닫기", SnackbarDuration.Short
                                                     )
@@ -584,20 +574,19 @@ fun TotalLineDrRecord(
                                     text = "저장",
                                     modifier = Modifier
                                         .padding(all = 5.dp)
-                                        .padding(horizontal = 3.dp)
-                                )
+                                        .padding(horizontal = 3.dp))
                             }
 
                             Card(modifier = Modifier
                                 .padding(bottom = 10.dp),
-                                colors = CardDefaults.cardColors(TopButtonColor),
+                                colors = CardDefaults.cardColors( TopButtonColor ),
                                 elevation = CardDefaults.cardElevation(8.dp),
                                 shape = RoundedCornerShape(2.dp),
                                 onClick = {
                                     itemRowVisible = false
                                     coroutineScope.launch {
                                         delay(500)
-                                        memoTextInput = data.buyDrMemo!!
+                                        memoTextInput = data.buyWonMemo!!
                                     }
 
                                 }) {
@@ -605,26 +594,22 @@ fun TotalLineDrRecord(
                                     text = "닫기",
                                     modifier = Modifier
                                         .padding(all = 5.dp)
-                                        .padding(horizontal = 3.dp)
-                                )
+                                        .padding(horizontal = 3.dp))
                             }
                         }
                     }
                 }
-
-
             }
-            if (openDialog) {
-                SellDialog(
-                    buyRecord = data,
-                    sellAction = {
-                        sellActed(data)
 
-                    },
-                    onDismissRequest = { openDialog = it },
-                    onClicked = { openDialog = it },
-                    dollarViewModel = dollarViewModel
-                )
+
+            if (openDialog) {
+                WonSellDialog(
+                    buyRecord = data,
+                    onDismissRequest = { openDialog = it},
+                    onClicked = {openDialog = it},
+                    wonViewModel = wonViewModel,
+                    sellAction = { sellActed(data) },
+                    snackbarHostState = snackbarHostState)
             }
 
             if(groupAddDialog) {
@@ -635,29 +620,29 @@ fun TotalLineDrRecord(
                     onClickedLabel = "추가",
                     closeButtonLabel = "닫기",
                     onClicked = { name ->
-                        dollarViewModel.updateRecordGroup(data, name)
+                        wonViewModel.updateRecordGroup(data, name)
                         groupAddDialog = false
                         groupDropdownExpanded = false
                         dropdownExpanded = false
                     })
             }
 
-            if (deleteAskDialog.value) {
+
+            if(deleteAskDialog.value) {
 
                 Log.d(MainActivity.TAG, "다이로그 오픈")
 
                 AskTriggerDialog(
                     title = "삭제하시겠습니까?",
                     onClickedLabel = "예",
-                    onDismissRequest = {
+                    onDismissRequest ={
                         deleteAskDialog.value = it
                     }) {
-                    dollarViewModel.removeBuyRecord(data)
+                    wonViewModel.removeBuyRecord(data)
                 }
 
             }
 
         }
     )
-
 }

@@ -1,6 +1,7 @@
-package com.bobodroid.myapplication.lists.dollorList
+package com.bobodroid.myapplication.lists.wonList
 
 import android.annotation.SuppressLint
+import android.util.Log
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -13,7 +14,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.SnackbarHostState
 import androidx.compose.material3.Divider
@@ -29,24 +29,23 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
-import com.bobodroid.myapplication.R
 import com.bobodroid.myapplication.components.RecordHeader
 import com.bobodroid.myapplication.components.RecordTextView
-import com.bobodroid.myapplication.models.datamodels.DrBuyRecord
-import com.bobodroid.myapplication.models.viewmodels.DollarViewModel
+import com.bobodroid.myapplication.models.datamodels.WonBuyRecord
+import com.bobodroid.myapplication.models.datamodels.YenBuyRecord
+import com.bobodroid.myapplication.models.viewmodels.WonViewModel
+import com.bobodroid.myapplication.screens.TAG
 import java.util.UUID
 
+@OptIn(ExperimentalFoundationApi::class)
 @ExperimentalMaterialApi
-@OptIn(ExperimentalMaterialApi::class, ExperimentalFoundationApi::class)
 @SuppressLint("StateFlowValueCalledInComposition")
 @Composable
-fun TotalDrRecordBox(
-    dollarViewModel: DollarViewModel,
-    snackBarHostState: SnackbarHostState,
-    hideSellRecordState: Boolean
-) {
+fun TotalWonRecordBox(wonViewModel: WonViewModel,
+                      snackbarHostState: SnackbarHostState,
+                      hideSellRecordState: Boolean) {
 
-    val buyRecordHistory : State<Map<String, List<DrBuyRecord>>> = dollarViewModel.groupBuyRecordFlow.collectAsState()
+    val buyRecordHistory : State<Map<String, List<WonBuyRecord>>> = wonViewModel.groupBuyRecordFlow.collectAsState()
 
     val filterRecord  = if(hideSellRecordState)
     {
@@ -55,33 +54,36 @@ fun TotalDrRecordBox(
         buyRecordHistory.value
     }
 
-    var selectedId by remember { mutableStateOf(UUID.randomUUID()) }
-
     var lazyScrollState = rememberLazyListState()
 
     val coroutineScope = rememberCoroutineScope()
 
 
+    var selectedId by remember { mutableStateOf(UUID.randomUUID()) }
+
+
+
 
     Row(modifier = Modifier
+        .background(Color.White)
         .fillMaxWidth()
         .height(55.dp),
         horizontalArrangement = Arrangement.Center,
         verticalAlignment = Alignment.CenterVertically
     ) {
+
         RecordTextView(recordText = "매수날짜\n " + "(매도날짜)", 45.dp, 16, 2.5f, 0.dp, color = Color.Black)
         Spacer(modifier = Modifier.width(1.dp))
-        RecordTextView(recordText = "매수달러\n" + "(매수금)", 45.dp, 16, 2.5f,  0.dp, color = Color.Black)
+        RecordTextView(recordText = "매수원화\n" + "(매수금)", 45.dp, 16, 2.5f,  0.dp, color = Color.Black)
         Spacer(modifier = Modifier.width(1.dp))
         RecordTextView(recordText = "매수환율\n" + "(매도환율)", 45.dp, 16, 2.5f,  0.dp, color = Color.Black)
         Spacer(modifier = Modifier.width(1.dp))
         RecordTextView(recordText = "예상수익\n " + "(확정수익)", 45.dp, 16, 2.5f,  0.dp ,color = Color.Black)
+
     }
 
-
-    //리스트 아이템
-
     Column(
+        modifier = Modifier
     ) {
 
         Spacer(modifier = Modifier
@@ -89,14 +91,13 @@ fun TotalDrRecordBox(
             .background(Color.Gray)
             .height(2.dp))
 
+
+
         LazyColumn(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier,
             state = lazyScrollState) {
 
-            //  Buy -> 라인리코드텍스트에 넣지 말고 바로 데이터 전달 -> 리팩토리
-
-            filterRecord.forEach { key, items->
-
+            filterRecord.forEach { key, items ->
 
                 stickyHeader {
                     RecordHeader(key = key)
@@ -104,32 +105,40 @@ fun TotalDrRecordBox(
 
                 itemsIndexed(
                     items = items,
-                    key = { index: Int, item: DrBuyRecord -> item.id!! }
-                ) { index, Buy ->
+                    key = { index: Int, item: WonBuyRecord -> item.id}
+                ) {index, Buy ->
 
-
-
-                    TotalLineDrRecord(
+                    TotalLineWonRecordText(
                         Buy,
                         sellAction = Buy.recordColor!!
                         ,
                         sellActed = { buyRecord ->
                             selectedId = buyRecord.id
 
-                            dollarViewModel.updateBuyRecord(buyRecord)
+                            wonViewModel.updateBuyRecord(buyRecord)
 
                         },
                         onClicked = { recordbox ->
                             selectedId = recordbox.id
-                            dollarViewModel.dateFlow.value = recordbox.date!!
-                            dollarViewModel.haveMoneyDollar.value = recordbox.exchangeMoney!!
-                            dollarViewModel.recordInputMoney.value = recordbox.money!! },
-                        dollarViewModel = dollarViewModel,
-                        snackBarHostState = snackBarHostState)
+                            wonViewModel.dateFlow.value = recordbox.date!!
+                            wonViewModel.recordInputMoney.value = recordbox.money!!.toInt()
+                            wonViewModel.moneyType.value = recordbox.moneyType!!
+                            wonViewModel.haveMoney.value = recordbox.exchangeMoney!!
+
+                            Log.d(TAG, " ${recordbox.money}, ${recordbox.exchangeMoney}")
+
+                        }
+                        ,
+                        wonViewModel,
+                        snackbarHostState = snackbarHostState)
 
                     Divider()
                 }
             }
+
+
         }
+
+
     }
 }

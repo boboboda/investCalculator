@@ -306,10 +306,11 @@ fun YenInvestScreen(yenViewModel: YenViewModel, routeAction: InvestRouteAction, 
             Buttons("매수",
                 enabled = isBtnActive,
                 onClicked = {
-                    yenViewModel.buyAddRecord()
+                    yenViewModel.buyAddRecord(group.value)
                     yenViewModel.selectedBoxId.value = 1
                     routeAction.navTo(InvestRoute.MAIN)
                     allViewModel.changeMoney.value = 2
+                    group.value = "미지정"
 
                 }
                 , color = BuyColor
@@ -364,7 +365,6 @@ fun YenMyDatePickerDialog(
 
     var currentCardId : Int = id
 
-//    var color = if (selectedId == currentCardId) Color.Gray else Color.LightGray
 
     Dialog(onDismissRequest = {
         onDismissRequest()

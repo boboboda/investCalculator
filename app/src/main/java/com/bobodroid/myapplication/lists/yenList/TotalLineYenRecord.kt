@@ -148,9 +148,11 @@ fun TotalLineYenRecord(
         }
     }
 
-    val date = if(data.recordColor!!) { "${data.date}\n (${data.sellDate ?: "데이터없음"})" } else { data.date }
+    var date = if(data.recordColor!!) { "${data.date}\n (${data.sellDate ?: "데이터없음"})" } else { data.date }
 
-    val rate = if(data.recordColor!!) { "${data.rate}\n (${data.sellRate ?: "데이터없음"})" } else { data.rate }
+    var rate = if(data.recordColor!!) { "${data.rate}\n (${data.sellRate ?: "데이터없음"})" } else { data.rate }
+
+    var money = if(data.money.isNullOrEmpty()) {"값없음"} else {BigDecimal(data.money, mathContext).toBigDecimalWon()}
 
     LaunchedEffect(key1 = data.buyYenMemo, block = {
         memoTextInput = data.buyYenMemo ?: ""
@@ -241,7 +243,7 @@ fun TotalLineYenRecord(
                                 data.exchangeMoney,
                                 mathContext
                             ).toBigDecimalUs()!!
-                        }\n (${BigDecimal(data.money, mathContext).toBigDecimalWon()})",
+                        }\n (${money})",
                         TextHeight = 40.dp,
                         13,
                         2.5f,
@@ -486,6 +488,7 @@ fun TotalLineYenRecord(
                                             }, onClick = {
                                                 yenViewModel.updateRecordGroup(data, groupName)
                                                 dropdownExpanded = false
+                                                groupDropdownExpanded = false
                                             })
                                     }
 
@@ -633,8 +636,10 @@ fun TotalLineYenRecord(
                     onClickedLabel = "추가",
                     closeButtonLabel = "닫기",
                     onClicked = { name ->
-                       yenViewModel.groupAdd(name)
+                        yenViewModel.updateRecordGroup(data, name)
                         groupAddDialog = false
+                        groupDropdownExpanded = false
+                        dropdownExpanded = false
                     })
             }
 

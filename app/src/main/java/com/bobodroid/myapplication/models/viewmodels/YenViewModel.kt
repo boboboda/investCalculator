@@ -56,7 +56,10 @@ class YenViewModel @Inject constructor(private val investRepository: InvestRepos
                 combineBuyAndSell(sellRecord, buyRecord)
 
                 if (buyRecord.isNullOrEmpty()) {
-                    Log.d(TAG, "Empty Buy list")
+                    Log.d(TAG, "Yen Empty Buy list")
+                    _buyRecordFlow.value = emptyList()
+                    _filterBuyRecordFlow.value = emptyList()
+                    _groupBuyRecordFlow.value = setGroup(emptyList())
                 } else {
 
                     groupList.emit(buyRecord.map { it.buyYenCategoryName!! }.distinct())
@@ -68,7 +71,9 @@ class YenViewModel @Inject constructor(private val investRepository: InvestRepos
 
 
                 if (sellRecord.isNullOrEmpty()) {
-                    Log.d(TAG, "Empty Buy list")
+                    Log.d(TAG, "Yen Empty Sell list")
+                    _sellRecordFlow.value = emptyList()
+                    _filterSellRecordFlow.value = emptyList()
                 } else {
                     _sellRecordFlow.value = sellRecord
                     _filterSellRecordFlow.value = sellRecord
@@ -270,7 +275,7 @@ class YenViewModel @Inject constructor(private val investRepository: InvestRepos
     private val sellRecordActionFlow = MutableStateFlow(false)
 
 
-    fun buyAddRecord() {
+    fun buyAddRecord(groupName: String) {
         viewModelScope.launch {
             exchangeMoney.emit("${lastValue()}")
             investRepository
@@ -287,7 +292,7 @@ class YenViewModel @Inject constructor(private val investRepository: InvestRepos
                         profit = expectSellValue(),
                         expectProfit = expectSellValue(),
                         buyYenMemo = "",
-                        buyYenCategoryName = ""
+                        buyYenCategoryName = groupName
                     )
                 )
 
@@ -326,21 +331,23 @@ class YenViewModel @Inject constructor(private val investRepository: InvestRepos
         viewModelScope.launch {
             investRepository.updateRecord(
                 YenBuyRecord(
-                    yenBuyRecord.id,
-                    yenBuyRecord.date,
-                    yenBuyRecord.money,
+                    id = yenBuyRecord.id,
+                    date = yenBuyRecord.date,
+                    sellDate = sellDateFlow.value,
                     rate = yenBuyRecord.rate,
                     buyRate = yenBuyRecord.buyRate,
                     sellRate = sellRateFlow.value,
+                    money = yenBuyRecord.money,
                     exchangeMoney = yenBuyRecord.exchangeMoney,
                     profit = yenBuyRecord.profit,
-                    expectProfit = yenBuyRecord.expectProfit,
+                    expectProfit = yenBuyRecord.profit,
                     sellProfit = sellYenFlow.value,
                     recordColor = true,
-                    buyYenMemo = "",
+                    buyYenMemo = yenBuyRecord.buyYenMemo,
                     buyYenCategoryName = yenBuyRecord.buyYenCategoryName
                 )
             )
+
         }
     }
 

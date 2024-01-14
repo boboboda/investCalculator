@@ -59,7 +59,10 @@ class DollarViewModel @Inject constructor(private val investRepository: InvestRe
                 combineBuyAndSell(sellRecord, buyRecord)
 
                 if (buyRecord.isNullOrEmpty()) {
-                    Log.d(TAG, "Empty Buy list")
+                    Log.d(TAG, "Dollar Empty Buy list")
+                    _buyRecordFlow.value = emptyList()
+                    _filterBuyRecordFlow.value = emptyList()
+                    _groupBuyRecordFlow.value = setGroup(emptyList())
                 } else {
 
                     groupList.emit(buyRecord.map { it.buyDrCategoryName!! }.distinct())
@@ -71,7 +74,9 @@ class DollarViewModel @Inject constructor(private val investRepository: InvestRe
 
 
                 if (sellRecord.isNullOrEmpty()) {
-                    Log.d(TAG, "Empty Buy list")
+                    Log.d(TAG, "Dollar Empty Sell list")
+                    _sellRecordFlow.value = emptyList()
+                    _filterSellRecordFlow.value = emptyList()
                 } else {
                     _sellRecordFlow.value = sellRecord
                     _filterSellRecordFlow.value = sellRecord
@@ -101,7 +106,7 @@ class DollarViewModel @Inject constructor(private val investRepository: InvestRe
                 buy.sellDate =
                     sellRecord.filter { it.id == buy.id }.map { it.date }
                         .firstOrNull() ?: "값없음"
-                buy.sellProfit =  sellRecord.filter { it.id == buy.id }
+                buy.sellProfit = sellRecord.filter { it.id == buy.id }
                     .map { it.exchangeMoney }.firstOrNull() ?: ""
                 buy.sellRate =
                     sellRecord.filter { it.id == buy.id }.map { it.rate }
@@ -356,9 +361,9 @@ class DollarViewModel @Inject constructor(private val investRepository: InvestRe
         viewModelScope.launch {
             investRepository.updateRecord(
                 DrBuyRecord(
-                    drBuyrecord.id,
-                    drBuyrecord.date,
-                    drBuyrecord.money,
+                    id = drBuyrecord.id,
+                    date = drBuyrecord.date,
+                    sellDate = sellDateFlow.value,
                     rate = drBuyrecord.rate,
                     buyRate = drBuyrecord.buyRate,
                     sellRate = sellRateFlow.value,

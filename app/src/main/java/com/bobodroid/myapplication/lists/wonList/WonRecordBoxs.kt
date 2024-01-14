@@ -73,16 +73,12 @@ fun BuyWonRecordBox(wonViewModel: WonViewModel, snackbarHostState: SnackbarHostS
 
         LazyColumn(modifier = Modifier, state = lazyScrollState) {
 
-            //  Buy -> 라인리코드텍스트에 넣지 말고 바로 데이터 전달 -> 리팩토리
-            val listSize = buySortRecord.size
             itemsIndexed(
                 items = buySortRecord,
                 key = { index: Int, item: WonBuyRecord -> item.id}) {index, Buy ->
 
                 WonLineRecordText(
                     Buy,
-                    index = index,
-                    listSize = listSize,
                     sellAction = Buy.recordColor!!
                     ,
                     sellActed = { buyRecord ->
@@ -103,18 +99,8 @@ fun BuyWonRecordBox(wonViewModel: WonViewModel, snackbarHostState: SnackbarHostS
                     }
                     ,
                     wonViewModel,
-                    snackbarHostState = snackbarHostState) {
-                    coroutineScope.launch {
-                        if(index <= listSize - 7) {
-                            delay(300)
-                            lazyScrollState.animateScrollToItem(index)
-                        } else {
-                            delay(300)
-                            lazyScrollState.animateScrollToItem(index, 0)
-                        }
+                    snackbarHostState = snackbarHostState)
 
-                    }
-                }
                 Divider()
             }
         }

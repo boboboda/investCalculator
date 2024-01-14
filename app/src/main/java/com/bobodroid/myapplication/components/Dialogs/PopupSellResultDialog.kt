@@ -329,7 +329,7 @@ fun YenSellResultDialog(
                     onClicked = {
                         sellAction()
                         yenViewModel.sellRecordValue(buyRecord)
-                        yenViewModel.selectedBoxId.value = 2
+                        onClicked?.invoke(false)
                     },
                     color = SellButtonColor,
                     fontColor = Color.White,
@@ -503,7 +503,7 @@ fun WonSellResultDialog(
                     onClicked = {
                         sellAction()
                         wonViewModel.sellRecordValue(buyRecord)
-                        wonViewModel.selectedCheckBoxId.value = 2
+                        onClicked?.invoke(false)
                     },
                     color = SellButtonColor,
                     fontColor = Color.White,

@@ -336,7 +336,7 @@ fun DollarInvestScreen(
                     dollarViewModel.selectedBoxId.value = 1
                     routeAction.navTo(InvestRoute.MAIN)
                     allViewModel.changeMoney.value = 1
-                    group.value = "기본"
+                    group.value = "미지정"
 
                 }, color = BuyColor, fontColor = Color.Black, modifier = Modifier
                     .height(60.dp)

@@ -43,7 +43,9 @@ import com.bobodroid.myapplication.routes.InvestRouteAction
 import java.text.SimpleDateFormat
 import androidx.compose.material.SnackbarHost
 import com.bobodroid.myapplication.lists.wonList.BuyWonRecordBox
+import com.bobodroid.myapplication.lists.wonList.EditTypeWonRecordBox
 import com.bobodroid.myapplication.lists.wonList.SellWonRecordBox
+import com.bobodroid.myapplication.lists.wonList.TotalWonRecordBox
 import com.bobodroid.myapplication.lists.yenList.TotalYenRecordBox
 import com.bobodroid.myapplication.models.viewmodels.WonViewModel
 
@@ -272,37 +274,42 @@ fun WonMainScreen(wonViewModel: WonViewModel,
 
         Box(
             modifier = Modifier
-                .fillMaxSize()) {
-
-        }
-
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-        ) {
+                .fillMaxSize(),
+            contentAlignment = Alignment.BottomCenter) {
             Column(
                 modifier = Modifier
-                    .fillMaxSize()) {
+                    .fillMaxSize()
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()) {
 
-                when (selectedBoxId.value) {
-                    1 -> {
+                    when (selectedBoxId.value) {
+                        1 -> {
+                            TotalWonRecordBox(
+                                wonViewModel,
+                                snackbarHostState,
+                                hideSellRecordState)
+                        }
 
-                    }
+                        2 -> {
+                            EditTypeWonRecordBox(
+                                wonViewModel,
+                                snackbarHostState,
+                                hideSellRecordState)
+                        }
 
-                    2 -> {
+                        3 -> {
+                            BuyWonRecordBox(
+                                wonViewModel,
+                                snackbarHostState)
+                        }
 
-                    }
-
-                    3 -> {
-                        BuyWonRecordBox(
-                            wonViewModel,
-                            snackbarHostState)
-                    }
-
-                    4 -> {
-                        SellWonRecordBox(
-                            wonViewModel,
-                            snackbarHostState)
+                        4 -> {
+                            SellWonRecordBox(
+                                wonViewModel,
+                                snackbarHostState)
+                        }
                     }
                 }
             }
@@ -355,8 +362,8 @@ fun WonMainScreen(wonViewModel: WonViewModel,
                         }
                     })
             }
-
         }
+
 
     }
 

@@ -109,7 +109,7 @@ fun MainScreen(dollarViewModel: DollarViewModel,
 
     val yenCheckBoxState = yenViewModel.selectedBoxId.collectAsState()
 
-    val wonCheckBoxState = wonViewModel.selectedCheckBoxId.collectAsState()
+    val wonCheckBoxState = wonViewModel.selectedBoxId.collectAsState()
 
     val coroutineScope = rememberCoroutineScope()
 

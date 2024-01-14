@@ -7,19 +7,25 @@ import android.util.Log
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.SnackbarHostState
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.KeyboardArrowDown
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.bobodroid.myapplication.components.*
 import com.bobodroid.myapplication.components.Caldenders.WonMyDatePickerDialog
 import com.bobodroid.myapplication.components.Dialogs.RateNumberField
+import com.bobodroid.myapplication.components.Dialogs.TextFieldDialog
 import com.bobodroid.myapplication.components.Dialogs.WonNumberField
 import com.bobodroid.myapplication.components.admobs.BuyBannerAd
 import com.bobodroid.myapplication.models.viewmodels.AllViewModel
@@ -53,6 +59,14 @@ fun WonInvestScreen(wonViewModel: WonViewModel, routeAction: InvestRouteAction, 
     val moneyCgBtnSelected = wonViewModel.moneyCgBtnSelected.collectAsState()
 
     val snackbarHostState = remember { SnackbarHostState() }
+
+    var group = remember { mutableStateOf("미지정") }
+
+    var dropdownExpanded by remember { mutableStateOf(false) }
+
+    val groupList = wonViewModel.groupList.collectAsState()
+
+    var groupAddDialog by remember { mutableStateOf(false) }
 
 
     Column(
@@ -88,32 +102,160 @@ fun WonInvestScreen(wonViewModel: WonViewModel, routeAction: InvestRouteAction, 
 
             Card(
                 modifier = Modifier
-                    .width(170.dp)
+                    .width(160.dp)
                     .padding(end = 10.dp)
                     .height(40.dp)
                     .background(Color.White),
                 border = BorderStroke(1.dp, Color.Black),
-                colors = CardDefaults.cardColors(contentColor = Color.Black, containerColor = Color.White),
-                onClick = { isDialogOpen.value = !isDialogOpen.value
-
+                colors = CardDefaults.cardColors(
+                    contentColor = Color.Black,
+                    containerColor = Color.White
+                ),
+                onClick = {
+                    isDialogOpen.value = !isDialogOpen.value
                 }) {
-                Text(text = "$date",
-                    color = Color.Black,
-                    fontSize = 18.sp,
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier
-                        .width(160.dp)
-                        .height(40.dp)
-                        .padding(start = 12.dp, top = 8.dp))
+
+                Row(modifier = Modifier
+                    .fillMaxSize(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.Center) {
+                    Text(
+                        text = "$date",
+                        color = Color.Black,
+                        fontSize = 18.sp,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier
+                    )
+                }
+
             }
         }
-
-
-
 
         Spacer(modifier = Modifier
             .fillMaxWidth()
             .height(5.dp))
+
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(start = 15.dp, bottom = 10.dp),
+            horizontalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            Card(
+                colors = CardDefaults.cardColors(WelcomeScreenBackgroundColor),
+                elevation = CardDefaults.cardElevation(8.dp),
+                shape = RoundedCornerShape(1.dp),
+                modifier = Modifier
+                    .height(40.dp)
+                    .wrapContentWidth()
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxHeight()
+                        .wrapContentWidth()
+                        .padding(horizontal = 10.dp),
+                    horizontalArrangement = Arrangement.Center,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(text = group.value)
+                }
+            }
+
+
+            Box(
+                modifier = Modifier
+                    .wrapContentSize(Alignment.TopEnd)
+            ) {
+                Card(
+                    colors = CardDefaults.cardColors(WelcomeScreenBackgroundColor),
+                    elevation = CardDefaults.cardElevation(8.dp),
+                    shape = RoundedCornerShape(1.dp),
+                    modifier = Modifier
+                        .height(40.dp)
+                        .wrapContentWidth(),
+                    onClick = {
+                        if (!dropdownExpanded) dropdownExpanded = true else dropdownExpanded = false
+                    }) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxHeight()
+                            .wrapContentWidth()
+                            .padding(horizontal = 10.dp),
+                        horizontalArrangement = Arrangement.Center,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(text = "그룹지정")
+
+                        Icon(imageVector = Icons.Rounded.KeyboardArrowDown, contentDescription = "")
+                    }
+                }
+                DropdownMenu(
+                    scrollState = rememberScrollState(),
+                    modifier = Modifier
+                        .wrapContentHeight()
+                        .heightIn(max = 200.dp)
+                        .width(200.dp),
+                    offset = DpOffset(x = 0.dp, y = 10.dp),
+                    expanded = dropdownExpanded,
+                    onDismissRequest = {
+                        dropdownExpanded = false
+                    }
+                ) {
+
+                    DropdownMenuItem(
+                        modifier = Modifier
+                            .fillMaxWidth(),
+                        text = {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth(),
+                                contentAlignment = Alignment.TopStart
+                            ) {
+                                Text(
+                                    text = "새그룹",
+                                    color = Color.Blue,
+                                    fontSize = 13.sp
+                                )
+                            }
+                        }, onClick = {
+                            groupAddDialog = true
+                        })
+
+                    Divider(
+                        Modifier
+                            .fillMaxWidth(),
+                        color = Color.Gray,
+                        thickness = 2.dp
+                    )
+
+                    groupList.value.forEach { groupName ->
+                        DropdownMenuItem(
+                            modifier = Modifier
+                                .fillMaxWidth(),
+                            text = {
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth(),
+                                    contentAlignment = Alignment.TopStart
+                                ) {
+                                    Text(
+                                        text = groupName,
+                                        fontSize = 13.sp
+                                    )
+                                }
+                            }, onClick = {
+                                group.value = groupName
+                                dropdownExpanded = false
+                            })
+                    }
+
+
+                }
+            }
+
+
+        }
+
 
         Row(
             modifier = Modifier.width(180.dp),
@@ -164,6 +306,19 @@ fun WonInvestScreen(wonViewModel: WonViewModel, routeAction: InvestRouteAction, 
                 wonViewModel)
         }
 
+        if (groupAddDialog) {
+            TextFieldDialog(
+                onDismissRequest = {
+                    groupAddDialog = it },
+                placeholder = "새 그룹명을 작성해주세요",
+                onClickedLabel = "추가",
+                closeButtonLabel = "닫기",
+                onClicked = { name ->
+                    wonViewModel.groupAdd(name)
+                    groupAddDialog = false
+                })
+        }
+
 
         Spacer(modifier = Modifier
             .fillMaxWidth()
@@ -177,11 +332,12 @@ fun WonInvestScreen(wonViewModel: WonViewModel, routeAction: InvestRouteAction, 
             Buttons("매수",
                 enabled = isBtnActive,
                 onClicked = {
-                    wonViewModel.buyAddRecord()
-                    wonViewModel.selectedCheckBoxId.value = 1
+                    wonViewModel.buyAddRecord(groupName = group.value)
+                    wonViewModel.selectedBoxId.value = 1
                     routeAction.navTo(InvestRoute.MAIN)
                     allViewModel.changeMoney.value = 3
                     Log.d(TAG, "${wonViewModel.exchangeMoney.value}")
+                    group.value = "미지정"
 
                 }
                 , color = BuyColor
@@ -195,7 +351,7 @@ fun WonInvestScreen(wonViewModel: WonViewModel, routeAction: InvestRouteAction, 
 
 
             Buttons( "닫기", onClicked = {
-                wonViewModel.selectedCheckBoxId.value = 1
+                wonViewModel.selectedBoxId.value = 1
                 routeAction.navTo(InvestRoute.MAIN)
                 wonViewModel.moneyInputFlow.value = ""
                 wonViewModel.rateInputFlow.value = ""

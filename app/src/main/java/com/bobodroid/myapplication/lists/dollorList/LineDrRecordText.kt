@@ -94,8 +94,6 @@ fun LineDrRecordText(
 
     var groupDropdownExpanded by remember { mutableStateOf(false) }
 
-    var isTextFieldFocused = false
-
     val focusRequester by remember { mutableStateOf(FocusRequester()) }
 
     var groupAddDialog by remember { mutableStateOf(false) }
@@ -459,6 +457,7 @@ fun LineDrRecordText(
                                             }, onClick = {
                                                 dollarViewModel.updateRecordGroup(data, groupName)
                                                 dropdownExpanded = false
+                                                groupDropdownExpanded = false
                                             })
                                     }
 
@@ -471,10 +470,7 @@ fun LineDrRecordText(
                         OutlinedTextField(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .focusRequester(focusRequester = focusRequester)
-                                .onFocusChanged {
-                                    isTextFieldFocused = it.isFocused
-                                },
+                                .focusRequester(focusRequester = focusRequester),
                             placeholder = {
                                 Text(
                                     text = "메모를 입력해주세요",
@@ -608,8 +604,10 @@ fun LineDrRecordText(
                     onClickedLabel = "추가",
                     closeButtonLabel = "닫기",
                     onClicked = { name ->
-                        dollarViewModel.groupAdd(name)
+                        dollarViewModel.updateRecordGroup(data, name)
                         groupAddDialog = false
+                        groupDropdownExpanded = false
+                        dropdownExpanded = false
                     })
             }
 

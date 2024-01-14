@@ -69,7 +69,6 @@ fun LineYenRecordText(
     onClicked: ((YenBuyRecord) -> Unit)?,
     yenViewModel: YenViewModel,
     snackbarHostState: SnackbarHostState,
-
     ) {
 
     val mathContext = MathContext(28, RoundingMode.HALF_UP)
@@ -410,7 +409,8 @@ fun LineYenRecordText(
                                     offset = DpOffset(x = 115.dp, y = 10.dp),
                                     expanded = groupDropdownExpanded,
                                     onDismissRequest = {
-                                        groupDropdownExpanded = false}) {
+                                        groupDropdownExpanded = false})
+                                {
 
                                     DropdownMenuItem(
                                         modifier = Modifier
@@ -456,6 +456,7 @@ fun LineYenRecordText(
                                             }, onClick = {
                                                 yenViewModel.updateRecordGroup(data, groupName)
                                                 dropdownExpanded = false
+                                                groupDropdownExpanded = false
                                             })
                                     }
 
@@ -600,8 +601,10 @@ fun LineYenRecordText(
                     onClickedLabel = "추가",
                     closeButtonLabel = "닫기",
                     onClicked = { name ->
-                        yenViewModel.groupAdd(name)
+                        yenViewModel.updateRecordGroup(data, name)
                         groupAddDialog = false
+                        groupDropdownExpanded = false
+                        dropdownExpanded = false
                     })
             }
 

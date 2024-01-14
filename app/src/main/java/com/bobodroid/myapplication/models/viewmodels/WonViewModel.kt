@@ -48,7 +48,10 @@ class WonViewModel @Inject constructor(private val investRepository: InvestRepos
                 combineBuyAndSell(sellRecord, buyRecord)
 
                 if (buyRecord.isNullOrEmpty()) {
-                    Log.d(TAG, "Empty Buy list")
+                    Log.d(TAG, "Won Empty Buy list")
+                    _buyRecordFlow.value = emptyList()
+                    _filterBuyRecordFlow.value = emptyList()
+                    _groupBuyRecordFlow.value = setGroup(emptyList())
                 } else {
 
                     groupList.emit(buyRecord.map { it.buyWonCategoryName!! }.distinct())
@@ -60,7 +63,9 @@ class WonViewModel @Inject constructor(private val investRepository: InvestRepos
 
 
                 if (sellRecord.isNullOrEmpty()) {
-                    Log.d(TAG, "Empty Buy list")
+                    Log.d(TAG, "Won Empty Sell list")
+                    _sellRecordFlow.value = emptyList()
+                    _filterSellRecordFlow.value = emptyList()
                 } else {
                     _sellRecordFlow.value = sellRecord
                     _filterSellRecordFlow.value = sellRecord
@@ -82,6 +87,27 @@ class WonViewModel @Inject constructor(private val investRepository: InvestRepos
         val makeGroup = recordList.sortedBy { it.date }.groupBy { it.buyWonCategoryName!! }
 
         return makeGroup
+    }
+
+    fun groupAdd(newGroupName: String) {
+
+        val updateGroupList = groupList.value.toMutableList().apply {
+            add(newGroupName)
+        }.toList()
+
+        viewModelScope.launch {
+            groupList.emit(updateGroupList)
+        }
+
+    }
+
+    fun updateRecordGroup(wonBuyrecord: WonBuyRecord, groupName: String) {
+        viewModelScope.launch {
+
+            val updateData = wonBuyrecord.copy(buyWonCategoryName = groupName)
+
+            investRepository.updateRecord(updateData)
+        }
     }
 
     fun combineBuyAndSell(sellRecord: List<WonSellRecord>, buyRecord: List<WonBuyRecord>) {
@@ -213,7 +239,7 @@ class WonViewModel @Inject constructor(private val investRepository: InvestRepos
     private val sellRecordActionFlow = MutableStateFlow(false)
 
 
-    fun buyAddRecord() {
+    fun buyAddRecord(groupName: String) {
         viewModelScope.launch {
             when(moneyCgBtnSelected.value) {
                 1 -> {moneyType.emit(1)}
@@ -238,13 +264,13 @@ class WonViewModel @Inject constructor(private val investRepository: InvestRepos
                         rate = rateInputFlow.value,
                         buyRate = rateInputFlow.value,
                         sellRate = "",
-                        exchangeMoney = "${exchangeMoney.value}",
+                        exchangeMoney = exchangeMoney.value,
                         recordColor = sellRecordActionFlow.value,
                         moneyType = moneyType.value,
                         profit = expectSellValue(),
                         sellProfit = "",
                         expectProfit = expectSellValue(),
-                        buyWonCategoryName = "",
+                        buyWonCategoryName = groupName,
                         buyWonMemo = ""
                     )
                 )
@@ -329,19 +355,22 @@ class WonViewModel @Inject constructor(private val investRepository: InvestRepos
         viewModelScope.launch {
             investRepository.updateRecord(
                 WonBuyRecord(
-                    wonBuyRecord.id,
-                    wonBuyRecord.date,
-                    wonBuyRecord.money,
+                    id = wonBuyRecord.id,
+                    date = wonBuyRecord.date,
+                    sellDate = sellDateFlow.value,
                     rate = wonBuyRecord.rate,
-                    sellRate = sellRateFlow.value,
-                    profit = wonBuyRecord.profit,
-                    expectProfit = wonBuyRecord.expectProfit,
-                    exchangeMoney = wonBuyRecord.exchangeMoney,
-                    recordColor = true,
                     moneyType = wonBuyRecord.moneyType,
+                    buyRate = wonBuyRecord.buyRate,
+                    sellRate = sellRateFlow.value,
+                    money = wonBuyRecord.money,
+                    exchangeMoney = wonBuyRecord.exchangeMoney,
+                    profit = wonBuyRecord.profit,
+                    expectProfit = wonBuyRecord.profit,
                     sellProfit = sellWonFlow.value,
+                    recordColor = true,
                     buyWonMemo = wonBuyRecord.buyWonMemo,
-                    buyWonCategoryName = wonBuyRecord.buyWonCategoryName)
+                    buyWonCategoryName = wonBuyRecord.buyWonCategoryName
+                )
             )
         }
     }

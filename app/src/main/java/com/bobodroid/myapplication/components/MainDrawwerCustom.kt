@@ -1,12 +1,13 @@
 package com.bobodroid.myapplication.components
 
 import android.content.Intent
-import android.content.pm.PackageManager
 import android.net.Uri
-import android.util.Log
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.foundation.border
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -15,7 +16,9 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.layout.wrapContentSize
+import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.DrawerState
 import androidx.compose.material.SnackbarDuration
@@ -25,7 +28,11 @@ import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Divider
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -37,13 +44,14 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
-import com.bobodroid.myapplication.MainActivity.Companion.TAG
 import com.bobodroid.myapplication.components.Dialogs.AskTriggerDialog
 import com.bobodroid.myapplication.components.Dialogs.ChargeDialog
 import com.bobodroid.myapplication.components.Dialogs.CustomIdDialog
@@ -51,14 +59,16 @@ import com.bobodroid.myapplication.components.Dialogs.PermissionGuideDialog
 import com.bobodroid.myapplication.components.Dialogs.TargetRateDialog
 import com.bobodroid.myapplication.components.admobs.showInterstitial
 import com.bobodroid.myapplication.components.admobs.showRewardedAdvertisement
+import com.bobodroid.myapplication.lists.TargetRateList
 import com.bobodroid.myapplication.models.viewmodels.AllViewModel
 import com.bobodroid.myapplication.models.viewmodels.DollarViewModel
 import com.bobodroid.myapplication.models.viewmodels.WonViewModel
 import com.bobodroid.myapplication.models.viewmodels.YenViewModel
-import com.bobodroid.myapplication.ui.theme.TitleCardColor
 import com.bobodroid.myapplication.ui.theme.TopButtonColor
+import com.bobodroid.myapplication.ui.theme.WelcomeScreenBackgroundColor
 import kotlinx.coroutines.launch
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DrawerCustom(
     allViewModel: AllViewModel,
@@ -76,6 +86,8 @@ fun DrawerCustom(
     val chargeDialog = remember { mutableStateOf(false) }
 
     val localUser = allViewModel.localUserData.collectAsState()
+
+    var dropdownExpanded by remember { mutableStateOf(false) }
 
     val freeChance = localUser.value.rateResetCount
 
@@ -99,6 +111,8 @@ fun DrawerCustom(
 
     var targetWindowsExpandVisible by remember { mutableStateOf(false) }
 
+    val targetRateData = allViewModel.targetRateFlow.collectAsState()
+
     val expandIcon =
         if (targetWindowsExpandVisible) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown
 
@@ -112,6 +126,12 @@ fun DrawerCustom(
 
     val webPostIntent = Intent(Intent.ACTION_VIEW)
     webPostIntent.data = Uri.parse("https://cobusil.vercel.app/release/postBoard/dollarRecord")
+
+    var selectedCurrency by remember { mutableStateOf("달러") }
+
+    var selectedNumber by remember { mutableStateOf("1") }
+
+    var selectedHighAndLow by remember { mutableStateOf("고점") }
 
     Column(
         modifier = Modifier
@@ -280,136 +300,336 @@ fun DrawerCustom(
         Column(
             modifier = Modifier
                 .fillMaxWidth(),
-            horizontalAlignment = Alignment.Start
         ) {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(start = 10.dp, end = 20.dp),
-                horizontalArrangement = Arrangement.Start
+                horizontalArrangement = Arrangement.Start,
+                verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(text = "목표 환율 알람설정")
 
+
                 Spacer(modifier = Modifier.width(10.dp))
-                CardButton(
-                    label = "설정",
-                    onClicked = {
-                        if (localUser.value.customId.isNullOrEmpty()) {
-                            coroutineScope.launch {
-                                drawerState.close()
-                                mainScreenSnackBarHostState.showSnackbar(
-                                    "아이디를 새로 만든 후 진행해 주세요",
-                                    actionLabel = "닫기", SnackbarDuration.Short
-                                )
-                            }
-                        } else {
-                            if (alarmPermissionState.value) {
-                                targetRateDialog = true
-                            } else {
-                                alarmPermissionDialog = true
-                            }
-                        }
-                    },
-                    buttonColor = TopButtonColor,
-                    fontColor = Color.Black,
+
+                Card(
+                    colors = CardDefaults.cardColors(TopButtonColor),
+                    elevation = CardDefaults.cardElevation(8.dp),
+                    shape = RoundedCornerShape(1.dp),
+                    border = BorderStroke(0.5.dp, color = Color.Black),
                     modifier = Modifier
                         .height(20.dp)
-                        .width(40.dp),
-                    fontSize = 15
-                )
-
-                Spacer(modifier = Modifier.weight(1f))
-
-                IconButton(
-                    imageVector = expandIcon,
-                    onClicked = {
+                        .width(70.dp),
+                    onClick = {
                         if (!targetWindowsExpandVisible) targetWindowsExpandVisible = true
                         else
                             targetWindowsExpandVisible = false
-                    }, modifier = Modifier
-                )
+                    }) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxHeight()
+                            .wrapContentWidth()
+                            .padding(horizontal = 10.dp),
+                        horizontalArrangement = Arrangement.Center,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        AutoSizeText(value = "더보기", minFontSize = 8.sp, color = Color.Black)
+
+                        Image(
+                            imageVector = expandIcon,
+                            contentScale = ContentScale.Crop,
+                            contentDescription = "더보기 여부"
+                        )
+                    }
+            }
             }
 
             AnimatedVisibility(visible = targetWindowsExpandVisible) {
+
                 Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(10.dp)
-                        .border(
-                            width = 1.dp,
-                            color = Color.Black,
-                            shape = RoundedCornerShape(10.dp)
-                        ),
-                    horizontalAlignment = Alignment.Start
+                    verticalArrangement = Arrangement.spacedBy(5.dp)
                 ) {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(start = 10.dp, top = 10.dp),
-                        horizontalAlignment = Alignment.Start
-                    ) {
 
-                        CustomCard(
-                            label = "달러",
-                            fontSize = 15,
+                    Row(modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(end = 25.dp),
+                        horizontalArrangement = Arrangement.End) {
+                        Box(
                             modifier = Modifier
-                                .height(20.dp)
-                                .width(40.dp),
-                            fontColor = Color.Black,
-                            cardColor = TitleCardColor
-                        )
-
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(start = 10.dp, bottom = 10.dp, top = 10.dp),
-                            horizontalArrangement = Arrangement.spacedBy(
-                                10.dp,
-                                alignment = Alignment.Start
-                            )
+                                .wrapContentSize(Alignment.TopEnd),
                         ) {
-                            Text(text = "최대환율: 1200")
+                            CardButton(
+                                label = "설정",
+                                onClicked = {
+                                    if (localUser.value.customId.isNullOrEmpty()) {
+                                        coroutineScope.launch {
+                                            drawerState.close()
+                                            mainScreenSnackBarHostState.showSnackbar(
+                                                "아이디를 새로 만든 후 진행해 주세요",
+                                                actionLabel = "닫기", SnackbarDuration.Short
+                                            )
+                                        }
+                                    } else {
+                                        if (alarmPermissionState.value) {
+                                            dropdownExpanded = true
+                                        } else {
+                                            alarmPermissionDialog = true
+                                        }
+                                    }
+                                },
+                                buttonColor = TopButtonColor,
+                                fontColor = Color.Black,
+                                modifier = Modifier
+                                    .height(20.dp)
+                                    .width(40.dp),
+                                fontSize = 15
+                            )
+                            DropdownMenu(
+                                offset = DpOffset(x = 0.dp, y = 10.dp),
+                                expanded = dropdownExpanded,
+                                onDismissRequest = {
+                                    dropdownExpanded = false
+                                }
+                            ) {
 
-                            Text(text = "최소환율: 1000")
+                                DropdownMenuItem(
+                                    modifier = Modifier
+                                        .fillMaxWidth(),
+                                    text = {
+                                        Box(
+                                            modifier = Modifier
+                                                .fillMaxWidth(),
+                                            contentAlignment = Alignment.TopStart
+                                        ) {
+                                            Text(
+                                                text = "추가",
+                                                fontSize = 13.sp
+                                            )
+                                        }
+                                    }, onClick = {
+
+                                        when (selectedCurrency) {
+                                            "달러" -> {
+
+                                                when(selectedHighAndLow) {
+                                                    "고점" -> {
+                                                        if (targetRateData.value.dollarHighRateList?.size == 5) {
+                                                            coroutineScope.launch {
+                                                                dropdownExpanded = false
+                                                                drawerState.close()
+                                                                mainScreenSnackBarHostState.showSnackbar(
+                                                                    "목표환율 설정 제한을 초과하였습니다.\n" +
+                                                                            "(제한갯수: 5개)",
+                                                                    actionLabel = "닫기", SnackbarDuration.Short
+                                                                )
+                                                            }
+                                                        } else {
+                                                            targetRateDialog = true
+                                                        }
+                                                    }
+                                                    "저점" -> {
+                                                        if (targetRateData.value.dollarLowRateList?.size == 5) {
+                                                            coroutineScope.launch {
+                                                                dropdownExpanded = false
+                                                                drawerState.close()
+                                                                mainScreenSnackBarHostState.showSnackbar(
+                                                                    "목표환율 설정 제한을 초과하였습니다.\n" +
+                                                                            "(제한갯수: 5개)",
+                                                                    actionLabel = "닫기", SnackbarDuration.Short
+                                                                )
+                                                            }
+                                                        } else {
+                                                            targetRateDialog = true
+                                                        }
+                                                    }
+                                                }
+
+
+                                            }
+
+                                            "엔화" -> {
+
+                                                when(selectedHighAndLow) {
+                                                    "고점"-> {
+                                                        if (targetRateData.value.yenHighRateList?.size == 5) {
+                                                            coroutineScope.launch {
+                                                                dropdownExpanded = false
+                                                                drawerState.close()
+                                                                mainScreenSnackBarHostState.showSnackbar(
+                                                                    "목표환율 설정 제한을 초과하였습니다.\n" +
+                                                                            "(제한갯수: 5개)",
+                                                                    actionLabel = "닫기", SnackbarDuration.Short
+                                                                )
+                                                            }
+                                                        } else {
+                                                            targetRateDialog = true
+                                                        }
+                                                    }
+                                                    "저점"-> {
+                                                        if (targetRateData.value.yenLowRateList?.size == 5) {
+                                                            coroutineScope.launch {
+                                                                dropdownExpanded = false
+                                                                drawerState.close()
+                                                                mainScreenSnackBarHostState.showSnackbar(
+                                                                    "목표환율 설정 제한을 초과하였습니다.\n" +
+                                                                            "(제한갯수: 5개)",
+                                                                    actionLabel = "닫기", SnackbarDuration.Short
+                                                                )
+                                                            }
+                                                        } else {
+                                                            targetRateDialog = true
+                                                        }
+                                                    }
+                                                }
+
+
+                                            }
+                                        }
+
+
+                                    })
+
+                                DropdownMenuItem(
+                                    modifier = Modifier
+                                        .fillMaxWidth(),
+                                    text = {
+                                        Box(
+                                            modifier = Modifier
+                                                .fillMaxWidth(),
+                                            contentAlignment = Alignment.TopStart
+                                        ) {
+                                            Text(
+                                                text = "삭제",
+                                                fontSize = 13.sp
+                                            )
+                                        }
+                                    }, onClick = {
+                                        when (selectedCurrency) {
+                                            "달러" -> {
+
+                                                when(selectedHighAndLow) {
+                                                    "고점" -> {
+                                                       val removeData = targetRateData.value.dollarHighRateList?.filter { it.number == selectedNumber }?.firstOrNull()
+
+                                                        if(removeData == null) {
+                                                            coroutineScope.launch {
+                                                                dropdownExpanded = false
+                                                                drawerState.close()
+                                                                mainScreenSnackBarHostState.showSnackbar(
+                                                                    "삭제할 데이터가 존재하지 않습니다.",
+                                                                    actionLabel = "닫기", SnackbarDuration.Short
+                                                                )
+                                                            }
+                                                        } else {
+                                                            allViewModel.targetRateRemove(
+                                                                drHighRate = removeData,
+                                                                drLowRate = null,
+                                                                yenHighRate = null,
+                                                                yenLowRate = null
+                                                            )
+                                                            dropdownExpanded = false
+                                                        }
+                                                    }
+                                                    "저점" -> {
+                                                        val removeData = targetRateData.value.dollarLowRateList?.filter { it.number == selectedNumber }?.firstOrNull()
+
+                                                        if(removeData == null) {
+                                                            coroutineScope.launch {
+                                                                dropdownExpanded = false
+                                                                drawerState.close()
+                                                                mainScreenSnackBarHostState.showSnackbar(
+                                                                    "삭제할 데이터가 존재하지 않습니다.",
+                                                                    actionLabel = "닫기", SnackbarDuration.Short
+                                                                )
+                                                            }
+                                                        } else {
+                                                            allViewModel.targetRateRemove(
+                                                                drHighRate = null,
+                                                                drLowRate = removeData,
+                                                                yenHighRate = null,
+                                                                yenLowRate = null
+                                                            )
+                                                            dropdownExpanded = false
+                                                        }
+                                                    }
+                                                }
+
+
+                                            }
+
+                                            "엔화" -> {
+
+                                                when(selectedHighAndLow) {
+                                                    "고점"-> {
+                                                        val removeData = targetRateData.value.yenHighRateList?.filter { it.number == selectedNumber }?.firstOrNull()
+
+                                                        if(removeData == null) {
+                                                            coroutineScope.launch {
+                                                                dropdownExpanded = false
+                                                                drawerState.close()
+                                                                mainScreenSnackBarHostState.showSnackbar(
+                                                                    "삭제할 데이터가 존재하지 않습니다.",
+                                                                    actionLabel = "닫기", SnackbarDuration.Short
+                                                                )
+                                                            }
+                                                        } else {
+                                                            allViewModel.targetRateRemove(
+                                                                drHighRate = null,
+                                                                drLowRate = null,
+                                                                yenHighRate = removeData,
+                                                                yenLowRate = null
+                                                            )
+                                                            dropdownExpanded = false
+                                                        }
+                                                    }
+                                                    "저점"-> {
+                                                        val removeData = targetRateData.value.yenLowRateList?.filter { it.number == selectedNumber }?.firstOrNull()
+
+                                                        if(removeData == null) {
+                                                            coroutineScope.launch {
+                                                                dropdownExpanded = false
+                                                                drawerState.close()
+                                                                mainScreenSnackBarHostState.showSnackbar(
+                                                                    "삭제할 데이터가 존재하지 않습니다.",
+                                                                    actionLabel = "닫기", SnackbarDuration.Short
+                                                                )
+                                                            }
+                                                        } else {
+                                                            allViewModel.targetRateRemove(
+                                                                drHighRate = null,
+                                                                drLowRate = null,
+                                                                yenHighRate = null,
+                                                                yenLowRate = removeData
+                                                            )
+                                                            dropdownExpanded = false
+                                                        }
+                                                    }
+                                                }
+
+
+                                            }
+                                        }
+                                    })
+                            }
                         }
                     }
 
 
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(start = 10.dp),
-                        horizontalAlignment = Alignment.Start
-                    ) {
-
-                        CustomCard(
-                            label = "엔화",
-                            fontSize = 15,
-                            modifier = Modifier
-                                .height(20.dp)
-                                .width(40.dp),
-                            fontColor = Color.Black,
-                            cardColor = TitleCardColor
-                        )
-
-
-
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(start = 10.dp, bottom = 10.dp, top = 10.dp),
-                            horizontalArrangement = Arrangement.spacedBy(
-                                10.dp,
-                                alignment = Alignment.Start
-                            )
-                        ) {
-                            Text(text = "최대환율: 1200")
-
-                            Text(text = "최소환율: 1000")
+                    TargetRateList(
+                        allViewModel,
+                        selectedCurrency = {
+                            selectedCurrency = it
+                        },
+                        selectedNumber = {
+                            selectedNumber = it
+                        },
+                        selectedHighAndLow = {
+                            selectedHighAndLow = it
                         }
-
-                    }
+                    )
                 }
+
             }
 
         }
@@ -592,20 +812,33 @@ fun DrawerCustom(
         }
 
         if (alarmPermissionDialog) {
-            AskTriggerDialog(onDismissRequest = {
-                alarmPermissionDialog = it
-            }, title = "알람 권한이 없습니다.\n" +
-                    "권한 허용 후 다시 시도해주세요",
-                onClickedLabel = "설정") {
+            AskTriggerDialog(
+                onDismissRequest = {
+                    alarmPermissionDialog = it
+                }, title = "알람 권한이 없습니다.\n" +
+                        "권한 허용 후 다시 시도해주세요",
+                onClickedLabel = "설정"
+            ) {
                 permissionGuideDialog = true
                 alarmPermissionDialog = false
             }
         }
 
         if (targetRateDialog) {
-            TargetRateDialog(onDismissRequest = {
-
-            }, allViewModel = allViewModel)
+            TargetRateDialog(
+                highAndLowState = selectedHighAndLow,
+                currency = selectedCurrency,
+                onDismissRequest = {
+                    targetRateDialog = it
+                    dropdownExpanded = it
+                }, allViewModel = allViewModel,
+                targetRate = targetRateData.value,
+                onClicked = {
+                    targetRateDialog = false
+                    dropdownExpanded = false
+                },
+                snackbarHostState = mainScreenSnackBarHostState
+            )
         }
 
         if (permissionGuideDialog) {

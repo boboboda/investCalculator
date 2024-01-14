@@ -151,7 +151,7 @@ fun SellDialog(
                         openDialog.value = it
                         onDismissRequest.invoke(it)
                         dollarViewModel.resetValue() },
-                    onClicked = { onClicked?.invoke(false) }
+                    onClicked = { onClicked?.invoke(it) }
                     ,dollarViewModel = dollarViewModel)
 
             }
@@ -281,10 +281,11 @@ fun YenSellDialog(
                     sellAction = sellAction,
                     onDismissRequest = {
                         openDialog.value = it
-                        onDismissRequest
+                        onDismissRequest.invoke(it)
                         yenViewModel.resetValue()
                     },
-                    onClicked = { onClicked?.invoke(false) }, yenViewModel = yenViewModel)
+                    onClicked = { onClicked?.invoke(it) },
+                    yenViewModel = yenViewModel)
 
             }
 
@@ -412,10 +413,10 @@ fun WonSellDialog(
                     buyRecord = buyRecord,
                     onDismissRequest = {
                         openDialog.value = it
-                        onDismissRequest
+                        onDismissRequest.invoke(it)
                         wonViewModel.resetValue() },
                     sellAction =  sellAction,
-                    onClicked = { onClicked?.invoke(false) }
+                    onClicked = { onClicked?.invoke(it) }
                     , wonViewModel = wonViewModel)
 
             }

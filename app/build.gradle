@@ -21,10 +21,10 @@ android {
         applicationId "com.bobodroid.myapplication"
         minSdk 26
         targetSdk 33
-        compileSdk 34
-        versionCode 26
-        compileSdkPreview "UpsideDownCake"
-        versionName "23.2.1"
+        compileSdk 33
+        versionCode 27
+//        compileSdkPreview "UpsideDownCake"
+        versionName "24.1.1"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
@@ -164,7 +164,7 @@ dependencies {
 
 
     //스프래쉬 화면
-    implementation 'androidx.core:core-splashscreen:1.1.0-alpha01'
+    implementation 'androidx.core:core-splashscreen:1.0.1'
 
     // retrofit
     def retrofit_version = "2.9.0"

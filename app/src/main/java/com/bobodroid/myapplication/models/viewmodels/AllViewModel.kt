@@ -280,11 +280,23 @@ class AllViewModel @Inject constructor(
     fun targetRateLoad(customId: String, targetRateData: (TargetRate, resultMessage: String) -> Unit) {
         db.collection("userTargetRate")
             .whereEqualTo("customId", customId)
-            .get()
-            .addOnSuccessListener { querySnapShot ->
-                val data = TargetRate(querySnapShot)
+            .addSnapshotListener { querySnapShot, e ->
 
-                targetRateData.invoke(data, "알람설정을 성공적으로 불러왔습니다.")
+                if(querySnapShot != null) {
+                    val data = TargetRate(querySnapShot)
+
+                    targetRateData.invoke(data, "알람설정을 성공적으로 불러왔습니다.")
+
+                    Log.d(TAG, "목표환율 변경 수신${data}")
+                } else {
+                    Log.d(TAG, "목표환율 null")
+                }
+
+                if (e != null) {
+                    Log.w(TAG, "Listen failed.", e)
+                    return@addSnapshotListener
+                }
+
             }
     }
 

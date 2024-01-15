@@ -67,6 +67,17 @@ fun TargetRateList(
 
     val currencyState = remember { mutableStateOf("달러") }
 
+    LaunchedEffect(key1 = targetRate, block = {
+
+        highDollarNumberState.value = "1"
+
+        lowDollarNumberState.value = "1"
+
+        highYenNumberState.value = "1"
+
+        lowYenNumberState.value = "1"
+    })
+
 
     Column(
         modifier = Modifier

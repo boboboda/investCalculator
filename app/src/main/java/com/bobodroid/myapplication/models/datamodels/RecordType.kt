@@ -574,6 +574,7 @@ data class TargetRate(
     constructor(data: QuerySnapshot) : this() {
         for (document in data.documents) {
             this.customId = document["customId"] as String? ?: ""
+            this.fcmToken = document["fcmToken"] as String? ?: ""
             this.dollarHighRateList = createDrHighRateList(document["dollarHighRateList"]!!) as List<DollarTargetHighRate>? ?: emptyList()
             this.dollarLowRateList = createDrLowRateList(document["dollarLowRateList"]!!) as List<DollarTargetLowRate>? ?: emptyList()
             this.yenHighRateList = createYenHighRateList(document["yenHighRateList"]!!) as List<YenTargetHighRate>? ?: emptyList()

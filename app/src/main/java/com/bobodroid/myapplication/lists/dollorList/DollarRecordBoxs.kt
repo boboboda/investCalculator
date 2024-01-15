@@ -1,10 +1,12 @@
 package com.bobodroid.myapplication.lists.dollorList
 
 import android.annotation.SuppressLint
+import android.util.Log
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
@@ -16,6 +18,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import com.bobodroid.myapplication.MainActivity.Companion.TAG
 import com.bobodroid.myapplication.components.*
 import com.bobodroid.myapplication.models.datamodels.*
 import com.bobodroid.myapplication.models.viewmodels.*
@@ -25,7 +28,9 @@ import java.util.UUID
 
 
 @ExperimentalMaterialApi
-@OptIn(ExperimentalMaterialApi::class, ExperimentalFoundationApi::class)
+@OptIn(ExperimentalMaterialApi::class, ExperimentalFoundationApi::class,
+    ExperimentalStdlibApi::class
+)
 @SuppressLint("StateFlowValueCalledInComposition")
 @Composable
 fun BuyRecordBox(
@@ -82,19 +87,29 @@ fun BuyRecordBox(
             state = lazyScrollState) {
 
             //  Buy -> 라인리코드텍스트에 넣지 말고 바로 데이터 전달 -> 리팩토리
-            filterRecord.forEach { key, items->
+            filterRecord.onEachIndexed { groupIndex:Int, (key, items)->
 
 
                 stickyHeader {
                     RecordHeader(key = key)
                 }
 
-                itemsIndexed(
+                items(
                     items = items,
-                    key = { index: Int, item: DrBuyRecord -> item.id!! }
-                ) { index, Buy ->
+                    key = { it.id!! }
+                ) { Buy ->
 
+                    var accmulatedCount = 0
 
+                    (0..<groupIndex).forEach {foreachIndex->
+                        val currentKey = filterRecord.keys.elementAt(foreachIndex)
+                        val elements = filterRecord.getValue(currentKey)
+                        accmulatedCount += elements.count()
+                    }
+
+                    val foundIndex = items.indexOfFirst { it.id === Buy.id }
+
+                    val finalIndex = foundIndex + accmulatedCount + groupIndex
 
                     LineDrRecordText(
                         Buy,
@@ -112,7 +127,15 @@ fun BuyRecordBox(
                             dollarViewModel.haveMoneyDollar.value = recordbox.exchangeMoney!!
                             dollarViewModel.recordInputMoney.value = recordbox.money!! },
                         dollarViewModel = dollarViewModel,
-                        snackBarHostState = snackBarHostState)
+                        snackBarHostState = snackBarHostState) {
+                        coroutineScope.launch {
+
+                            Log.d(TAG, "index${finalIndex}")
+
+                            delay(300)
+                            lazyScrollState.animateScrollToItem(finalIndex, 0)
+                    }
+                    }
 
                     Divider()
                 }

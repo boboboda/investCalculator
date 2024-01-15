@@ -94,7 +94,7 @@ fun TotalLineDrRecord(
     onClicked: ((DrBuyRecord) -> Unit)?,
     dollarViewModel: DollarViewModel,
     snackBarHostState: SnackbarHostState,
-
+    recordSelected: () -> Unit,
     ) {
 
     val mathContext = MathContext(28, RoundingMode.HALF_UP)
@@ -215,7 +215,13 @@ fun TotalLineDrRecord(
                         .fillMaxWidth()
                         .clickable {
                             if (itemRowVisible == false) {
-                                itemRowVisible = true
+                                coroutineScope.launch {
+                                    itemRowVisible = true
+                                    recordSelected.invoke()
+
+
+                                }
+
                             } else {
                                 focusManager.clearFocus()
                             }

@@ -71,7 +71,7 @@ fun LineDrRecordText(
     onClicked: ((DrBuyRecord) -> Unit)?,
     dollarViewModel: DollarViewModel,
     snackBarHostState: SnackbarHostState,
-
+    recordSelected: () -> Unit,
     ) {
 
     val mathContext = MathContext(28, RoundingMode.HALF_UP)
@@ -187,6 +187,7 @@ fun LineDrRecordText(
                         .clickable {
                             if (itemRowVisible == false) {
                                 itemRowVisible = true
+                                recordSelected.invoke()
                             } else {
                                 focusManager.clearFocus()
                             }

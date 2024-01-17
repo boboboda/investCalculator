@@ -21,6 +21,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -335,5 +336,39 @@ fun CustomCard(
 
         }
 
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun LabelAndIconButton(
+    onClicked: () -> Unit,
+    label: String,
+    icon: ImageVector) {
+    Card(
+        colors = CardDefaults.cardColors(TopButtonColor),
+        elevation = CardDefaults.cardElevation(8.dp),
+        shape = RoundedCornerShape(1.dp),
+        border = BorderStroke(1.dp, color = Color.Black),
+        modifier = Modifier
+            .height(20.dp)
+            .width(70.dp),
+        onClick = onClicked) {
+        Row(
+            modifier = Modifier
+                .fillMaxHeight()
+                .wrapContentWidth()
+                .padding(horizontal = 10.dp),
+            horizontalArrangement = Arrangement.Center,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            AutoSizeText(value = label, minFontSize = 8.sp, color = Color.Black)
+
+            Image(
+                imageVector = icon,
+                contentScale = ContentScale.Crop,
+                contentDescription = "사용자 정의"
+            )
+        }
     }
 }

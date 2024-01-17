@@ -35,6 +35,7 @@ android {
         buildConfigField("String", "BUY_BANNER_AD_KEY", properties['buy_banner_ad_key'])
         buildConfigField("String", "FONT_AD_KEY", properties['font_ad_key'])
         buildConfigField("String", "REWARD_FRONT_AD_KEY", properties['reward_font_ad_key'])
+        buildConfigField("String", "REWARD_TARGET_FONT_AD_KEY", properties['reward_target_font_ad_key'])
 
 
 

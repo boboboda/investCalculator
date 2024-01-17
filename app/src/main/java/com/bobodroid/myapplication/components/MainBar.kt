@@ -7,6 +7,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.DrawerState
 import androidx.compose.material.DrawerValue
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.AccountCircle
 import androidx.compose.material.icons.outlined.Menu
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material.rememberDrawerState
@@ -55,7 +56,7 @@ fun MainTopBar(menuBarClinked: () -> Unit) {
 
         Spacer(modifier = Modifier.weight(1f))
         IconButton(
-            imageVector = Icons.Outlined.Settings,
+            imageVector = Icons.Outlined.AccountCircle,
             onClicked = {
                 menuBarClinked.invoke()
 

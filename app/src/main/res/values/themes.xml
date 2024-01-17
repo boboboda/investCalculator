@@ -21,5 +21,12 @@
     </style>
 
     <style name="RewardedAdTheme" parent="Theme.AppCompat.Light.NoActionBar">
-        <item name="android:windowBackground">@android:color/black</item> </style>
+        <item name="android:windowBackground">@android:color/white</item>
+    </style>
+
+
+    <style name="WebViewTheme" parent="Theme.AppCompat.Light.NoActionBar">
+        <item name="android:windowBackground">@android:color/white</item>
+    </style>
+
 </resources>

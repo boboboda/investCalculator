@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.layout.wrapContentSize
@@ -54,6 +55,7 @@ import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
+import com.bobodroid.myapplication.WebActivity
 import com.bobodroid.myapplication.billing.BillingDialog
 import com.bobodroid.myapplication.components.Dialogs.AskTriggerDialog
 import com.bobodroid.myapplication.components.Dialogs.ChargeDialog
@@ -121,16 +123,23 @@ fun DrawerCustom(
     val expandIcon =
         if (targetWindowsExpandVisible) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown
 
+
+    var userDetailExpandVisible by remember { mutableStateOf(false) }
+
+    val userVisibleIcon =
+        if (userDetailExpandVisible) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown
+
+
     val context = LocalContext.current
 
     val id =
         if (localUser.value.customId.isNullOrEmpty()) localUser.value.id else localUser.value.customId
 
-    val webIntent = Intent(Intent.ACTION_VIEW)
-    webIntent.data = Uri.parse("https://cobusil.vercel.app")
+    val webIntent = Intent(context, WebActivity::class.java)
+    webIntent.putExtra("url", "https://cobusil.vercel.app")
 
-    val webPostIntent = Intent(Intent.ACTION_VIEW)
-    webPostIntent.data = Uri.parse("https://cobusil.vercel.app/release/postBoard/dollarRecord")
+    val webPostIntent = Intent(context, WebActivity::class.java)
+    webPostIntent.putExtra("url", "https://cobusil.vercel.app/release/postBoard/dollarRecord")
 
     var selectedCurrency by remember { mutableStateOf("달러") }
 
@@ -167,115 +176,140 @@ fun DrawerCustom(
             horizontalAlignment = Alignment.Start
         ) {
 
-            Text(
-                modifier = Modifier.padding(
-                    start = 10.dp,
-                    end = 100.dp,
-                    bottom = 5.dp),
-                text = "ID: ${id}",
-                fontSize = 15.sp,
-                overflow = TextOverflow.Ellipsis,
-                maxLines = 1
-            )
-            Row(
-                Modifier
-                    .fillMaxWidth()
-                    .padding(top = 5.dp, start = 10.dp, end = 20.dp, bottom = 10.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(
-                    space = 5.dp,
-                    alignment = Alignment.Start
-                )
-            ) {
-
-                CardButton(
-                    label = "아이디 만들기",
-                    onClicked = {
-
-                        customDialog = true
-
-                    },
-                    buttonColor = TopButtonColor,
-                    fontColor = Color.Black,
-                    modifier = Modifier
-                        .height(30.dp)
-                        .width(80.dp),
-                    fontSize = 15
-                )
-
-                CardButton(
-                    label = "아이디 찾기",
-                    onClicked = {
-                        findIdDialog = true
-                    },
-                    buttonColor = TopButtonColor,
-                    fontColor = Color.Black,
-                    modifier = Modifier
-                        .height(30.dp)
-                        .width(80.dp),
-                    fontSize = 15
-                )
-
-            }
 
             Row(
                 Modifier
                     .fillMaxWidth()
-                    .padding(top = 5.dp, start = 10.dp, end = 20.dp),
-                horizontalArrangement = Arrangement.spacedBy(5.dp, Alignment.Start)
+                    .padding(start = 10.dp, end = 10.dp, bottom = 5.dp)
             ) {
-
-                CardButton(
-                    label = "클라우드 저장",
-                    onClicked = {
-
-                        if (localUser.value.customId.isNullOrEmpty()) {
-                            coroutineScope.launch {
-                                drawerState.close()
-                                mainScreenSnackBarHostState.showSnackbar(
-                                    "아이디를 새로 만든 후 진행해 주세요",
-                                    actionLabel = "닫기", SnackbarDuration.Short
-                                )
-                            }
-                        } else {
-                            cloudSaveAskDialog = true
-                        }
-
-
-                    },
-                    buttonColor = TopButtonColor,
-                    fontColor = Color.Black,
-                    modifier = Modifier
-                        .height(30.dp)
-                        .width(80.dp),
-                    fontSize = 15
+                Text(
+                    modifier = Modifier.weight(0.6f),
+                    text = "ID: ${id}",
+                    fontSize = 15.sp,
+                    overflow = TextOverflow.Ellipsis,
+                    maxLines = 1
                 )
 
-                CardButton(
-                    label = "클라우드 불러오기",
-                    onClicked = {
+                Spacer(modifier = Modifier.weight(0.4f))
 
-                        if (localUser.value.customId.isNullOrEmpty()) {
-                            coroutineScope.launch {
-                                drawerState.close()
-                                mainScreenSnackBarHostState.showSnackbar(
-                                    "아이디 찾은 후 진행해 주세요",
-                                    actionLabel = "닫기", SnackbarDuration.Short
-                                )
-                            }
-                        } else {
-                            cloudLoadDialog = true
-                        }
-                    },
-                    buttonColor = TopButtonColor,
-                    fontColor = Color.Black,
-                    modifier = Modifier
-                        .height(30.dp)
-                        .width(100.dp),
-                    fontSize = 15
-                )
+                LabelAndIconButton(onClicked = {
+                   if(!userDetailExpandVisible) userDetailExpandVisible = true else userDetailExpandVisible = false
+                }, label = "설정", icon = userVisibleIcon)
+
 
             }
+
+            AnimatedVisibility(visible = userDetailExpandVisible) {
+
+                Column(
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Row(
+                        Modifier
+                            .fillMaxWidth()
+                            .padding(top = 5.dp, start = 10.dp, end = 20.dp, bottom = 10.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(
+                            space = 5.dp,
+                            alignment = Alignment.Start
+                        )
+                    ) {
+
+                        CardButton(
+                            label = "아이디 만들기",
+                            onClicked = {
+
+                                customDialog = true
+
+                            },
+                            buttonColor = TopButtonColor,
+                            fontColor = Color.Black,
+                            modifier = Modifier
+                                .height(30.dp)
+                                .width(80.dp),
+                            fontSize = 15
+                        )
+
+                        CardButton(
+                            label = "아이디 찾기",
+                            onClicked = {
+                                findIdDialog = true
+                            },
+                            buttonColor = TopButtonColor,
+                            fontColor = Color.Black,
+                            modifier = Modifier
+                                .height(30.dp)
+                                .width(80.dp),
+                            fontSize = 15
+                        )
+
+                    }
+
+                    Row(
+                        Modifier
+                            .fillMaxWidth()
+                            .padding(top = 5.dp, start = 10.dp, end = 20.dp),
+                        horizontalArrangement = Arrangement.spacedBy(5.dp, Alignment.Start)
+                    ) {
+
+                        CardButton(
+                            label = "클라우드 저장",
+                            onClicked = {
+
+                                if (localUser.value.customId.isNullOrEmpty()) {
+                                    coroutineScope.launch {
+                                        drawerState.close()
+                                        mainScreenSnackBarHostState.showSnackbar(
+                                            "아이디를 새로 만든 후 진행해 주세요",
+                                            actionLabel = "닫기", SnackbarDuration.Short
+                                        )
+                                    }
+                                } else {
+                                    cloudSaveAskDialog = true
+                                }
+
+
+                            },
+                            buttonColor = TopButtonColor,
+                            fontColor = Color.Black,
+                            modifier = Modifier
+                                .height(30.dp)
+                                .width(80.dp),
+                            fontSize = 15
+                        )
+
+                        CardButton(
+                            label = "클라우드 불러오기",
+                            onClicked = {
+
+                                if (localUser.value.customId.isNullOrEmpty()) {
+                                    coroutineScope.launch {
+                                        drawerState.close()
+                                        mainScreenSnackBarHostState.showSnackbar(
+                                            "아이디 찾은 후 진행해 주세요",
+                                            actionLabel = "닫기", SnackbarDuration.Short
+                                        )
+                                    }
+                                } else {
+                                    cloudLoadDialog = true
+                                }
+                            },
+                            buttonColor = TopButtonColor,
+                            fontColor = Color.Black,
+                            modifier = Modifier
+                                .height(30.dp)
+                                .width(100.dp),
+                            fontSize = 15
+                        )
+
+                    }
+                }
+
+
+            }
+
+
+
 
             Divider(
                 modifier = Modifier
@@ -298,12 +332,12 @@ fun DrawerCustom(
                     coroutineScope.launch {
                         drawerState.close()
                         mainScreenSnackBarHostState.showSnackbar(
-                            "아이디 생성 후 진행해 주세요",
+                            "커스텀 아이디 생성 후 진행해 주세요",
                             actionLabel = "닫기", SnackbarDuration.Short
                         )
                     }
                 } else {
-                    if(readyBillingState) {
+                    if (readyBillingState) {
                         billingDialog = true
                     } else {
 
@@ -374,36 +408,12 @@ fun DrawerCustom(
 
                 Spacer(modifier = Modifier.width(10.dp))
 
-                Card(
-                    colors = CardDefaults.cardColors(TopButtonColor),
-                    elevation = CardDefaults.cardElevation(8.dp),
-                    shape = RoundedCornerShape(1.dp),
-                    border = BorderStroke(0.5.dp, color = Color.Black),
-                    modifier = Modifier
-                        .height(20.dp)
-                        .width(70.dp),
-                    onClick = {
-                        if (!targetWindowsExpandVisible) targetWindowsExpandVisible = true
-                        else
-                            targetWindowsExpandVisible = false
-                    }) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxHeight()
-                            .wrapContentWidth()
-                            .padding(horizontal = 10.dp),
-                        horizontalArrangement = Arrangement.Center,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        AutoSizeText(value = "더보기", minFontSize = 8.sp, color = Color.Black)
+                LabelAndIconButton(onClicked = {
+                    if (!targetWindowsExpandVisible) targetWindowsExpandVisible = true
+                    else
+                        targetWindowsExpandVisible = false
+                }, label = "더보기", icon = expandIcon)
 
-                        Image(
-                            imageVector = expandIcon,
-                            contentScale = ContentScale.Crop,
-                            contentDescription = "더보기 여부"
-                        )
-                    }
-                }
             }
 
             AnimatedVisibility(visible = targetWindowsExpandVisible) {

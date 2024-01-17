@@ -96,7 +96,7 @@ fun TotalLineYenRecord(
     onClicked: ((YenBuyRecord) -> Unit)?,
     yenViewModel: YenViewModel,
     snackBarHostState: SnackbarHostState,
-
+    recordSelected: () -> Unit,
     ) {
 
     val mathContext = MathContext(28, RoundingMode.HALF_UP)
@@ -219,6 +219,7 @@ fun TotalLineYenRecord(
                         .clickable {
                             if (itemRowVisible == false) {
                                 itemRowVisible = true
+                                recordSelected.invoke()
                             } else {
                                 focusManager.clearFocus()
                             }

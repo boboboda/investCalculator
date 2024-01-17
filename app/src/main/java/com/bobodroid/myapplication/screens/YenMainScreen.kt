@@ -35,7 +35,6 @@ import com.bobodroid.myapplication.lists.dollorList.SellRecordBox
 import com.bobodroid.myapplication.lists.dollorList.TotalDrRecordBox
 import com.bobodroid.myapplication.lists.dollorList.addFocusCleaner
 import com.bobodroid.myapplication.lists.yenList.BuyYenRecordBox
-import com.bobodroid.myapplication.lists.yenList.EditTypeYenRecordBox
 import com.bobodroid.myapplication.lists.yenList.SellYenRecordBox
 import com.bobodroid.myapplication.models.viewmodels.AllViewModel
 import com.bobodroid.myapplication.models.viewmodels.YenViewModel
@@ -64,14 +63,10 @@ fun YenMainScreen
         }
 
         2 -> {
-            "편집형"
-        }
-
-        3 -> {
             "매수"
         }
 
-        4 -> {
+        3 -> {
             "매도"
         }
 
@@ -172,34 +167,13 @@ fun YenMainScreen
                                 contentAlignment = Alignment.TopStart
                             ) {
                                 Text(
-                                    text = "편집형",
-                                    color = Color.Black,
-                                    fontSize = 13.sp
-                                )
-                            }
-                        }, onClick = {
-                            yenViewModel.selectedBoxId.value = 2
-                            dropdownExpanded = false
-                        })
-
-
-                    DropdownMenuItem(
-                        modifier = Modifier
-                            .fillMaxWidth(),
-                        text = {
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxWidth(),
-                                contentAlignment = Alignment.TopStart
-                            ) {
-                                Text(
                                     text = "매수",
                                     color = Color.Black,
                                     fontSize = 13.sp
                                 )
                             }
                         }, onClick = {
-                            yenViewModel.selectedBoxId.value = 3
+                            yenViewModel.selectedBoxId.value = 2
                             dropdownExpanded = false
                         })
 
@@ -219,7 +193,7 @@ fun YenMainScreen
                                 )
                             }
                         }, onClick = {
-                            yenViewModel.selectedBoxId.value = 4
+                            yenViewModel.selectedBoxId.value = 3
                             dropdownExpanded = false
                         })
 
@@ -291,20 +265,13 @@ fun YenMainScreen
                     }
 
                     2 -> {
-                        EditTypeYenRecordBox(
-                            yenViewModel,
-                            snackbarHostState,
-                            hideSellRecordState
-                        )
-                    }
-                    3 -> {
                         BuyYenRecordBox(
                             yenViewModel,
                             snackbarHostState,
                             hideSellRecordState)
                     }
 
-                    4 -> {
+                    3 -> {
                         SellYenRecordBox(
                             yenViewModel,
                             snackbarHostState)

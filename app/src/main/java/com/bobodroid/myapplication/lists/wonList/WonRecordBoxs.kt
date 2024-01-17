@@ -2,9 +2,11 @@ package com.bobodroid.myapplication.lists.wonList
 
 import android.annotation.SuppressLint
 import android.util.Log
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.*
@@ -15,6 +17,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.bobodroid.myapplication.components.*
+import com.bobodroid.myapplication.lists.dollorList.TotalLineDrRecord
 import com.bobodroid.myapplication.models.datamodels.*
 import com.bobodroid.myapplication.models.viewmodels.*
 import com.bobodroid.myapplication.screens.TAG
@@ -24,14 +27,23 @@ import java.util.UUID
 
 
 @ExperimentalMaterialApi
-@OptIn(ExperimentalMaterialApi::class)
+@OptIn(ExperimentalMaterialApi::class, ExperimentalStdlibApi::class,
+    ExperimentalFoundationApi::class
+)
 @SuppressLint("StateFlowValueCalledInComposition")
 @Composable
-fun BuyWonRecordBox(wonViewModel: WonViewModel, snackbarHostState: SnackbarHostState) {
+fun BuyWonRecordBox(wonViewModel: WonViewModel,
+                    snackbarHostState: SnackbarHostState,
+                    hideSellRecordState: Boolean) {
 
-    val buyRecordHistory : State<List<WonBuyRecord>> = wonViewModel.filterBuyRecordFlow.collectAsState()
+    val buyRecordHistory : State<Map<String,List<WonBuyRecord>>> = wonViewModel.groupBuyRecordFlow.collectAsState()
 
-    val buySortRecord = buyRecordHistory.value.sortedBy { it.date }
+    val filterRecord  = if(hideSellRecordState)
+    {
+        buyRecordHistory.value.mapValues { it.value.filter { it.recordColor == false } }
+    } else {
+        buyRecordHistory.value
+    }
 
     var lazyScrollState = rememberLazyListState()
 
@@ -73,35 +85,61 @@ fun BuyWonRecordBox(wonViewModel: WonViewModel, snackbarHostState: SnackbarHostS
 
         LazyColumn(modifier = Modifier, state = lazyScrollState) {
 
-            itemsIndexed(
-                items = buySortRecord,
-                key = { index: Int, item: WonBuyRecord -> item.id}) {index, Buy ->
+            filterRecord.onEachIndexed { groupIndex:Int, (key, items)->
 
-                WonLineRecordText(
-                    Buy,
-                    sellAction = Buy.recordColor!!
-                    ,
-                    sellActed = { buyRecord ->
-                        selectedId = buyRecord.id
 
-                        wonViewModel.updateBuyRecord(buyRecord)
+                stickyHeader {
+                    RecordHeader(key = key)
+                }
 
-                    },
-                    onClicked = { recordbox ->
-                        selectedId = recordbox.id
-                        wonViewModel.dateFlow.value = recordbox.date!!
-                        wonViewModel.recordInputMoney.value = recordbox.money!!.toInt()
-                        wonViewModel.moneyType.value = recordbox.moneyType!!
-                        wonViewModel.haveMoney.value = recordbox.exchangeMoney!!
+                items(
+                    items = items,
+                    key = { it.id!! }
+                ) { Buy ->
 
-                        Log.d(TAG, " ${recordbox.money}, ${recordbox.exchangeMoney}")
+                    var accmulatedCount = 1
 
+                    (0..<groupIndex).forEach {foreachIndex->
+                        val currentKey = filterRecord.keys.elementAt(foreachIndex)
+                        val elements = filterRecord.getValue(currentKey)
+                        accmulatedCount += elements.count()
                     }
-                    ,
-                    wonViewModel,
-                    snackbarHostState = snackbarHostState)
 
-                Divider()
+                    val foundIndex = items.indexOfFirst { it.id === Buy.id }
+
+                    val finalIndex = foundIndex + accmulatedCount + groupIndex
+
+                    WonLineRecordText(
+                        Buy,
+                        sellAction = Buy.recordColor!!
+                        ,
+                        sellActed = { buyRecord ->
+                            selectedId = buyRecord.id
+
+                            wonViewModel.updateBuyRecord(buyRecord)
+
+                        },
+                        onClicked = { recordbox ->
+                            selectedId = recordbox.id
+                            wonViewModel.dateFlow.value = recordbox.date!!
+                            wonViewModel.recordInputMoney.value = recordbox.money!!.toInt()
+                            wonViewModel.moneyType.value = recordbox.moneyType!!
+                            wonViewModel.haveMoney.value = recordbox.exchangeMoney!!
+
+                            Log.d(TAG, " ${recordbox.money}, ${recordbox.exchangeMoney}")
+
+                        }
+                        ,
+                        wonViewModel,
+                        snackbarHostState = snackbarHostState) {
+                        coroutineScope.launch {
+                            delay(300)
+                            lazyScrollState.animateScrollToItem(finalIndex, -55)
+                        }
+                    }
+
+                    Divider()
+                }
             }
         }
 

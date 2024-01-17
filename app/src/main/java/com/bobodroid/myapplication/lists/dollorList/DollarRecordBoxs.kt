@@ -99,7 +99,7 @@ fun BuyRecordBox(
                     key = { it.id!! }
                 ) { Buy ->
 
-                    var accmulatedCount = 0
+                    var accmulatedCount = 1
 
                     (0..<groupIndex).forEach {foreachIndex->
                         val currentKey = filterRecord.keys.elementAt(foreachIndex)
@@ -111,7 +111,7 @@ fun BuyRecordBox(
 
                     val finalIndex = foundIndex + accmulatedCount + groupIndex
 
-                    LineDrRecordText(
+                    TotalLineDrRecord(
                         Buy,
                         sellAction = Buy.recordColor!!
                         ,
@@ -129,12 +129,9 @@ fun BuyRecordBox(
                         dollarViewModel = dollarViewModel,
                         snackBarHostState = snackBarHostState) {
                         coroutineScope.launch {
-
-                            Log.d(TAG, "index${finalIndex}")
-
                             delay(300)
-                            lazyScrollState.animateScrollToItem(finalIndex, 0)
-                    }
+                            lazyScrollState.animateScrollToItem(finalIndex, -55)
+                        }
                     }
 
                     Divider()
@@ -143,10 +140,6 @@ fun BuyRecordBox(
 
 
         }
-
-
-
-
     }
 
 }

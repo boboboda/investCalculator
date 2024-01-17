@@ -35,7 +35,6 @@ import com.bobodroid.myapplication.lists.dollorList.SellRecordBox
 import com.bobodroid.myapplication.lists.dollorList.TotalDrRecordBox
 import com.bobodroid.myapplication.lists.dollorList.addFocusCleaner
 import com.bobodroid.myapplication.lists.yenList.BuyYenRecordBox
-import com.bobodroid.myapplication.lists.yenList.EditTypeYenRecordBox
 import com.bobodroid.myapplication.lists.yenList.SellYenRecordBox
 import com.bobodroid.myapplication.models.viewmodels.AllViewModel
 import com.bobodroid.myapplication.models.viewmodels.YenViewModel
@@ -43,7 +42,6 @@ import com.bobodroid.myapplication.routes.InvestRouteAction
 import java.text.SimpleDateFormat
 import androidx.compose.material.SnackbarHost
 import com.bobodroid.myapplication.lists.wonList.BuyWonRecordBox
-import com.bobodroid.myapplication.lists.wonList.EditTypeWonRecordBox
 import com.bobodroid.myapplication.lists.wonList.SellWonRecordBox
 import com.bobodroid.myapplication.lists.wonList.TotalWonRecordBox
 import com.bobodroid.myapplication.lists.yenList.TotalYenRecordBox
@@ -68,14 +66,10 @@ fun WonMainScreen(wonViewModel: WonViewModel,
         }
 
         2 -> {
-            "편집형"
-        }
-
-        3 -> {
             "매수"
         }
 
-        4 -> {
+        3 -> {
             "매도"
         }
 
@@ -162,26 +156,6 @@ fun WonMainScreen(wonViewModel: WonViewModel,
                             dropdownExpanded = false
                         })
 
-                    DropdownMenuItem(
-                        modifier = Modifier
-                            .fillMaxWidth(),
-                        text = {
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxWidth(),
-                                contentAlignment = Alignment.TopStart
-                            ) {
-                                Text(
-                                    text = "편집형",
-                                    color = Color.Black,
-                                    fontSize = 13.sp
-                                )
-                            }
-                        }, onClick = {
-                            wonViewModel.selectedBoxId.value = 2
-                            dropdownExpanded = false
-                        })
-
 
                     DropdownMenuItem(
                         modifier = Modifier
@@ -199,7 +173,7 @@ fun WonMainScreen(wonViewModel: WonViewModel,
                                 )
                             }
                         }, onClick = {
-                            wonViewModel.selectedBoxId.value = 3
+                            wonViewModel.selectedBoxId.value = 2
                             dropdownExpanded = false
                         })
 
@@ -219,7 +193,7 @@ fun WonMainScreen(wonViewModel: WonViewModel,
                                 )
                             }
                         }, onClick = {
-                            wonViewModel.selectedBoxId.value = 4
+                            wonViewModel.selectedBoxId.value = 3
                             dropdownExpanded = false
                         })
 
@@ -293,19 +267,13 @@ fun WonMainScreen(wonViewModel: WonViewModel,
                         }
 
                         2 -> {
-                            EditTypeWonRecordBox(
+                            BuyWonRecordBox(
                                 wonViewModel,
                                 snackbarHostState,
                                 hideSellRecordState)
                         }
 
                         3 -> {
-                            BuyWonRecordBox(
-                                wonViewModel,
-                                snackbarHostState)
-                        }
-
-                        4 -> {
                             SellWonRecordBox(
                                 wonViewModel,
                                 snackbarHostState)

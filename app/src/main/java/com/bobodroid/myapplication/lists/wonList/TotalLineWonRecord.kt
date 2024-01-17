@@ -92,7 +92,8 @@ fun TotalLineWonRecordText(
     sellActed: (WonBuyRecord) -> Unit,
     onClicked: ((WonBuyRecord)-> Unit)?,
     wonViewModel: WonViewModel,
-    snackbarHostState: SnackbarHostState
+    snackbarHostState: SnackbarHostState,
+    recordSelected: () -> Unit,
 ) {
 
     val mathContext = MathContext(28, RoundingMode.HALF_UP)
@@ -230,6 +231,7 @@ fun TotalLineWonRecordText(
                         .clickable {
                             if (itemRowVisible == false) {
                                 itemRowVisible = true
+                                recordSelected.invoke()
                             } else {
                                 focusManager.clearFocus()
                             }

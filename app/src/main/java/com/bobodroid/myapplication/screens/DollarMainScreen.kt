@@ -30,7 +30,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.DpOffset
 import com.bobodroid.myapplication.R
 import com.bobodroid.myapplication.lists.dollorList.BuyRecordBox
-import com.bobodroid.myapplication.lists.dollorList.EditTypeRecordBox
 import com.bobodroid.myapplication.lists.dollorList.SellRecordBox
 import com.bobodroid.myapplication.lists.dollorList.TotalDrRecordBox
 import com.bobodroid.myapplication.lists.dollorList.addFocusCleaner
@@ -73,14 +72,10 @@ fun DollarMainScreen(
         }
 
         2 -> {
-            "편집형"
-        }
-
-        3 -> {
             "매수"
         }
 
-        4 -> {
+        3 -> {
             "매도"
         }
 
@@ -167,25 +162,7 @@ fun DollarMainScreen(
                             dropdownExpanded = false
                         })
 
-                    DropdownMenuItem(
-                        modifier = Modifier
-                            .fillMaxWidth(),
-                        text = {
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxWidth(),
-                                contentAlignment = Alignment.TopStart
-                            ) {
-                                Text(
-                                    text = "편집형",
-                                    color = Color.Black,
-                                    fontSize = 13.sp
-                                )
-                            }
-                        }, onClick = {
-                            dollarViewModel.selectedBoxId.value = 2
-                            dropdownExpanded = false
-                        })
+
 
 
                     DropdownMenuItem(
@@ -204,7 +181,7 @@ fun DollarMainScreen(
                                 )
                             }
                         }, onClick = {
-                            dollarViewModel.selectedBoxId.value = 3
+                            dollarViewModel.selectedBoxId.value = 2
                             dropdownExpanded = false
                         })
 
@@ -224,7 +201,7 @@ fun DollarMainScreen(
                                 )
                             }
                         }, onClick = {
-                            dollarViewModel.selectedBoxId.value = 4
+                            dollarViewModel.selectedBoxId.value = 3
                             dropdownExpanded = false
                         })
 
@@ -295,22 +272,14 @@ fun DollarMainScreen(
                             hideSellRecordState
                         )
                     }
-
                     2 -> {
-                        EditTypeRecordBox(
-                            dollarViewModel,
-                            snackBarHostState,
-                            hideSellRecordState
-                        )
-                    }
-                    3 -> {
                         BuyRecordBox(
                             dollarViewModel,
                             snackBarHostState,
                             hideSellRecordState)
                     }
 
-                    4 -> {
+                    3 -> {
                         SellRecordBox(
                             dollarViewModel,
                             snackBarHostState)

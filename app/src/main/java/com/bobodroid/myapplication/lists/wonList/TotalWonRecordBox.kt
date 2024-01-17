@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.ExperimentalMaterialApi
@@ -35,9 +36,11 @@ import com.bobodroid.myapplication.models.datamodels.WonBuyRecord
 import com.bobodroid.myapplication.models.datamodels.YenBuyRecord
 import com.bobodroid.myapplication.models.viewmodels.WonViewModel
 import com.bobodroid.myapplication.screens.TAG
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import java.util.UUID
 
-@OptIn(ExperimentalFoundationApi::class)
+@OptIn(ExperimentalFoundationApi::class, ExperimentalStdlibApi::class)
 @ExperimentalMaterialApi
 @SuppressLint("StateFlowValueCalledInComposition")
 @Composable
@@ -97,16 +100,29 @@ fun TotalWonRecordBox(wonViewModel: WonViewModel,
             modifier = Modifier,
             state = lazyScrollState) {
 
-            filterRecord.forEach { key, items ->
+            filterRecord.onEachIndexed { groupIndex:Int, (key, items)->
+
 
                 stickyHeader {
                     RecordHeader(key = key)
                 }
 
-                itemsIndexed(
+                items(
                     items = items,
-                    key = { index: Int, item: WonBuyRecord -> item.id}
-                ) {index, Buy ->
+                    key = { it.id!! }
+                ) { Buy ->
+
+                    var accmulatedCount = 1
+
+                    (0..<groupIndex).forEach {foreachIndex->
+                        val currentKey = filterRecord.keys.elementAt(foreachIndex)
+                        val elements = filterRecord.getValue(currentKey)
+                        accmulatedCount += elements.count()
+                    }
+
+                    val foundIndex = items.indexOfFirst { it.id === Buy.id }
+
+                    val finalIndex = foundIndex + accmulatedCount + groupIndex
 
                     TotalLineWonRecordText(
                         Buy,
@@ -130,11 +146,19 @@ fun TotalWonRecordBox(wonViewModel: WonViewModel,
                         }
                         ,
                         wonViewModel,
-                        snackbarHostState = snackbarHostState)
+                        snackbarHostState = snackbarHostState)  {
+                        coroutineScope.launch {
+                            delay(300)
+                            lazyScrollState.animateScrollToItem(finalIndex, -55)
+                        }
+                    }
 
                     Divider()
                 }
             }
+
+
+
 
 
         }

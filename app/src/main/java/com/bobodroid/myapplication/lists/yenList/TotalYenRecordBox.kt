@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.ExperimentalMaterialApi
@@ -34,10 +35,14 @@ import com.bobodroid.myapplication.models.datamodels.DrBuyRecord
 import com.bobodroid.myapplication.models.datamodels.YenBuyRecord
 import com.bobodroid.myapplication.models.viewmodels.DollarViewModel
 import com.bobodroid.myapplication.models.viewmodels.YenViewModel
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import java.util.UUID
 
 @ExperimentalMaterialApi
-@OptIn(ExperimentalMaterialApi::class, ExperimentalFoundationApi::class)
+@OptIn(ExperimentalMaterialApi::class, ExperimentalFoundationApi::class,
+    ExperimentalStdlibApi::class
+)
 @SuppressLint("StateFlowValueCalledInComposition")
 @Composable
 fun TotalYenRecordBox(
@@ -95,17 +100,29 @@ fun TotalYenRecordBox(
 
             //  Buy -> 라인리코드텍스트에 넣지 말고 바로 데이터 전달 -> 리팩토리
 
-            filterRecord.forEach { key, items->
+            filterRecord.onEachIndexed { groupIndex:Int, (key, items)->
 
 
                 stickyHeader {
                     RecordHeader(key = key)
                 }
 
-                itemsIndexed(
+                items(
                     items = items,
-                    key = { index: Int, item: YenBuyRecord -> item.id!! }
-                ) { index, Buy ->
+                    key = { it.id!! }
+                ) { Buy ->
+
+                    var accmulatedCount = 1
+
+                    (0..<groupIndex).forEach {foreachIndex->
+                        val currentKey = filterRecord.keys.elementAt(foreachIndex)
+                        val elements = filterRecord.getValue(currentKey)
+                        accmulatedCount += elements.count()
+                    }
+
+                    val foundIndex = items.indexOfFirst { it.id === Buy.id }
+
+                    val finalIndex = foundIndex + accmulatedCount + groupIndex
 
                     TotalLineYenRecord(
                         Buy,
@@ -123,11 +140,20 @@ fun TotalYenRecordBox(
                             yenViewModel.haveMoney.value = recordbox.exchangeMoney!!
                             yenViewModel.recordInputMoney.value = recordbox.money!! },
                         yenViewModel = yenViewModel,
-                        snackBarHostState = snackBarHostState)
+                        snackBarHostState = snackBarHostState) {
+                        coroutineScope.launch {
+                            delay(300)
+                            lazyScrollState.animateScrollToItem(finalIndex, -55)
+                        }
+                    }
 
                     Divider()
                 }
             }
+
+
+
+
 
 
         }

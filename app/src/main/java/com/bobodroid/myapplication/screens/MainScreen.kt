@@ -1,5 +1,6 @@
 package com.bobodroid.myapplication.screens
 
+import android.app.Activity
 import android.content.Intent
 import android.net.Uri
 import android.util.Log
@@ -80,7 +81,8 @@ fun MainScreen(dollarViewModel: DollarViewModel,
                wonViewModel: WonViewModel,
                routeAction: InvestRouteAction,
                allViewModel: AllViewModel,
-               drawerState: DrawerState) {
+               drawerState: DrawerState,
+               activity: Activity) {
 
 
     val showOpenDialog = remember { mutableStateOf(false) }
@@ -159,7 +161,8 @@ fun MainScreen(dollarViewModel: DollarViewModel,
                 yenViewModel,
                 wonViewModel,
                 drawerState,
-                mainScreenSnackBarHostState)
+                mainScreenSnackBarHostState,
+                activity)
         },
     ) {
 

@@ -3,6 +3,7 @@ package com.bobodroid.myapplication
 import android.animation.ObjectAnimator
 import android.animation.PropertyValuesHolder
 import android.annotation.SuppressLint
+import android.app.Activity
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -104,7 +105,8 @@ class MainActivity : ComponentActivity() {
                 dollarViewModel,
                 yenViewModel,
                 wonViewModel,
-                allViewModel
+                allViewModel,
+                activity = this
             )
         }
     }
@@ -202,7 +204,8 @@ fun AppScreen(
     dollarViewModel: DollarViewModel,
     yenViewModel: YenViewModel,
     wonViewModel: WonViewModel,
-    allViewModel: AllViewModel
+    allViewModel: AllViewModel,
+    activity: Activity
 ) {
 
     val scope = rememberCoroutineScope()
@@ -230,7 +233,8 @@ fun AppScreen(
                 yenViewModel,
                 wonViewModel,
                 allViewModel,
-                drawerState = drawerState
+                drawerState = drawerState,
+                activity
             )
         }
 
@@ -246,7 +250,8 @@ fun InvestAppScreen(
     yenViewModel: YenViewModel,
     wonViewModel: WonViewModel,
     allViewModel: AllViewModel,
-    drawerState: DrawerState
+    drawerState: DrawerState,
+    activity: Activity
 ) {
 
 
@@ -262,8 +267,8 @@ fun InvestAppScreen(
         wonViewModel = wonViewModel,
         routeAction = investRouteAction,
         allViewModel = allViewModel,
-        drawerState = drawerState
-    )
+        drawerState = drawerState,
+        activity = activity)
 
 
 }
@@ -278,7 +283,8 @@ fun InvestNavHost(
     wonViewModel: WonViewModel,
     routeAction: InvestRouteAction,
     allViewModel: AllViewModel,
-    drawerState: DrawerState
+    drawerState: DrawerState,
+    activity: Activity
 ) {
     NavHost(navController = investNavController, startDestination = startRouter.routeName!!) {
         composable(InvestRoute.MAIN.routeName!!) {
@@ -288,7 +294,8 @@ fun InvestNavHost(
                 wonViewModel = wonViewModel,
                 routeAction = routeAction,
                 allViewModel = allViewModel,
-                drawerState = drawerState
+                drawerState = drawerState,
+                activity = activity
 
             )
         }

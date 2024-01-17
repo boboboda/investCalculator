@@ -22,9 +22,9 @@ android {
         minSdk 26
         targetSdk 33
         compileSdk 33
-        versionCode 28
+        versionCode 29
 //        compileSdkPreview "UpsideDownCake"
-        versionName "24.2.1"
+        versionName "24.3.1"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
@@ -185,6 +185,10 @@ dependencies {
 
     //interceptorRandomUserApiService.kt
     implementation("com.squareup.okhttp3:logging-interceptor:4.11.0")
+
+    def billing_version = "6.0.1"
+
+    implementation "com.android.billingclient:billing-ktx:$billing_version"
 
 }
 

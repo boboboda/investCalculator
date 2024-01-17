@@ -1,5 +1,6 @@
 package com.bobodroid.myapplication.components
 
+import android.app.Activity
 import android.content.Intent
 import android.net.Uri
 import androidx.compose.animation.AnimatedVisibility
@@ -23,6 +24,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.DrawerState
 import androidx.compose.material.SnackbarDuration
 import androidx.compose.material.SnackbarHostState
+import androidx.compose.material.TextButton
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
@@ -52,6 +54,7 @@ import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
+import com.bobodroid.myapplication.billing.BillingDialog
 import com.bobodroid.myapplication.components.Dialogs.AskTriggerDialog
 import com.bobodroid.myapplication.components.Dialogs.ChargeDialog
 import com.bobodroid.myapplication.components.Dialogs.CustomIdDialog
@@ -66,6 +69,7 @@ import com.bobodroid.myapplication.models.viewmodels.WonViewModel
 import com.bobodroid.myapplication.models.viewmodels.YenViewModel
 import com.bobodroid.myapplication.ui.theme.TopButtonColor
 import com.bobodroid.myapplication.ui.theme.WelcomeScreenBackgroundColor
+import com.bobodroid.myapplication.util.InvestApplication
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -76,7 +80,8 @@ fun DrawerCustom(
     yenViewModel: YenViewModel,
     wonViewModel: WonViewModel,
     drawerState: DrawerState,
-    mainScreenSnackBarHostState: SnackbarHostState
+    mainScreenSnackBarHostState: SnackbarHostState,
+    activity: Activity,
 ) {
 
     val coroutineScope = rememberCoroutineScope()
@@ -133,6 +138,15 @@ fun DrawerCustom(
 
     var selectedHighAndLow by remember { mutableStateOf("고점") }
 
+    var billingDialog by remember { mutableStateOf(false) }
+
+    val productList =
+        InvestApplication.instance.billingClientLifecycle.fetchedProductList.collectAsState()
+
+    var readyBillingState by remember { mutableStateOf(false) }
+
+    if (productList.value.isNullOrEmpty()) readyBillingState = false else readyBillingState = true
+
     Column(
         modifier = Modifier
             .fillMaxHeight()
@@ -149,12 +163,15 @@ fun DrawerCustom(
         Column(
             Modifier
                 .fillMaxWidth()
-                .padding(bottom = 20.dp),
+                .padding(bottom = 5.dp, end = 5.dp),
             horizontalAlignment = Alignment.Start
         ) {
 
             Text(
-                modifier = Modifier.padding(start = 10.dp, end = 20.dp, bottom = 5.dp),
+                modifier = Modifier.padding(
+                    start = 10.dp,
+                    end = 100.dp,
+                    bottom = 5.dp),
                 text = "ID: ${id}",
                 fontSize = 15.sp,
                 overflow = TextOverflow.Ellipsis,
@@ -259,6 +276,50 @@ fun DrawerCustom(
                 )
 
             }
+
+            Divider(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 10.dp)
+            )
+
+        }
+
+        Row(
+            Modifier
+                .fillMaxWidth()
+                .padding(start = 10.dp),
+            horizontalArrangement = Arrangement.Start
+        ) {
+
+            TextButton(onClick = {
+
+                if (localUser.value.customId.isNullOrEmpty()) {
+                    coroutineScope.launch {
+                        drawerState.close()
+                        mainScreenSnackBarHostState.showSnackbar(
+                            "아이디 생성 후 진행해 주세요",
+                            actionLabel = "닫기", SnackbarDuration.Short
+                        )
+                    }
+                } else {
+                    if(readyBillingState) {
+                        billingDialog = true
+                    } else {
+
+                        coroutineScope.launch {
+                            drawerState.close()
+                            mainScreenSnackBarHostState.showSnackbar(
+                                "아직 광고가 준비 되어있지 않습니다.",
+                                actionLabel = "닫기", SnackbarDuration.Short
+                            )
+                        }
+                    }
+                }
+            }) {
+                Text(text = "광고 삭제(구현 예정)")
+            }
+
         }
 
         Divider(
@@ -342,7 +403,7 @@ fun DrawerCustom(
                             contentDescription = "더보기 여부"
                         )
                     }
-            }
+                }
             }
 
             AnimatedVisibility(visible = targetWindowsExpandVisible) {
@@ -351,10 +412,12 @@ fun DrawerCustom(
                     verticalArrangement = Arrangement.spacedBy(5.dp)
                 ) {
 
-                    Row(modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(end = 25.dp),
-                        horizontalArrangement = Arrangement.End) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(end = 25.dp),
+                        horizontalArrangement = Arrangement.End
+                    ) {
                         Box(
                             modifier = Modifier
                                 .wrapContentSize(Alignment.TopEnd),
@@ -412,7 +475,7 @@ fun DrawerCustom(
                                         when (selectedCurrency) {
                                             "달러" -> {
 
-                                                when(selectedHighAndLow) {
+                                                when (selectedHighAndLow) {
                                                     "고점" -> {
                                                         if (targetRateData.value.dollarHighRateList?.size == 5) {
                                                             coroutineScope.launch {
@@ -421,13 +484,15 @@ fun DrawerCustom(
                                                                 mainScreenSnackBarHostState.showSnackbar(
                                                                     "목표환율 설정 제한을 초과하였습니다.\n" +
                                                                             "(제한갯수: 5개)",
-                                                                    actionLabel = "닫기", SnackbarDuration.Short
+                                                                    actionLabel = "닫기",
+                                                                    SnackbarDuration.Short
                                                                 )
                                                             }
                                                         } else {
                                                             targetRateDialog = true
                                                         }
                                                     }
+
                                                     "저점" -> {
                                                         if (targetRateData.value.dollarLowRateList?.size == 5) {
                                                             coroutineScope.launch {
@@ -436,7 +501,8 @@ fun DrawerCustom(
                                                                 mainScreenSnackBarHostState.showSnackbar(
                                                                     "목표환율 설정 제한을 초과하였습니다.\n" +
                                                                             "(제한갯수: 5개)",
-                                                                    actionLabel = "닫기", SnackbarDuration.Short
+                                                                    actionLabel = "닫기",
+                                                                    SnackbarDuration.Short
                                                                 )
                                                             }
                                                         } else {
@@ -450,8 +516,8 @@ fun DrawerCustom(
 
                                             "엔화" -> {
 
-                                                when(selectedHighAndLow) {
-                                                    "고점"-> {
+                                                when (selectedHighAndLow) {
+                                                    "고점" -> {
                                                         if (targetRateData.value.yenHighRateList?.size == 5) {
                                                             coroutineScope.launch {
                                                                 dropdownExpanded = false
@@ -459,14 +525,16 @@ fun DrawerCustom(
                                                                 mainScreenSnackBarHostState.showSnackbar(
                                                                     "목표환율 설정 제한을 초과하였습니다.\n" +
                                                                             "(제한갯수: 5개)",
-                                                                    actionLabel = "닫기", SnackbarDuration.Short
+                                                                    actionLabel = "닫기",
+                                                                    SnackbarDuration.Short
                                                                 )
                                                             }
                                                         } else {
                                                             targetRateDialog = true
                                                         }
                                                     }
-                                                    "저점"-> {
+
+                                                    "저점" -> {
                                                         if (targetRateData.value.yenLowRateList?.size == 5) {
                                                             coroutineScope.launch {
                                                                 dropdownExpanded = false
@@ -474,7 +542,8 @@ fun DrawerCustom(
                                                                 mainScreenSnackBarHostState.showSnackbar(
                                                                     "목표환율 설정 제한을 초과하였습니다.\n" +
                                                                             "(제한갯수: 5개)",
-                                                                    actionLabel = "닫기", SnackbarDuration.Short
+                                                                    actionLabel = "닫기",
+                                                                    SnackbarDuration.Short
                                                                 )
                                                             }
                                                         } else {
@@ -508,17 +577,20 @@ fun DrawerCustom(
                                         when (selectedCurrency) {
                                             "달러" -> {
 
-                                                when(selectedHighAndLow) {
+                                                when (selectedHighAndLow) {
                                                     "고점" -> {
-                                                       val removeData = targetRateData.value.dollarHighRateList?.filter { it.number == selectedNumber }?.firstOrNull()
+                                                        val removeData =
+                                                            targetRateData.value.dollarHighRateList?.filter { it.number == selectedNumber }
+                                                                ?.firstOrNull()
 
-                                                        if(removeData == null) {
+                                                        if (removeData == null) {
                                                             coroutineScope.launch {
                                                                 dropdownExpanded = false
                                                                 drawerState.close()
                                                                 mainScreenSnackBarHostState.showSnackbar(
                                                                     "삭제할 데이터가 존재하지 않습니다.",
-                                                                    actionLabel = "닫기", SnackbarDuration.Short
+                                                                    actionLabel = "닫기",
+                                                                    SnackbarDuration.Short
                                                                 )
                                                             }
                                                         } else {
@@ -531,16 +603,20 @@ fun DrawerCustom(
                                                             dropdownExpanded = false
                                                         }
                                                     }
-                                                    "저점" -> {
-                                                        val removeData = targetRateData.value.dollarLowRateList?.filter { it.number == selectedNumber }?.firstOrNull()
 
-                                                        if(removeData == null) {
+                                                    "저점" -> {
+                                                        val removeData =
+                                                            targetRateData.value.dollarLowRateList?.filter { it.number == selectedNumber }
+                                                                ?.firstOrNull()
+
+                                                        if (removeData == null) {
                                                             coroutineScope.launch {
                                                                 dropdownExpanded = false
                                                                 drawerState.close()
                                                                 mainScreenSnackBarHostState.showSnackbar(
                                                                     "삭제할 데이터가 존재하지 않습니다.",
-                                                                    actionLabel = "닫기", SnackbarDuration.Short
+                                                                    actionLabel = "닫기",
+                                                                    SnackbarDuration.Short
                                                                 )
                                                             }
                                                         } else {
@@ -560,17 +636,20 @@ fun DrawerCustom(
 
                                             "엔화" -> {
 
-                                                when(selectedHighAndLow) {
-                                                    "고점"-> {
-                                                        val removeData = targetRateData.value.yenHighRateList?.filter { it.number == selectedNumber }?.firstOrNull()
+                                                when (selectedHighAndLow) {
+                                                    "고점" -> {
+                                                        val removeData =
+                                                            targetRateData.value.yenHighRateList?.filter { it.number == selectedNumber }
+                                                                ?.firstOrNull()
 
-                                                        if(removeData == null) {
+                                                        if (removeData == null) {
                                                             coroutineScope.launch {
                                                                 dropdownExpanded = false
                                                                 drawerState.close()
                                                                 mainScreenSnackBarHostState.showSnackbar(
                                                                     "삭제할 데이터가 존재하지 않습니다.",
-                                                                    actionLabel = "닫기", SnackbarDuration.Short
+                                                                    actionLabel = "닫기",
+                                                                    SnackbarDuration.Short
                                                                 )
                                                             }
                                                         } else {
@@ -583,16 +662,20 @@ fun DrawerCustom(
                                                             dropdownExpanded = false
                                                         }
                                                     }
-                                                    "저점"-> {
-                                                        val removeData = targetRateData.value.yenLowRateList?.filter { it.number == selectedNumber }?.firstOrNull()
 
-                                                        if(removeData == null) {
+                                                    "저점" -> {
+                                                        val removeData =
+                                                            targetRateData.value.yenLowRateList?.filter { it.number == selectedNumber }
+                                                                ?.firstOrNull()
+
+                                                        if (removeData == null) {
                                                             coroutineScope.launch {
                                                                 dropdownExpanded = false
                                                                 drawerState.close()
                                                                 mainScreenSnackBarHostState.showSnackbar(
                                                                     "삭제할 데이터가 존재하지 않습니다.",
-                                                                    actionLabel = "닫기", SnackbarDuration.Short
+                                                                    actionLabel = "닫기",
+                                                                    SnackbarDuration.Short
                                                                 )
                                                             }
                                                         } else {
@@ -688,6 +771,17 @@ fun DrawerCustom(
                     chargeDialog.value = false
                 }
             }
+        }
+
+        if (billingDialog) {
+            BillingDialog(
+                productItem = productList.value.last(),
+                onPurchaseButtonClicked = {
+                    InvestApplication.instance.billingClientLifecycle.startBillingFlow(activity, it)
+                },
+                onDismissRequest = {
+                    billingDialog = it
+                })
         }
 
         if (customDialog) {

@@ -39,7 +39,12 @@ import java.util.*
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterialApi::class)
 
 @Composable
-fun WonInvestScreen(wonViewModel: WonViewModel, routeAction: InvestRouteAction, allViewModel: AllViewModel) {
+fun WonInvestScreen(
+    wonViewModel: WonViewModel,
+    routeAction: InvestRouteAction,
+    routeName: String,
+    allViewModel: AllViewModel,
+) {
 
 
 
@@ -81,22 +86,19 @@ fun WonInvestScreen(wonViewModel: WonViewModel, routeAction: InvestRouteAction, 
         Row(modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically) {
 
-            Card(
+            CardButton(
+                label = routeName,
+                onClicked = {
+                    routeAction.navTo(InvestRoute.DOLLAR_BUY)
+                },
+                fontSize = 15,
                 modifier = Modifier
                     .padding(10.dp)
                     .height(50.dp)
                     .width(80.dp),
-                colors = CardDefaults.cardColors(containerColor = Green)
-            ) {
-                Text(
-                    text = "달러",
-                    fontSize = 20.sp,
-                    modifier = Modifier
-                        .padding(10.dp)
-                        .height(50.dp)
-                        .width(80.dp),
-                    textAlign = TextAlign.Center)
-            }
+                fontColor = Color.Black,
+                buttonColor = Green
+            )
 
             Spacer(modifier = Modifier.weight(1f))
 

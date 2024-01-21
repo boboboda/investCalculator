@@ -15,9 +15,16 @@ import com.google.android.gms.ads.rewarded.RewardedAdLoadCallback
 
 private var rewardedAd: RewardedAd? = null
 
+private var targetRewardedAd: RewardedAd? = null
+
 fun loadRewardedAdvertisement(context: Context) {
     var adRequest = AdRequest.Builder().build()
-        RewardedAd.load(context, BuildConfig.REWARD_FRONT_AD_KEY, adRequest, object : RewardedAdLoadCallback() {
+
+    RewardedAd.load(
+        context,
+        BuildConfig.REWARD_FRONT_AD_KEY,
+        adRequest,
+        object : RewardedAdLoadCallback() {
             override fun onAdFailedToLoad(adError: LoadAdError) {
                 Log.d(TAG, "${adError?.toString()}")
                 rewardedAd = null
@@ -30,6 +37,7 @@ fun loadRewardedAdvertisement(context: Context) {
             }
         })
 }
+
 //
 fun showRewardedAdvertisement(context: Context, onAdDismissed: () -> Unit) {
     val activity = context.findActivity()
@@ -49,7 +57,6 @@ fun showRewardedAdvertisement(context: Context, onAdDismissed: () -> Unit) {
             }
 
 
-
             override fun onAdDismissedFullScreenContent() {
                 rewardedAd = null
 
@@ -58,6 +65,69 @@ fun showRewardedAdvertisement(context: Context, onAdDismissed: () -> Unit) {
             }
         }
         rewardedAd?.let { ad ->
+            ad.show(activity, OnUserEarnedRewardListener { rewardItem ->
+                // Handle the reward.
+                val rewardAmount = rewardItem.amount
+                val rewardType = rewardItem.type
+
+                Log.d(TAG, "User earned the reward.")
+
+            })
+        } ?: run {
+            Log.d(TAG, "The rewarded ad wasn't ready yet.")
+        }
+    }
+}
+
+
+fun loadTargetRewardedAdvertisement(context: Context) {
+    var adRequest = AdRequest.Builder().build()
+
+    RewardedAd.load(
+        context,
+        BuildConfig.REWARD_TARGET_FONT_AD_KEY,
+        adRequest,
+        object : RewardedAdLoadCallback() {
+            override fun onAdFailedToLoad(adError: LoadAdError) {
+                Log.d(TAG, "${adError?.toString()}")
+                targetRewardedAd = null
+            }
+
+
+            override fun onAdLoaded(ad: RewardedAd) {
+                Log.d(TAG, "Ad was loaded.")
+                targetRewardedAd = ad
+            }
+        })
+}
+
+//
+fun showTargetRewardedAdvertisement(context: Context, onAdDismissed: () -> Unit) {
+    val activity = context.findActivity()
+
+    if (targetRewardedAd != null && activity != null) {
+        targetRewardedAd?.fullScreenContentCallback = object : FullScreenContentCallback() {
+
+            override fun onAdClicked() {
+                // Called when a click is recorded for an ad.
+                Log.d(TAG, "Ad was clicked.")
+            }
+
+            override fun onAdFailedToShowFullScreenContent(p0: AdError) {
+                // Called when ad fails to show.
+                Log.e(TAG, "Ad failed to show fullscreen content.")
+                targetRewardedAd = null
+            }
+
+
+            override fun onAdDismissedFullScreenContent() {
+                targetRewardedAd = null
+
+                loadTargetRewardedAdvertisement(context)
+                onAdDismissed()
+            }
+        }
+        targetRewardedAd?.let { ad ->
             ad.show(activity, OnUserEarnedRewardListener { rewardItem ->
                 // Handle the reward.
                 val rewardAmount = rewardItem.amount

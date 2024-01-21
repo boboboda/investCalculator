@@ -76,7 +76,7 @@ fun TotalYenRecordBox(
     ) {
         RecordTextView(recordText = "매수날짜\n " + "(매도날짜)", 45.dp, 16, 2.5f, 0.dp, color = Color.Black)
         Spacer(modifier = Modifier.width(1.dp))
-        RecordTextView(recordText = "매수앤화\n" + "(매수금)", 45.dp, 16, 2.5f,  0.dp, color = Color.Black)
+        RecordTextView(recordText = "매수엔화\n" + "(매수금)", 45.dp, 16, 2.5f,  0.dp, color = Color.Black)
         Spacer(modifier = Modifier.width(1.dp))
         RecordTextView(recordText = "매수환율\n" + "(매도환율)", 45.dp, 16, 2.5f,  0.dp, color = Color.Black)
         Spacer(modifier = Modifier.width(1.dp))

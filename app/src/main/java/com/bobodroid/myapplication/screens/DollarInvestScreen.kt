@@ -40,7 +40,8 @@ import com.bobodroid.myapplication.routes.InvestRouteAction
 fun DollarInvestScreen(
     dollarViewModel: DollarViewModel,
     routeAction: InvestRouteAction,
-    allViewModel: AllViewModel
+    routeName: String,
+    allViewModel: AllViewModel,
 ) {
 
 
@@ -72,8 +73,6 @@ fun DollarInvestScreen(
 
 
 
-
-
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -91,23 +90,19 @@ fun DollarInvestScreen(
             verticalAlignment = Alignment.CenterVertically
         ) {
 
-            Card(
+            CardButton(
+                label = routeName,
+                onClicked = {
+                    routeAction.navTo(InvestRoute.YEN_BUY)
+                },
+                fontSize = 15,
                 modifier = Modifier
                     .padding(10.dp)
                     .height(50.dp)
                     .width(80.dp),
-                colors = CardDefaults.cardColors(containerColor = Green)
-            ) {
-                Text(
-                    text = "달러",
-                    fontSize = 20.sp,
-                    modifier = Modifier
-                        .padding(10.dp)
-                        .height(50.dp)
-                        .width(80.dp),
-                    textAlign = TextAlign.Center
-                )
-            }
+                fontColor = Color.Black,
+                buttonColor = Green
+            )
 
             Spacer(modifier = Modifier.weight(1f))
 

@@ -58,10 +58,10 @@
                 android:value="true" />
             <meta-data
                 android:name="com.google.firebase.messaging.default_notification_icon"
-                android:resource="@drawable/ic_icon" />
+                android:resource="@drawable/ic_icon"/>
             <meta-data
                 android:name="com.google.firebase.messaging.default_notification_color"
-                android:resource="@color/white" />
+                android:resource="@color/purple_200"/>
         </service>
     </application>
 

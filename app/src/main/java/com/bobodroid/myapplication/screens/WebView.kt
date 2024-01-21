@@ -3,11 +3,13 @@ package com.bobodroid.myapplication.screens
 import android.app.Activity
 import android.webkit.WebView
 import android.webkit.WebViewClient
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.viewinterop.AndroidView
 import com.bobodroid.myapplication.models.viewmodels.WebViewModel
@@ -45,7 +47,10 @@ fun WebView(webViewModel: WebViewModel, url:String) {
         }
     }
 
-    AndroidView(factory = { webView })
+    AndroidView(
+        factory = { webView },
+        Modifier
+            .fillMaxSize())
 }
 
 

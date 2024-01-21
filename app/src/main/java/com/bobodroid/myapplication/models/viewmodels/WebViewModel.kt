@@ -1,5 +1,6 @@
 package com.bobodroid.myapplication.models.viewmodels
 
+import android.app.Activity
 import android.webkit.WebView
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
@@ -31,4 +32,7 @@ class WebViewModel(): ViewModel() {
         }
     }
 
+    fun finishWebAct(activity: Activity) {
+        activity.finish()
+    }
 }

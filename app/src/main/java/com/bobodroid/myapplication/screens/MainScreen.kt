@@ -72,8 +72,7 @@ import java.math.RoundingMode
 
 const val TAG = "메인"
 
-@OptIn(ExperimentalFoundationApi::class, ExperimentalAnimationApi::class,
-    ExperimentalMaterialApi::class
+@OptIn(ExperimentalAnimationApi::class,
 )
 @Composable
 fun MainScreen(dollarViewModel: DollarViewModel,

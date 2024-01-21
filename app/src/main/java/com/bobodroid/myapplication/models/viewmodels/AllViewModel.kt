@@ -73,6 +73,8 @@ class AllViewModel @Inject constructor(
         }
     }
 
+
+    // 목표 환율 추가
     fun targetRateAdd(
         drHighRate: DollarTargetHighRate?,
         drLowRate: DollarTargetLowRate?,
@@ -150,6 +152,7 @@ class AllViewModel @Inject constructor(
 
     }
 
+    // 목표 환율 삭제
     fun targetRateRemove(
         drHighRate: DollarTargetHighRate?,
         drLowRate: DollarTargetLowRate?,
@@ -227,6 +230,8 @@ class AllViewModel @Inject constructor(
 
     }
 
+
+    // 목표 환율 정렬
     fun sortTargetRateList(type: String, rateList: List<Any>): List<Any>  {
 
         when(type) {
@@ -277,6 +282,7 @@ class AllViewModel @Inject constructor(
     }
 
 
+    // 목표 환율 로딩
     fun targetRateLoad(customId: String, targetRateData: (TargetRate, resultMessage: String) -> Unit) {
         db.collection("userTargetRate")
             .whereEqualTo("customId", customId)
@@ -302,6 +308,7 @@ class AllViewModel @Inject constructor(
 
 
 
+    // 공지사항 로드
     private fun noticeApi(noticeDate: (String) -> Unit) {
         viewModelScope.launch {
             val noticeResponse = NoticeApi.noticeService.noticeRequest()
@@ -314,6 +321,8 @@ class AllViewModel @Inject constructor(
         }
     }
 
+
+    // 공지사항 상태 관리
     fun noticeDialogState(localUserDate: LocalUserData, noticeDate: String) {
 
 
@@ -344,7 +353,7 @@ class AllViewModel @Inject constructor(
     }
 
 
-    // 임시 더미 로컬 유저데이터 수정 필요
+    // 로컬 아이디 생성
     fun localIdAdd(localUser: (LocalUserData) -> Unit) {
         viewModelScope.launch(Dispatchers.IO) {
             Log.d(TAG, "로컬 유저 생성 실행")
@@ -369,6 +378,8 @@ class AllViewModel @Inject constructor(
         }
     }
 
+
+
     fun dateReset() {
         viewModelScope.launch {
             Log.d(TAG, "날짜 초기화")
@@ -386,6 +397,15 @@ class AllViewModel @Inject constructor(
         }
     }
 
+    // 로컬 아이디 삭제
+    fun deleteLocalUser() {
+        viewModelScope.launch {
+            investRepository.localUserDataDelete()
+        }
+    }
+
+
+    // 공지사항 연기 설정
     fun selectDelayDate(localUser: LocalUserData) {
         viewModelScope.launch {
             if (localUser != null) {
@@ -413,17 +433,14 @@ class AllViewModel @Inject constructor(
 
     val delayDay = dateWeek(7)
 
-    fun deleteLocalUser() {
-        viewModelScope.launch {
-            investRepository.localUserDataDelete()
-        }
-    }
+
 
 
     // 항상 최신 값 가지고 있음
     val recentExChangeRateFlow = MutableStateFlow(ExchangeRate())
 
 
+    // 최신 환율 불러오기
     fun recentRateHotListener(response: (ExchangeRate, LocalUserData) -> Unit) {
 //        dateUpdate()
 
@@ -470,6 +487,10 @@ class AllViewModel @Inject constructor(
                     if (snapshot != null) {
 
                         val data = ExchangeRate(snapshot)
+
+                        val jpySpread = ""
+
+                        val usdSpread = ""
 
                         Log.d(TAG, "서버에서 들어온 값 ${data}")
 

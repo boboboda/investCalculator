@@ -101,7 +101,8 @@ fun BuyRecordBox(
 
                     var accmulatedCount = 1
 
-                    (0..<groupIndex).forEach {foreachIndex->
+                    (0..<groupIndex).forEach { foreachIndex->
+
                         val currentKey = filterRecord.keys.elementAt(foreachIndex)
                         val elements = filterRecord.getValue(currentKey)
                         accmulatedCount += elements.count()

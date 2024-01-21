@@ -1,5 +1,6 @@
 package com.bobodroid.myapplication.components.Dialogs
 
+import android.app.Activity
 import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -40,6 +41,7 @@ import com.bobodroid.myapplication.MainActivity.Companion.TAG
 import com.bobodroid.myapplication.components.CardButton
 import com.bobodroid.myapplication.components.CustomCard
 import com.bobodroid.myapplication.components.CustomOutLinedTextField
+import com.bobodroid.myapplication.components.admobs.showTargetRewardedAdvertisement
 import com.bobodroid.myapplication.lists.dollorList.addFocusCleaner
 import com.bobodroid.myapplication.models.datamodels.DollarTargetHighRate
 import com.bobodroid.myapplication.models.datamodels.DollarTargetLowRate
@@ -50,6 +52,7 @@ import com.bobodroid.myapplication.models.viewmodels.AllViewModel
 import com.bobodroid.myapplication.ui.theme.DialogBackgroundColor
 import com.bobodroid.myapplication.ui.theme.TitleCardColor
 import com.bobodroid.myapplication.ui.theme.WelcomeScreenBackgroundColor
+import io.grpc.Context
 
 @Composable
 fun TargetRateDialog(
@@ -57,7 +60,7 @@ fun TargetRateDialog(
     targetRate: TargetRate,
     currency: String,
     highAndLowState: String,
-    snackbarHostState: SnackbarHostState,
+    context: android.content.Context,
     onClicked: (() -> Unit)? = null,
     allViewModel: AllViewModel,
 ) {
@@ -93,6 +96,8 @@ fun TargetRateDialog(
     var rate by remember { mutableStateOf("") }
 
     val focusManager = LocalFocusManager.current
+
+    var adViewAskDialog by remember { mutableStateOf(false) }
 
     val focusRequester by remember { mutableStateOf(FocusRequester()) }
 
@@ -598,62 +603,9 @@ fun TargetRateDialog(
                 Button(
                     shape = RoundedCornerShape(5.dp),
                     onClick = {
-                              when(currency) {
-                                  "달러"-> {
-                                      when(highAndLowState) {
-                                          "고점" -> {
-                                              allViewModel.targetRateAdd(
-                                                  drHighRate = DollarTargetHighRate(
-                                                      number = highDollarNumber.toInt().plus(1).toString(),
-                                                      highRate = rate),
-                                                  drLowRate = null,
-                                                  yenHighRate = null,
-                                                  yenLowRate = null
-                                              )
-                                              onClicked?.invoke()
-                                          }
-                                          "저점" -> {
-                                              allViewModel.targetRateAdd(
-                                                  drHighRate = null,
-                                                  drLowRate = DollarTargetLowRate(
-                                                      number = lowDollarNumber.toInt().plus(1).toString(),
-                                                      lowRate = rate),
-                                                  yenHighRate = null,
-                                                  yenLowRate = null
-                                              )
-                                              onClicked?.invoke()
-                                          }
-                                      }
 
-                                  }
-                                  "엔화"-> {
-                                      when(highAndLowState) {
-                                          "고점" -> {
-                                              allViewModel.targetRateAdd(
-                                                  drHighRate = null,
-                                                  drLowRate = null,
-                                                  yenHighRate = YenTargetHighRate(
-                                                      number = highYenNumber.toInt().plus(1).toString(),
-                                                      highRate = rate),
-                                                  yenLowRate = null
-                                              )
-                                              onClicked?.invoke()
-                                          }
-                                          "저점" -> {
-                                              allViewModel.targetRateAdd(
-                                                  drHighRate = null,
-                                                  drLowRate = null,
-                                                  yenHighRate = null,
-                                                  yenLowRate = YenTargetLowRate(
-                                                      number = lowYenNumber.toInt().plus(1).toString(),
-                                                      lowRate = rate)
-                                              )
-                                              onClicked?.invoke()
-                                          }
-                                      }
+                        adViewAskDialog = true
 
-                                  }
-                              }
                     },
                     colors = ButtonDefaults.buttonColors(WelcomeScreenBackgroundColor)
                 ) {
@@ -703,6 +655,75 @@ fun TargetRateDialog(
 
             Spacer(modifier = Modifier.height(10.dp))
 
+        }
+
+        if(adViewAskDialog) {
+            AskTriggerDialog(
+                onDismissRequest = {
+                    adViewAskDialog = false
+                },
+                title = "광고 시청하여 목표환율을 설정하시겠습니까?",
+                onClickedLabel = "예") {
+                showTargetRewardedAdvertisement(context, onAdDismissed = {
+                    when(currency) {
+                        "달러"-> {
+                            when(highAndLowState) {
+                                "고점" -> {
+                                    allViewModel.targetRateAdd(
+                                        drHighRate = DollarTargetHighRate(
+                                            number = highDollarNumber.toInt().plus(1).toString(),
+                                            highRate = rate),
+                                        drLowRate = null,
+                                        yenHighRate = null,
+                                        yenLowRate = null
+                                    )
+                                    onClicked?.invoke()
+                                }
+                                "저점" -> {
+                                    allViewModel.targetRateAdd(
+                                        drHighRate = null,
+                                        drLowRate = DollarTargetLowRate(
+                                            number = lowDollarNumber.toInt().plus(1).toString(),
+                                            lowRate = rate),
+                                        yenHighRate = null,
+                                        yenLowRate = null
+                                    )
+                                    onClicked?.invoke()
+                                }
+                            }
+
+                        }
+                        "엔화"-> {
+                            when(highAndLowState) {
+                                "고점" -> {
+                                    allViewModel.targetRateAdd(
+                                        drHighRate = null,
+                                        drLowRate = null,
+                                        yenHighRate = YenTargetHighRate(
+                                            number = highYenNumber.toInt().plus(1).toString(),
+                                            highRate = rate),
+                                        yenLowRate = null
+                                    )
+                                    onClicked?.invoke()
+                                }
+                                "저점" -> {
+                                    allViewModel.targetRateAdd(
+                                        drHighRate = null,
+                                        drLowRate = null,
+                                        yenHighRate = null,
+                                        yenLowRate = YenTargetLowRate(
+                                            number = lowYenNumber.toInt().plus(1).toString(),
+                                            lowRate = rate)
+                                    )
+                                    onClicked?.invoke()
+                                }
+                            }
+
+                        }
+                    }
+                    adViewAskDialog = false
+                })
+            }
         }
 
 

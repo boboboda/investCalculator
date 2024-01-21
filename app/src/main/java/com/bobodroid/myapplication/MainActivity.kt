@@ -4,7 +4,6 @@ import android.animation.ObjectAnimator
 import android.animation.PropertyValuesHolder
 import android.annotation.SuppressLint
 import android.app.Activity
-import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
@@ -12,7 +11,6 @@ import android.os.Bundle
 import android.util.Log
 import android.view.View
 import android.view.ViewTreeObserver
-import android.view.animation.AnticipateInterpolator
 import android.view.animation.LinearInterpolator
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -25,7 +23,6 @@ import androidx.compose.material.rememberDrawerState
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.core.animation.doOnEnd
-import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
 import androidx.core.splashscreen.SplashScreen
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
@@ -36,7 +33,7 @@ import androidx.navigation.compose.rememberNavController
 import com.bobodroid.myapplication.components.MainTopBar
 import com.bobodroid.myapplication.components.admobs.loadInterstitial
 import com.bobodroid.myapplication.components.admobs.loadRewardedAdvertisement
-import com.bobodroid.myapplication.fcm.RateFirebaseMessagingService
+import com.bobodroid.myapplication.components.admobs.loadTargetRewardedAdvertisement
 import com.bobodroid.myapplication.models.viewmodels.AllViewModel
 import com.bobodroid.myapplication.models.viewmodels.DollarViewModel
 import com.bobodroid.myapplication.models.viewmodels.WonViewModel
@@ -46,7 +43,6 @@ import com.bobodroid.myapplication.screens.*
 import com.google.android.gms.ads.MobileAds
 //import com.google.android.gms.ads.MobileAds
 import dagger.hilt.android.AndroidEntryPoint
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.util.*
 
@@ -88,11 +84,6 @@ class MainActivity : ComponentActivity() {
             }
         )
 
-        /** FCM설정, Token값 가져오기 */
-
-//        RateFirebaseMessagingService().deleteFirebaseToken()
-
-
         setContent {
             MobileAds.initialize(this)
 
@@ -101,6 +92,9 @@ class MainActivity : ComponentActivity() {
             loadInterstitial(this)
 
             loadRewardedAdvertisement(this)
+
+            loadTargetRewardedAdvertisement(this)
+
             AppScreen(
                 dollarViewModel,
                 yenViewModel,
@@ -111,6 +105,7 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    // 앱이 처음 실행될 때, 앱이 백그라운드에서 포그라운드로 넘올 때
     override fun onStart() {
         super.onStart()
         // 앱 초기 실행 및 백그라운드에서 포그라운드로 전환될 때 실행
@@ -286,8 +281,8 @@ fun InvestNavHost(
     drawerState: DrawerState,
     activity: Activity
 ) {
-    NavHost(navController = investNavController, startDestination = startRouter.routeName!!) {
-        composable(InvestRoute.MAIN.routeName!!) {
+    NavHost(navController = investNavController, startDestination = startRouter.route!!) {
+        composable(InvestRoute.MAIN.route!!) {
             MainScreen(
                 dollarViewModel = dollarViewModel,
                 yenViewModel = yenViewModel,
@@ -299,20 +294,29 @@ fun InvestNavHost(
 
             )
         }
-        composable(InvestRoute.DOLLAR_BUY.routeName!!) {
+        composable(InvestRoute.DOLLAR_BUY.route!!) {
             DollarInvestScreen(
                 dollarViewModel = dollarViewModel,
                 routeAction = routeAction,
+                routeName = InvestRoute.DOLLAR_BUY.routName,
                 allViewModel
             )
         }
 
-        composable(InvestRoute.YEN_BUY.routeName!!) {
-            YenInvestScreen(yenViewModel = yenViewModel, routeAction = routeAction, allViewModel)
+        composable(InvestRoute.YEN_BUY.route!!) {
+            YenInvestScreen(
+                yenViewModel = yenViewModel,
+                routeAction = routeAction,
+                routeName = InvestRoute.YEN_BUY.routName,
+                allViewModel)
         }
 
-        composable(InvestRoute.WON_BUY.routeName!!) {
-            WonInvestScreen(wonViewModel = wonViewModel, routeAction = routeAction, allViewModel)
+        composable(InvestRoute.WON_BUY.route!!) {
+            WonInvestScreen(
+                wonViewModel = wonViewModel,
+                routeAction = routeAction,
+                routeName = InvestRoute.WON_BUY.routName,
+                allViewModel)
         }
     }
 }

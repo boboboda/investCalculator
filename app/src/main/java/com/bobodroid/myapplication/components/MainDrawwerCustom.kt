@@ -3,6 +3,7 @@ package com.bobodroid.myapplication.components
 import android.app.Activity
 import android.content.Intent
 import android.net.Uri
+import android.util.Log
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
@@ -55,12 +56,15 @@ import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
+import com.bobodroid.myapplication.MainActivity.Companion.TAG
 import com.bobodroid.myapplication.WebActivity
 import com.bobodroid.myapplication.billing.BillingDialog
 import com.bobodroid.myapplication.components.Dialogs.AskTriggerDialog
 import com.bobodroid.myapplication.components.Dialogs.ChargeDialog
+import com.bobodroid.myapplication.components.Dialogs.ChoiceDialog
 import com.bobodroid.myapplication.components.Dialogs.CustomIdDialog
 import com.bobodroid.myapplication.components.Dialogs.PermissionGuideDialog
+import com.bobodroid.myapplication.components.Dialogs.SpreadDialog
 import com.bobodroid.myapplication.components.Dialogs.TargetRateDialog
 import com.bobodroid.myapplication.components.admobs.showInterstitial
 import com.bobodroid.myapplication.components.admobs.showRewardedAdvertisement
@@ -156,6 +160,21 @@ fun DrawerCustom(
 
     if (productList.value.isNullOrEmpty()) readyBillingState = false else readyBillingState = true
 
+
+    val resentRate = allViewModel.recentExChangeRateFlow.collectAsState()
+
+    var spreadDialog by remember { mutableStateOf(false) }
+
+    var drSpreadDialog by remember {
+        mutableStateOf(false)
+    }
+
+    var yenSpreadDialog by remember {
+        mutableStateOf(false)
+    }
+
+
+
     Column(
         modifier = Modifier
             .fillMaxHeight()
@@ -193,7 +212,8 @@ fun DrawerCustom(
                 Spacer(modifier = Modifier.weight(0.4f))
 
                 LabelAndIconButton(onClicked = {
-                   if(!userDetailExpandVisible) userDetailExpandVisible = true else userDetailExpandVisible = false
+                    if (!userDetailExpandVisible) userDetailExpandVisible =
+                        true else userDetailExpandVisible = false
                 }, label = "설정", icon = userVisibleIcon)
 
 
@@ -328,28 +348,37 @@ fun DrawerCustom(
 
             TextButton(onClick = {
 
-                if (localUser.value.customId.isNullOrEmpty()) {
-                    coroutineScope.launch {
-                        drawerState.close()
-                        mainScreenSnackBarHostState.showSnackbar(
-                            "커스텀 아이디 생성 후 진행해 주세요",
-                            actionLabel = "닫기", SnackbarDuration.Short
-                        )
-                    }
-                } else {
-                    if (readyBillingState) {
-                        billingDialog = true
-                    } else {
-
-                        coroutineScope.launch {
-                            drawerState.close()
-                            mainScreenSnackBarHostState.showSnackbar(
-                                "아직 광고가 준비 되어있지 않습니다.",
-                                actionLabel = "닫기", SnackbarDuration.Short
-                            )
-                        }
-                    }
+                coroutineScope.launch {
+                    drawerState.close()
+                    mainScreenSnackBarHostState.showSnackbar(
+                        "업데이트 예정입니다.",
+                        actionLabel = "닫기", SnackbarDuration.Short
+                    )
                 }
+
+
+//                if (localUser.value.customId.isNullOrEmpty()) {
+//                    coroutineScope.launch {
+//                        drawerState.close()
+//                        mainScreenSnackBarHostState.showSnackbar(
+//                            "커스텀 아이디 생성 후 진행해 주세요",
+//                            actionLabel = "닫기", SnackbarDuration.Short
+//                        )
+//                    }
+//                } else {
+//                    if (readyBillingState) {
+//                        billingDialog = true
+//                    } else {
+//
+//                        coroutineScope.launch {
+//                            drawerState.close()
+//                            mainScreenSnackBarHostState.showSnackbar(
+//                                "아직 결제 아이템이 아직 준비 되어있지 않습니다.",
+//                                actionLabel = "닫기", SnackbarDuration.Short
+//                            )
+//                        }
+//                    }
+//                }
             }) {
                 Text(text = "광고 삭제(구현 예정)")
             }
@@ -727,43 +756,33 @@ fun DrawerCustom(
 
         }
 
-
-
-
-
         Spacer(
             modifier = Modifier
                 .height(10.dp)
         )
 
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(start = 10.dp),
-            horizontalArrangement = Arrangement.Start
-        ) {
-            Text(text = "스프레드: {}")
-
-            Spacer(modifier = Modifier.width(10.dp))
-            CardButton(
-                label = "설정",
-                onClicked = {
-                    coroutineScope.launch {
-                        drawerState.close()
-                        mainScreenSnackBarHostState.showSnackbar(
-                            "업데이트 예정입니다.",
-                            actionLabel = "닫기", SnackbarDuration.Short
-                        )
-                    }
-                },
-                buttonColor = TopButtonColor,
-                fontColor = Color.Black,
-                modifier = Modifier
-                    .height(20.dp)
-                    .width(40.dp),
-                fontSize = 15
-            )
-        }
+//        Row(
+//            modifier = Modifier
+//                .fillMaxWidth()
+//                .padding(start = 10.dp),
+//            horizontalArrangement = Arrangement.Start
+//        ) {
+//            Text(text = "스프레드: {}")
+//
+//            Spacer(modifier = Modifier.width(10.dp))
+//            CardButton(
+//                label = "설정",
+//                onClicked = {
+//                    spreadDialog = true
+//                },
+//                buttonColor = TopButtonColor,
+//                fontColor = Color.Black,
+//                modifier = Modifier
+//                    .height(20.dp)
+//                    .width(40.dp),
+//                fontSize = 15
+//            )
+//        }
 
         Divider(
             modifier = Modifier
@@ -931,17 +950,18 @@ fun DrawerCustom(
         if (targetRateDialog) {
             TargetRateDialog(
                 highAndLowState = selectedHighAndLow,
+                context = context,
                 currency = selectedCurrency,
                 onDismissRequest = {
                     targetRateDialog = it
                     dropdownExpanded = it
-                }, allViewModel = allViewModel,
+                },
+                allViewModel = allViewModel,
                 targetRate = targetRateData.value,
                 onClicked = {
                     targetRateDialog = false
                     dropdownExpanded = false
                 },
-                snackbarHostState = mainScreenSnackBarHostState
             )
         }
 
@@ -952,6 +972,7 @@ fun DrawerCustom(
 
             }
         }
+
 
 
 

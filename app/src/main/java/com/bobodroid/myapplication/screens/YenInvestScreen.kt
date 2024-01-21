@@ -42,7 +42,12 @@ import com.bobodroid.myapplication.routes.InvestRouteAction
 @OptIn(ExperimentalMaterial3Api::class)
 
 @Composable
-fun YenInvestScreen(yenViewModel: YenViewModel, routeAction: InvestRouteAction, allViewModel: AllViewModel) {
+fun YenInvestScreen(
+    yenViewModel: YenViewModel,
+    routeAction: InvestRouteAction,
+    routeName: String,
+    allViewModel: AllViewModel,
+) {
 
 
 
@@ -81,22 +86,20 @@ fun YenInvestScreen(yenViewModel: YenViewModel, routeAction: InvestRouteAction, 
 
         Row(modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically) {
-            Card(
+
+            CardButton(
+                label = routeName,
+                onClicked = {
+                    routeAction.navTo(InvestRoute.WON_BUY)
+                },
+                fontSize = 15,
                 modifier = Modifier
                     .padding(10.dp)
                     .height(50.dp)
                     .width(80.dp),
-                colors = CardDefaults.cardColors(containerColor = Green)
-            ) {
-                Text(
-                    text = "엔화",
-                    fontSize = 20.sp,
-                    modifier = Modifier
-                        .padding(10.dp)
-                        .height(50.dp)
-                        .width(80.dp),
-                    textAlign = TextAlign.Center)
-            }
+                fontColor = Color.Black,
+                buttonColor = Green
+            )
 
             Spacer(modifier = Modifier.weight(1f))
 

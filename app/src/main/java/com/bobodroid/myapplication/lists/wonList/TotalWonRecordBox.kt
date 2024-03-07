@@ -124,7 +124,7 @@ fun TotalWonRecordBox(wonViewModel: WonViewModel,
 
                     val finalIndex = foundIndex + accmulatedCount + groupIndex
 
-                    TotalLineWonRecordText(
+                    TotalLineWonRecord(
                         Buy,
                         sellAction = Buy.recordColor!!
                         ,
@@ -146,6 +146,9 @@ fun TotalWonRecordBox(wonViewModel: WonViewModel,
                         }
                         ,
                         wonViewModel,
+                        insertSelected = { date, money, rate->
+                            wonViewModel.insertBuyRecord(Buy, date, money, rate)
+                        },
                         snackbarHostState = snackbarHostState)  {
                         coroutineScope.launch {
                             delay(300)

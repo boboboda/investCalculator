@@ -69,12 +69,14 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.bobodroid.myapplication.MainActivity
 import com.bobodroid.myapplication.components.Dialogs.AskTriggerDialog
+import com.bobodroid.myapplication.components.Dialogs.InsertDialog
 import com.bobodroid.myapplication.components.Dialogs.SellDialog
 import com.bobodroid.myapplication.components.Dialogs.TextFieldDialog
 import com.bobodroid.myapplication.components.RecordTextView
 import com.bobodroid.myapplication.extensions.toBigDecimalUs
 import com.bobodroid.myapplication.extensions.toBigDecimalWon
 import com.bobodroid.myapplication.models.datamodels.DrBuyRecord
+import com.bobodroid.myapplication.models.viewmodels.AllViewModel
 import com.bobodroid.myapplication.models.viewmodels.DollarViewModel
 import com.bobodroid.myapplication.ui.theme.DeleteColor
 import com.bobodroid.myapplication.ui.theme.SelectedColor
@@ -94,8 +96,9 @@ fun TotalLineDrRecord(
     onClicked: ((DrBuyRecord) -> Unit)?,
     dollarViewModel: DollarViewModel,
     snackBarHostState: SnackbarHostState,
+    insertSelected: (String, String, String) -> Unit,
     recordSelected: () -> Unit,
-    ) {
+) {
 
     val mathContext = MathContext(28, RoundingMode.HALF_UP)
 
@@ -123,15 +126,19 @@ fun TotalLineDrRecord(
 
     val focusRequester by remember { mutableStateOf(FocusRequester()) }
 
+    var insertDialog by remember { mutableStateOf(false) }
 
 
-
-    val profit = if(!data.recordColor!!) {
+    val profit = if (!data.recordColor!!) {
         if (data.profit.isNullOrEmpty()) {
-        "0"
-    } else { data.profit }
+            "0"
+        } else {
+            data.profit
+        }
     } else {
-        if(data.sellProfit.isNullOrEmpty()) { "0" } else {
+        if (data.sellProfit.isNullOrEmpty()) {
+            "0"
+        } else {
             data.sellProfit
         }
 
@@ -147,9 +154,17 @@ fun TotalLineDrRecord(
         }
     }
 
-    val date = if(data.recordColor!!) { "${data.date}\n (${data.sellDate ?: "데이터없음"})" } else { data.date }
+    val date = if (data.recordColor!!) {
+        "${data.date}\n (${data.sellDate ?: "데이터없음"})"
+    } else {
+        data.date
+    }
 
-    val rate = if(data.recordColor!!) { "${data.rate}\n (${data.sellRate ?: "데이터없음"})" } else { data.rate }
+    val rate = if (data.recordColor!!) {
+        "${data.rate}\n (${data.sellRate ?: "데이터없음"})"
+    } else {
+        data.rate
+    }
 
     LaunchedEffect(key1 = data.buyDrMemo, block = {
         memoTextInput = data.buyDrMemo ?: ""
@@ -346,7 +361,8 @@ fun TotalLineDrRecord(
                                             dropdownExpanded = false
                                             if (!data.recordColor!!) {
                                                 onClicked?.invoke(data)
-                                                if (!openDialog) openDialog = true else openDialog = false
+                                                if (!openDialog) openDialog = true else openDialog =
+                                                    false
                                             } else {
                                                 if (snackBarHostState.currentSnackbarData == null) {
                                                     coroutineScope.launch {
@@ -359,6 +375,39 @@ fun TotalLineDrRecord(
                                                 }
                                             }
                                         })
+
+
+                                    DropdownMenuItem(
+                                        modifier = Modifier
+                                            .fillMaxWidth(),
+                                        text = {
+                                            Box(
+                                                modifier = Modifier
+                                                    .fillMaxWidth(),
+                                                contentAlignment = Alignment.TopStart
+                                            ) {
+                                                Text(
+                                                    text = "매수 수정",
+                                                    fontSize = 13.sp
+                                                )
+                                            }
+                                        }, onClick = {
+                                            dropdownExpanded = false
+                                            if (!data.recordColor!!) {
+                                                insertDialog = true
+                                            } else {
+                                                if (snackBarHostState.currentSnackbarData == null) {
+                                                    coroutineScope.launch {
+                                                        snackBarHostState.showSnackbar(
+                                                            "매도한 기록은 수정이 불가능합니다.",
+                                                            actionLabel = "닫기",
+                                                            SnackbarDuration.Short
+                                                        )
+                                                    }
+                                                }
+                                            }
+                                        })
+
 
                                     DropdownMenuItem(
                                         modifier = Modifier
@@ -377,7 +426,7 @@ fun TotalLineDrRecord(
                                         }, onClick = {
                                             coroutineScope.launch {
                                                 dropdownExpanded = false
-                                                if(data.recordColor == false) {
+                                                if (data.recordColor == false) {
                                                     if (snackBarHostState.currentSnackbarData == null) {
                                                         coroutineScope.launch {
                                                             snackBarHostState.showSnackbar(
@@ -388,7 +437,8 @@ fun TotalLineDrRecord(
                                                         }
                                                     }
                                                 } else {
-                                                    val result = dollarViewModel.cancelSellRecord(data.id)
+                                                    val result =
+                                                        dollarViewModel.cancelSellRecord(data.id)
                                                     if (result.first) {
                                                         if (snackBarHostState.currentSnackbarData == null) {
                                                             coroutineScope.launch {
@@ -397,7 +447,9 @@ fun TotalLineDrRecord(
                                                                     actionLabel = "닫기",
                                                                     SnackbarDuration.Short
                                                                 )
-                                                                dollarViewModel.removeSellRecord(result.second)
+                                                                dollarViewModel.removeSellRecord(
+                                                                    result.second
+                                                                )
                                                             }
                                                         }
                                                     } else {
@@ -445,7 +497,8 @@ fun TotalLineDrRecord(
                                     offset = DpOffset(x = 115.dp, y = 10.dp),
                                     expanded = groupDropdownExpanded,
                                     onDismissRequest = {
-                                        groupDropdownExpanded = false}
+                                        groupDropdownExpanded = false
+                                    }
                                 ) {
 
                                     DropdownMenuItem(
@@ -620,6 +673,22 @@ fun TotalLineDrRecord(
 
 
             }
+
+            if (insertDialog) {
+                InsertDialog(
+                    data = data,
+                    moneyTitle = "매수금(원)을 입력해주세요",
+                    rateTitle = "매수환율을 입력해주세요",
+                    onDismissRequest = {
+                        insertDialog = false
+                    },
+                    onClicked = { date, money, rate ->
+                        insertSelected.invoke(date, money, rate)
+                        insertDialog = false
+                    }
+                )
+            }
+
             if (openDialog) {
                 SellDialog(
                     buyRecord = data,
@@ -633,10 +702,11 @@ fun TotalLineDrRecord(
                 )
             }
 
-            if(groupAddDialog) {
+            if (groupAddDialog) {
                 TextFieldDialog(
                     onDismissRequest = {
-                        groupAddDialog = it },
+                        groupAddDialog = it
+                    },
                     placeholder = "새 그룹명을 작성해주세요",
                     onClickedLabel = "추가",
                     closeButtonLabel = "닫기",

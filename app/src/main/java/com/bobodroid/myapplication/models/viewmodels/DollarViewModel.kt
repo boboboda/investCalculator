@@ -296,7 +296,7 @@ class DollarViewModel @Inject constructor(private val investRepository: InvestRe
 
     fun buyDollarAdd(groupName: String) {
         viewModelScope.launch {
-            exchangeMoney.emit("${lastValue()}")
+            exchangeMoney.emit("${lastValue(moneyInputFlow.value, rateInputFlow.value)}")
             Log.d(TAG, "매수 달러 ${exchangeMoney.value}")
             investRepository
                 .addRecord(
@@ -325,32 +325,31 @@ class DollarViewModel @Inject constructor(private val investRepository: InvestRe
         }
     }
 
+    fun insertBuyRecord(existingDrBurRecord: DrBuyRecord,
+                        insertDate: String,
+                        insertMoney: String,
+                        insertRate: String) {
+
+        viewModelScope.launch {
+
+            val insertDate = existingDrBurRecord.copy(
+                date = insertDate,
+                money = insertMoney,
+                rate = insertRate,
+                buyRate = insertRate,
+                profit = "0",
+                expectProfit = "0",
+                exchangeMoney = lastValue(insertMoney, insertRate).toString())
+
+            investRepository.updateRecord(insertDate)
+        }
+
+    }
+
     fun removeBuyRecord(drBuyrecord: DrBuyRecord) {
         viewModelScope.launch {
 
             investRepository.deleteRecord(drBuyrecord)
-
-            val buyRecordState = _buyRecordFlow.value
-            val groupRecord = _groupBuyRecordFlow.value
-            val filterRecord = _filterBuyRecordFlow.value
-            val buyItems = buyRecordState.toMutableList().apply {
-                remove(drBuyrecord)
-            }.toList()
-
-            val groupBuyItems = groupRecord.toMutableMap().apply {
-                remove(drBuyrecord.buyDrCategoryName)
-            }.toMap()
-
-            val filterBuyItems = filterRecord.toMutableList().apply {
-                remove(drBuyrecord)
-            }.toList()
-
-
-            _buyRecordFlow.value = buyItems
-
-            _groupBuyRecordFlow.value = groupBuyItems
-
-            _filterBuyRecordFlow.value = filterBuyItems
 
         }
     }
@@ -619,11 +618,6 @@ class DollarViewModel @Inject constructor(private val investRepository: InvestRe
 
         val resentUsRate = drResentRateStateFlow.value.exchangeRates?.usd
 
-        Log.d(
-            TAG,
-            "개별 profit 실행 exchangeMoney:${exchangeMoney.value} 최신환율: ${resentUsRate} 원화: ${moneyInputFlow.value}"
-        )
-
         val profit = ((BigDecimal(exchangeMoney.value).times(BigDecimal(resentUsRate)))
             .setScale(20, RoundingMode.HALF_UP)
                 ).minus(BigDecimal(moneyInputFlow.value))
@@ -635,8 +629,8 @@ class DollarViewModel @Inject constructor(private val investRepository: InvestRe
 
 //    private fun lastValue() = (moneyInputFlow.value.toBigDecimal() / rateInputFlow.value.toBigDecimal()).setScale(2)
 
-    private fun lastValue() = BigDecimal(moneyInputFlow.value).divide(
-        BigDecimal(rateInputFlow.value),
+    private fun lastValue(money: String, rate: String) = BigDecimal(money).divide(
+        BigDecimal(rate),
         20,
         RoundingMode.HALF_UP
     )

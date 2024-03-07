@@ -140,6 +140,9 @@ fun TotalYenRecordBox(
                             yenViewModel.haveMoney.value = recordbox.exchangeMoney!!
                             yenViewModel.recordInputMoney.value = recordbox.money!! },
                         yenViewModel = yenViewModel,
+                        insertSelected = { date, money, rate->
+                            yenViewModel.insertBuyRecord(Buy, date, money, rate)
+                        },
                         snackBarHostState = snackBarHostState) {
                         coroutineScope.launch {
                             delay(300)

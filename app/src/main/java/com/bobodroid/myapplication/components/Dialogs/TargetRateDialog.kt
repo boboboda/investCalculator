@@ -41,8 +41,8 @@ import com.bobodroid.myapplication.MainActivity.Companion.TAG
 import com.bobodroid.myapplication.components.CardButton
 import com.bobodroid.myapplication.components.CustomCard
 import com.bobodroid.myapplication.components.CustomOutLinedTextField
+import com.bobodroid.myapplication.components.addFocusCleaner
 import com.bobodroid.myapplication.components.admobs.showTargetRewardedAdvertisement
-import com.bobodroid.myapplication.lists.dollorList.addFocusCleaner
 import com.bobodroid.myapplication.models.datamodels.DollarTargetHighRate
 import com.bobodroid.myapplication.models.datamodels.DollarTargetLowRate
 import com.bobodroid.myapplication.models.datamodels.TargetRate

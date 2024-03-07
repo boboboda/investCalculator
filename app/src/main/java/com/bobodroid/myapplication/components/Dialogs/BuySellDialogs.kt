@@ -104,7 +104,7 @@ fun SellDialog(
 
                     RateNumberField(
                         title = "매도환율을 입력해주세요",
-                        Modifier.fillMaxWidth(),
+                        modifier = Modifier.fillMaxWidth(),
                         onClicked = {
                         dollarViewModel.sellRateFlow.value = it
                     })
@@ -236,7 +236,7 @@ fun YenSellDialog(
 
                     RateNumberField(
                         title = "매도환율을 입력해주세요",
-                        Modifier ,
+                        modifier = Modifier ,
                         onClicked = {
                         yenViewModel.sellRateFlow.value = it
                     })
@@ -369,7 +369,7 @@ fun WonSellDialog(
 
                     RateNumberField(
                         title = "매도환율을 입력해주세요",
-                        Modifier ,
+                        modifier = Modifier ,
                         onClicked = {
                         wonViewModel.sellRateFlow.value = it
                     })

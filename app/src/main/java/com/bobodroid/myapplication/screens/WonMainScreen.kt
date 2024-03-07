@@ -30,18 +30,14 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.ExperimentalUnitApi
 import com.bobodroid.myapplication.R
-import com.bobodroid.myapplication.lists.dollorList.BuyRecordBox
 import com.bobodroid.myapplication.lists.dollorList.SellRecordBox
 import com.bobodroid.myapplication.lists.dollorList.TotalDrRecordBox
-import com.bobodroid.myapplication.lists.dollorList.addFocusCleaner
-import com.bobodroid.myapplication.lists.yenList.BuyYenRecordBox
 import com.bobodroid.myapplication.lists.yenList.SellYenRecordBox
 import com.bobodroid.myapplication.models.viewmodels.AllViewModel
 import com.bobodroid.myapplication.models.viewmodels.YenViewModel
 import com.bobodroid.myapplication.routes.InvestRouteAction
 import java.text.SimpleDateFormat
 import androidx.compose.material.SnackbarHost
-import com.bobodroid.myapplication.lists.wonList.BuyWonRecordBox
 import com.bobodroid.myapplication.lists.wonList.SellWonRecordBox
 import com.bobodroid.myapplication.lists.wonList.TotalWonRecordBox
 import com.bobodroid.myapplication.lists.yenList.TotalYenRecordBox
@@ -66,10 +62,6 @@ fun WonMainScreen(wonViewModel: WonViewModel,
         }
 
         2 -> {
-            "매수"
-        }
-
-        3 -> {
             "매도"
         }
 
@@ -156,27 +148,6 @@ fun WonMainScreen(wonViewModel: WonViewModel,
                             dropdownExpanded = false
                         })
 
-
-                    DropdownMenuItem(
-                        modifier = Modifier
-                            .fillMaxWidth(),
-                        text = {
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxWidth(),
-                                contentAlignment = Alignment.TopStart
-                            ) {
-                                Text(
-                                    text = "매수",
-                                    color = Color.Black,
-                                    fontSize = 13.sp
-                                )
-                            }
-                        }, onClick = {
-                            wonViewModel.selectedBoxId.value = 2
-                            dropdownExpanded = false
-                        })
-
                     DropdownMenuItem(
                         modifier = Modifier
                             .fillMaxWidth(),
@@ -193,7 +164,7 @@ fun WonMainScreen(wonViewModel: WonViewModel,
                                 )
                             }
                         }, onClick = {
-                            wonViewModel.selectedBoxId.value = 3
+                            wonViewModel.selectedBoxId.value = 2
                             dropdownExpanded = false
                         })
 
@@ -267,13 +238,6 @@ fun WonMainScreen(wonViewModel: WonViewModel,
                         }
 
                         2 -> {
-                            BuyWonRecordBox(
-                                wonViewModel,
-                                snackbarHostState,
-                                hideSellRecordState)
-                        }
-
-                        3 -> {
                             SellWonRecordBox(
                                 wonViewModel,
                                 snackbarHostState)

@@ -101,7 +101,9 @@ fun DollarInvestScreen(
                     .height(50.dp)
                     .width(80.dp),
                 fontColor = Color.Black,
-                buttonColor = Green
+                buttonColor = Green,
+                cardBorder = BorderStroke(width = 0.dp, color = Color.White),
+                shape = RoundedCornerShape(8.dp)
             )
 
             Spacer(modifier = Modifier.weight(1f))
@@ -270,7 +272,6 @@ fun DollarInvestScreen(
                 dollarViewModel.moneyInputFlow.value = it
                 Log.d(TAG, "$it")
             },
-            snackBarHostState
         )
 
         Spacer(
@@ -279,8 +280,9 @@ fun DollarInvestScreen(
                 .height(10.dp)
         )
 
-        RateNumberField("매수환율을 입력해주세요",
-            Modifier.padding(10.dp),
+        RateNumberField(
+            title ="매수환율을 입력해주세요",
+            modifier = Modifier.padding(10.dp),
             onClicked = {
                 dollarViewModel.rateInputFlow.value = it
             })

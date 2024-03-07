@@ -36,27 +36,29 @@ import com.bobodroid.myapplication.R
 import com.bobodroid.myapplication.components.RecordHeader
 import com.bobodroid.myapplication.components.RecordTextView
 import com.bobodroid.myapplication.models.datamodels.DrBuyRecord
+import com.bobodroid.myapplication.models.viewmodels.AllViewModel
 import com.bobodroid.myapplication.models.viewmodels.DollarViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.util.UUID
 
 @ExperimentalMaterialApi
-@OptIn(ExperimentalMaterialApi::class, ExperimentalFoundationApi::class,
+@OptIn(ExperimentalFoundationApi::class,
     ExperimentalStdlibApi::class
 )
 @SuppressLint("StateFlowValueCalledInComposition")
 @Composable
 fun TotalDrRecordBox(
     dollarViewModel: DollarViewModel,
+    allViewModel: AllViewModel,
     snackBarHostState: SnackbarHostState,
     hideSellRecordState: Boolean
 ) {
 
-    val buyRecordHistory : State<Map<String, List<DrBuyRecord>>> = dollarViewModel.groupBuyRecordFlow.collectAsState()
+    val buyRecordHistory: State<Map<String, List<DrBuyRecord>>> =
+        dollarViewModel.groupBuyRecordFlow.collectAsState()
 
-    val filterRecord  = if(hideSellRecordState)
-    {
+    val filterRecord = if (hideSellRecordState) {
         buyRecordHistory.value.mapValues { it.value.filter { it.recordColor == false } }
     } else {
         buyRecordHistory.value
@@ -70,19 +72,34 @@ fun TotalDrRecordBox(
 
 
 
-    Row(modifier = Modifier
-        .fillMaxWidth()
-        .height(55.dp),
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(55.dp),
         horizontalArrangement = Arrangement.Center,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        RecordTextView(recordText = "매수날짜\n " + "(매도날짜)", 45.dp, 16, 2.5f, 0.dp, color = Color.Black)
+        RecordTextView(
+            recordText = "매수날짜\n " + "(매도날짜)",
+            45.dp,
+            16,
+            2.5f,
+            0.dp,
+            color = Color.Black
+        )
         Spacer(modifier = Modifier.width(1.dp))
-        RecordTextView(recordText = "매수달러\n" + "(매수금)", 45.dp, 16, 2.5f,  0.dp, color = Color.Black)
+        RecordTextView(recordText = "매수달러\n" + "(매수금)", 45.dp, 16, 2.5f, 0.dp, color = Color.Black)
         Spacer(modifier = Modifier.width(1.dp))
-        RecordTextView(recordText = "매수환율\n" + "(매도환율)", 45.dp, 16, 2.5f,  0.dp, color = Color.Black)
+        RecordTextView(recordText = "매수환율\n" + "(매도환율)", 45.dp, 16, 2.5f, 0.dp, color = Color.Black)
         Spacer(modifier = Modifier.width(1.dp))
-        RecordTextView(recordText = "예상수익\n " + "(확정수익)", 45.dp, 16, 2.5f,  0.dp ,color = Color.Black)
+        RecordTextView(
+            recordText = "예상수익\n " + "(확정수익)",
+            45.dp,
+            16,
+            2.5f,
+            0.dp,
+            color = Color.Black
+        )
     }
 
 
@@ -91,17 +108,20 @@ fun TotalDrRecordBox(
     Column(
     ) {
 
-        Spacer(modifier = Modifier
-            .fillMaxWidth()
-            .background(Color.Gray)
-            .height(2.dp))
+        Spacer(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(Color.Gray)
+                .height(2.dp)
+        )
 
         LazyColumn(
             modifier = Modifier.fillMaxWidth(),
-            state = lazyScrollState) {
+            state = lazyScrollState
+        ) {
 
             //  Buy -> 라인리코드텍스트에 넣지 말고 바로 데이터 전달 -> 리팩토리
-            filterRecord.onEachIndexed { groupIndex:Int, (key, items)->
+            filterRecord.onEachIndexed { groupIndex: Int, (key, items) ->
 
 
                 stickyHeader {
@@ -115,7 +135,7 @@ fun TotalDrRecordBox(
 
                     var accmulatedCount = 1
 
-                    (0..<groupIndex).forEach {foreachIndex->
+                    (0..<groupIndex).forEach { foreachIndex ->
                         val currentKey = filterRecord.keys.elementAt(foreachIndex)
                         val elements = filterRecord.getValue(currentKey)
                         accmulatedCount += elements.count()
@@ -127,8 +147,7 @@ fun TotalDrRecordBox(
 
                     TotalLineDrRecord(
                         Buy,
-                        sellAction = Buy.recordColor!!
-                        ,
+                        sellAction = Buy.recordColor!!,
                         sellActed = { buyRecord ->
                             selectedId = buyRecord.id
 
@@ -139,9 +158,14 @@ fun TotalDrRecordBox(
                             selectedId = recordbox.id
                             dollarViewModel.dateFlow.value = recordbox.date!!
                             dollarViewModel.haveMoneyDollar.value = recordbox.exchangeMoney!!
-                            dollarViewModel.recordInputMoney.value = recordbox.money!! },
+                            dollarViewModel.recordInputMoney.value = recordbox.money!!
+                        },
                         dollarViewModel = dollarViewModel,
-                        snackBarHostState = snackBarHostState) {
+                        insertSelected = { date, money, rate->
+                            dollarViewModel.insertBuyRecord(Buy, date, money, rate)
+                        },
+                        snackBarHostState = snackBarHostState
+                    ) {
                         coroutineScope.launch {
                             delay(300)
                             lazyScrollState.animateScrollToItem(finalIndex, -55)

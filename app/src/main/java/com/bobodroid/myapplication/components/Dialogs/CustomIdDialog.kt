@@ -51,7 +51,6 @@ import com.bobodroid.myapplication.components.Buttons
 import com.bobodroid.myapplication.ui.theme.SellButtonColor
 import kotlinx.coroutines.launch
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CustomIdDialog(
     onDismissRequest: (Boolean) -> Unit,

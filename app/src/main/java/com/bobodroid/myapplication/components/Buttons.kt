@@ -150,9 +150,11 @@ fun CardButton(
     onClicked: (String) -> Unit,
     fontSize: Int,
     modifier: Modifier,
+    cardBorder : BorderStroke? = null,
     fontColor: Color,
     buttonColor: Color,
-    disableColor: Color? = null
+    disableColor: Color? = null,
+    shape: RoundedCornerShape? = null
 ) {
 
     var cardLabel: String = label
@@ -167,8 +169,8 @@ fun CardButton(
     Card(colors = CardDefaults.cardColors(buttonColor),
         elevation = CardDefaults.cardElevation(8.dp),
         modifier = modifier,
-        border = BorderStroke(1.dp, color),
-        shape = RoundedCornerShape(2.dp),
+        border = cardBorder ?: BorderStroke(width = 1.dp, color),
+        shape = shape ?: RoundedCornerShape(2.dp),
         onClick = {
             onClicked(label)
         }) {

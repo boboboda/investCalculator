@@ -275,9 +275,11 @@ class YenViewModel @Inject constructor(private val investRepository: InvestRepos
     private val sellRecordActionFlow = MutableStateFlow(false)
 
 
+
+
     fun buyAddRecord(groupName: String) {
         viewModelScope.launch {
-            exchangeMoney.emit("${lastValue()}")
+            exchangeMoney.emit("${lastValue(moneyInputFlow.value, rateInputFlow.value)}")
             investRepository
                 .addRecord(
                     YenBuyRecord(
@@ -305,25 +307,32 @@ class YenViewModel @Inject constructor(private val investRepository: InvestRepos
         }
     }
 
+
+    fun insertBuyRecord(existingYenBuyRecord: YenBuyRecord,
+                        insertDate: String,
+                        insertMoney: String,
+                        insertRate: String) {
+
+        viewModelScope.launch {
+
+            val insertDate = existingYenBuyRecord.copy(
+                date = insertDate,
+                money = insertMoney,
+                rate = insertRate,
+                buyRate = insertRate,
+                profit = "0",
+                expectProfit = "0",
+                exchangeMoney = lastValue(insertMoney, insertRate).toString())
+
+            investRepository.updateRecord(insertDate)
+        }
+
+    }
+
+
     fun removeBuyRecord(yenBuyRecord: YenBuyRecord) {
         viewModelScope.launch {
             investRepository.deleteRecord(yenBuyRecord)
-
-            val buyRecordState = _buyRecordFlow.value
-
-            val filterBuyRecord = _filterBuyRecordFlow.value
-
-            val buyItems = buyRecordState.toMutableList().apply {
-                remove(yenBuyRecord)
-            }.toList()
-
-            val filterBuyItems = filterBuyRecord.toMutableList().apply {
-                remove(yenBuyRecord)
-            }.toList()
-
-            _buyRecordFlow.value = buyItems
-
-            _filterBuyRecordFlow.value = filterBuyItems
         }
     }
 
@@ -598,8 +607,7 @@ class YenViewModel @Inject constructor(private val investRepository: InvestRepos
         return profit.toString()
     }
 
-    private fun lastValue() = BigDecimal(moneyInputFlow.value).divide(BigDecimal(rateInputFlow.value), 20, RoundingMode.HALF_UP) * BigDecimal("100")
-
+    private fun lastValue(money:String, rate:String) = BigDecimal(money).divide(BigDecimal(rate), 20, RoundingMode.HALF_UP) * BigDecimal("100")
 
     private fun sellValue() = (
             (BigDecimal(haveMoney.value).times(BigDecimal(sellRateFlow.value)))

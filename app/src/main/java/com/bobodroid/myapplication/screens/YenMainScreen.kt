@@ -30,11 +30,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.ExperimentalUnitApi
 import com.bobodroid.myapplication.R
-import com.bobodroid.myapplication.lists.dollorList.BuyRecordBox
 import com.bobodroid.myapplication.lists.dollorList.SellRecordBox
 import com.bobodroid.myapplication.lists.dollorList.TotalDrRecordBox
-import com.bobodroid.myapplication.lists.dollorList.addFocusCleaner
-import com.bobodroid.myapplication.lists.yenList.BuyYenRecordBox
 import com.bobodroid.myapplication.lists.yenList.SellYenRecordBox
 import com.bobodroid.myapplication.models.viewmodels.AllViewModel
 import com.bobodroid.myapplication.models.viewmodels.YenViewModel
@@ -63,10 +60,6 @@ fun YenMainScreen
         }
 
         2 -> {
-            "매수"
-        }
-
-        3 -> {
             "매도"
         }
 
@@ -167,33 +160,13 @@ fun YenMainScreen
                                 contentAlignment = Alignment.TopStart
                             ) {
                                 Text(
-                                    text = "매수",
-                                    color = Color.Black,
-                                    fontSize = 13.sp
-                                )
-                            }
-                        }, onClick = {
-                            yenViewModel.selectedBoxId.value = 2
-                            dropdownExpanded = false
-                        })
-
-                    DropdownMenuItem(
-                        modifier = Modifier
-                            .fillMaxWidth(),
-                        text = {
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxWidth(),
-                                contentAlignment = Alignment.TopStart
-                            ) {
-                                Text(
                                     text = "매도",
                                     color = Color.Black,
                                     fontSize = 13.sp
                                 )
                             }
                         }, onClick = {
-                            yenViewModel.selectedBoxId.value = 3
+                            yenViewModel.selectedBoxId.value = 2
                             dropdownExpanded = false
                         })
 
@@ -265,13 +238,6 @@ fun YenMainScreen
                     }
 
                     2 -> {
-                        BuyYenRecordBox(
-                            yenViewModel,
-                            snackbarHostState,
-                            hideSellRecordState)
-                    }
-
-                    3 -> {
                         SellYenRecordBox(
                             yenViewModel,
                             snackbarHostState)

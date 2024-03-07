@@ -17,10 +17,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.bobodroid.myapplication.components.*
 import com.bobodroid.myapplication.models.viewmodels.DollarViewModel
 import com.bobodroid.myapplication.ui.theme.*
-import java.util.*
 import androidx.compose.material.SnackbarHostState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.KeyboardArrowDown
@@ -29,10 +27,9 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.DpOffset
 import com.bobodroid.myapplication.R
-import com.bobodroid.myapplication.lists.dollorList.BuyRecordBox
+import com.bobodroid.myapplication.components.addFocusCleaner
 import com.bobodroid.myapplication.lists.dollorList.SellRecordBox
 import com.bobodroid.myapplication.lists.dollorList.TotalDrRecordBox
-import com.bobodroid.myapplication.lists.dollorList.addFocusCleaner
 import com.bobodroid.myapplication.models.viewmodels.AllViewModel
 
 
@@ -40,7 +37,7 @@ import com.bobodroid.myapplication.models.viewmodels.AllViewModel
 @Composable
 fun DollarMainScreen(
     dollarViewModel: DollarViewModel,
-    allViewModel: AllViewModel
+    allViewModel: AllViewModel,
 ) {
 
 
@@ -72,13 +69,8 @@ fun DollarMainScreen(
         }
 
         2 -> {
-            "매수"
-        }
-
-        3 -> {
             "매도"
         }
-
         else -> {
             "오류"
         }
@@ -163,28 +155,6 @@ fun DollarMainScreen(
                         })
 
 
-
-
-                    DropdownMenuItem(
-                        modifier = Modifier
-                            .fillMaxWidth(),
-                        text = {
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxWidth(),
-                                contentAlignment = Alignment.TopStart
-                            ) {
-                                Text(
-                                    text = "매수",
-                                    color = Color.Black,
-                                    fontSize = 13.sp
-                                )
-                            }
-                        }, onClick = {
-                            dollarViewModel.selectedBoxId.value = 2
-                            dropdownExpanded = false
-                        })
-
                     DropdownMenuItem(
                         modifier = Modifier
                             .fillMaxWidth(),
@@ -201,7 +171,7 @@ fun DollarMainScreen(
                                 )
                             }
                         }, onClick = {
-                            dollarViewModel.selectedBoxId.value = 3
+                            dollarViewModel.selectedBoxId.value = 2
                             dropdownExpanded = false
                         })
 
@@ -268,18 +238,13 @@ fun DollarMainScreen(
                     1 -> {
                         TotalDrRecordBox(
                             dollarViewModel,
+                            allViewModel,
                             snackBarHostState,
-                            hideSellRecordState
+                            hideSellRecordState,
+
                         )
                     }
                     2 -> {
-                        BuyRecordBox(
-                            dollarViewModel,
-                            snackBarHostState,
-                            hideSellRecordState)
-                    }
-
-                    3 -> {
                         SellRecordBox(
                             dollarViewModel,
                             snackBarHostState)

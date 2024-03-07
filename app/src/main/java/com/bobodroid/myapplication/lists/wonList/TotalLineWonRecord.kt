@@ -67,6 +67,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.bobodroid.myapplication.MainActivity
 import com.bobodroid.myapplication.components.Dialogs.AskTriggerDialog
+import com.bobodroid.myapplication.components.Dialogs.InsertDialog
 import com.bobodroid.myapplication.components.Dialogs.TextFieldDialog
 import com.bobodroid.myapplication.components.Dialogs.WonSellDialog
 import com.bobodroid.myapplication.components.RecordTextView
@@ -86,12 +87,13 @@ import java.math.RoundingMode
 
 @OptIn(ExperimentalMaterialApi::class, ExperimentalMaterial3Api::class)
 @Composable
-fun TotalLineWonRecordText(
+fun TotalLineWonRecord(
     data: WonBuyRecord,
     sellAction: Boolean = data.recordColor!!,
     sellActed: (WonBuyRecord) -> Unit,
     onClicked: ((WonBuyRecord)-> Unit)?,
     wonViewModel: WonViewModel,
+    insertSelected: (String, String, String) -> Unit,
     snackbarHostState: SnackbarHostState,
     recordSelected: () -> Unit,
 ) {
@@ -149,6 +151,8 @@ fun TotalLineWonRecordText(
     val coroutineScope = rememberCoroutineScope()
 
     val focusRequester by remember { mutableStateOf(FocusRequester()) }
+
+    var insertDialog by remember { mutableStateOf(false) }
 
     LaunchedEffect(key1 = data.buyWonMemo, block = {
         memoTextInput = data.buyWonMemo!!
@@ -341,6 +345,37 @@ fun TotalLineWonRecordText(
                                                     coroutineScope.launch {
                                                         snackbarHostState.showSnackbar(
                                                             "매도한 기록입니다.",
+                                                            actionLabel = "닫기",
+                                                            SnackbarDuration.Short
+                                                        )
+                                                    }
+                                                }
+                                            }
+                                        })
+
+                                    DropdownMenuItem(
+                                        modifier = Modifier
+                                            .fillMaxWidth(),
+                                        text = {
+                                            Box(
+                                                modifier = Modifier
+                                                    .fillMaxWidth(),
+                                                contentAlignment = Alignment.TopStart
+                                            ) {
+                                                Text(
+                                                    text = "매수 수정",
+                                                    fontSize = 13.sp
+                                                )
+                                            }
+                                        }, onClick = {
+                                            dropdownExpanded = false
+                                            if (!data.recordColor!!) {
+                                                insertDialog = true
+                                            } else {
+                                                if (snackbarHostState.currentSnackbarData == null) {
+                                                    coroutineScope.launch {
+                                                        snackbarHostState.showSnackbar(
+                                                            "매도한 기록은 수정이 불가능합니다.",
                                                             actionLabel = "닫기",
                                                             SnackbarDuration.Short
                                                         )
@@ -601,6 +636,21 @@ fun TotalLineWonRecordText(
                         }
                     }
                 }
+            }
+
+            if (insertDialog) {
+                InsertDialog(
+                    data = data,
+                    moneyTitle = "매수금(원)을 입력해주세요",
+                    rateTitle = "매수환율을 입력해주세요",
+                    onDismissRequest = {
+                        insertDialog = false
+                    },
+                    onClicked = { date, money, rate ->
+                        insertSelected.invoke(date, money, rate)
+                        insertDialog = false
+                    }
+                )
             }
 
 

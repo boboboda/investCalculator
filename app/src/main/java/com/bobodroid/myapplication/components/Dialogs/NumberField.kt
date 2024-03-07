@@ -27,14 +27,14 @@ import com.bobodroid.myapplication.extensions.toLongWon
 @Composable
 fun NumberField(
     title: String,
-    onClicked: ((String) -> Unit)?,
-    snackBarHostState: SnackbarHostState) {
+    haveValue: String? = "",
+    onClicked: ((String) -> Unit)?) {
 
     var won = NumberFormat.getInstance(Locale.KOREA)
-    var openDialog = remember { mutableStateOf(false) }
-    var userInput by remember { mutableStateOf("") }
+    val openDialog = remember { mutableStateOf(false) }
+    var userInput by remember { mutableStateOf(haveValue) }
 
-    var inputMoney = if(userInput == "") "$title" else "${userInput.toLong().toLongWon()}"
+    val inputMoney = if(userInput == "") title else "${userInput?.toLong()?.toLongWon()}"
 
     Card(
         modifier = Modifier
@@ -45,7 +45,7 @@ fun NumberField(
         colors = CardDefaults.cardColors(Color.White),
 
         onClick = {
-            if(openDialog.value == false) openDialog.value = !openDialog.value else null
+            if(!openDialog.value) openDialog.value = !openDialog.value else null
         }
     ) {
         Text(
@@ -59,9 +59,9 @@ fun NumberField(
     }
     if (openDialog.value) {
         Popup(
-            alignment = Alignment.TopCenter,
+            alignment = Alignment.BottomCenter,
             onDismissRequest = {openDialog.value = false},
-            offset = IntOffset(0, 1100)
+            offset = IntOffset(0, -180)
         ) {
             Box(){
                 PopupNumberView(
@@ -82,11 +82,12 @@ fun NumberField(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun RateNumberField(title: String,
+                    haveValue: String? = "0",
                     modifier: Modifier,
                     onClicked: ((String) -> Unit)?) {
 
     var openDialog = remember { mutableStateOf(false) }
-    var userInput by remember { mutableStateOf("0") }
+    var userInput by remember { mutableStateOf(haveValue) }
 
     var inputMoney = if(userInput == "0") "$title" else "${userInput}"
 
@@ -112,9 +113,9 @@ fun RateNumberField(title: String,
     }
     if (openDialog.value) {
         Popup(
-            alignment = Alignment.TopCenter,
+            alignment = Alignment.BottomCenter,
             onDismissRequest = {openDialog.value = false},
-            offset = IntOffset(0, 1100)
+            offset = IntOffset(0, -180)
         ) {
             Box(){
                 FloatPopupNumberView(onClicked = {
@@ -124,7 +125,7 @@ fun RateNumberField(title: String,
                 )
             }
         }
-    } else {}
+    }
 }
 
 
@@ -172,9 +173,9 @@ fun WonNumberField(title: String, onClicked: ((String) -> Unit)?,
     }
     if (openDialog.value) {
         Popup(
+            alignment = Alignment.BottomCenter,
             onDismissRequest = {openDialog.value = false},
-            alignment = Alignment.TopCenter,
-            offset = IntOffset(0, 1100)
+            offset = IntOffset(0, -180)
         ) {
             Box(){
                 PopupNumberView(

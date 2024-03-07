@@ -68,6 +68,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.bobodroid.myapplication.MainActivity
 import com.bobodroid.myapplication.components.Dialogs.AskTriggerDialog
+import com.bobodroid.myapplication.components.Dialogs.InsertDialog
 import com.bobodroid.myapplication.components.Dialogs.SellDialog
 import com.bobodroid.myapplication.components.Dialogs.TextFieldDialog
 import com.bobodroid.myapplication.components.Dialogs.YenSellDialog
@@ -97,6 +98,7 @@ fun TotalLineYenRecord(
     onClicked: ((YenBuyRecord) -> Unit)?,
     yenViewModel: YenViewModel,
     snackBarHostState: SnackbarHostState,
+    insertSelected: (String, String, String) -> Unit,
     recordSelected: () -> Unit,
     ) {
 
@@ -125,6 +127,8 @@ fun TotalLineYenRecord(
     var groupAddDialog by remember { mutableStateOf(false) }
 
     val focusRequester by remember { mutableStateOf(FocusRequester()) }
+
+    var insertDialog by remember { mutableStateOf(false) }
 
 
 
@@ -351,6 +355,37 @@ fun TotalLineYenRecord(
                                                     coroutineScope.launch {
                                                         snackBarHostState.showSnackbar(
                                                             "매도한 기록입니다.",
+                                                            actionLabel = "닫기",
+                                                            SnackbarDuration.Short
+                                                        )
+                                                    }
+                                                }
+                                            }
+                                        })
+
+                                    DropdownMenuItem(
+                                        modifier = Modifier
+                                            .fillMaxWidth(),
+                                        text = {
+                                            Box(
+                                                modifier = Modifier
+                                                    .fillMaxWidth(),
+                                                contentAlignment = Alignment.TopStart
+                                            ) {
+                                                Text(
+                                                    text = "매수 수정",
+                                                    fontSize = 13.sp
+                                                )
+                                            }
+                                        }, onClick = {
+                                            dropdownExpanded = false
+                                            if (!data.recordColor!!) {
+                                                insertDialog = true
+                                            } else {
+                                                if (snackBarHostState.currentSnackbarData == null) {
+                                                    coroutineScope.launch {
+                                                        snackBarHostState.showSnackbar(
+                                                            "매도한 기록은 수정이 불가능합니다.",
                                                             actionLabel = "닫기",
                                                             SnackbarDuration.Short
                                                         )
@@ -618,6 +653,22 @@ fun TotalLineYenRecord(
 
 
             }
+
+            if (insertDialog) {
+                InsertDialog(
+                    data = data,
+                    moneyTitle = "매수금(원)을 입력해주세요",
+                    rateTitle = "매수환율을 입력해주세요",
+                    onDismissRequest = {
+                        insertDialog = false
+                    },
+                    onClicked = { date, money, rate ->
+                        insertSelected.invoke(date, money, rate)
+                        insertDialog = false
+                    }
+                )
+            }
+
             if (openDialog) {
                 YenSellDialog(
                     buyRecord = data,

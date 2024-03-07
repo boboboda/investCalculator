@@ -247,12 +247,12 @@ class WonViewModel @Inject constructor(private val investRepository: InvestRepos
             }
             when(moneyCgBtnSelected.value) {
                 1-> {
-                    val dollarCg = dollarLastValue()
+                    val dollarCg = dollarLastValue(moneyInputFlow.value, rateInputFlow.value)
                     Log.d(TAG,"값 ${dollarCg}")
                     exchangeMoney.emit("${dollarCg}")
                 }
                 2-> {
-                    val yenCg = yenLastValue()
+                    val yenCg = yenLastValue(moneyInputFlow.value, rateInputFlow.value)
                     exchangeMoney.emit("${yenCg}")
                 }
                 else -> {null}}
@@ -284,6 +284,52 @@ class WonViewModel @Inject constructor(private val investRepository: InvestRepos
     }
 
 
+    fun insertBuyRecord(existingWonBuyRecord: WonBuyRecord,
+                        insertDate: String,
+                        insertMoney: String,
+                        insertRate: String) {
+
+        val moneyType = existingWonBuyRecord.moneyType
+
+        when(moneyType) {
+            1 -> {
+                viewModelScope.launch {
+
+                    val insertDate = existingWonBuyRecord.copy(
+                        date = insertDate,
+                        money = insertMoney,
+                        rate = insertRate,
+                        buyRate = insertRate,
+                        profit = "0",
+                        expectProfit = "0",
+                        exchangeMoney = dollarLastValue(insertMoney, insertRate).toString())
+
+                    investRepository.updateRecord(insertDate)
+                }
+            }
+            2 -> {
+                viewModelScope.launch {
+
+                    val insertDate = existingWonBuyRecord.copy(
+                        date = insertDate,
+                        money = insertMoney,
+                        rate = insertRate,
+                        buyRate = insertRate,
+                        profit = "0",
+                        expectProfit = "0",
+                        exchangeMoney = yenLastValue(insertMoney, insertRate).toString())
+
+                    investRepository.updateRecord(insertDate)
+                }
+            }
+        }
+
+
+
+    }
+
+
+
 
     fun sellCalculation() {
         viewModelScope.launch {
@@ -305,24 +351,6 @@ class WonViewModel @Inject constructor(private val investRepository: InvestRepos
     fun removeBuyRecord(wonBuyRecord: WonBuyRecord) {
         viewModelScope.launch {
             investRepository.deleteRecord(wonBuyRecord)
-
-            val buyRecordState = _buyRecordFlow.value
-
-            val filterBuyRecord = _filterBuyRecordFlow.value
-
-            val buyItems = buyRecordState.toMutableList().apply{
-                remove(wonBuyRecord)
-            }.toList()
-
-            val filterBuyItems = filterBuyRecord.toMutableList().apply{
-                remove(wonBuyRecord)
-            }.toList()
-
-
-            _buyRecordFlow.value = buyItems
-
-            _filterBuyRecordFlow.value = filterBuyItems
-
         }
     }
 
@@ -601,9 +629,9 @@ class WonViewModel @Inject constructor(private val investRepository: InvestRepos
 
 
 
-    private fun dollarLastValue() = (BigDecimal(moneyInputFlow.value).times(BigDecimal(rateInputFlow.value))).setScale(20, RoundingMode.HALF_UP)
+    private fun dollarLastValue(money: String, rate: String) = (BigDecimal(money).times(BigDecimal(rate))).setScale(20, RoundingMode.HALF_UP)
 
-    private fun yenLastValue() = (BigDecimal(moneyInputFlow.value).times(BigDecimal(rateInputFlow.value))).setScale(20, RoundingMode.HALF_UP).divide(
+    private fun yenLastValue(money: String, rate: String) = (BigDecimal(money).times(BigDecimal(rate))).setScale(20, RoundingMode.HALF_UP).divide(
         BigDecimal("100")
     )
 

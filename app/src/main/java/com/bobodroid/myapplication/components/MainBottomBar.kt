@@ -85,8 +85,6 @@ fun TopButton(mainText: String,
 @Composable
 fun TopButtonView(allViewModel: AllViewModel) {
 
-//    val titles = listOf<String>("달러", "엔화", "원화")
-
     val changeMoney = allViewModel.changeMoney.collectAsState()
 
     val mainTitle = when(changeMoney.value) {

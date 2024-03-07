@@ -98,7 +98,9 @@ fun YenInvestScreen(
                     .height(50.dp)
                     .width(80.dp),
                 fontColor = Color.Black,
-                buttonColor = Green
+                buttonColor = Green,
+                cardBorder = BorderStroke(width = 0.dp, color = Color.White),
+                shape = RoundedCornerShape(8.dp)
             )
 
             Spacer(modifier = Modifier.weight(1f))
@@ -262,15 +264,15 @@ fun YenInvestScreen(
 
         NumberField("매수금(원)을 입력해주세요", onClicked = {
              yenViewModel.moneyInputFlow.value = it
-        },
-            snackBarHostState)
+        })
 
         Spacer(modifier = Modifier
             .fillMaxWidth()
             .height(10.dp))
 
-        RateNumberField("매수환율을 입력해주세요",
-            Modifier.padding(horizontal = 10.dp),
+        RateNumberField(
+            title ="매수환율을 입력해주세요",
+            modifier = Modifier.padding(horizontal = 10.dp),
             onClicked = {
             yenViewModel.rateInputFlow.value = it
         })

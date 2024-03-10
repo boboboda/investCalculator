@@ -312,7 +312,7 @@ fun CustomCard(
 
     Card(
         colors = CardDefaults.cardColors(cardColor),
-        elevation = CardDefaults.cardElevation(8.dp),
+        elevation = CardDefaults.cardElevation(3.dp),
         modifier = modifier,
         shape = RoundedCornerShape(2.dp)
     ) {

@@ -59,9 +59,6 @@ fun DollarInvestScreen(
     var date = if (today == "") "$today" else {
         dateRecord.value
     }
-
-    val snackBarHostState = remember { SnackbarHostState() }
-
     var group = remember { mutableStateOf("미지정") }
 
     var dropdownExpanded by remember { mutableStateOf(false) }
@@ -287,15 +284,15 @@ fun DollarInvestScreen(
                 dollarViewModel.rateInputFlow.value = it
             })
 
-        if (isDialogOpen.value) {
-            MyDatePickerDialog(
-                onDateSelected = null,
-                onDismissRequest = {
-                    isDialogOpen.value = false
-                }, id = 1,
-                dollarViewModel
-            )
-        }
+//        if (isDialogOpen.value) {
+//            MyDatePickerDialog(
+//                onDateSelected = null,
+//                onDismissRequest = {
+//                    isDialogOpen.value = false
+//                }, id = 1,
+//                dollarViewModel
+//            )
+//        }
 
         if (groupAddDialog) {
             TextFieldDialog(

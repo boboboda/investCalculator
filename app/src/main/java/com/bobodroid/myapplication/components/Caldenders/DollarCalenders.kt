@@ -24,15 +24,10 @@ import java.time.temporal.ChronoField
 // 달러 탐색 날짜
 @Composable
 fun MyDatePickerDialog(
-    onDateSelected: ((LocalDate, Int) -> Unit)?,
-    onDismissRequest: () -> Unit,
-    id: Int,
-    dollarViewModel: DollarViewModel) {
+    onDateSelected: (LocalDate) -> Unit,
+    onDismissRequest: () -> Unit) {
 
     val selectedDate = remember { mutableStateOf(LocalDate.now()) }
-
-    var currentCardId : Int = id
-
 //    var color = if (selectedId == currentCardId) Color.Gray else Color.LightGray
 
     Dialog(onDismissRequest = {
@@ -70,8 +65,8 @@ fun MyDatePickerDialog(
 
                 TextButton(
                     onClick = {
-                        dollarViewModel.dateFlow.value = selectedDate.value.toString()
-                        onDateSelected?.invoke(selectedDate.value, currentCardId)
+                        onDateSelected.invoke(selectedDate.value)
+//                        dollarViewModel.dateFlow.value = selectedDate.value.toString()
                         onDismissRequest()
                     }
                 ) {

@@ -22,19 +22,23 @@ import java.util.*
 import androidx.compose.material.SnackbarHostState
 import com.bobodroid.myapplication.extensions.toLongUs
 import com.bobodroid.myapplication.extensions.toLongWon
+import com.bobodroid.myapplication.ui.theme.BottomSheetSelectedColor
+import com.bobodroid.myapplication.ui.theme.BuyColor
+import com.bobodroid.myapplication.ui.theme.SelectedColor
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun NumberField(
     title: String,
     haveValue: String? = "",
-    onClicked: ((String) -> Unit)?) {
+    onClicked: ((String) -> Unit)?
+) {
 
     var won = NumberFormat.getInstance(Locale.KOREA)
     val openDialog = remember { mutableStateOf(false) }
     var userInput by remember { mutableStateOf(haveValue) }
 
-    val inputMoney = if(userInput == "") title else "${userInput?.toLong()?.toLongWon()}"
+    val inputMoney = if (userInput == "") title else "${userInput?.toLong()?.toLongWon()}"
 
     Card(
         modifier = Modifier
@@ -45,7 +49,7 @@ fun NumberField(
         colors = CardDefaults.cardColors(Color.White),
 
         onClick = {
-            if(!openDialog.value) openDialog.value = !openDialog.value else null
+            if (!openDialog.value) openDialog.value = !openDialog.value else null
         }
     ) {
         Text(
@@ -60,36 +64,37 @@ fun NumberField(
     if (openDialog.value) {
         Popup(
             alignment = Alignment.BottomCenter,
-            onDismissRequest = {openDialog.value = false},
+            onDismissRequest = { openDialog.value = false },
             offset = IntOffset(0, -180)
         ) {
-            Box(){
+            Box() {
                 PopupNumberView(
                     onClicked = {
-                    openDialog.value = false
+                        openDialog.value = false
                         userInput = it
-                    onClicked?.invoke(it)
-                },
-                    limitNumberLength = 10)
+                        onClicked?.invoke(it)
+                    },
+                    limitNumberLength = 10
+                )
             }
         }
     }
 }
 
 
-
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun RateNumberField(title: String,
-                    haveValue: String? = "0",
-                    modifier: Modifier,
-                    onClicked: ((String) -> Unit)?) {
+fun RateNumberField(
+    title: String,
+    haveValue: String? = "0",
+    modifier: Modifier,
+    onClicked: ((String) -> Unit)?
+) {
 
     var openDialog = remember { mutableStateOf(false) }
     var userInput by remember { mutableStateOf(haveValue) }
 
-    var inputMoney = if(userInput == "0") "$title" else "${userInput}"
+    var inputMoney = if (userInput == "0") "$title" else "${userInput}"
 
     Card(
         modifier = modifier
@@ -99,7 +104,7 @@ fun RateNumberField(title: String,
         colors = CardDefaults.cardColors(Color.White),
 
         onClick = {
-            if(openDialog.value == false) openDialog.value = !openDialog.value else null
+            if (openDialog.value == false) openDialog.value = !openDialog.value else null
         }
     ) {
         Text(
@@ -114,14 +119,16 @@ fun RateNumberField(title: String,
     if (openDialog.value) {
         Popup(
             alignment = Alignment.BottomCenter,
-            onDismissRequest = {openDialog.value = false},
+            onDismissRequest = { openDialog.value = false },
             offset = IntOffset(0, -180)
         ) {
-            Box(){
-                FloatPopupNumberView(onClicked = {
-                    openDialog.value = false
-                    userInput = it
-                    onClicked?.invoke(userInput.toString())},
+            Box() {
+                FloatPopupNumberView(
+                    onClicked = {
+                        openDialog.value = false
+                        userInput = it
+                        onClicked?.invoke(userInput.toString())
+                    },
                 )
             }
         }
@@ -129,26 +136,35 @@ fun RateNumberField(title: String,
 }
 
 
-
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun WonNumberField(title: String, onClicked: ((String) -> Unit)?,
-                   wonViewModel: WonViewModel,
-                   snackbarHostState: SnackbarHostState) {
+fun WonNumberField(
+    title: String, onClicked: ((String) -> Unit)?,
+    wonViewModel: WonViewModel,
+    snackbarHostState: SnackbarHostState
+) {
     var openDialog = remember { mutableStateOf(false) }
     var userInput by remember { mutableStateOf(0L) }
 
     val moneyCgBtn = wonViewModel.moneyCgBtnSelected.collectAsState()
 
 
-    var inputMoney = if(userInput == 0L) "$title"
+    var inputMoney = if (userInput == 0L) "$title"
     else "${
-        when(moneyCgBtn.value) {
-            1 -> {userInput.toLongUs()}
-            2 -> {userInput.toFloat().toYen()}
-            else -> {"$title"} }
-        }"
+        when (moneyCgBtn.value) {
+            1 -> {
+                userInput.toLongUs()
+            }
+
+            2 -> {
+                userInput.toFloat().toYen()
+            }
+
+            else -> {
+                "$title"
+            }
+        }
+    }"
 
     Card(
         modifier = Modifier
@@ -159,7 +175,7 @@ fun WonNumberField(title: String, onClicked: ((String) -> Unit)?,
         colors = CardDefaults.cardColors(Color.White),
 
         onClick = {
-            if(openDialog.value == false) openDialog.value = !openDialog.value else null
+            if (openDialog.value == false) openDialog.value = !openDialog.value else null
         }
     ) {
         Text(
@@ -174,19 +190,88 @@ fun WonNumberField(title: String, onClicked: ((String) -> Unit)?,
     if (openDialog.value) {
         Popup(
             alignment = Alignment.BottomCenter,
-            onDismissRequest = {openDialog.value = false},
+            onDismissRequest = { openDialog.value = false },
             offset = IntOffset(0, -180)
         ) {
-            Box(){
+            Box() {
                 PopupNumberView(
                     onClicked = {
-                    openDialog.value = false
-                    userInput = it.toLong()
-                    onClicked?.invoke(userInput.toString())
-                },
+                        openDialog.value = false
+                        userInput = it.toLong()
+                        onClicked?.invoke(userInput.toString())
+                    },
                     limitNumberLength = 6
-                    )
+                )
             }
         }
+    }
+}
+
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun BottomSheetNumberField(
+    title: String,
+    seletedState: Boolean,
+    onClicked: () -> Unit
+) {
+
+    val formatTile = if (title == "") "매수금(원)을 입력해주세요" else title.toLong().toLongWon()
+
+    val cardColor = if(seletedState) CardDefaults.cardColors(BottomSheetSelectedColor) else CardDefaults.cardColors(Color.White)
+
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(10.dp)
+            .height(45.dp),
+        border = BorderStroke(1.dp, Color.Black),
+        colors = cardColor,
+
+        onClick = onClicked
+    ) {
+        Text(
+            text = formatTile,
+            fontSize = 18.sp,
+            modifier = Modifier
+                .padding(3.dp, top = 10.dp)
+                .fillMaxWidth(),
+            textAlign = TextAlign.Center
+        )
+    }
+}
+
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun BottomSheetRateNumberField(
+    title: String,
+    modifier: Modifier,
+    seletedState: Boolean,
+    onClicked: () -> Unit
+) {
+
+    val formatTile = if (title == "") "매수환율을 입력해주세요" else title
+
+    val cardColor = if(seletedState) CardDefaults.cardColors(BottomSheetSelectedColor) else CardDefaults.cardColors(Color.White)
+
+
+    Card(
+        modifier = modifier
+            .fillMaxWidth()
+            .height(45.dp),
+        border = BorderStroke(1.dp, Color.Black),
+        colors = cardColor,
+
+        onClick = onClicked
+    ) {
+        Text(
+            text = formatTile,
+            fontSize = 18.sp,
+            modifier = Modifier
+                .padding(3.dp, top = 10.dp)
+                .fillMaxWidth(),
+            textAlign = TextAlign.Center
+        )
     }
 }

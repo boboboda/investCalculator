@@ -32,6 +32,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
+import java.io.IOException
 import java.math.BigDecimal
 import java.math.RoundingMode
 import java.text.SimpleDateFormat
@@ -313,13 +314,21 @@ class AllViewModel @Inject constructor(
     // 공지사항 로드
     private fun noticeApi(noticeDate: (String) -> Unit) {
         viewModelScope.launch {
-            val noticeResponse = NoticeApi.noticeService.noticeRequest()
 
-            val res = noticeResponse.data.first()
+            try {
+                val noticeResponse = NoticeApi.noticeService.noticeRequest()
+                val res = noticeResponse.data.first()
 
-            noticeContent.emit(res.content)
-            noticeDate.invoke(res.createdAt)
-            noticeDateFlow.emit(res.createdAt)
+                noticeContent.emit(res.content)
+                noticeDate.invoke(res.createdAt)
+                noticeDateFlow.emit(res.createdAt)
+            } catch (error: IOException) {
+                Log.e(TAG, "$error")
+                return@launch
+            } catch (error: Exception) {
+                Log.e(TAG, "$error")
+                return@launch
+            }
         }
     }
 
@@ -503,7 +512,9 @@ class AllViewModel @Inject constructor(
                         }
 
                     } else {
-                        Log.d(TAG, "Current data: null")
+                        Log.w(TAG, "Current data: null")
+                        return@addSnapshotListener
+
                     }
                 }
 

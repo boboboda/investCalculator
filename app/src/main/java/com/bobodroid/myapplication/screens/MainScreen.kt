@@ -213,6 +213,8 @@ fun MainScreen(
 
     var groupAddDialog by remember { mutableStateOf(false) }
 
+    val moneyCgBtnSelected = wonViewModel.moneyCgBtnSelected.collectAsState()
+
     LaunchedEffect(key1 = Unit, block = {
 
         coroutineScope.launch {
@@ -416,8 +418,6 @@ fun MainScreen(
                     }
 
 //                    TopButtonView(allViewModel = allViewModel)
-
-
                 }
 
                 Column(
@@ -493,16 +493,23 @@ fun MainScreen(
                                     onClicked = {
                                         when(rowViewController.value) {
                                             1-> {
+                                                dollarViewModel.moneyInputFlow.value = numberUserInput
+                                                dollarViewModel.rateInputFlow.value = rateNumberUserInput
+
                                                 dollarViewModel.buyDollarAdd(
                                                     groupName = group
                                                 )
                                             }
                                             2-> {
+                                                yenViewModel.moneyInputFlow.value = numberUserInput
+                                                yenViewModel.rateInputFlow.value = rateNumberUserInput
                                                 yenViewModel.buyAddRecord(
                                                     groupName = group
                                                 )
                                             }
                                             3-> {
+                                                wonViewModel.moneyInputFlow.value = numberUserInput
+                                                wonViewModel.rateInputFlow.value = rateNumberUserInput
                                                 wonViewModel.buyAddRecord(
                                                     groupName = group
                                                 )
@@ -510,6 +517,7 @@ fun MainScreen(
                                         }
 
                                         group = "미지정"
+                                        showBottomSheet = false
                                     },
                                     color = BuyColor,
                                     fontColor = Color.Black,
@@ -530,7 +538,7 @@ fun MainScreen(
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .padding(start = 10.dp, bottom = 20.dp, end = 10.dp),
+                                    .padding(start= 20.dp,bottom = 20.dp, end = 10.dp),
                                 horizontalArrangement = Arrangement.spacedBy(
                                     10.dp,
                                     alignment = Alignment.End
@@ -540,7 +548,7 @@ fun MainScreen(
 
                                 Card(
                                     colors = CardDefaults.cardColors(WelcomeScreenBackgroundColor),
-                                    elevation = CardDefaults.cardElevation(8.dp),
+                                    elevation = CardDefaults.cardElevation(3.dp),
                                     shape = RoundedCornerShape(1.dp),
                                     modifier = Modifier
                                         .height(40.dp)
@@ -565,7 +573,7 @@ fun MainScreen(
                                 ) {
                                     Card(
                                         colors = CardDefaults.cardColors(WelcomeScreenBackgroundColor),
-                                        elevation = CardDefaults.cardElevation(8.dp),
+                                        elevation = CardDefaults.cardElevation(3.dp),
                                         shape = RoundedCornerShape(1.dp),
                                         modifier = Modifier
                                             .height(40.dp)
@@ -650,14 +658,13 @@ fun MainScreen(
                                     }
                                 }
 
-                                Spacer(modifier = Modifier.width(20.dp))
+                                Spacer(modifier = Modifier.weight(1f))
 
                                 Card(
                                     modifier = Modifier
                                         .width(160.dp)
                                         .padding(end = 10.dp)
-                                        .height(40.dp)
-                                        .background(Color.White),
+                                        .height(40.dp),
                                     border = BorderStroke(1.dp, Color.Black),
                                     colors = CardDefaults.cardColors(
                                         contentColor = Color.Black,
@@ -685,9 +692,42 @@ fun MainScreen(
                                 }
                             }
 
+                            AnimatedVisibility(visible = rowViewController.value == 3) {
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(start = 20.dp, bottom = 20.dp, end = 10.dp),
+                                    horizontalArrangement = Arrangement.spacedBy(
+                                        10.dp,
+                                        alignment = Alignment.Start
+                                    ),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+
+                                    MoneyChButtonView(
+                                        mainText = "달러",
+                                        id = 1,
+                                        selectedId = moneyCgBtnSelected.value ,
+                                        selectAction = {wonViewModel.moneyCgBtnSelected.value = it})
+
+                                    Spacer(modifier = Modifier.width(20.dp))
+
+                                    MoneyChButtonView(
+                                        mainText = "엔화",
+                                        id = 2,
+                                        selectedId = moneyCgBtnSelected.value ,
+                                        selectAction = {wonViewModel.moneyCgBtnSelected.value = it})
+
+                                }
+                            }
+
+
+
                             BottomSheetNumberField(
                                 title = numberUserInput,
-                                seletedState = numberPadPopViewIsVible
+                                selectedState = numberPadPopViewIsVible,
+                                selectedMoneyType = rowViewController.value,
+                                buyMoneyType = moneyCgBtnSelected.value
                             ) {
                                 coroutineScope.launch {
                                     if (ratePadPopViewIsVible) {
@@ -709,7 +749,7 @@ fun MainScreen(
 
                             BottomSheetRateNumberField(
                                 title = rateNumberUserInput,
-                                seletedState = ratePadPopViewIsVible,
+                                selectedState = ratePadPopViewIsVible,
                                 modifier = Modifier.padding(10.dp)
                             ) {
                                 coroutineScope.launch {
@@ -867,6 +907,12 @@ fun MainScreen(
                     wonCheckboxController = wonCheckBoxState.value,
                     buyButtonClicked = {
                         showBottomSheet = true
+                    },
+                    totalMoneyCheckClicked = {
+                          showOpenDialog.value = true
+                    },
+                    refreshClicked = {
+                        rateRefreshDialog.value = true
                     })
 
                 if (rateRefreshDialog.value) {
@@ -1293,6 +1339,8 @@ fun ContentIcon(
     yenCheckboxController: Int,
     wonCheckboxController: Int,
     buyButtonClicked: () -> Unit,
+    totalMoneyCheckClicked: () -> Unit,
+    refreshClicked: () -> Unit
 ) {
 
     val scope = rememberCoroutineScope()
@@ -1380,7 +1428,7 @@ fun ContentIcon(
                     horizontalArrangement = Arrangement.spacedBy(bottomRefreshPadding.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    androidx.compose.material3.Icon(
+                    Icon(
                         imageVector = Icons.Rounded.Menu,
                         contentDescription = "메뉴",
                         tint = Color.White
@@ -1440,7 +1488,8 @@ fun ContentIcon(
                             )
                         }
                     }, onClick = {
-
+                        dropdownExpanded = false
+                        totalMoneyCheckClicked.invoke()
                     })
 
                 DropdownMenuItem(
@@ -1459,7 +1508,8 @@ fun ContentIcon(
                             )
                         }
                     }, onClick = {
-
+                        dropdownExpanded = false
+                        refreshClicked.invoke()
                     })
 
             }

@@ -116,7 +116,7 @@ fun MoneyChButtonView(
 
     androidx.compose.material.Card(
         backgroundColor = color,
-        elevation = 8.dp,
+        elevation = 3.dp,
         modifier = Modifier
             .padding(top = 5.dp, bottom = 10.dp)
             .width(60.dp)

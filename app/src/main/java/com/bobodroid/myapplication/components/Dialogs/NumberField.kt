@@ -212,13 +212,32 @@ fun WonNumberField(
 @Composable
 fun BottomSheetNumberField(
     title: String,
-    seletedState: Boolean,
+    selectedState: Boolean,
+    selectedMoneyType: Int,
+    buyMoneyType: Int,
     onClicked: () -> Unit
 ) {
 
-    val formatTile = if (title == "") "매수금(원)을 입력해주세요" else title.toLong().toLongWon()
+   val formatTile = if(title == "") {
+       "매수금(원)을 입력해주세요"
+   } else {
+        when(selectedMoneyType) {
+            1,2 -> { title.toLong().toLongWon() }
+            3-> { when(buyMoneyType) {
+                1-> { title.toLong().toLongUs()}
+                2-> { title.toFloat().toYen()}
+                else ->{
+                    return
+                }
+            }
+            }
+            else -> {
+                return
+            }
+        }
+    }
 
-    val cardColor = if(seletedState) CardDefaults.cardColors(BottomSheetSelectedColor) else CardDefaults.cardColors(Color.White)
+    val cardColor = if(selectedState) CardDefaults.cardColors(BottomSheetSelectedColor) else CardDefaults.cardColors(Color.White)
 
     Card(
         modifier = Modifier
@@ -247,13 +266,13 @@ fun BottomSheetNumberField(
 fun BottomSheetRateNumberField(
     title: String,
     modifier: Modifier,
-    seletedState: Boolean,
+    selectedState: Boolean,
     onClicked: () -> Unit
 ) {
 
     val formatTile = if (title == "") "매수환율을 입력해주세요" else title
 
-    val cardColor = if(seletedState) CardDefaults.cardColors(BottomSheetSelectedColor) else CardDefaults.cardColors(Color.White)
+    val cardColor = if(selectedState) CardDefaults.cardColors(BottomSheetSelectedColor) else CardDefaults.cardColors(Color.White)
 
 
     Card(

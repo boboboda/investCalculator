@@ -294,30 +294,6 @@ fun InvestNavHost(
 
             )
         }
-        composable(InvestRoute.DOLLAR_BUY.route!!) {
-            DollarInvestScreen(
-                dollarViewModel = dollarViewModel,
-                routeAction = routeAction,
-                routeName = InvestRoute.DOLLAR_BUY.routName,
-                allViewModel
-            )
-        }
-
-        composable(InvestRoute.YEN_BUY.route!!) {
-            YenInvestScreen(
-                yenViewModel = yenViewModel,
-                routeAction = routeAction,
-                routeName = InvestRoute.YEN_BUY.routName,
-                allViewModel)
-        }
-
-        composable(InvestRoute.WON_BUY.route!!) {
-            WonInvestScreen(
-                wonViewModel = wonViewModel,
-                routeAction = routeAction,
-                routeName = InvestRoute.WON_BUY.routName,
-                allViewModel)
-        }
     }
 }
 

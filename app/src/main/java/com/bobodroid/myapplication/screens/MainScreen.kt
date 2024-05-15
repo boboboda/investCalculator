@@ -73,7 +73,10 @@ import com.bobodroid.myapplication.components.Dialogs.FloatPopupNumberView
 import com.bobodroid.myapplication.components.Dialogs.NumberField
 import com.bobodroid.myapplication.components.Dialogs.PopupNumberView
 import com.bobodroid.myapplication.components.Dialogs.RateNumberField
+import com.bobodroid.myapplication.components.Dialogs.RewardShowAskDialog
 import com.bobodroid.myapplication.components.Dialogs.TextFieldDialog
+import com.bobodroid.myapplication.components.Dialogs.ThanksDialog
+import com.bobodroid.myapplication.components.admobs.showTargetRewardedAdvertisement
 import com.bobodroid.myapplication.ui.theme.BottomSheetTitleColor
 import com.bobodroid.myapplication.ui.theme.BuyColor
 import com.bobodroid.myapplication.ui.theme.MainTopButtonColor
@@ -143,9 +146,9 @@ fun MainScreen(
 
     val noticeShowDialog = allViewModel.noticeShowDialog.collectAsState()
 
-    val noticeContent = allViewModel.noticeContent.collectAsState()
+    val rewardShowDialog = allViewModel.rewardShowDialog.collectAsState()
 
-    val nowDate = allViewModel.todayDateFlow.collectAsState()
+    val noticeContent = allViewModel.noticeContent.collectAsState()
 
     val localUser = allViewModel.localUserData.collectAsState()
 
@@ -160,8 +163,6 @@ fun MainScreen(
     val recentRate = allViewModel.recentExChangeRateFlow.collectAsState()
 
     var dropdownExpanded by remember { mutableStateOf(false) }
-
-    var bottomMenuDropdownExpanded by remember { mutableStateOf(false) }
 
     val mainScreenSnackBarHostState = remember { SnackbarHostState() }
 
@@ -214,6 +215,8 @@ fun MainScreen(
     var groupAddDialog by remember { mutableStateOf(false) }
 
     val moneyCgBtnSelected = wonViewModel.moneyCgBtnSelected.collectAsState()
+
+    var thankShowingDialog by remember { mutableStateOf(false) }
 
     LaunchedEffect(key1 = Unit, block = {
 
@@ -538,7 +541,7 @@ fun MainScreen(
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .padding(start= 20.dp,bottom = 20.dp, end = 10.dp),
+                                    .padding(start = 20.dp, bottom = 20.dp, end = 10.dp),
                                 horizontalArrangement = Arrangement.spacedBy(
                                     10.dp,
                                     alignment = Alignment.End
@@ -1003,7 +1006,7 @@ fun MainScreen(
                     )
                 }
 
-                if (noticeShowDialog.value)
+                if (noticeShowDialog.value) {
                     NoticeDialog(
                         content = noticeContent.value,
                         onDismissRequest = { close ->
@@ -1016,6 +1019,31 @@ fun MainScreen(
                                 delay(1000)
                             }
                         })
+                }
+
+                if(rewardShowDialog.value) {
+                    RewardShowAskDialog(
+                        onDismissRequest = {
+                            allViewModel.rewardDelayDate(localUser.value)
+                            allViewModel.rewardShowDialog.value = it
+                    },
+                        onClicked = {
+                            showTargetRewardedAdvertisement(context, onAdDismissed = {
+                                allViewModel.rewardDelayDate(localUser.value)
+                                allViewModel.rewardShowDialog.value = false
+                                thankShowingDialog = true
+                            })
+                        })
+                }
+
+                if(thankShowingDialog)
+                ThanksDialog(onDismissRequest = {
+                    thankShowingDialog = it
+                })
+
+
+
+
 
             }
         }

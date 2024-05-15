@@ -40,6 +40,7 @@ import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import java.util.Calendar
+import java.util.Date
 import java.util.GregorianCalendar
 import javax.inject.Inject
 
@@ -57,6 +58,8 @@ class AllViewModel @Inject constructor(
 
     val noticeShowDialog = MutableStateFlow(false)
 
+    val rewardShowDialog = MutableStateFlow(false)
+
     val todayDateFlow = MutableStateFlow("${LocalDate.now()}")
 
     val openAppNoticeDateState = MutableStateFlow(true)
@@ -70,12 +73,18 @@ class AllViewModel @Inject constructor(
     val _targetRate = MutableStateFlow(TargetRate())
 
     val targetRateFlow = _targetRate.asStateFlow()
-    init {
+
+    val onReadyRewardAd = MutableStateFlow(false)
+
+    init{
         viewModelScope.launch {
-//            _targetRate.emit(targetDummyData)
+            onReadyRewardAd.collect {isReady ->
+                if(isReady) {
+                    rewardAdState(localUserData.value)
+                }
+            }
         }
     }
-
 
     // 목표 환율 추가
     fun targetRateAdd(
@@ -310,6 +319,43 @@ class AllViewModel @Inject constructor(
     }
 
 
+    // 리워드 다이로그 상태 관리
+    private fun rewardAdState(localUserDate: LocalUserData) {
+
+        Log.d(TAG, "연기날짜: ${localUserDate.rewardAdShowingDate} 오늘날짜: ${todayDateFlow.value}")
+
+        // 닫기 후 호출 방지
+        if (!localUserDate.rewardAdShowingDate.isNullOrEmpty()) {
+            if (todayDateFlow.value > localUserDate.rewardAdShowingDate!!) {
+                Log.d(TAG, "오늘 날짜가 더 큽니다.")
+                rewardShowDialog.value = true
+            } else {
+                Log.d(TAG, "연기된 날짜가 더 큽니다.")
+            }
+        } else {
+            Log.d(TAG, "날짜 값이 없습니다.")
+            rewardShowDialog.value = true
+        }
+    }
+
+    // 리워드 다이로그 연기 설정
+    fun rewardDelayDate(localUser: LocalUserData) {
+        viewModelScope.launch {
+
+            Log.d(TAG, "날짜 연기 신청")
+
+            val updateUserData = localUser.copy(
+                rewardAdShowingDate = delayDate(inputDate = todayDateFlow.value, delayDay = 1)
+            )
+
+            investRepository.localUserUpdate(updateUserData)
+
+            Log.d(TAG, "딜레이리워드날짜: ${localUserData.value.rewardAdShowingDate}")
+        }
+    }
+
+
+
 
     // 공지사항 로드
     private fun noticeApi(noticeDate: (String) -> Unit) {
@@ -336,7 +382,6 @@ class AllViewModel @Inject constructor(
     // 공지사항 상태 관리
     fun noticeDialogState(localUserDate: LocalUserData, noticeDate: String) {
 
-
         // 저장한 날짜와 같으면 실행
         Log.d(
             TAG,
@@ -360,6 +405,23 @@ class AllViewModel @Inject constructor(
             }
         } else {
             return
+        }
+    }
+
+
+    // 공지사항 연기 설정
+    fun selectDelayDate(localUser: LocalUserData) {
+        viewModelScope.launch {
+
+            Log.d(TAG, "날짜 연기 신청")
+
+            val updateUserData = localUser.copy(
+                userShowNoticeDate = noticeDateFlow.value
+            )
+
+            investRepository.localUserUpdate(updateUserData)
+
+            Log.d(TAG, "날짜 수정 실행, ${noticeDateFlow.value}")
         }
     }
 
@@ -400,7 +462,7 @@ class AllViewModel @Inject constructor(
             val updateUserData = user.copy(
                 userShowNoticeDate = "",
                 userResetDate = "",
-                userResetState = ""
+                rewardAdShowingDate = ""
 
 
             )
@@ -416,23 +478,7 @@ class AllViewModel @Inject constructor(
     }
 
 
-    // 공지사항 연기 설정
-    fun selectDelayDate(localUser: LocalUserData) {
-        viewModelScope.launch {
-            if (localUser != null) {
 
-                Log.d(TAG, "날짜 연기 신청")
-
-                val updateUserData = localUser.copy(
-                    userShowNoticeDate = noticeDateFlow.value
-                )
-
-                investRepository.localUserUpdate(updateUserData)
-
-                Log.d(TAG, "날짜 수정 실행, ${noticeDateFlow.value}")
-            }
-        }
-    }
 
 
     fun dateWeek(week: Int): String? {
@@ -442,7 +488,24 @@ class AllViewModel @Inject constructor(
         return sdfr.format(c.time).toString()
     }
 
+
     val delayDay = dateWeek(7)
+
+    fun delayDate(inputDate: String, delayDay: Int): String? {
+        val dateFormat = SimpleDateFormat("yyyy-MM-dd")
+        val date: Date? = dateFormat.parse(inputDate)
+
+        date?.let {
+            val calendar = GregorianCalendar().apply {
+                time = date
+                add(Calendar.DAY_OF_MONTH, delayDay)
+            }
+
+            return dateFormat.format(calendar.time)
+        }
+
+        return null
+    }
 
 
 
@@ -467,6 +530,7 @@ class AllViewModel @Inject constructor(
 
                 noticeApi { noticeDate ->
                     noticeDialogState(localData, noticeDate)
+
                 }
 
                 fcmTokenUpdate(localData)
@@ -670,32 +734,21 @@ class AllViewModel @Inject constructor(
     }
 
     private fun resetChance(localUser: LocalUserData) {
+        val lastResetDate = localUser.userResetDate!!
 
-        val resetDate = localUser.userResetDate
-
-        val resetState = localUser.userResetState
-
-
-        if (todayDateFlow.value >= resetDate!!) {
-            Log.w(TAG, "리셋 받을 날짜가 오늘이랑 같거나 큰 경우")
-            if (todayDateFlow.value == resetState) {
-                Log.w(TAG, "무료기회가 리셋된 기기입니다.")
-            } else {
-
-                Log.w(TAG, "무료기회 리셋 진행")
-                viewModelScope.launch {
-                    val updateData = localUser.copy(
-                        userResetDate = todayDateFlow.value,
-                        userResetState = todayDateFlow.value,
-                        rateResetCount = 3
-                    )
-
-                    investRepository.localUserUpdate(updateData)
-                }
+        if (todayDateFlow.value > lastResetDate) {
+            Log.w(TAG, "무료기회 리셋 진행")
+            viewModelScope.launch {
+                val updateData = localUser.copy(
+                    userResetDate = todayDateFlow.value,
+                    rateResetCount = 3 // 사용자에게 다시 리셋 기회 제공
+                )
+                investRepository.localUserUpdate(updateData)
             }
+        } else if (todayDateFlow.value == lastResetDate) {
+            Log.w(TAG, "오늘 이미 무료기회를 리셋 받았습니다.")
         } else {
-            Log.w(TAG, "리셋 에러")
-            return
+            Log.w(TAG, "리셋 날짜가 미래로 설정되어 있습니다. 설정 오류가 있는지 확인하세요.")
         }
     }
 
@@ -808,6 +861,7 @@ class AllViewModel @Inject constructor(
 
 
     fun cloudLoad(cloudId: String, cloudData: (CloudUserData, resultMessage: String) -> Unit) {
+
         db.collection("userCloud")
             .whereEqualTo("customId", cloudId)
             .get()

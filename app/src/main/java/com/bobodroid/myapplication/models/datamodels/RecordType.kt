@@ -28,18 +28,23 @@ data class LocalUserData(
     var fcmToken: String? = null,
 
     // 광고 리셋
+    // 무료 광고 횟수
     @ColumnInfo(name = "rate_Reset_Count", defaultValue = "")
     var rateResetCount: Int? = null,
 
+    // 환율 새로고침 날짜
     @ColumnInfo(name = "reFresh_CreateAt", defaultValue = "")
     var reFreshCreateAt: String? = null,
 
+    // 광고 시청 후 리셋 기회 제공
     @ColumnInfo(name = "rate_Ad_Count", defaultValue = "")
     var rateAdCount: Int? = null,
 
-    @ColumnInfo(name = "user_Reset_State", defaultValue = "")
-    var userResetState: String? = null,
+    // 하루 무료 기회 제공 여부 (날짜로 저장)
+    @ColumnInfo(name = "reward_ad_Showing_date", defaultValue = "")
+    var rewardAdShowingDate: String? = null,
 
+    // 무료기회 초기화
     @ColumnInfo(name = "user_Reset_Date", defaultValue = "")
     var userResetDate: String? = null,
 

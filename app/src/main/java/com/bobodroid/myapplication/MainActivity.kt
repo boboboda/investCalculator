@@ -22,6 +22,7 @@ import androidx.compose.material.DrawerValue
 import androidx.compose.material.rememberDrawerState
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.core.animation.doOnEnd
 import androidx.core.content.ContextCompat
 import androidx.core.splashscreen.SplashScreen
@@ -75,7 +76,19 @@ class MainActivity : ComponentActivity() {
         content.viewTreeObserver.addOnPreDrawListener(
             object : ViewTreeObserver.OnPreDrawListener {
                 override fun onPreDraw(): Boolean {
-                    // Check whether the initial data is ready.
+
+                    MobileAds.initialize(this@MainActivity)
+
+//            allViewModel.deleteLocalUser()
+
+//                    allViewModel.dateReset()
+
+                    loadInterstitial(this@MainActivity)
+
+                    loadRewardedAdvertisement(this@MainActivity, allViewModel)
+
+                    loadTargetRewardedAdvertisement(this@MainActivity)
+
                     Thread.sleep(1500)
                     // The content is ready. Start drawing.
                     content.viewTreeObserver.removeOnPreDrawListener(this)
@@ -85,16 +98,6 @@ class MainActivity : ComponentActivity() {
         )
 
         setContent {
-            MobileAds.initialize(this)
-
-//            allViewModel.deleteLocalUser()
-
-            loadInterstitial(this)
-
-            loadRewardedAdvertisement(this)
-
-            loadTargetRewardedAdvertisement(this)
-
             AppScreen(
                 dollarViewModel,
                 yenViewModel,

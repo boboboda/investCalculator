@@ -22,9 +22,9 @@ android {
         minSdk 26
         targetSdk 33
         compileSdk 33
-        versionCode 33
+        versionCode 35
 //        compileSdkPreview "UpsideDownCake"
-        versionName "24.5.1"
+        versionName "24.7.1"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {

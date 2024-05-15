@@ -4,6 +4,7 @@ import android.content.Context
 import android.util.Log
 import com.bobodroid.myapplication.BuildConfig
 import com.bobodroid.myapplication.MainActivity.Companion.TAG
+import com.bobodroid.myapplication.models.viewmodels.AllViewModel
 import com.google.android.gms.ads.AdError
 import com.google.android.gms.ads.AdRequest
 import com.google.android.gms.ads.FullScreenContentCallback
@@ -17,8 +18,8 @@ private var rewardedAd: RewardedAd? = null
 
 private var targetRewardedAd: RewardedAd? = null
 
-fun loadRewardedAdvertisement(context: Context) {
-    var adRequest = AdRequest.Builder().build()
+fun loadRewardedAdvertisement(context: Context, allViewModel: AllViewModel) {
+    val adRequest = AdRequest.Builder().build()
 
     RewardedAd.load(
         context,
@@ -26,7 +27,7 @@ fun loadRewardedAdvertisement(context: Context) {
         adRequest,
         object : RewardedAdLoadCallback() {
             override fun onAdFailedToLoad(adError: LoadAdError) {
-                Log.d(TAG, "${adError?.toString()}")
+                Log.e(TAG, "$adError")
                 rewardedAd = null
             }
 
@@ -34,6 +35,7 @@ fun loadRewardedAdvertisement(context: Context) {
             override fun onAdLoaded(ad: RewardedAd) {
                 Log.d(TAG, "Ad was loaded.")
                 rewardedAd = ad
+                allViewModel.onReadyRewardAd.value = true
             }
         })
 }
@@ -60,7 +62,6 @@ fun showRewardedAdvertisement(context: Context, onAdDismissed: () -> Unit) {
             override fun onAdDismissedFullScreenContent() {
                 rewardedAd = null
 
-                loadRewardedAdvertisement(context)
                 onAdDismissed()
             }
         }
@@ -81,7 +82,7 @@ fun showRewardedAdvertisement(context: Context, onAdDismissed: () -> Unit) {
 
 
 fun loadTargetRewardedAdvertisement(context: Context) {
-    var adRequest = AdRequest.Builder().build()
+    val adRequest = AdRequest.Builder().build()
 
     RewardedAd.load(
         context,
@@ -89,7 +90,7 @@ fun loadTargetRewardedAdvertisement(context: Context) {
         adRequest,
         object : RewardedAdLoadCallback() {
             override fun onAdFailedToLoad(adError: LoadAdError) {
-                Log.d(TAG, "${adError?.toString()}")
+                Log.e(TAG, "adError")
                 targetRewardedAd = null
             }
 

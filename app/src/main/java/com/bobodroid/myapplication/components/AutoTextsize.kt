@@ -11,9 +11,11 @@ import androidx.compose.ui.platform.LocalFontLoader
 import androidx.compose.ui.text.Paragraph
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.LineHeightStyle
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.TextUnit
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
 @Composable
@@ -25,6 +27,8 @@ fun AutoSizeText(
     minFontSize: TextUnit,
     scaleFactor: Float = 0.9f,
     color: Color,
+    textAlign: TextAlign = TextAlign.Center,
+    lineHeight: Int = 20,
     fontWeight: FontWeight? = null) {
     BoxWithConstraints(
         modifier = modifier
@@ -51,11 +55,12 @@ fun AutoSizeText(
         }
 
         Text(
+            lineHeight = lineHeight.sp,
             text = value,
             color = color,
             maxLines = maxLines,
             fontSize = nFontSize,
-            textAlign = TextAlign.Center,
+            textAlign = textAlign,
             fontWeight = fontWeight)
 
     }

@@ -41,8 +41,8 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavBackStackEntry
 import com.bobodroid.myapplication.MainActivity.Companion.TAG
 import com.bobodroid.myapplication.models.viewmodels.AllViewModel
-import com.bobodroid.myapplication.routes.InvestRoute
-import com.bobodroid.myapplication.routes.InvestRouteAction
+import com.bobodroid.myapplication.routes.MainRoute
+import com.bobodroid.myapplication.routes.MainRouteAction
 import com.bobodroid.myapplication.ui.theme.TopButtonColor
 import com.bobodroid.myapplication.ui.theme.TopButtonInColor
 import kotlinx.coroutines.launch
@@ -108,4 +108,84 @@ fun TopButtonView(allViewModel: AllViewModel) {
                 }
             }
         })
+}
+
+
+@Composable
+fun MainBottomBar(
+    mainRouteAction: MainRouteAction,
+    mainRouteBackStack: NavBackStackEntry?,
+    allViewModel: AllViewModel
+) {
+
+    val snackBarHostState = remember { SnackbarHostState() }
+
+    val coroutineScope = rememberCoroutineScope()
+
+
+
+    BottomNavigation(
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        MainRoute.Main.let {
+            BottomNavigationItem(
+                modifier = Modifier.background(Color.White),
+                label = { Text(text = it.title!!) },
+                icon = {
+                    it.iconResId?.let { iconId ->
+                        Icon(painter = painterResource(iconId), contentDescription = it.title)
+                    }
+                },
+                selectedContentColor = Color.Black,
+                unselectedContentColor = Color.LightGray,
+                selected = (mainRouteBackStack?.destination?.route) == it.routeName,
+                onClick = {
+                    mainRouteAction.navTo(it)
+                    allViewModel.nowBottomCardValue.value = it.selectValue!!
+                },
+            )
+        }
+
+        MainRoute.Alert.let {
+            BottomNavigationItem(modifier = Modifier.background(Color.White),
+                label = { Text(text = it.title!!) },
+                icon = {
+                    it.iconResId?.let { iconId ->
+                        Icon(painter = painterResource(iconId), contentDescription = it.title)
+                    }
+                },
+                selectedContentColor = Color.Black,
+                unselectedContentColor = Color.LightGray,
+                selected = (mainRouteBackStack?.destination?.route) == it.routeName,
+                onClick = {
+                    mainRouteAction.navTo(it)
+                    allViewModel.nowBottomCardValue.value = it.selectValue!!
+                }
+
+            )
+        }
+
+        MainRoute.MyPage.let {
+            it.selectValue
+            BottomNavigationItem(modifier = Modifier.background(Color.White),
+                label = { Text(text = it.title!!) },
+                icon = {
+                    it.iconResId?.let { iconId ->
+                        Icon(painter = painterResource(iconId), contentDescription = it.title)
+                    }
+                },
+                selectedContentColor = Color.Black,
+                unselectedContentColor = Color.LightGray,
+                selected = (mainRouteBackStack?.destination?.route) == it.routeName,
+                onClick = {
+                    mainRouteAction.navTo(it)
+                    allViewModel.nowBottomCardValue.value = it.selectValue!!
+                }
+            )
+        }
+
+//        SnackbarHost(hostState = snackBarHostState, modifier = Modifier)
+
+
+    }
 }

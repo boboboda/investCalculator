@@ -49,8 +49,6 @@ import java.util.*
 import com.bobodroid.myapplication.models.viewmodels.AllViewModel
 import com.bobodroid.myapplication.models.viewmodels.WonViewModel
 import com.bobodroid.myapplication.models.viewmodels.YenViewModel
-import com.bobodroid.myapplication.routes.InvestRoute
-import com.bobodroid.myapplication.routes.InvestRouteAction
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import com.bobodroid.myapplication.components.Dialogs.NoticeDialog
@@ -77,6 +75,8 @@ import com.bobodroid.myapplication.components.Dialogs.RewardShowAskDialog
 import com.bobodroid.myapplication.components.Dialogs.TextFieldDialog
 import com.bobodroid.myapplication.components.Dialogs.ThanksDialog
 import com.bobodroid.myapplication.components.admobs.showTargetRewardedAdvertisement
+import com.bobodroid.myapplication.routes.InvestRoute
+import com.bobodroid.myapplication.routes.MainRouteAction
 import com.bobodroid.myapplication.ui.theme.BottomSheetTitleColor
 import com.bobodroid.myapplication.ui.theme.BuyColor
 import com.bobodroid.myapplication.ui.theme.MainTopButtonColor
@@ -89,7 +89,7 @@ fun MainScreen(
     dollarViewModel: DollarViewModel,
     yenViewModel: YenViewModel,
     wonViewModel: WonViewModel,
-    routeAction: InvestRouteAction,
+    routeAction: MainRouteAction,
     allViewModel: AllViewModel,
     drawerState: DrawerState,
     activity: Activity
@@ -1116,245 +1116,6 @@ fun RateView(
 
 }
 
-@Composable
-fun MainBottomView(
-    showOpenDialog: (Boolean) -> Unit,
-    rateRefreshDialog: (Boolean) -> Unit,
-    showBottomSheet: () -> Unit,
-    rowViewController: Int,
-    routeAction: InvestRouteAction,
-    close: (Boolean) -> Unit
-) {
-
-    val scope = rememberCoroutineScope()
-
-    var bottomRefreshPadding by remember { mutableStateOf(5) }
-
-    var isVisible by remember { mutableStateOf(true) }
-
-    LaunchedEffect(key1 = Unit, block = {
-        scope.launch {
-            delay(3000)
-            isVisible = false
-            bottomRefreshPadding = 0
-        }
-    })
-
-
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .wrapContentHeight()
-            .padding(top = 10.dp)
-    ) {
-        Row(
-            modifier = Modifier
-                .wrapContentHeight()
-                .fillMaxWidth()
-                .padding(start = 20.dp, bottom = 10.dp),
-            horizontalArrangement = Arrangement.End,
-            verticalAlignment = Alignment.CenterVertically
-
-        ) {
-
-            FloatingActionButton(
-                onClick = showBottomSheet,
-                containerColor = MaterialTheme.colors.secondary,
-                shape = RoundedCornerShape(16.dp),
-                modifier = Modifier
-                    .padding(bottom = 10.dp, end = 20.dp)
-                    .height(60.dp)
-                    .wrapContentWidth(),
-            ) {
-                Row(
-                    Modifier
-                        .wrapContentSize()
-                        .padding(start = 17.dp, end = 17.dp),
-                    horizontalArrangement = Arrangement.spacedBy(bottomRefreshPadding.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    androidx.compose.material3.Icon(
-                        imageVector = Icons.Rounded.Refresh,
-                        contentDescription = "새로고침",
-                        tint = Color.White
-                    )
-                    AnimatedVisibility(visible = isVisible) {
-                        Text(text = "새로고침", color = Color.White, modifier = Modifier)
-                    }
-
-                }
-
-            }
-
-
-            Spacer(modifier = Modifier.width(15.dp))
-
-            FloatingActionButton(
-                onClick = {
-
-                    rateRefreshDialog.invoke(true)
-
-                },
-                containerColor = MaterialTheme.colors.secondary,
-                shape = RoundedCornerShape(16.dp),
-                modifier = Modifier
-                    .padding(bottom = 10.dp, end = 20.dp)
-                    .height(60.dp)
-                    .wrapContentWidth(),
-            ) {
-                Row(
-                    Modifier
-                        .wrapContentSize()
-                        .padding(start = 17.dp, end = 17.dp),
-                    horizontalArrangement = Arrangement.spacedBy(bottomRefreshPadding.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    androidx.compose.material3.Icon(
-                        imageVector = Icons.Rounded.Refresh,
-                        contentDescription = "새로고침",
-                        tint = Color.White
-                    )
-                    AnimatedVisibility(visible = isVisible) {
-                        Text(text = "새로고침", color = Color.White, modifier = Modifier)
-                    }
-
-                }
-
-            }
-
-            Spacer(modifier = Modifier.width(15.dp))
-
-
-            FloatingActionButton(
-                onClick = {
-
-                    when (rowViewController) {
-                        1 -> {
-                            routeAction.navTo(InvestRoute.DOLLAR_BUY)
-                        }
-
-                        2 -> {
-                            routeAction.navTo(InvestRoute.YEN_BUY)
-                        }
-
-                        3 -> {
-                            routeAction.navTo(InvestRoute.WON_BUY)
-                        }
-                    }
-
-                },
-                containerColor = MaterialTheme.colors.secondary,
-                shape = RoundedCornerShape(16.dp),
-                modifier = Modifier
-                    .padding(bottom = 10.dp, end = 20.dp)
-                    .height(60.dp)
-                    .wrapContentWidth(),
-            ) {
-                Row(
-                    Modifier
-                        .wrapContentSize()
-                        .padding(start = 17.dp, end = 17.dp),
-                    horizontalArrangement = Arrangement.spacedBy(bottomRefreshPadding.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    androidx.compose.material3.Icon(
-                        imageVector = Icons.Rounded.Add,
-                        contentDescription = "매수화면",
-                        tint = Color.White
-                    )
-                    AnimatedVisibility(visible = isVisible) {
-                        Text(text = "매수", color = Color.White, modifier = Modifier)
-                    }
-
-                }
-            }
-
-
-        }
-
-
-        Row(
-            modifier = Modifier
-                .wrapContentHeight()
-                .fillMaxWidth()
-                .padding(start = 20.dp, bottom = 10.dp),
-            horizontalArrangement = Arrangement.End,
-            verticalAlignment = Alignment.CenterVertically
-
-        ) {
-            FloatingActionButton(
-                onClick = {
-                    showOpenDialog.invoke(true)
-                },
-                containerColor = MaterialTheme.colors.secondary,
-                shape = RoundedCornerShape(16.dp),
-                modifier = Modifier
-                    .padding(bottom = 10.dp, end = 20.dp)
-                    .height(60.dp)
-                    .wrapContentWidth(),
-            ) {
-
-                Row(
-                    Modifier
-                        .wrapContentSize()
-                        .padding(start = 17.dp, end = 17.dp),
-                    horizontalArrangement = Arrangement.spacedBy(bottomRefreshPadding.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    androidx.compose.material3.Icon(
-                        imageVector = Icons.Rounded.DateRange,
-                        contentDescription = "날짜 범위 지정",
-                        tint = Color.White
-                    )
-                    AnimatedVisibility(visible = isVisible) {
-                        Text(text = "조회", color = Color.White, modifier = Modifier)
-                    }
-
-                }
-
-
-            }
-
-            Spacer(modifier = Modifier.width(15.dp))
-
-            FloatingActionButton(
-                onClick = {
-
-                    close.invoke(false)
-
-                },
-                containerColor = MaterialTheme.colors.secondary,
-                shape = RoundedCornerShape(16.dp),
-                modifier = Modifier
-                    .padding(bottom = 10.dp, end = 20.dp)
-                    .height(60.dp)
-                    .wrapContentWidth(),
-            ) {
-                Row(
-                    Modifier
-                        .wrapContentSize()
-                        .padding(start = 17.dp, end = 17.dp),
-                    horizontalArrangement = Arrangement.spacedBy(bottomRefreshPadding.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    androidx.compose.material3.Icon(
-                        imageVector = Icons.Rounded.Close,
-                        contentDescription = "닫기",
-                        tint = Color.White
-                    )
-                    AnimatedVisibility(visible = isVisible) {
-                        Text(text = "닫기", color = Color.White, modifier = Modifier)
-                    }
-
-                }
-
-            }
-
-        }
-    }
-
-
-}
 
 @Composable
 fun ContentIcon(

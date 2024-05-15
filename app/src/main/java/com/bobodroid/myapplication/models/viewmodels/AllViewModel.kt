@@ -49,8 +49,9 @@ class AllViewModel @Inject constructor(
     private val investRepository: InvestRepository
 ) : ViewModel() {
 
-
     var changeMoney = MutableStateFlow(1)
+
+    val nowBottomCardValue = MutableStateFlow(1)
 
     val db = Firebase.firestore
 

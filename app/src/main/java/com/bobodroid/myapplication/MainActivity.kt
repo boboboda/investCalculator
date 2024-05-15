@@ -16,21 +16,32 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.material.BottomNavigation
+import androidx.compose.material.BottomNavigationItem
 import androidx.compose.material.DrawerState
 import androidx.compose.material.DrawerValue
+import androidx.compose.material.Icon
+import androidx.compose.material.SnackbarHostState
+import androidx.compose.material.Text
 import androidx.compose.material.rememberDrawerState
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.core.animation.doOnEnd
 import androidx.core.content.ContextCompat
 import androidx.core.splashscreen.SplashScreen
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
+import androidx.navigation.NavBackStackEntry
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import com.bobodroid.myapplication.components.MainBottomBar
 import com.bobodroid.myapplication.components.MainTopBar
 import com.bobodroid.myapplication.components.admobs.loadInterstitial
 import com.bobodroid.myapplication.components.admobs.loadRewardedAdvertisement
@@ -255,18 +266,41 @@ fun InvestAppScreen(
 
     val investNavController = rememberNavController()
     val investRouteAction = remember(investNavController) {
-        InvestRouteAction(investNavController)
+        MainRouteAction(investNavController)
     }
 
-    InvestNavHost(
-        investNavController = investNavController,
-        dollarViewModel = dollarViewModel,
-        yenViewModel = yenViewModel,
-        wonViewModel = wonViewModel,
-        routeAction = investRouteAction,
-        allViewModel = allViewModel,
-        drawerState = drawerState,
-        activity = activity)
+    val mainBackStack = investNavController.currentBackStackEntryAsState()
+
+    Column(
+        modifier = Modifier.fillMaxSize()
+    ) {
+
+        Column(
+            modifier = Modifier.weight(1f)
+        ) {
+            InvestNavHost(
+                investNavController = investNavController,
+                dollarViewModel = dollarViewModel,
+                yenViewModel = yenViewModel,
+                wonViewModel = wonViewModel,
+                routeAction = investRouteAction,
+                allViewModel = allViewModel,
+                drawerState = drawerState,
+                activity = activity)
+        }
+
+
+
+        Column(
+            modifier = Modifier.wrapContentSize()
+        ) {
+            MainBottomBar(mainRouteAction = investRouteAction, mainRouteBackStack = mainBackStack.value, allViewModel = allViewModel)
+        }
+
+
+    }
+
+
 
 
 }
@@ -275,17 +309,17 @@ fun InvestAppScreen(
 @Composable
 fun InvestNavHost(
     investNavController: NavHostController,
-    startRouter: InvestRoute = InvestRoute.MAIN,
+    startRouter: MainRoute = MainRoute.Main,
     dollarViewModel: DollarViewModel,
     yenViewModel: YenViewModel,
     wonViewModel: WonViewModel,
-    routeAction: InvestRouteAction,
+    routeAction: MainRouteAction,
     allViewModel: AllViewModel,
     drawerState: DrawerState,
     activity: Activity
 ) {
-    NavHost(navController = investNavController, startDestination = startRouter.route!!) {
-        composable(InvestRoute.MAIN.route!!) {
+    NavHost(navController = investNavController, startDestination = startRouter.routeName!!) {
+        composable(MainRoute.Main.routeName!!) {
             MainScreen(
                 dollarViewModel = dollarViewModel,
                 yenViewModel = yenViewModel,
@@ -294,11 +328,23 @@ fun InvestNavHost(
                 allViewModel = allViewModel,
                 drawerState = drawerState,
                 activity = activity
-
             )
+        }
+
+        composable(MainRoute.Alert.routeName!!) {
+            Column {
+                Text(text = "알람")
+            }
+        }
+
+        composable(MainRoute.MyPage.routeName!!) {
+            Column {
+                Text(text = "마이페이지")
+            }
         }
     }
 }
+
 
 
 

@@ -14,7 +14,8 @@ class InvestRepository @Inject constructor(
     private val yenSellDatabaseDao: YenSellDatabaseDao,
     private val wonBuyDatabaseDao: WonBuyDatabaseDao,
     private val wonSellDatabaseDao: WonSellDatabaseDao,
-    private val localUserDatabaseDao: LocalUserDatabaseDao) {
+    private val localUserDatabaseDao: LocalUserDatabaseDao,
+    private val exchangeRateDataBaseDao: ExchangeRateDataBaseDao) {
 
 
     // 달러
@@ -83,4 +84,13 @@ class InvestRepository @Inject constructor(
     suspend fun localUserUpdate(localUserData: LocalUserData) = localUserDatabaseDao.update(localUserData)
     suspend fun localUserDataDelete() = localUserDatabaseDao.deleteAll()
     fun localUserDataGet(): Flow<LocalUserData> = localUserDatabaseDao.getUserData().flowOn(Dispatchers.IO).conflate()
+
+    //환율 저장
+
+    suspend fun exchangeSave(dataRate: ExchangeRate) = exchangeRateDataBaseDao.insert(dataRate)
+    suspend fun exchangeUpdate(dataRate: ExchangeRate) = exchangeRateDataBaseDao.update(dataRate)
+    suspend fun exchangeRateDataDelete() = exchangeRateDataBaseDao.deleteAll()
+    fun exchangeRateDataGet(): Flow<List<ExchangeRate>> = exchangeRateDataBaseDao.getRateData().flowOn(Dispatchers.IO).conflate()
+
+    suspend fun saveAllExchangeRates(exchangeRates: List<ExchangeRate>) = exchangeRateDataBaseDao.insertAll(exchangeRates = exchangeRates)
 }

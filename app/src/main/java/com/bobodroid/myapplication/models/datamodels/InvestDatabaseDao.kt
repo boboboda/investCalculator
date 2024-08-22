@@ -2,6 +2,7 @@ package com.bobodroid.myapplication.models.datamodels
 
 import androidx.room.*
 import kotlinx.coroutines.flow.Flow
+import okhttp3.internal.connection.Exchange
 import java.util.UUID
 
 
@@ -183,5 +184,26 @@ interface LocalUserDatabaseDao {
     suspend fun deleteNote(localUserData: LocalUserData)
 }
 
+@Dao
+interface  ExchangeRateDataBaseDao {
+
+    @Query("SELECT * from exchangeRate_table")
+    fun getRateData(): Flow<List<ExchangeRate>>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insert(rateData: ExchangeRate)
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertAll(exchangeRates: List<ExchangeRate>)
+
+    @Update(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun update(rateData: ExchangeRate)
+
+    @Query("DELETE from exchangeRate_table")
+    suspend fun deleteAll()
+    @Delete
+    suspend fun deleteRate(rateData: ExchangeRate)
+
+}
 
 

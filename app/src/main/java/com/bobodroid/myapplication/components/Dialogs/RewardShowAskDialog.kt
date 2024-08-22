@@ -56,20 +56,20 @@ fun RewardShowAskDialog(
                     .fillMaxWidth()
                     .heightIn(min = 100.dp, max = 500.dp)
                     .wrapContentHeight()
-                    .padding(bottom = 30.dp),
+                    .padding(bottom = 30.dp)
+                    .padding(horizontal = 10.dp),
                 verticalArrangement = Arrangement.Top,
                 horizontalAlignment = Alignment.Start
             ) {
 
                 AutoSizeText(
-                    value = "저의 앱은 무료로 제공되고 있습니다 그리하여 \n" +
-                            "광고 시청은 개발자에게 큰 힘이 됩니다.\n " +
-                            "광고를 시청하시겠습니까?",
-                    fontSize = 16.sp,
-                    minFontSize = 15.sp,
+                    value = "리워드 광고 시청 후 하루 동안 배너광고를 제거하시겠습니까?",
+                    fontSize = 15.sp,
+                    minFontSize = 13.sp,
                     color = Color.Black,
                     textAlign = TextAlign.Start,
                     lineHeight = 25,
+                    maxLines = 2,
                     fontWeight = FontWeight.Medium,
                     modifier = Modifier
                         .padding(end = 10.dp)
@@ -85,25 +85,27 @@ fun RewardShowAskDialog(
                         .fillMaxWidth(),
                     horizontalArrangement = Arrangement.Center
                 ) {
-                    Buttons(label = "예",
+                    Buttons(
                         onClicked = onClicked,
 
                         color = SellButtonColor,
                         fontColor = Color.White,
                         modifier = Modifier
                             .height(40.dp)
-                            .width(80.dp),
-                        fontSize = 15)
+                            .width(80.dp)) {
+                        androidx.compose.material3.Text(text = "시청", fontSize = 15.sp)
+                    }
                     Spacer(modifier = Modifier.width(25.dp))
 
-                    Buttons(label = "아니요",
+                    Buttons(
                         onClicked = {onDismissRequest(false)},
                         color = SellButtonColor,
                         fontColor = Color.White,
                         modifier = Modifier
                             .height(40.dp)
-                            .wrapContentSize()
-                        , fontSize = 15)
+                            .wrapContentSize()) {
+                        androidx.compose.material3.Text(text = "닫기", fontSize = 15.sp)
+                    }
                 }
             }
 //            Row(

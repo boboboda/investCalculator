@@ -114,7 +114,6 @@ class WonViewModel @Inject constructor(private val investRepository: InvestRepos
 
 
         if (!sellRecord.isNullOrEmpty() && !buyRecord.isNullOrEmpty()) {
-            Log.d(TAG, "매도 리스트 ${sellRecord}, ${buyRecord}")
             buyRecord.forEach { buy ->
                 if (buy.buyWonCategoryName.isNullOrEmpty()) buy.buyWonCategoryName =
                     "미지정"
@@ -452,8 +451,8 @@ class WonViewModel @Inject constructor(private val investRepository: InvestRepos
                     // 기존 데이터가 비어있을 때
                     Log.d(TAG, "프로핏 데이터가 없는경우 profit 실행")
 
-                    val resentRateUs = exchangeRate.exchangeRates?.usd
-                    val resentRateYen = exchangeRate.exchangeRates?.jpy
+                    val resentRateUs = exchangeRate.usd
+                    val resentRateYen = exchangeRate.jpy
 
                     if(resentRateUs.isNullOrEmpty()) {
                         Log.d(TAG, "calculateProfit 최신 값 받아오기 실패")
@@ -489,8 +488,8 @@ class WonViewModel @Inject constructor(private val investRepository: InvestRepos
                     }
                 } else {
 
-                    val resentRateUs = exchangeRate.exchangeRates?.usd
-                    val resentRateYen = exchangeRate.exchangeRates?.jpy
+                    val resentRateUs = exchangeRate.usd
+                    val resentRateYen = exchangeRate.jpy
 
                     if(resentRateUs.isNullOrEmpty()) {
                         Log.d(MainActivity.TAG, "calculateProfit 최신 값 받아오기 실패")
@@ -606,13 +605,13 @@ class WonViewModel @Inject constructor(private val investRepository: InvestRepos
 
         Log.d(TAG, "머니 타입 ${moneyType.value}")
 
-        Log.d(TAG, "원화 us: ${wonResentRateStateFlow.value.exchangeRates?.usd}")
+        Log.d(TAG, "원화 us: ${wonResentRateStateFlow.value.usd}")
 
-        Log.d(TAG, "원화 jpy: ${wonResentRateStateFlow.value.exchangeRates?.jpy}")
+        Log.d(TAG, "원화 jpy: ${wonResentRateStateFlow.value.jpy}")
 
         val resentUsRate = when(moneyType.value) {
-            1-> {wonResentRateStateFlow.value.exchangeRates?.usd}
-            2-> {wonResentRateStateFlow.value.exchangeRates?.jpy}
+            1-> {wonResentRateStateFlow.value.usd}
+            2-> {wonResentRateStateFlow.value.jpy}
             else -> { null }
         }
 

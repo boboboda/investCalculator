@@ -1,59 +1,66 @@
 package com.bobodroid.myapplication.models.datamodels
 
-import android.util.Log
-import com.bobodroid.myapplication.MainActivity.Companion.TAG
+import androidx.room.ColumnInfo
+import androidx.room.Entity
+import androidx.room.PrimaryKey
+import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.QueryDocumentSnapshot
 import com.google.firebase.firestore.QuerySnapshot
+import java.util.UUID
+import javax.annotation.Nonnull
 
+@Entity(tableName = "exchangeRate_table")
 data class ExchangeRate(
-    var id: String? = null,
-    var createAt: String? = null,
-    var exchangeRates: Rate? = null
-)
-{
-    constructor(data: QuerySnapshot): this() {
-        for (document in data.documents) {
-            // document는 QueryDocumentSnapshot 객체입니다.
-            this.id = document.id
-            this.createAt = document["createAt"] as String? ?: ""
-            this.exchangeRates = Rate(document["exchangeRates"]!!) as Rate? ?: Rate()
+    @PrimaryKey
+    @ColumnInfo(name = "id")
+    @Nonnull
+    var id: String = UUID.randomUUID().toString(),
 
+    @ColumnInfo(name = "createAt", defaultValue = "N/A")  // 기본값으로 "N/A" 설정
+    var createAt: String = "N/A",
 
-        }
-    }
-
-
-    constructor(data: QueryDocumentSnapshot): this() {
-            // document는 QueryDocumentSnapshot 객체입니다.
-            this.id = data.id
-            this.createAt = data["createAt"] as String? ?: ""
-            this.exchangeRates = Rate(data["exchangeRates"]!!) as Rate? ?: Rate()
-        }
-
-
-
-    fun asHasMap(): HashMap<String, Any?> {
-    return hashMapOf(
-        "id" to this.id,
-        "createAt" to this.createAt,
-        "exchangeRates" to this.exchangeRates
-    )
-}
-}
-
-data class Rate(
+    @ColumnInfo(name = "usd")
     var usd: String? = null,
+
+    @ColumnInfo(name = "jpy")
     var jpy: String? = null
 ) {
-    constructor(data: Any): this() {
-        this.jpy = (data as? Map<String, String>)?.get("JPY")
-        this.usd = (data as? Map<String, String>)?.get("USD")
+    companion object {
+        fun fromQuerySnapshot(data: QuerySnapshot): ExchangeRate? {
+            val document = data.documents.firstOrNull() ?: return null
+            return ExchangeRate(
+                id = document.id,
+                createAt = document.getString("createAt") ?: "",
+                usd = (document["exchangeRates"] as? Map<String, String>)?.get("USD"),
+                jpy = (document["exchangeRates"] as? Map<String, String>)?.get("JPY")
+            )
+        }
+
+        fun fromDocumentSnapshot(data: DocumentSnapshot): ExchangeRate {
+            return ExchangeRate(
+                id = data.id,
+                createAt = data.getString("createAt") ?: "",
+                usd = (data["exchangeRates"] as? Map<String, String>)?.get("USD"),
+                jpy = (data["exchangeRates"] as? Map<String, String>)?.get("JPY")
+            )
+        }
+
+        fun fromQueryDocumentSnapshot(data: QueryDocumentSnapshot): ExchangeRate {
+            return ExchangeRate(
+                id = data.id,
+                createAt = data.getString("createAt") ?: "",
+                usd = (data["exchangeRates"] as? Map<String, String>)?.get("USD"),
+                jpy = (data["exchangeRates"] as? Map<String, String>)?.get("JPY")
+            )
+        }
     }
 
-    fun asHasMap(): HashMap<String, Any?> {
+    fun asHashMap(): HashMap<String, Any?> {
         return hashMapOf(
-            "USD" to this.usd,
-            "JPY" to this.jpy,
+            "id" to id,
+            "createAt" to createAt,
+            "usd" to usd,
+            "jpy" to jpy
         )
     }
 }

@@ -115,12 +115,15 @@ fun TopButtonView(allViewModel: AllViewModel) {
 fun MainBottomBar(
     mainRouteAction: MainRouteAction,
     mainRouteBackStack: NavBackStackEntry?,
-    allViewModel: AllViewModel
+    allViewModel: AllViewModel,
+    returnAlarmView: () -> Unit
 ) {
 
     val snackBarHostState = remember { SnackbarHostState() }
 
     val coroutineScope = rememberCoroutineScope()
+
+    val localUser = allViewModel.localUserData.collectAsState()
 
 
 
@@ -158,28 +161,59 @@ fun MainBottomBar(
                 unselectedContentColor = Color.LightGray,
                 selected = (mainRouteBackStack?.destination?.route) == it.routeName,
                 onClick = {
-                    mainRouteAction.navTo(it)
-                    allViewModel.nowBottomCardValue.value = it.selectValue!!
+                    localUser.value.customId?.let { id ->
+                        if(id.isNotEmpty()) {
+                            mainRouteAction.navTo(it)
+                            allViewModel.nowBottomCardValue.value = it.selectValue!!
+                        } else {
+                            returnAlarmView()
+                        }
+                    } ?: run {
+                        returnAlarmView()
+                }
+
                 }
 
             )
         }
 
-        MainRoute.MyPage.let {
-            it.selectValue
-            BottomNavigationItem(modifier = Modifier.background(Color.White),
-                label = { Text(text = it.title!!) },
+        MainRoute.AnalysisScreen.let { parentRoute ->
+            BottomNavigationItem(
+                modifier = Modifier.background(Color.White),
+                label = { Text(text = parentRoute.title!!) },
                 icon = {
-                    it.iconResId?.let { iconId ->
-                        Icon(painter = painterResource(iconId), contentDescription = it.title)
+                    parentRoute.iconResId?.let { iconId ->
+                        Icon(painter = painterResource(iconId), contentDescription = parentRoute.title)
                     }
                 },
                 selectedContentColor = Color.Black,
                 unselectedContentColor = Color.LightGray,
-                selected = (mainRouteBackStack?.destination?.route) == it.routeName,
+                selected = (mainRouteBackStack?.destination?.route == parentRoute.routeName ||
+                        mainRouteBackStack?.destination?.route in parentRoute.subRoutes),
                 onClick = {
-                    mainRouteAction.navTo(it)
-                    allViewModel.nowBottomCardValue.value = it.selectValue!!
+                    mainRouteAction.navTo(parentRoute)
+                    allViewModel.nowBottomCardValue.value = parentRoute.selectValue!!
+                }
+            )
+        }
+
+
+        MainRoute.MyPage.let { parentRoute ->
+            BottomNavigationItem(
+                modifier = Modifier.background(Color.White),
+                label = { Text(text = parentRoute.title!!) },
+                icon = {
+                    parentRoute.iconResId?.let { iconId ->
+                        Icon(painter = painterResource(iconId), contentDescription = parentRoute.title)
+                    }
+                },
+                selectedContentColor = Color.Black,
+                unselectedContentColor = Color.LightGray,
+                selected = (mainRouteBackStack?.destination?.route == parentRoute.routeName ||
+                        mainRouteBackStack?.destination?.route in parentRoute.subRoutes),
+                onClick = {
+                    mainRouteAction.navTo(parentRoute)
+                    allViewModel.nowBottomCardValue.value = parentRoute.selectValue!!
                 }
             )
         }

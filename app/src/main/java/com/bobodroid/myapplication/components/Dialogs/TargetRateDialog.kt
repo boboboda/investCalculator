@@ -43,11 +43,8 @@ import com.bobodroid.myapplication.components.CustomCard
 import com.bobodroid.myapplication.components.CustomOutLinedTextField
 import com.bobodroid.myapplication.components.addFocusCleaner
 import com.bobodroid.myapplication.components.admobs.showTargetRewardedAdvertisement
-import com.bobodroid.myapplication.models.datamodels.DollarTargetHighRate
-import com.bobodroid.myapplication.models.datamodels.DollarTargetLowRate
 import com.bobodroid.myapplication.models.datamodels.TargetRate
-import com.bobodroid.myapplication.models.datamodels.YenTargetHighRate
-import com.bobodroid.myapplication.models.datamodels.YenTargetLowRate
+import com.bobodroid.myapplication.models.datamodels.TargetRateList
 import com.bobodroid.myapplication.models.viewmodels.AllViewModel
 import com.bobodroid.myapplication.ui.theme.DialogBackgroundColor
 import com.bobodroid.myapplication.ui.theme.TitleCardColor
@@ -57,7 +54,7 @@ import io.grpc.Context
 @Composable
 fun TargetRateDialog(
     onDismissRequest: (Boolean) -> Unit,
-    targetRate: TargetRate,
+    targetRate: TargetRateList,
     currency: String,
     highAndLowState: String,
     context: android.content.Context,
@@ -216,7 +213,7 @@ fun TargetRateDialog(
                                                 Text(
                                                     modifier = Modifier
                                                         .padding(start = 5.dp),
-                                                    text = "목표환율: ${filterDollarHighRate?.first()?.highRate ?: ""}"
+                                                    text = "목표환율: ${filterDollarHighRate?.first()?.rate ?: ""}"
                                                 )
                                             }
                                         }
@@ -316,7 +313,7 @@ fun TargetRateDialog(
                                                 Text(
                                                     modifier = Modifier
                                                         .padding(start = 5.dp),
-                                                    text = "목표환율: ${filterDollarLowRate?.first()?.lowRate ?: ""}"
+                                                    text = "목표환율: ${filterDollarLowRate?.first()?.rate ?: ""}"
                                                 )
                                             }
                                         }
@@ -444,7 +441,7 @@ fun TargetRateDialog(
                                                 Text(
                                                     modifier = Modifier
                                                         .padding(start = 5.dp),
-                                                    text = "목표환율: ${filterYenHighRate?.first()?.highRate ?: ""}"
+                                                    text = "목표환율: ${filterYenHighRate?.first()?.rate ?: ""}"
                                                 )
                                             }
                                         }
@@ -544,7 +541,7 @@ fun TargetRateDialog(
                                                 Text(
                                                     modifier = Modifier
                                                         .padding(start = 5.dp),
-                                                    text = "목표환율: ${filterYenLowRate?.first()?.lowRate ?: ""}"
+                                                    text = "목표환율: ${filterYenLowRate?.first()?.rate ?: ""}"
                                                 )
                                             }
                                         }
@@ -670,9 +667,9 @@ fun TargetRateDialog(
                             when(highAndLowState) {
                                 "고점" -> {
                                     allViewModel.targetRateAdd(
-                                        drHighRate = DollarTargetHighRate(
+                                        drHighRate = TargetRate(
                                             number = highDollarNumber.toInt().plus(1).toString(),
-                                            highRate = rate),
+                                            rate = rate),
                                         drLowRate = null,
                                         yenHighRate = null,
                                         yenLowRate = null
@@ -682,9 +679,9 @@ fun TargetRateDialog(
                                 "저점" -> {
                                     allViewModel.targetRateAdd(
                                         drHighRate = null,
-                                        drLowRate = DollarTargetLowRate(
+                                        drLowRate = TargetRate(
                                             number = lowDollarNumber.toInt().plus(1).toString(),
-                                            lowRate = rate),
+                                            rate = rate),
                                         yenHighRate = null,
                                         yenLowRate = null
                                     )
@@ -696,14 +693,16 @@ fun TargetRateDialog(
                         "엔화"-> {
                             when(highAndLowState) {
                                 "고점" -> {
-                                    allViewModel.targetRateAdd(
-                                        drHighRate = null,
-                                        drLowRate = null,
-                                        yenHighRate = YenTargetHighRate(
-                                            number = highYenNumber.toInt().plus(1).toString(),
-                                            highRate = rate),
-                                        yenLowRate = null
-                                    )
+                                    allViewModel.run {
+                                        targetRateAdd(
+                                                                        drHighRate = null,
+                                                                        drLowRate = null,
+                                                                        yenHighRate = TargetRate(
+                                                                            number = highYenNumber.toInt().plus(1).toString(),
+                                                                            rate = rate),
+                                                                        yenLowRate = null
+                                                                    )
+                                    }
                                     onClicked?.invoke()
                                 }
                                 "저점" -> {
@@ -711,9 +710,9 @@ fun TargetRateDialog(
                                         drHighRate = null,
                                         drLowRate = null,
                                         yenHighRate = null,
-                                        yenLowRate = YenTargetLowRate(
+                                        yenLowRate = TargetRate(
                                             number = lowYenNumber.toInt().plus(1).toString(),
-                                            lowRate = rate)
+                                            rate = rate)
                                     )
                                     onClicked?.invoke()
                                 }

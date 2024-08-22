@@ -34,30 +34,32 @@ import com.bobodroid.myapplication.ui.theme.TopButtonInColor
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun Buttons(
-    label: String,
     onClicked: (() -> Unit)?,
     color: Color, fontColor: Color,
     enabled: Boolean = true, modifier: Modifier,
-    fontSize: Int
+    label: @Composable () -> Unit,
 ) {
     Button(
         colors = ButtonDefaults.buttonColors(
             containerColor = color,
             contentColor = fontColor,
-            disabledContentColor = Color.White,
-            disabledContainerColor = Color.Gray
+            disabledContentColor = Color.LightGray,
+            disabledContainerColor = Color.White
         ),
         modifier = modifier,
         shape = RoundedCornerShape(5.dp),
         enabled = enabled,
         onClick = { onClicked?.invoke() })
     {
-        Text(
-            text = label,
-            fontSize = fontSize.sp,
-            textAlign = TextAlign.Center,
-            modifier = Modifier.padding(0.dp)
-        )
+
+        label()
+
+//        Text(
+//            text = label,
+//            fontSize = fontSize.sp,
+//            textAlign = TextAlign.Center,
+//            modifier = Modifier.padding(0.dp)
+//        )
     }
 }
 

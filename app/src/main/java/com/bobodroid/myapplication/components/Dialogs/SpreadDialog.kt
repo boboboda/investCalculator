@@ -40,11 +40,7 @@ import com.bobodroid.myapplication.MainActivity.Companion.TAG
 import com.bobodroid.myapplication.components.CustomCard
 import com.bobodroid.myapplication.components.CustomOutLinedTextField
 import com.bobodroid.myapplication.components.addFocusCleaner
-import com.bobodroid.myapplication.models.datamodels.DollarTargetHighRate
-import com.bobodroid.myapplication.models.datamodels.DollarTargetLowRate
 import com.bobodroid.myapplication.models.datamodels.TargetRate
-import com.bobodroid.myapplication.models.datamodels.YenTargetHighRate
-import com.bobodroid.myapplication.models.datamodels.YenTargetLowRate
 import com.bobodroid.myapplication.models.viewmodels.AllViewModel
 import com.bobodroid.myapplication.ui.theme.DialogBackgroundColor
 import com.bobodroid.myapplication.ui.theme.TitleCardColor

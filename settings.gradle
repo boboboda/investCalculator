@@ -3,6 +3,7 @@ pluginManagement {
         gradlePluginPortal()
         google()
         mavenCentral()
+        maven { url "https://www.jitpack.io" }
     }
     resolutionStrategy {
         eachPlugin {
@@ -11,14 +12,16 @@ pluginManagement {
             }
         }
     }
-
 }
+
 dependencyResolutionManagement {
-    repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+    repositoriesMode.set(RepositoriesMode.PREFER_SETTINGS) // 프로젝트 수준 리포지토리 우선
     repositories {
         google()
         mavenCentral()
+        maven { url "https://www.jitpack.io" }
     }
 }
-rootProject.name = "Inverst Calculator"
+
+rootProject.name = "InvestCalculator"
 include ':app'

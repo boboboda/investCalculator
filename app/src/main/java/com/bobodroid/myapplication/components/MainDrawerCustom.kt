@@ -124,11 +124,6 @@ fun DrawerCustom(
     val id =
         if (localUser.value.customId.isNullOrEmpty()) localUser.value.id else localUser.value.customId
 
-    val webIntent = Intent(context, WebActivity::class.java)
-    webIntent.putExtra("url", "https://cobusil.vercel.app")
-
-    val webPostIntent = Intent(context, WebActivity::class.java)
-    webPostIntent.putExtra("url", "https://cobusil.vercel.app/release/postBoard/dollarRecord")
 
     var selectedCurrency by remember { mutableStateOf("달러") }
 
@@ -788,7 +783,7 @@ fun DrawerCustom(
                 chargeDialog.value = it
             }) {
                 showInterstitial(context) {
-                    allViewModel.chargeChance()
+//                    allViewModel.chargeChance()
 
                     chargeDialog.value = false
                 }
@@ -806,30 +801,7 @@ fun DrawerCustom(
                 })
         }
 
-        if (customDialog) {
-            CustomIdDialog(
-                onDismissRequest = {
-                    customDialog = it
-                },
-                placeholder = "커스텀 아이디를 입력해주세요",
-                buttonLabel = "확인",
-                onClicked = { customId, pin ->
-                    allViewModel.idCustom(customId, pin) { resultMessage ->
 
-                        coroutineScope.launch {
-                            customDialog = false
-                            drawerState.close()
-                            mainScreenSnackBarHostState.showSnackbar(
-                                resultMessage,
-                                actionLabel = "닫기", SnackbarDuration.Short
-                            )
-                        }
-
-                    }
-
-                },
-            )
-        }
 
         if (cloudLoadDialog) {
             AskTriggerDialog(
@@ -911,7 +883,7 @@ fun DrawerCustom(
                 placeholder = "아이디를 입력해주세요",
                 buttonLabel = "확인",
                 onClicked = { cloudId, pin ->
-                    allViewModel.findCustomId(cloudId, pin) { resultMessage ->
+                    allViewModel.logIn(cloudId, pin) { resultMessage ->
                         coroutineScope.launch {
                             findIdDialog = false
                             drawerState.close()
@@ -1009,7 +981,7 @@ fun DrawerCustom(
                 CardButton(
                     label = "공식사이트",
                     onClicked = {
-                        ContextCompat.startActivity(context, webIntent, null)
+
                     },
                     fontSize = 15,
                     modifier = Modifier
@@ -1023,7 +995,6 @@ fun DrawerCustom(
                     label = "문의게시판",
                     onClicked = {
 
-                        ContextCompat.startActivity(context, webPostIntent, null)
                     },
                     fontSize = 15,
                     modifier = Modifier

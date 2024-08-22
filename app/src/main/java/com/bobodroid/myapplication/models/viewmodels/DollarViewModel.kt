@@ -98,7 +98,6 @@ class DollarViewModel @Inject constructor(private val investRepository: InvestRe
 
 
         if (!sellRecord.isNullOrEmpty() && !buyRecord.isNullOrEmpty()) {
-            Log.d(TAG, "매도 리스트 ${sellRecord}, ${buyRecord}")
             buyRecord.forEach { buy ->
                 if (buy.buyDrCategoryName.isNullOrEmpty()) buy.buyDrCategoryName =
                     "미지정"
@@ -481,7 +480,7 @@ class DollarViewModel @Inject constructor(private val investRepository: InvestRe
 
                     Log.d(TAG, "기존 데이터 profit 추가 실행")
 
-                    val resentRate = exchangeRate.exchangeRates?.usd
+                    val resentRate = exchangeRate.usd
 
                     if (resentRate.isNullOrEmpty()) {
                         Log.d(TAG, "calculateProfit 최신 값 받아오기 실패")
@@ -510,7 +509,7 @@ class DollarViewModel @Inject constructor(private val investRepository: InvestRe
                 } else {
                     Log.d(TAG, "업데이트 데이터 profit 실행")
 
-                    val resentRate = exchangeRate.exchangeRates?.usd
+                    val resentRate = exchangeRate.usd
 
                     if (resentRate.isNullOrEmpty()) {
                         Log.d(TAG, "calculateProfit 최신 값 받아오기 실패")
@@ -616,7 +615,7 @@ class DollarViewModel @Inject constructor(private val investRepository: InvestRe
 
     fun expectSellValue(): String {
 
-        val resentUsRate = drResentRateStateFlow.value.exchangeRates?.usd
+        val resentUsRate = drResentRateStateFlow.value.usd
 
         val profit = ((BigDecimal(exchangeMoney.value).times(BigDecimal(resentUsRate)))
             .setScale(20, RoundingMode.HALF_UP)

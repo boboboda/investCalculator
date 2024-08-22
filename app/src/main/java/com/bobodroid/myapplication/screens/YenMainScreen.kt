@@ -1,5 +1,6 @@
 package com.bobodroid.myapplication.screens
 
+import android.util.Log
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -38,6 +39,7 @@ import com.bobodroid.myapplication.models.viewmodels.YenViewModel
 import com.bobodroid.myapplication.routes.InvestRouteAction
 import java.text.SimpleDateFormat
 import androidx.compose.material.SnackbarHost
+import com.bobodroid.myapplication.components.admobs.BannerAd
 import com.bobodroid.myapplication.lists.yenList.TotalYenRecordBox
 
 
@@ -54,19 +56,6 @@ fun YenMainScreen
 
     val visibleIcon = if (hideSellRecordState)  R.drawable.ic_visible  else  R.drawable.ic_invisible
 
-    val dropdownMenuName = when (selectedBoxId.value) {
-        1 -> {
-            "종합형"
-        }
-
-        2 -> {
-            "매도"
-        }
-
-        else -> {
-            "오류"
-        }
-    }
 
     var dropdownExpanded by remember { mutableStateOf(false) }
 
@@ -75,6 +64,10 @@ fun YenMainScreen
     val snackbarHostState = remember { SnackbarHostState() }
 
     val focusManager = LocalFocusManager.current
+
+    val totalYenSellProfit = yenViewModel.totalSellProfit.collectAsState()
+
+    val bannerState = allViewModel.deleteBannerStateFlow.collectAsState()
 
     Column(
         modifier = Modifier
@@ -85,95 +78,23 @@ fun YenMainScreen
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 30.dp)
-                .padding(bottom = 5.dp),
+                .padding(horizontal = 10.dp)
+                .padding(bottom = 5.dp)
+                .padding(end = 10.dp),
             horizontalArrangement = Arrangement.Start,
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Box(
-                modifier = Modifier
-                    .wrapContentSize(Alignment.TopEnd)
-            ) {
-                Card(
-                    colors = CardDefaults.cardColors(WelcomeScreenBackgroundColor),
-                    elevation = CardDefaults.cardElevation(8.dp),
-                    shape = RoundedCornerShape(1.dp),
-                    modifier = Modifier
-                        .height(40.dp)
-                        .wrapContentWidth(),
-                    onClick = {
-                        if (!dropdownExpanded) dropdownExpanded = true else dropdownExpanded = false
-                    }) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxHeight()
-                            .wrapContentWidth()
-                            .padding(horizontal = 10.dp),
-                        horizontalArrangement = Arrangement.Center,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(text = dropdownMenuName)
 
-                        Icon(imageVector = Icons.Rounded.KeyboardArrowDown, contentDescription = "")
-                    }
-                }
-                DropdownMenu(
-                    scrollState = rememberScrollState(),
-                    modifier = Modifier
-                        .wrapContentHeight()
-                        .background(Color.White)
-                        .heightIn(max = 200.dp)
-                        .width(100.dp),
-                    offset = DpOffset(x = 0.dp, y = 10.dp),
-                    expanded = dropdownExpanded,
-                    onDismissRequest = {
-                        dropdownExpanded = false
-                    }
-                ) {
-                    DropdownMenuItem(
-                        modifier = Modifier
-                            .fillMaxWidth(),
-                        text = {
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxWidth(),
-                                contentAlignment = Alignment.TopStart
-                            ) {
-                                Text(
-                                    text = "종합형",
-                                    color = Color.Black,
-                                    fontSize = 13.sp
-                                )
-                            }
-                        }, onClick = {
-                            yenViewModel.selectedBoxId.value = 1
-                            dropdownExpanded = false
-                        })
-
-                    DropdownMenuItem(
-                        modifier = Modifier
-                            .fillMaxWidth(),
-                        text = {
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxWidth(),
-                                contentAlignment = Alignment.TopStart
-                            ) {
-                                Text(
-                                    text = "매도",
-                                    color = Color.Black,
-                                    fontSize = 13.sp
-                                )
-                            }
-                        }, onClick = {
-                            yenViewModel.selectedBoxId.value = 2
-                            dropdownExpanded = false
-                        })
-
-                }
-
+            Column(modifier = Modifier
+                .wrapContentWidth()
+                .padding(end = 20.dp)) {
+                GetMoneyView(
+                    getMoney = "${totalYenSellProfit.value}",
+                    onClicked = { Log.d(TAG, "") },
+                    allViewModel
+                )
             }
-
+            
             Spacer(modifier = Modifier.weight(1f))
 
             Card(
@@ -203,6 +124,19 @@ fun YenMainScreen
                 }
             }
 
+        }
+
+        if(!bannerState.value) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth(),
+                verticalArrangement = Arrangement.Center,
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+
+                BannerAd()
+
+            }
         }
 
         Row(

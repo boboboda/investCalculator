@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.TextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -31,6 +32,8 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.bobodroid.myapplication.components.Buttons
 import com.bobodroid.myapplication.ui.theme.SellButtonColor
+import androidx.compose.material.OutlinedTextField
+import androidx.compose.ui.text.input.KeyboardType
 
 @Composable
 fun TextFieldDialog(
@@ -39,6 +42,9 @@ fun TextFieldDialog(
     placeholder: String,
     onClicked: (String) -> Unit,
     closeButtonLabel: String,
+    keyboardType: KeyboardType = KeyboardType.Text,
+    textContent: (@Composable () -> Unit)? = null,
+
 ) {
 
     var userInput by remember { mutableStateOf("") }
@@ -61,11 +67,17 @@ fun TextFieldDialog(
             verticalArrangement = Arrangement.Center
         ) {
 
-            androidx.compose.material.OutlinedTextField(
+            textContent?.let {
+                textContent()
+            }
+
+
+            OutlinedTextField(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(50.dp)
                     .padding(horizontal = 10.dp),
+                keyboardOptions = KeyboardOptions(keyboardType = keyboardType),
                 placeholder = {
                     Text(text = placeholder)
                 },
@@ -92,8 +104,7 @@ fun TextFieldDialog(
                     .fillMaxWidth(),
                 horizontalArrangement = Arrangement.Center
             ) {
-                Buttons(label = onClickedLabel,
-                    onClicked = {
+                Buttons(onClicked = {
                         onClicked.invoke(userInput)
                                 userInput = ""
                                 },
@@ -102,18 +113,22 @@ fun TextFieldDialog(
                     fontColor = Color.White,
                     modifier = Modifier
                         .height(40.dp)
-                        .width(80.dp),
-                    fontSize = 15)
+                        .width(80.dp))
+                {
+                    Text(text = onClickedLabel, fontSize = 15.sp)
+                }
+
                 Spacer(modifier = Modifier.width(25.dp))
 
-                Buttons(label = closeButtonLabel,
+                Buttons(
                     onClicked = {onDismissRequest(false)},
                     color = SellButtonColor,
                     fontColor = Color.White,
                     modifier = Modifier
                         .height(40.dp)
-                        .wrapContentSize()
-                    , fontSize = 15)
+                        .wrapContentSize()) {
+                    Text(text = closeButtonLabel, fontSize = 15.sp)
+                }
             }
         }
     }

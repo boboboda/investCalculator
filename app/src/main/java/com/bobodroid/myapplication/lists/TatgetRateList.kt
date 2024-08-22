@@ -216,7 +216,7 @@ fun TargetRateList(
                                             .padding(start = 10.dp, bottom = 10.dp, top = 10.dp),
                                         verticalArrangement = Arrangement.spacedBy(5.dp)
                                     ) {
-                                        Text(text = "목표환율: ${filterHighDrData?.firstOrNull()?.highRate ?: ""}")
+                                        Text(text = "목표환율: ${filterHighDrData?.firstOrNull()?.rate ?: ""}")
                                     }
                                 }
                             }
@@ -254,7 +254,7 @@ fun TargetRateList(
                                             .padding(start = 10.dp, bottom = 10.dp, top = 10.dp),
                                         verticalArrangement = Arrangement.spacedBy(5.dp)
                                     ) {
-                                        Text(text = "목표환율: ${filterLowDrData?.firstOrNull()?.lowRate ?: ""}")
+                                        Text(text = "목표환율: ${filterLowDrData?.firstOrNull()?.rate ?: ""}")
                                     }
                                 }
                             }
@@ -305,7 +305,7 @@ fun TargetRateList(
                                             .padding(start = 10.dp, bottom = 10.dp, top = 10.dp),
                                         verticalArrangement = Arrangement.spacedBy(5.dp)
                                     ) {
-                                        Text(text = "목표환율: ${filterHighYenData?.firstOrNull()?.highRate ?: ""}")
+                                        Text(text = "목표환율: ${filterHighYenData?.firstOrNull()?.rate ?: ""}")
                                     }
                                 }
                             }
@@ -343,7 +343,7 @@ fun TargetRateList(
                                             .padding(start = 10.dp, bottom = 10.dp, top = 10.dp),
                                         verticalArrangement = Arrangement.spacedBy(5.dp)
                                     ) {
-                                        Text(text = "목표환율: ${filterLowYenData?.firstOrNull()?.lowRate ?: ""}")
+                                        Text(text = "목표환율: ${filterLowYenData?.firstOrNull()?.rate ?: ""}")
                                     }
                                 }
                             }

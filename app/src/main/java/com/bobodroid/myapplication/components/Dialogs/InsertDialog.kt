@@ -159,7 +159,6 @@ fun InsertDialog(
                             horizontalArrangement = Arrangement.Center
                         ) {
                             Buttons(
-                                label = "수정",
                                 onClicked = {
                                     onClicked.invoke(date, userMoneyInput ?: "0", userRateInput ?: "0")
                                 },
@@ -169,19 +168,21 @@ fun InsertDialog(
                                 modifier = Modifier
                                     .height(40.dp)
                                     .width(80.dp),
-                                fontSize = 15
-                            )
+                            ) {
+                                Text(text = "수정", fontSize = 15.sp)
+                            }
                             Spacer(modifier = Modifier.width(25.dp))
 
                             Buttons(
-                                label = "닫기",
                                 onClicked = { onDismissRequest(false) },
                                 color = SellButtonColor,
                                 fontColor = Color.White,
                                 modifier = Modifier
                                     .height(40.dp)
-                                    .width(80.dp), fontSize = 15
-                            )
+                                    .width(80.dp)
+                            ) {
+                                Text(text = "닫기", fontSize = 15.sp)
+                            }
                         }
 
                     }
@@ -337,7 +338,6 @@ fun InsertDialog(
                             horizontalArrangement = Arrangement.Center
                         ) {
                             Buttons(
-                                label = "수정",
                                 onClicked = {
                                     onClicked.invoke(date, userMoneyInput ?: "0", userRateInput ?: "0")
                                 },
@@ -346,20 +346,23 @@ fun InsertDialog(
                                 fontColor = Color.White,
                                 modifier = Modifier
                                     .height(40.dp)
-                                    .width(80.dp),
-                                fontSize = 15
-                            )
+                                    .width(80.dp)
+                            ) {
+                                Text(text = "수정", fontSize = 15.sp)
+                            }
+
                             Spacer(modifier = Modifier.width(25.dp))
 
                             Buttons(
-                                label = "닫기",
                                 onClicked = { onDismissRequest(false) },
                                 color = SellButtonColor,
                                 fontColor = Color.White,
                                 modifier = Modifier
                                     .height(40.dp)
-                                    .width(80.dp), fontSize = 15
-                            )
+                                    .width(80.dp)
+                            ) {
+                                Text(text = "닫기", fontSize = 15.sp)
+                            }
                         }
 
                     }
@@ -515,7 +518,6 @@ fun InsertDialog(
                             horizontalArrangement = Arrangement.Center
                         ) {
                             Buttons(
-                                label = "수정",
                                 onClicked = {
                                     onClicked.invoke(date, userMoneyInput ?: "0", userRateInput ?: "0")
                                 },
@@ -525,19 +527,21 @@ fun InsertDialog(
                                 modifier = Modifier
                                     .height(40.dp)
                                     .width(80.dp),
-                                fontSize = 15
-                            )
+                            ) {
+                                Text(text = "수정", fontSize = 15.sp)
+                            }
                             Spacer(modifier = Modifier.width(25.dp))
 
                             Buttons(
-                                label = "닫기",
                                 onClicked = { onDismissRequest(false) },
                                 color = SellButtonColor,
                                 fontColor = Color.White,
                                 modifier = Modifier
                                     .height(40.dp)
-                                    .width(80.dp), fontSize = 15
-                            )
+                                    .width(80.dp)
+                            ) {
+                                Text(text = "닫기", fontSize = 15.sp)
+                            }
                         }
 
                     }

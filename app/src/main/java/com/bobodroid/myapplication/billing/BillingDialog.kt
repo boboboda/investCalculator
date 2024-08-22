@@ -68,7 +68,7 @@ fun BillingDialog(
                     .fillMaxWidth(),
                 horizontalArrangement = Arrangement.Center
             ) {
-                Buttons(label = "구독",
+                Buttons(
                     onClicked = {
                         onPurchaseButtonClicked.invoke(productItem)
                     },
@@ -77,18 +77,20 @@ fun BillingDialog(
                     fontColor = Color.White,
                     modifier = Modifier
                         .height(40.dp)
-                        .width(80.dp),
-                    fontSize = 15)
+                        .width(80.dp)) {
+                    Text(text = "구독", fontSize = 15.sp)
+                }
                 Spacer(modifier = Modifier.width(25.dp))
 
-                Buttons(label = "아니요",
+                Buttons(
                     onClicked = {onDismissRequest(false)},
                     color = SellButtonColor,
                     fontColor = Color.White,
                     modifier = Modifier
                         .height(40.dp)
-                        .wrapContentSize()
-                    , fontSize = 15)
+                        .wrapContentSize()) {
+                    Text(text = "아니요", fontSize = 15.sp)
+                }
             }
         }
     }

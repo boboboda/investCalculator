@@ -1,6 +1,7 @@
 package com.bobodroid.myapplication.routes
 
 import androidx.navigation.NavHostController
+import com.bobodroid.myapplication.R
 
 
 enum class InvestRoute(val route: String, val routName: String) {
@@ -36,11 +37,19 @@ sealed class MainRoute(
     open val routeName: String? = null,
     open val title: String? = null,
     open val selectValue: Int? = null,
-    open val iconResId: Int? = null
+    open val iconResId: Int? = null,
+    open val subRoutes: List<String> = emptyList()
 ) {
-    object Main: MainRoute("Main", "홈", 1 )
-    object Alert: MainRoute("Data","데이터",2)
-    object MyPage: MainRoute("Draw","뽑기", 3)
+    object Main: MainRoute("Main", "홈", 1, iconResId = R.drawable.edit_06)
+    object Alert: MainRoute("Alert", "알람", 2, iconResId = R.drawable.alarm)
+    object AnalysisScreen: MainRoute("Analysis", "분석", 3, iconResId = R.drawable.baseline_bar_chart_24)
+    object MyPage: MainRoute("MyPage", "마이페이지", 4, iconResId = R.drawable.user, subRoutes = listOf("CreateUser", "CustomerServiceCenter", "CloudService"))
+
+    object CreateUser: MainRoute("CreateUser", "유저생성")
+    object CustomerServiceCenter: MainRoute("CustomerServiceCenter", "고객센터")
+    object CloudService: MainRoute("CloudService", "클라우드")
+
+
 
 //    object Notice: MainRoute("Notice", "게시판")
 //    object Write: MainRoute("Write", "글쓰기")

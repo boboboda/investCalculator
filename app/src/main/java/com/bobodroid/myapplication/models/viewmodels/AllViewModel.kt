@@ -6,21 +6,20 @@ import androidx.compose.runtime.remember
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.bobodroid.myapplication.MainActivity.Companion.TAG
+import com.bobodroid.myapplication.extensions.toDate
+import com.bobodroid.myapplication.extensions.toDateTime
 import com.bobodroid.myapplication.models.datamodels.CloudUserData
-import com.bobodroid.myapplication.models.datamodels.DollarTargetHighRate
-import com.bobodroid.myapplication.models.datamodels.DollarTargetLowRate
 import com.bobodroid.myapplication.models.datamodels.DrBuyRecord
 import com.bobodroid.myapplication.models.datamodels.DrSellRecord
 import com.bobodroid.myapplication.models.datamodels.ExchangeRate
 import com.bobodroid.myapplication.models.datamodels.InvestRepository
 import com.bobodroid.myapplication.models.datamodels.LocalUserData
 import com.bobodroid.myapplication.models.datamodels.TargetRate
+import com.bobodroid.myapplication.models.datamodels.TargetRateList
 import com.bobodroid.myapplication.models.datamodels.WonBuyRecord
 import com.bobodroid.myapplication.models.datamodels.WonSellRecord
 import com.bobodroid.myapplication.models.datamodels.YenBuyRecord
 import com.bobodroid.myapplication.models.datamodels.YenSellRecord
-import com.bobodroid.myapplication.models.datamodels.YenTargetHighRate
-import com.bobodroid.myapplication.models.datamodels.YenTargetLowRate
 import com.bobodroid.myapplication.models.datamodels.service.NoticeApi
 import com.bobodroid.myapplication.util.InvestApplication
 import com.google.firebase.firestore.Query
@@ -31,6 +30,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.last
 import kotlinx.coroutines.launch
 import java.io.IOException
 import java.math.BigDecimal
@@ -38,6 +38,7 @@ import java.math.RoundingMode
 import java.text.SimpleDateFormat
 import java.time.LocalDate
 import java.time.LocalDateTime
+import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 import java.util.Calendar
 import java.util.Date
@@ -71,28 +72,41 @@ class AllViewModel @Inject constructor(
 
     val alarmPermissionState = MutableStateFlow(false)
 
-    val _targetRate = MutableStateFlow(TargetRate())
+    val _targetRate = MutableStateFlow(TargetRateList())
 
     val targetRateFlow = _targetRate.asStateFlow()
 
     val onReadyRewardAd = MutableStateFlow(false)
 
+    val deleteBannerStateFlow = MutableStateFlow(false)
+
+
+
     init{
-        viewModelScope.launch {
+        viewModelScope.launch() {
             onReadyRewardAd.collect {isReady ->
                 if(isReady) {
+
+                    rewardIsReadyStateFlow.value = true
+
                     rewardAdState(localUserData.value)
+
+                    bannerAdState(localUserData.value)
                 }
             }
         }
+
+        loadLocalRate()
     }
+
+    val rewardIsReadyStateFlow = MutableStateFlow(false)
 
     // 목표 환율 추가
     fun targetRateAdd(
-        drHighRate: DollarTargetHighRate?,
-        drLowRate: DollarTargetLowRate?,
-        yenHighRate: YenTargetHighRate?,
-        yenLowRate: YenTargetLowRate?
+        drHighRate: TargetRate? = null,
+        drLowRate: TargetRate? = null,
+        yenHighRate: TargetRate? = null,
+        yenLowRate: TargetRate? = null
     ) {
         if(drHighRate != null) {
 
@@ -103,7 +117,7 @@ class AllViewModel @Inject constructor(
             val addRateData = targetRateFlow.value.copy(
                 customId = localUserData.value.customId,
                 fcmToken = localUserData.value.fcmToken,
-                dollarHighRateList = updateDollarRateList?.let { sortTargetRateList(type="달러고점", it) } as List<DollarTargetHighRate>
+                dollarHighRateList = updateDollarRateList?.let { sortTargetRateList(type="달러고점", it) } as List<TargetRate>
             )
             db.collection("userTargetRate").document(localUserData.value.customId!!)
                 .set(addRateData.asHasMap())
@@ -120,7 +134,7 @@ class AllViewModel @Inject constructor(
             val addRateData = targetRateFlow.value.copy(
                 customId = localUserData.value.customId,
                 fcmToken = localUserData.value.fcmToken,
-                dollarLowRateList = updateDollarRateList?.let { sortTargetRateList(type="달러저점", it) } as List<DollarTargetLowRate>
+                dollarLowRateList = updateDollarRateList?.let { sortTargetRateList(type="달러저점", it) } as List<TargetRate>
             )
             db.collection("userTargetRate").document(localUserData.value.customId!!)
                 .set(addRateData.asHasMap())
@@ -137,7 +151,7 @@ class AllViewModel @Inject constructor(
             val addRateData = targetRateFlow.value.copy(
                 customId = localUserData.value.customId,
                 fcmToken = localUserData.value.fcmToken,
-                yenHighRateList = updateYenRateList?.let { sortTargetRateList(type="엔화고점", it) } as List<YenTargetHighRate>
+                yenHighRateList = updateYenRateList?.let { sortTargetRateList(type="엔화고점", it) } as List<TargetRate>
             )
             db.collection("userTargetRate").document(localUserData.value.customId!!)
                 .set(addRateData.asHasMap())
@@ -154,7 +168,7 @@ class AllViewModel @Inject constructor(
             val addRateData = targetRateFlow.value.copy(
                 customId = localUserData.value.customId,
                 fcmToken = localUserData.value.fcmToken,
-                yenLowRateList = updateYenRateList?.let { sortTargetRateList(type="엔화저점", it) } as List<YenTargetLowRate>
+                yenLowRateList = updateYenRateList?.let { sortTargetRateList(type="엔화저점", it) } as List<TargetRate>
             )
             db.collection("userTargetRate").document(localUserData.value.customId!!)
                 .set(addRateData.asHasMap())
@@ -167,10 +181,10 @@ class AllViewModel @Inject constructor(
 
     // 목표 환율 삭제
     fun targetRateRemove(
-        drHighRate: DollarTargetHighRate?,
-        drLowRate: DollarTargetLowRate?,
-        yenHighRate: YenTargetHighRate?,
-        yenLowRate: YenTargetLowRate?
+        drHighRate: TargetRate? = null,
+        drLowRate: TargetRate? = null,
+        yenHighRate: TargetRate? = null,
+        yenLowRate: TargetRate? = null
     ) {
         if(drHighRate != null) {
 
@@ -181,7 +195,7 @@ class AllViewModel @Inject constructor(
             val removeRateData = targetRateFlow.value.copy(
                 customId = localUserData.value.customId,
                 fcmToken = localUserData.value.fcmToken,
-                dollarHighRateList = updateDollarRateList?.let { sortTargetRateList(type="달러고점", it) } as List<DollarTargetHighRate>
+                dollarHighRateList = updateDollarRateList?.let { sortTargetRateList(type="달러고점", it) } as List<TargetRate>
             )
             db.collection("userTargetRate").document(localUserData.value.customId!!)
                 .set(removeRateData.asHasMap())
@@ -198,7 +212,7 @@ class AllViewModel @Inject constructor(
             val removeRateData = targetRateFlow.value.copy(
                 customId = localUserData.value.customId,
                 fcmToken = localUserData.value.fcmToken,
-                dollarLowRateList = updateDollarRateList?.let { sortTargetRateList(type="달러저점", it) } as List<DollarTargetLowRate>
+                dollarLowRateList = updateDollarRateList?.let { sortTargetRateList(type="달러저점", it) } as List<TargetRate>
             )
             db.collection("userTargetRate").document(localUserData.value.customId!!)
                 .set(removeRateData.asHasMap())
@@ -215,7 +229,7 @@ class AllViewModel @Inject constructor(
             val removeRateData = targetRateFlow.value.copy(
                 customId = localUserData.value.customId,
                 fcmToken = localUserData.value.fcmToken,
-                yenHighRateList = updateYenRateList?.let { sortTargetRateList(type="엔화고점", it) } as List<YenTargetHighRate>
+                yenHighRateList = updateYenRateList?.let { sortTargetRateList(type="엔화고점", it) } as List<TargetRate>
             )
             db.collection("userTargetRate").document(localUserData.value.customId!!)
                 .set(removeRateData.asHasMap())
@@ -232,7 +246,7 @@ class AllViewModel @Inject constructor(
             val removeRateData = targetRateFlow.value.copy(
                 customId = localUserData.value.customId,
                 fcmToken = localUserData.value.fcmToken,
-                yenLowRateList = updateYenRateList?.let { sortTargetRateList(type="엔화저점", it) } as List<YenTargetLowRate>
+                yenLowRateList = updateYenRateList?.let { sortTargetRateList(type="엔화저점", it) } as List<TargetRate>
             )
             db.collection("userTargetRate").document(localUserData.value.customId!!)
                 .set(removeRateData.asHasMap())
@@ -249,9 +263,9 @@ class AllViewModel @Inject constructor(
 
         when(type) {
             "달러고점" -> {
-                rateList as List<DollarTargetHighRate>
+                rateList as List<TargetRate>
 
-                var sortList = rateList.sortedByDescending { it.highRate }
+                var sortList = rateList.sortedByDescending { it.rate }
 
                 sortList = sortList.mapIndexed { index, element ->
                     element.copy(number = "${index + 1}") }.toMutableList()
@@ -259,9 +273,9 @@ class AllViewModel @Inject constructor(
                 return sortList
             }
             "달러저점" -> {
-                rateList as List<DollarTargetLowRate>
+                rateList as List<TargetRate>
 
-                var sortList = rateList.sortedByDescending { it.lowRate }
+                var sortList = rateList.sortedByDescending { it.rate }
 
                 sortList = sortList.mapIndexed { index, element ->
                     element.copy(number = "${index + 1}") }.toMutableList()
@@ -269,9 +283,9 @@ class AllViewModel @Inject constructor(
                 return sortList
             }
             "엔화고점" -> {
-                rateList as List<YenTargetHighRate>
+                rateList as List<TargetRate>
 
-                var sortList = rateList.sortedByDescending { it.highRate }
+                var sortList = rateList.sortedByDescending { it.rate }
 
                 sortList = sortList.mapIndexed { index, element ->
                     element.copy(number = "${index + 1}") }.toMutableList()
@@ -279,9 +293,9 @@ class AllViewModel @Inject constructor(
                 return sortList
             }
             "엔화저점" -> {
-                rateList as List<YenTargetLowRate>
+                rateList as List<TargetRate>
 
-                var sortList = rateList.sortedByDescending { it.lowRate }
+                var sortList = rateList.sortedByDescending { it.rate }
 
                 sortList = sortList.mapIndexed { index, element ->
                     element.copy(number = "${index + 1}") }.toMutableList()
@@ -296,13 +310,13 @@ class AllViewModel @Inject constructor(
 
 
     // 목표 환율 로딩
-    fun targetRateLoad(customId: String, targetRateData: (TargetRate, resultMessage: String) -> Unit) {
+    fun targetRateLoad(customId: String, targetRateData: (TargetRateList, resultMessage: String) -> Unit) {
         db.collection("userTargetRate")
             .whereEqualTo("customId", customId)
             .addSnapshotListener { querySnapShot, e ->
 
                 if(querySnapShot != null) {
-                    val data = TargetRate(querySnapShot)
+                    val data = TargetRateList(querySnapShot)
 
                     targetRateData.invoke(data, "알람설정을 성공적으로 불러왔습니다.")
 
@@ -330,8 +344,10 @@ class AllViewModel @Inject constructor(
             if (todayDateFlow.value > localUserDate.rewardAdShowingDate!!) {
                 Log.d(TAG, "오늘 날짜가 더 큽니다.")
                 rewardShowDialog.value = true
+
             } else {
                 Log.d(TAG, "연기된 날짜가 더 큽니다.")
+
             }
         } else {
             Log.d(TAG, "날짜 값이 없습니다.")
@@ -352,6 +368,46 @@ class AllViewModel @Inject constructor(
             investRepository.localUserUpdate(updateUserData)
 
             Log.d(TAG, "딜레이리워드날짜: ${localUserData.value.rewardAdShowingDate}")
+        }
+    }
+
+
+    //배너 삭제
+    private fun bannerAdState(localUserDate: LocalUserData) {
+
+        Log.d(TAG, "배너 광고 제거 연기날짜: ${localUserDate.userResetDate} 오늘날짜: ${todayDateFlow.value}")
+
+        // 닫기 후 호출 방지
+
+        localUserDate.userResetDate?.let {
+            if (todayDateFlow.value > localUserDate.userResetDate!!) {
+                Log.d(TAG, "오늘 날짜가 더 큽니다.")
+            } else {
+                Log.d(TAG, "연기된 날짜가 더 큽니다.")
+                deleteBannerStateFlow.value = true
+            }
+        } ?: run {
+            Log.d(TAG, "날짜 값이 없습니다.")
+        }
+    }
+
+
+    // 배너 광고 제거 딜레이
+    fun deleteBannerDelayDate(localUser: LocalUserData) {
+        viewModelScope.launch {
+
+            Log.d(TAG, "날짜 연기 신청")
+
+            val updateUserData = localUser.copy(
+                userResetDate = delayDate(inputDate = todayDateFlow.value, delayDay = 1)
+            )
+
+            investRepository.localUserUpdate(updateUserData)
+
+            Log.d(TAG, "배너광고 삭제 딜레이리워드날짜: ${localUserData.value.userResetDate}")
+
+            deleteBannerStateFlow.value = true
+
         }
     }
 
@@ -433,7 +489,7 @@ class AllViewModel @Inject constructor(
             Log.d(TAG, "로컬 유저 생성 실행")
 
             val createLocalUser = LocalUserData(
-                userResetDate = todayDateFlow.value,
+                userResetDate = "",
                 rateAdCount = 0,
                 rateResetCount = 3
             )
@@ -511,8 +567,17 @@ class AllViewModel @Inject constructor(
 
 
 
+    // 환율 관련
     // 항상 최신 값 가지고 있음
     val recentExChangeRateFlow = MutableStateFlow(ExchangeRate())
+
+    val totalExchangeRate = MutableStateFlow<List<ExchangeRate>>(emptyList())
+
+    // 현재 날짜와 시각
+    val nowDateTimeFlow = MutableStateFlow(LocalDateTime.now().toString())
+
+    // 오늘 자정의 시각
+    val midnightDateTimeFlow = MutableStateFlow(LocalDateTime.now().with(LocalTime.MIDNIGHT).toString())
 
 
     // 최신 환율 불러오기
@@ -527,7 +592,7 @@ class AllViewModel @Inject constructor(
 
                 Log.d(TAG, "localData = ${localUserData.value}")
 
-                resetChance(localData)
+//                resetChance(localData)
 
                 noticeApi { noticeDate ->
                     noticeDialogState(localData, noticeDate)
@@ -562,7 +627,7 @@ class AllViewModel @Inject constructor(
 
                     if (snapshot != null) {
 
-                        val data = ExchangeRate(snapshot)
+                        val data = ExchangeRate.fromQuerySnapshot(snapshot)
 
                         val jpySpread = ""
 
@@ -570,10 +635,12 @@ class AllViewModel @Inject constructor(
 
                         Log.d(TAG, "서버에서 들어온 값 ${data}")
 
-                        response(data, localUserData.value)
+                        data?.let {
+                            response(it, localUserData.value)
 
-                        viewModelScope.launch {
-                            recentExChangeRateFlow.emit(data)
+                            viewModelScope.launch {
+                                recentExChangeRateFlow.emit(it)
+                            }
                         }
 
                     } else {
@@ -584,6 +651,136 @@ class AllViewModel @Inject constructor(
                 }
 
         }
+    }
+
+
+    fun deleteTotalRates() {
+        viewModelScope.launch {
+            investRepository.exchangeRateDataDelete()
+        }
+    }
+    private fun fireStoreNowRateLoad(startOfDay: String, endOfDay: String, result:(List<ExchangeRate>) -> Unit) {
+
+        viewModelScope.launch(Dispatchers.IO) {
+            db.collection("exchangeRates")
+                .whereGreaterThanOrEqualTo("createAt", startOfDay)
+                .whereLessThan("createAt", endOfDay)
+                .orderBy("createAt", Query.Direction.DESCENDING)
+                .get()
+                .addOnSuccessListener { snapshot  ->
+                    if (snapshot != null && !snapshot.isEmpty) {
+                        val data = snapshot.documents.mapNotNull { doc ->
+                            ExchangeRate.fromDocumentSnapshot(doc)
+                        }
+
+                        result(data)
+
+                    } else {
+                        Log.w(TAG, "Current data: null")
+                    }
+                }
+                .addOnFailureListener { e ->
+                    Log.w(TAG, "Data load failed: ", e)
+                }
+        }
+    }
+    fun firebaseRateLoad(loadFinished:(String) -> Unit) {
+
+        // 토탈 데이터 마지막 날짜 시간, 오늘날짜 시간 비교
+        // 오늘 날짜가 더 클 경우 오늘 자정부터, 현재시간 데이터 요청
+
+        val totalRateLastDay = totalExchangeRate.value.lastOrNull()?.createAt
+
+        val todayTime = nowDateTimeFlow.value.toDateTime()
+
+
+        if(totalExchangeRate.value.isEmpty()) {
+            totalRateLoad {
+                viewModelScope.launch {
+                    totalExchangeRate.emit(it)
+
+                    investRepository.saveAllExchangeRates(it)
+
+                    loadFinished("성공적으로 데이터를 불러왔습니다.")
+
+                }
+            }
+
+        } else {
+
+            totalRateLastDay?.let {
+                if(todayTime > totalRateLastDay) {
+                    fireStoreNowRateLoad(
+                        startOfDay = totalRateLastDay,
+                        endOfDay = todayTime) {
+                        viewModelScope.launch {
+                            investRepository.saveAllExchangeRates(it)
+                            loadFinished("성공적으로 데이터를 불러왔습니다.")
+                        }
+                    }
+
+                } else {
+                    loadFinished("데이터가 최신값입니다.")
+                }
+            }
+        }
+    }
+
+    private fun totalRateLoad(loadFinished:(List<ExchangeRate>) -> Unit){
+
+        viewModelScope.launch(Dispatchers.IO) {
+            db.collection("exchangeRates")
+                .get()
+                .addOnSuccessListener { querySnapShot ->
+                    if (querySnapShot != null) {
+
+                        Log.d(TAG, "서버에서 모든 데이터 불러오기 실행")
+
+                        val exchangeRates = querySnapShot.map { ExchangeRate.fromQuerySnapshot(querySnapShot) }
+
+                        Log.d(TAG, "서버에서 들어온 토탈 환율 값 갯수: ${exchangeRates.count()}")
+
+                        loadFinished(exchangeRates.filterNotNull())
+                    } else {
+                        Log.w(TAG, "Current data: null")
+                        return@addOnSuccessListener
+                    }
+                }
+                .addOnFailureListener { e ->
+                    Log.w(TAG, "Data load failed: ", e)
+                }
+        }
+
+
+    }
+    private fun loadLocalRate() {
+        viewModelScope.launch(Dispatchers.IO) {
+            investRepository.exchangeRateDataGet()
+                .distinctUntilChanged()  // 중복 데이터 필터링
+                .collect { localRateData ->  // collect로 데이터 처리
+                    totalExchangeRate.emit(localRateData) // 변화된 데이터 emit
+                    processRates()
+                }
+        }
+    }
+
+    private fun processRates() {
+        val dateToRatesMap = mutableMapOf<String, MutableList<Float>>()
+
+        // 데이터를 날짜별로 그룹화
+        for (exchangeRate in totalExchangeRate.value) {
+            val date = exchangeRate.createAt.toDate() ?: continue
+            val rate = exchangeRate.jpy?.toFloat() ?: continue  // Rate 객체의 값을 얻는 부분은 Rate 클래스에 맞게 수정
+
+            dateToRatesMap.getOrPut(date) { mutableListOf() }.add(rate)
+        }
+
+        // 날짜별로 최대값, 최소값, 날짜를 구하여 트리플 리스트로 변환
+        val processedExchangeRates = dateToRatesMap.map { (date, rates) ->
+            Triple(date, rates.minOrNull() ?: 0f, rates.maxOrNull() ?: 0f)
+        }
+
+        Log.d(TAG, "서버에서 들어온 가공된 값 $processedExchangeRates")
     }
 
 
@@ -640,118 +837,47 @@ class AllViewModel @Inject constructor(
     val refreshDateFlow = MutableStateFlow("")
 
 
-    fun useItem(
-        useChance: (Boolean, ExchangeRate) -> Unit
-    ) {
-
+    fun reFreshProfit(reFreshClicked: (ExchangeRate) -> Unit) {
         val resentRate = recentExChangeRateFlow.value
 
-        val localUser = localUserData.value
-
-        val freeChance = localUser.rateResetCount
-        val payChance = localUser.rateAdCount
-
-        // 리셋되어 차감된 데이터 가져옴
-        Log.e(TAG, "데이터 체크${localUser}")
-
-        // 기회 모두 소진한 경우
-        if (freeChance == 0 && payChance == 0) {
-
-            viewModelScope.launch {
-                Log.d(TAG, "useItem 기회 모두 소진한 경우")
-
-                val updateDate = localUser.copy(
-                    reFreshCreateAt = resentRate.createAt
-                )
-
-                refreshDateFlow.emit(resentRate.createAt!!)
-
-                investRepository.localUserUpdate(updateDate)
-
-                useChance.invoke(true, resentRate)
-            }
-        } else {
-            // 무료 기회만 소진한 경우
-            if (freeChance == 0) {
-                //유료 기회 사용 로직
-
-                viewModelScope.launch {
-
-                    val usePayChange = payChance!! - 1
-
-                    Log.d(TAG, "useItem 무료기회만 소진한 경우 ${usePayChange}")
-
-                    val updateDate = localUser.copy(
-                        rateAdCount = usePayChange,
-                        reFreshCreateAt = resentRate.createAt
-                    )
-
-                    refreshDateFlow.emit(resentRate.createAt!!)
-
-                    investRepository.localUserUpdate(updateDate)
-
-                    useChance.invoke(false, resentRate)
-                }
-
-            } else {
-
-                viewModelScope.launch {
-
-                    val useFreeChance = freeChance!! - 1
-
-                    Log.d(TAG, "useItem 무료기회 차감 로직 ${useFreeChance}")
-
-                    val updateDate = localUser.copy(
-                        rateResetCount = useFreeChance,
-                        reFreshCreateAt = resentRate.createAt
-                    )
-
-                    refreshDateFlow.emit(resentRate.createAt!!)
-
-                    investRepository.localUserUpdate(updateDate)
-
-
-                    useChance.invoke(false, resentRate)
-                }
-
-            }
-        }
-
+        reFreshClicked.invoke(resentRate)
     }
 
-    fun chargeChance() {
-        val localUser = localUserData.value
 
-        val payChance = localUser.rateAdCount
 
-        viewModelScope.launch {
-            val chargeChance = payChance!! + 1
+//    fun chargeChance() {
+//        val localUser = localUserData.value
+//
+//        val payChance = localUser.rateAdCount
+//
+//        viewModelScope.launch {
+//            val chargeChance = payChance!! + 1
+//
+//            val updateDate = localUser.copy(
+//                rateAdCount = chargeChance
+//            )
+//            investRepository.localUserUpdate(updateDate)
+//        }
+//    }
 
-            val updateDate = localUser.copy(
-                rateAdCount = chargeChance
-            )
-            investRepository.localUserUpdate(updateDate)
-        }
-    }
-
-    private fun resetChance(localUser: LocalUserData) {
-        val lastResetDate = localUser.userResetDate!!
-
-        if (todayDateFlow.value > lastResetDate) {
-            Log.w(TAG, "무료기회 리셋 진행")
-            viewModelScope.launch {
-                val updateData = localUser.copy(
-                    userResetDate = todayDateFlow.value,
-                    rateResetCount = 3 // 사용자에게 다시 리셋 기회 제공
-                )
-                investRepository.localUserUpdate(updateData)
-            }
-        } else if (todayDateFlow.value == lastResetDate) {
-            Log.w(TAG, "오늘 이미 무료기회를 리셋 받았습니다.")
-        } else {
-            Log.w(TAG, "리셋 날짜가 미래로 설정되어 있습니다. 설정 오류가 있는지 확인하세요.")
-        }
-    }
+//    private fun resetChance(localUser: LocalUserData) {
+//        val lastResetDate = localUser.userResetDate!!
+//
+//        if (todayDateFlow.value > lastResetDate) {
+//            Log.w(TAG, "무료기회 리셋 진행")
+//            viewModelScope.launch {
+//                val updateData = localUser.copy(
+//                    userResetDate = todayDateFlow.value,
+//                    rateResetCount = 3 // 사용자에게 다시 리셋 기회 제공
+//                )
+//                investRepository.localUserUpdate(updateData)
+//            }
+//        } else if (todayDateFlow.value == lastResetDate) {
+//            Log.w(TAG, "오늘 이미 무료기회를 리셋 받았습니다.")
+//        } else {
+//            Log.w(TAG, "리셋 날짜가 미래로 설정되어 있습니다. 설정 오류가 있는지 확인하세요.")
+//        }
+//    }
 
     fun idCustom(customId: String, pin: String, resultMessage: (String) -> Unit) {
         // 파이어스토어 id 생성
@@ -790,7 +916,7 @@ class AllViewModel @Inject constructor(
         }
     }
 
-    fun findCustomId(id: String, pin: String, successFind: (message: String) -> Unit) {
+    fun logIn(id: String, pin: String, successFind: (message: String) -> Unit) {
 
         val localUser = localUserData.value
 
@@ -816,7 +942,7 @@ class AllViewModel @Inject constructor(
                         )
                         investRepository.localUserUpdate(updateDate)
 
-                        successFind.invoke("아이디 찾기가 성공되었습니다.")
+                        successFind.invoke("로그인 되었습니다.")
                     }
 
                 }
@@ -827,6 +953,27 @@ class AllViewModel @Inject constructor(
         }
 
     }
+
+
+
+    fun logout(result: (message: String) -> Unit) {
+
+        val localUser = localUserData.value
+
+        viewModelScope.launch {
+            Log.d(TAG, "localId custom 실행")
+
+            val updateDate = localUser.copy(
+                customId = ""
+            )
+            investRepository.localUserUpdate(updateDate)
+
+            result.invoke("로그아웃되었습니다.")
+        }
+
+    }
+
+
 
     private val formatTodayFlow = MutableStateFlow(
         LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))

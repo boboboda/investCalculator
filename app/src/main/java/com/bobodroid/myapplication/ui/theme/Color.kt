@@ -28,7 +28,7 @@ val TopButtonInColor = Color(0xFF6096B4)
 val SelectedColor = Color(0xFF7B8FA1)
 val DeleteColor = Color(0xFFF5EA5A)
 
-val TopBarColor = Color(0xFFD7BBD9)
+val TopBarColor = Color(0xFF125CF0)
 val TitleCardColor = Color(0xFFF6F7C1)
 
 val DialogBackgroundColor = Color(0xFFF5F5DC)
@@ -39,3 +39,8 @@ val MainTopButtonColor = Color(0xFFA3B7C5)
 val BottomSheetTitleColor = Color(color = 0xFFFEECE2)
 
 val BottomSheetSelectedColor = Color(0xFFBFCBD6)
+
+var MyPageButtonColor = Color(0xFFBADEFF)
+
+var HighRateColor = Color (0xFFFFD7C5)
+var LowRateColor = Color (0xFFBADEFF)

@@ -128,7 +128,7 @@ class YenViewModel @Inject constructor(private val investRepository: InvestRepos
 
 
         if (!sellRecord.isNullOrEmpty() && !buyRecord.isNullOrEmpty()) {
-            Log.d(TAG, "매도 리스트 ${sellRecord}, ${buyRecord}")
+
             buyRecord.forEach { buy ->
                 if (buy.buyYenCategoryName.isNullOrEmpty()) buy.buyYenCategoryName =
                     "미지정"
@@ -454,7 +454,7 @@ class YenViewModel @Inject constructor(private val investRepository: InvestRepos
 
                     Log.d(TAG, "기존 데이터 profit 추가 실행")
 
-                    val resentRate = exchangeRate.exchangeRates?.jpy
+                    val resentRate = exchangeRate.jpy
 
                     if (resentRate.isNullOrEmpty()) {
                         Log.d(TAG, "calculateProfit 최신 값 받아오기 실패")
@@ -481,7 +481,7 @@ class YenViewModel @Inject constructor(private val investRepository: InvestRepos
 
                     Log.d(MainActivity.TAG, "업데이트 데이터 profit 실행")
 
-                    val resentRate = exchangeRate.exchangeRates?.jpy
+                    val resentRate = exchangeRate.jpy
 
                     if (resentRate.isNullOrEmpty()) {
                         Log.d(MainActivity.TAG, "calculateProfit 최신 값 받아오기 실패")
@@ -592,7 +592,7 @@ class YenViewModel @Inject constructor(private val investRepository: InvestRepos
 
     fun expectSellValue(): String {
 
-        val resentUsRate = yenResentRateStateFlow.value.exchangeRates?.jpy
+        val resentUsRate = yenResentRateStateFlow.value.jpy
 
         Log.d(
             TAG,

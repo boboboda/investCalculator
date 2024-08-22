@@ -12,6 +12,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.bobodroid.myapplication.components.Buttons
@@ -161,7 +162,6 @@ fun SellResultDialog(
                 horizontalArrangement = Arrangement.Center
             ) {
                 Buttons(
-                    label = "기록",
                     onClicked = {
                         sellAction()
                         dollarViewModel.sellRecordValue(buyRecord)
@@ -171,13 +171,13 @@ fun SellResultDialog(
                     fontColor = Color.White,
                     modifier = Modifier
                         .height(40.dp)
-                        .width(80.dp),
-                    fontSize = 15)
+                        .width(80.dp)) {
+                    Text(text = "기록", fontSize = 15.sp)
+                }
 
                 Spacer(modifier = Modifier.width(40.dp))
 
                 Buttons(
-                    label = "닫기",
                     onClicked = {
                         onDismissRequest?.invoke(false)
                         onClicked?.invoke(false)
@@ -186,8 +186,9 @@ fun SellResultDialog(
                     fontColor = Color.White,
                     modifier = Modifier
                         .height(40.dp)
-                        .width(80.dp),
-                    fontSize = 15)
+                        .width(80.dp)) {
+                    Text(text = "닫기", fontSize = 15.sp)
+                }
             }
         }
     }
@@ -325,7 +326,6 @@ fun YenSellResultDialog(
                 horizontalArrangement = Arrangement.Center
             ) {
                 Buttons(
-                    label = "기록",
                     onClicked = {
                         sellAction()
                         yenViewModel.sellRecordValue(buyRecord)
@@ -335,13 +335,13 @@ fun YenSellResultDialog(
                     fontColor = Color.White,
                     modifier = Modifier
                         .height(40.dp)
-                        .width(80.dp),
-                    fontSize = 15)
+                        .width(80.dp),) {
+                    Text(text = "", fontSize = 15.sp)
+                }
 
                 Spacer(modifier = Modifier.width(40.dp))
 
                 Buttons(
-                    label = "닫기",
                     onClicked = {
                         onDismissRequest?.invoke(false)
                         onClicked?.invoke(false)
@@ -350,8 +350,9 @@ fun YenSellResultDialog(
                     fontColor = Color.White,
                     modifier = Modifier
                         .height(40.dp)
-                        .width(80.dp),
-                    fontSize = 15)
+                        .width(80.dp),) {
+                    Text(text = "닫기", fontSize = 15.sp)
+                }
             }
         }
     }
@@ -499,7 +500,6 @@ fun WonSellResultDialog(
                 horizontalArrangement = Arrangement.Center
             ) {
                 Buttons(
-                    label = "기록",
                     onClicked = {
                         sellAction()
                         wonViewModel.sellRecordValue(buyRecord)
@@ -509,13 +509,13 @@ fun WonSellResultDialog(
                     fontColor = Color.White,
                     modifier = Modifier
                         .height(40.dp)
-                        .width(80.dp),
-                    fontSize = 15)
+                        .width(80.dp)){
+                    Text(text = "", fontSize = 15.sp)
+                }
 
                 Spacer(modifier = Modifier.width(40.dp))
 
                 Buttons(
-                    label = "닫기",
                     onClicked = {
                         onDismissRequest?.invoke(false)
                         onClicked?.invoke(false)
@@ -524,8 +524,9 @@ fun WonSellResultDialog(
                     fontColor = Color.White,
                     modifier = Modifier
                         .height(40.dp)
-                        .width(80.dp),
-                    fontSize = 15)
+                        .width(80.dp)) {
+                    Text(text = "닫기", fontSize = 15.sp)
+                }
             }
         }
     }

@@ -20,7 +20,8 @@ object AppModule {
         yenSellDatabaseDao: YenSellDatabaseDao,
         wonBuyDatabaseDao: WonBuyDatabaseDao,
         wonSellDatabaseDao: WonSellDatabaseDao,
-        localUserDatabaseDao: LocalUserDatabaseDao): InvestRepository {
+        localUserDatabaseDao: LocalUserDatabaseDao,
+        exchangeRateDataBaseDao: ExchangeRateDataBaseDao): InvestRepository {
         return InvestRepository(
             dollarBuyDatabaseDao,
             dollarSellDatabaseDao,
@@ -28,6 +29,7 @@ object AppModule {
             yenSellDatabaseDao,
             wonBuyDatabaseDao,
             wonSellDatabaseDao,
-            localUserDatabaseDao)
+            localUserDatabaseDao,
+            exchangeRateDataBaseDao)
     }
 }

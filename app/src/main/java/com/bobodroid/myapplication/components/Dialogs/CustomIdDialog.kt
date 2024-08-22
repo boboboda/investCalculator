@@ -133,18 +133,30 @@ fun CustomIdDialog(
                     value = userPinInput,
                     onValueChange = {
 
-                        if(it.isBlank()) {
+
+
+                        if(userPinInput.length >= 8) {
+                            coroutineScope.launch {
+                                snackbarHostState.showSnackbar(
+                                    "8자리 이하로 입력해주세요",
+                                    actionLabel = "닫기", SnackbarDuration.Short
+                                )
+                            }
                             userPinInput = ""
                         } else {
-                            if(it.toIntOrNull() != null){
-                                userPinInput = it
-                            } else {
+                            if(it.isBlank()) {
                                 userPinInput = ""
-                                coroutineScope.launch {
-                                    snackbarHostState.showSnackbar(
-                                        "숫자만 입력해주세요",
-                                        actionLabel = "닫기", SnackbarDuration.Short
-                                    )
+                            } else {
+                                if(it.toIntOrNull() != null){
+                                    userPinInput = it
+                                } else {
+                                    userPinInput = ""
+                                    coroutineScope.launch {
+                                        snackbarHostState.showSnackbar(
+                                            "숫자만 입력해주세요",
+                                            actionLabel = "닫기", SnackbarDuration.Short
+                                        )
+                                    }
                                 }
                             }
                         }
@@ -186,7 +198,6 @@ fun CustomIdDialog(
                     horizontalArrangement = Arrangement.Center
                 ) {
                     Buttons(
-                        label = buttonLabel,
                         onClicked = {
                             if(userPinInput.length < 8) {
                                 coroutineScope.launch {
@@ -207,20 +218,25 @@ fun CustomIdDialog(
                         modifier = Modifier
                             .height(40.dp)
                             .width(80.dp),
-                        enabled = isBtnActive,
-                        fontSize = 15
-                    )
+                        enabled = isBtnActive
+                    ) {
+                        Text(text = buttonLabel, fontSize = 15.sp)
+
+                    }
+
+
                     Spacer(modifier = Modifier.width(25.dp))
 
                     Buttons(
-                        label = "닫기",
                         onClicked = { onDismissRequest(false) },
                         color = SellButtonColor,
                         fontColor = Color.White,
                         modifier = Modifier
                             .height(40.dp)
-                            .width(80.dp), fontSize = 15
-                    )
+                            .width(80.dp)
+                    ) {
+                        Text(text = "닫기", fontSize = 15.sp)
+                    }
                 }
 
             }

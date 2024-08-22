@@ -50,6 +50,10 @@ private object DatabaseModule {
         return investDatabase.LocalUserDao()
     }
 
+    @Provides
+    fun provideExchagerateDao(investDatabase: InvestDatabase) : ExchangeRateDataBaseDao{
+        return  investDatabase.exchangeRateDao()
+    }
 
     @Provides
     @Singleton

@@ -402,9 +402,7 @@ data class WonBuyRecord(
         date = data["date"] as String?,
         sellDate = data["sellDate"] as String?,
         money = data["money"] as String?,
-        moneyType = data["moneyType"].let {
-            it.toString().toInt()
-        } as Int?,
+        moneyType = data["moneyType"].let { it.toString().toInt() } as Int?,
         rate = data["rate"] as String?,
         buyRate = data["buyRate"] as String?,
         sellRate = data["sellRate"] as String?,
@@ -557,13 +555,13 @@ data class CloudUserData(
 }
 
 
-data class TargetRate(
+data class TargetRateList(
     var customId: String? = null,
     var fcmToken: String? = null,
-    var dollarHighRateList : List<DollarTargetHighRate>? = emptyList(),
-    var dollarLowRateList: List<DollarTargetLowRate>? = emptyList(),
-    var yenHighRateList : List<YenTargetHighRate>? = emptyList(),
-    var yenLowRateList : List<YenTargetLowRate>? = emptyList()
+    var dollarHighRateList : List<TargetRate>? = emptyList(),
+    var dollarLowRateList: List<TargetRate>? = emptyList(),
+    var yenHighRateList : List<TargetRate>? = emptyList(),
+    var yenLowRateList : List<TargetRate>? = emptyList()
 ){
     fun asHasMap(): HashMap<String, Any?> {
         return hashMapOf(
@@ -580,86 +578,37 @@ data class TargetRate(
         for (document in data.documents) {
             this.customId = document["customId"] as String? ?: ""
             this.fcmToken = document["fcmToken"] as String? ?: ""
-            this.dollarHighRateList = createDrHighRateList(document["dollarHighRateList"]!!) as List<DollarTargetHighRate>? ?: emptyList()
-            this.dollarLowRateList = createDrLowRateList(document["dollarLowRateList"]!!) as List<DollarTargetLowRate>? ?: emptyList()
-            this.yenHighRateList = createYenHighRateList(document["yenHighRateList"]!!) as List<YenTargetHighRate>? ?: emptyList()
-            this.yenLowRateList = createYenLowRateList(document["yenLowRateList"]!!) as List<YenTargetLowRate>? ?: emptyList()
+            this.dollarHighRateList = createDrHighRateList(document["dollarHighRateList"]!!) as List<TargetRate>? ?: emptyList()
+            this.dollarLowRateList = createDrLowRateList(document["dollarLowRateList"]!!) as List<TargetRate>? ?: emptyList()
+            this.yenHighRateList = createYenHighRateList(document["yenHighRateList"]!!) as List<TargetRate>? ?: emptyList()
+            this.yenLowRateList = createYenLowRateList(document["yenLowRateList"]!!) as List<TargetRate>? ?: emptyList()
         }
     }
 }
 
-fun createDrHighRateList(data: Any) = (data as? List<Map<String, Any>>)?.map { DollarTargetHighRate(it) }!!
+fun createDrHighRateList(data: Any) = (data as? List<Map<String, Any>>)?.map { TargetRate(it) }!!
 
-fun createDrLowRateList(data: Any) = (data as? List<Map<String, Any>>)?.map { DollarTargetLowRate(it) }!!
+fun createDrLowRateList(data: Any) = (data as? List<Map<String, Any>>)?.map { TargetRate(it) }!!
 
-fun createYenHighRateList(data: Any) = (data as? List<Map<String, Any>>)?.map { YenTargetHighRate(it) }!!
+fun createYenHighRateList(data: Any) = (data as? List<Map<String, Any>>)?.map { TargetRate(it) }!!
 
-fun createYenLowRateList(data: Any) = (data as? List<Map<String, Any>>)?.map { YenTargetLowRate(it) }!!
+fun createYenLowRateList(data: Any) = (data as? List<Map<String, Any>>)?.map { TargetRate(it) }!!
 
 
-data class DollarTargetHighRate(
+data class TargetRate(
     var number: String? = null,
-    var highRate: String? = null,
+    var rate: String? = null,
 ) {
     fun asHasMap(): HashMap<String, Any?> {
         return  hashMapOf(
             "number" to this.number,
-            "highRate" to this.highRate,
+            "rate" to this.rate,
         )
     }
     constructor(data: Map<String, Any>) : this(
         number = data["number"] as String?,
-        highRate = data["highRate"] as String?
+        rate = data["rate"] as String?
     )
 }
 
-data class DollarTargetLowRate(
-    var number: String? = null,
-    var lowRate: String? = null,
-) {
-    fun asHasMap(): HashMap<String, Any?> {
-        return  hashMapOf(
-            "number" to this.number,
-            "lowRate" to this.lowRate,
-        )
-    }
 
-    constructor(data: Map<String, Any>) : this(
-        number = data["number"] as String?,
-        lowRate = data["lowRate"] as String?
-    )
-}
-
-data class YenTargetHighRate(
-    var number: String? = null,
-    var highRate: String? = null,
-) {
-    fun asHasMap(): HashMap<String, Any?> {
-        return  hashMapOf(
-            "number" to this.number,
-            "highRate" to this.highRate,
-        )
-    }
-
-    constructor(data: Map<String, Any>) : this(
-        number = data["number"] as String?,
-        highRate = data["highRate"] as String?
-    )
-}
-
-data class YenTargetLowRate(
-    var number: String? = null,
-    var lowRate: String? = null,
-) {
-    fun asHasMap(): HashMap<String, Any?> {
-        return  hashMapOf(
-            "number" to this.number,
-            "lowRate" to this.lowRate,
-        )
-    }
-
-    constructor(data: Map<String, Any>) : this(
-        number = data["number"] as String?,
-        lowRate = data["lowRate"] as String?
-    )
-}

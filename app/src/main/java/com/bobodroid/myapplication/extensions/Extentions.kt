@@ -5,6 +5,7 @@ import java.math.BigDecimal
 import java.math.RoundingMode
 import java.text.DecimalFormat
 import java.text.NumberFormat
+import java.text.SimpleDateFormat
 import java.time.LocalDate
 import java.util.*
 
@@ -100,3 +101,16 @@ fun Float.toRate(): String {
 //    val c: LocalDate = LocalDate.
 //    return c
 //}
+
+fun String.toDate(): String {
+    val dateFormatter = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+    return dateFormatter.format(dateFormatter.parse(this))
+
+}
+
+fun String.toDateTime(): String {
+    val inputFormat = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSSSS", Locale.getDefault())
+    val outputFormat = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault())
+    val date = inputFormat.parse(this) // 원본 날짜 파싱
+    return outputFormat.format(date) // 변경된 포맷으로 출력
+}

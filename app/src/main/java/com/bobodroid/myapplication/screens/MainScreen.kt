@@ -146,8 +146,6 @@ fun MainScreen(
 
     val noticeShowDialog = allViewModel.noticeShowDialog.collectAsState()
 
-    val rewardShowDialog = allViewModel.rewardShowDialog.collectAsState()
-
     val noticeContent = allViewModel.noticeContent.collectAsState()
 
     val localUser = allViewModel.localUserData.collectAsState()
@@ -216,7 +214,7 @@ fun MainScreen(
 
     val moneyCgBtnSelected = wonViewModel.moneyCgBtnSelected.collectAsState()
 
-    var thankShowingDialog by remember { mutableStateOf(false) }
+
 
     LaunchedEffect(key1 = Unit, block = {
 
@@ -237,23 +235,8 @@ fun MainScreen(
     }
     Column {
 
-        ModalDrawer(
-            drawerState = drawerState,
-            gesturesEnabled = false,
-            drawerShape = customShape(),
-            modifier = Modifier.weight(1f),
-            drawerContent = {
-                DrawerCustom(
-                    allViewModel,
-                    dollarViewModel,
-                    yenViewModel,
-                    wonViewModel,
-                    drawerState,
-                    mainScreenSnackBarHostState,
-                    activity
-                )
-            },
-        ) {
+        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.BottomCenter)
+        {
 
             Column(
                 modifier = Modifier
@@ -263,6 +246,8 @@ fun MainScreen(
             )
             {
 
+
+
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -270,47 +255,47 @@ fun MainScreen(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
 
-                    when (rowViewController.value) {
-                        1 -> {
-                            RateView(
-                                title = "USD",
-                                recentRate = "${recentRate.value.exchangeRates?.usd}",
-                                createAt = "${recentRate.value.createAt}"
-                            )
-                        }
+                    Column(
+                        modifier = Modifier.weight(0.7f)
+                    ) {
+                        when (rowViewController.value) {
+                            1 -> {
+                                RateView(
+                                    title = "USD",
+                                    recentRate = "${recentRate.value.usd}",
+                                    createAt = "${recentRate.value.createAt}"
+                                )
+                            }
 
-                        2 -> {
-                            RateView(
-                                title = "JPY",
-                                recentRate = "${
-                                    BigDecimal(recentRate.value.exchangeRates?.jpy).times(
-                                        BigDecimal("100").setScale(-2),
-                                    )
-                                }",
-                                createAt = "${recentRate.value.createAt}"
-                            )
-                        }
+                            2 -> {
+                                RateView(
+                                    title = "JPY",
+                                    recentRate = "${
+                                        BigDecimal(recentRate.value.jpy).times(
+                                            BigDecimal("100").setScale(-2),
+                                        )
+                                    }",
+                                    createAt = "${recentRate.value.createAt}"
+                                )
+                            }
 
-                        3 -> {
-                            RateView(
-                                title = "USD",
-                                recentRate = "${recentRate.value.exchangeRates?.usd}",
-                                subTitle = "JPY",
-                                subRecentRate = "${
-                                    BigDecimal(recentRate.value.exchangeRates?.jpy).times(
-                                        BigDecimal("100").setScale(-2)
-                                    )
-                                }",
-                                createAt = "${recentRate.value.createAt}"
-                            )
+                            3 -> {
+                                RateView(
+                                    title = "USD",
+                                    recentRate = "${recentRate.value.usd}",
+                                    subTitle = "JPY",
+                                    subRecentRate = "${
+                                        BigDecimal(recentRate.value.jpy).times(
+                                            BigDecimal("100").setScale(-2)
+                                        )
+                                    }",
+                                    createAt = "${recentRate.value.createAt}"
+                                )
+                            }
                         }
                     }
 
-                    Spacer(modifier = Modifier.weight(1f))
-
-
-
-                    Column() {
+                    Column(modifier = Modifier.weight(0.3f)) {
                         Card(
                             colors = CardDefaults.cardColors(MainTopButtonColor),
                             elevation = CardDefaults.cardElevation(8.dp),
@@ -326,14 +311,14 @@ fun MainScreen(
                                 modifier = Modifier
                                     .fillMaxHeight()
                                     .wrapContentWidth()
-                                    .padding(horizontal = 20.dp)
+                                    .padding(horizontal = 15.dp)
                                     .padding(vertical = 5.dp),
                                 horizontalArrangement = Arrangement.Center,
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Text(text = dropdownMenuName, fontSize = 18.sp)
 
-                                Spacer(modifier = Modifier.width(10.dp))
+                                Spacer(modifier = Modifier.width(5.dp))
                                 Icon(
                                     imageVector = Icons.Rounded.KeyboardArrowDown,
                                     contentDescription = ""
@@ -453,6 +438,9 @@ fun MainScreen(
                 }
 
 
+
+
+
                 // bottomsheet
                 if (showBottomSheet) {
                     ModalBottomSheet(
@@ -491,7 +479,6 @@ fun MainScreen(
                                 Spacer(Modifier.weight(1f))
 
                                 Buttons(
-                                    label = "기록",
                                     enabled = isBtnActive,
                                     onClicked = {
                                         when(rowViewController.value) {
@@ -524,18 +511,20 @@ fun MainScreen(
                                     },
                                     color = BuyColor,
                                     fontColor = Color.Black,
-                                    modifier = Modifier,
-                                    fontSize = 15
-                                )
+                                    modifier = Modifier
+                                ) {
+                                    Text(text = "기록", fontSize = 15.sp)
+                                }
 
                                 Buttons(
-                                    label = "닫기",
                                     onClicked = { showBottomSheet = false },
                                     color = BuyColor,
                                     fontColor = Color.Black,
                                     modifier = Modifier,
-                                    fontSize = 15
-                                )
+
+                                    ) {
+                                    Text(text = "닫기", fontSize = 15.sp)
+                                }
                             }
 
                             Row(
@@ -849,118 +838,6 @@ fun MainScreen(
                         })
                 }
 
-                //snackBar
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .wrapContentHeight()
-                ) {
-                    SnackbarHost(
-                        hostState = mainScreenSnackBarHostState, modifier = Modifier,
-                        snackbar = { snackBarData ->
-
-                            Card(
-                                shape = RoundedCornerShape(8.dp),
-                                border = BorderStroke(1.5.dp, Color.Black),
-                                modifier = Modifier
-                                    .padding(10.dp)
-                                    .fillMaxWidth(),
-                            ) {
-                                Row(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(8.dp)
-                                        .padding(start = 10.dp),
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.Start
-                                ) {
-
-                                    Text(
-                                        text = snackBarData.message,
-                                        fontSize = 15.sp,
-                                        lineHeight = 20.sp,
-                                        fontWeight = FontWeight.Medium
-                                    )
-
-                                    Spacer(modifier = Modifier.weight(1f))
-
-                                    Text(
-                                        modifier = Modifier
-                                            .padding(8.dp)
-                                            .clickable {
-                                                mainScreenSnackBarHostState.currentSnackbarData?.dismiss()
-                                            },
-                                        text = "닫기",
-                                        fontWeight = FontWeight.Medium
-                                    )
-                                }
-                            }
-                        })
-                }
-
-
-                ContentIcon(
-                    allViewModel,
-                    dollarViewModel,
-                    yenViewModel,
-                    wonViewModel,
-                    rowViewController.value,
-                    drCheckboxController = drBoxState.value,
-                    yenCheckboxController = yenCheckBoxState.value,
-                    wonCheckboxController = wonCheckBoxState.value,
-                    buyButtonClicked = {
-                        showBottomSheet = true
-                    },
-                    totalMoneyCheckClicked = {
-                          showOpenDialog.value = true
-                    },
-                    refreshClicked = {
-                        rateRefreshDialog.value = true
-                    })
-
-                if (rateRefreshDialog.value) {
-                    RateRefreshDialog(
-                        allViewModel,
-                        onDismissRequest = {
-                            rateRefreshDialog.value = it
-                        }
-                    ) {
-
-                        allViewModel.useItem(
-                            useChance = { haveChance, recentRate ->
-
-                                if (!haveChance) {
-                                    Log.d(TAG, "기회 있는 로직 실행")
-                                    dollarViewModel.calculateProfit(recentRate)
-
-                                    yenViewModel.calculateProfit(recentRate)
-
-                                    wonViewModel.calculateProfit(recentRate)
-
-                                    rateRefreshDialog.value = false
-
-                                } else {
-                                    Log.d(TAG, "기회 없어서 광고 실행")
-                                    showInterstitial(context) {
-
-                                        dollarViewModel.calculateProfit(recentRate)
-
-                                        yenViewModel.calculateProfit(recentRate)
-
-                                        wonViewModel.calculateProfit(recentRate)
-
-                                        rateRefreshDialog.value = false
-
-                                    }
-                                }
-
-                            }
-                        )
-                    }
-
-
-                }
-
                 if (showOpenDialog.value) {
                     RangeDateDialog(
                         onDismissRequest = {
@@ -1021,345 +898,97 @@ fun MainScreen(
                         })
                 }
 
-                if(rewardShowDialog.value) {
-                    RewardShowAskDialog(
-                        onDismissRequest = {
-                            allViewModel.rewardDelayDate(localUser.value)
-                            allViewModel.rewardShowDialog.value = it
-                    },
-                        onClicked = {
-                            showTargetRewardedAdvertisement(context, onAdDismissed = {
-                                allViewModel.rewardDelayDate(localUser.value)
-                                allViewModel.rewardShowDialog.value = false
-                                thankShowingDialog = true
-                            })
-                        })
-                }
 
-                if(thankShowingDialog)
-                ThanksDialog(onDismissRequest = {
-                    thankShowingDialog = it
+
+
+
+
+
+
+
+            }
+
+            ContentIcon(
+                buyButtonClicked = {
+                    showBottomSheet = true
+                },
+                totalMoneyCheckClicked = {
+                    showOpenDialog.value = true
+                },
+                refreshClicked = {
+
+                    allViewModel.reFreshProfit { recentRate ->
+                        dollarViewModel.calculateProfit(recentRate)
+
+                        yenViewModel.calculateProfit(recentRate)
+
+                        wonViewModel.calculateProfit(recentRate)
+
+                    }
                 })
 
-
-
-
-
-            }
-        }
-
-        Column(
-            modifier = Modifier
-                .fillMaxWidth(),
-            verticalArrangement = Arrangement.Center,
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-
-            BannerAd()
-
-        }
-    }
-}
-
-
-@Composable
-fun customShape() = object : Shape {
-    override fun createOutline(
-        size: Size,
-        layoutDirection: LayoutDirection,
-        density: Density
-    ): Outline {
-        return Outline.Rectangle(
-            Rect(
-                left = 0f,
-                top = 0f,
-                right = size.width * 2.3f / 3,
-                bottom = size.height
-            )
-        )
-    }
-}
-
-@Composable
-fun RateView(
-    title: String,
-    subTitle: String? = "",
-    recentRate: String,
-    subRecentRate: String? = "",
-    createAt: String
-) {
-
-    val useTitle = if (subTitle == "") {
-        "${title}: ${recentRate}"
-    } else {
-        "${title}: ${recentRate} | ${subTitle}: ${subRecentRate}"
-    }
-
-    Column(
-        modifier = Modifier
-            .wrapContentHeight(),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
-    ) {
-        Row(
-            modifier = Modifier
-                .wrapContentSize(),
-            horizontalArrangement = Arrangement.Center,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-
-
-            Text(text = useTitle, fontSize = 20.sp)
-        }
-        Text(text = "업데이트된 환율: ${createAt}")
-    }
-
-}
-
-
-@Composable
-fun ContentIcon(
-    allViewModel: AllViewModel,
-    dollarViewModel: DollarViewModel,
-    yenViewModel: YenViewModel,
-    wonViewModel: WonViewModel,
-    rowViewController: Int,
-    drCheckboxController: Int,
-    yenCheckboxController: Int,
-    wonCheckboxController: Int,
-    buyButtonClicked: () -> Unit,
-    totalMoneyCheckClicked: () -> Unit,
-    refreshClicked: () -> Unit
-) {
-
-    val scope = rememberCoroutineScope()
-
-    val totalDrSellProfit = dollarViewModel.totalSellProfit.collectAsState()
-
-    val totalYenSellProfit = yenViewModel.totalSellProfit.collectAsState()
-
-    var bottomRefreshPadding by remember { mutableStateOf(5) }
-
-    var dropdownExpanded by remember { mutableStateOf(false) }
-
-    var isVisible by remember {
-        mutableStateOf(true)
-    }
-
-    LaunchedEffect(key1 = Unit, block = {
-        scope.launch {
-            delay(3000)
-            isVisible = false
-            bottomRefreshPadding = 0
-        }
-    })
-
-    Row(
-        modifier = Modifier
-            .height(120.dp)
-            .fillMaxWidth()
-            .padding(start = 20.dp, bottom = 10.dp),
-        horizontalArrangement = Arrangement.End,
-        verticalAlignment = Alignment.CenterVertically
-
-    ) {
-
-        Row(
-            modifier = Modifier.weight(1f)
-        ) {
-
-            when (rowViewController) {
-                1 -> {
-                    GetMoneyView(
-                        getMoney = "${totalDrSellProfit.value}",
-                        onClicked = { Log.d(TAG, "") },
-                        allViewModel
-                    )
-                }
-
-                2 -> {
-                    GetMoneyView(
-                        getMoney = "${totalYenSellProfit.value}",
-                        onClicked = { Log.d(TAG, "") },
-                        allViewModel
-                    )
-                }
-
-                3 -> {
-                    when (wonCheckboxController) {
-                        1 -> {}
-                        2 -> {}
-                    }
-                }
-            }
-        }
-
-
-        Box(
-            modifier = Modifier
-                .wrapContentSize(Alignment.TopEnd)
-        ) {
-            FloatingActionButton(
-                onClick = {
-                    dropdownExpanded = true
-                },
-                containerColor = MaterialTheme.colors.secondary,
-                shape = RoundedCornerShape(16.dp),
+            //snackBar
+            Row(
                 modifier = Modifier
-                    .padding(bottom = 10.dp, end = 20.dp)
-                    .height(60.dp)
-                    .wrapContentWidth(),
+                    .fillMaxWidth()
+                    .wrapContentHeight()
             ) {
-                Row(
-                    Modifier
-                        .wrapContentSize()
-                        .padding(start = 17.dp, end = 17.dp),
-                    horizontalArrangement = Arrangement.spacedBy(bottomRefreshPadding.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Icon(
-                        imageVector = Icons.Rounded.Menu,
-                        contentDescription = "메뉴",
-                        tint = Color.White
-                    )
-                    AnimatedVisibility(visible = isVisible) {
-                        Text(text = "메뉴", color = Color.White, modifier = Modifier)
-                    }
+                SnackbarHost(
+                    hostState = mainScreenSnackBarHostState, modifier = Modifier,
+                    snackbar = { snackBarData ->
 
-                }
+                        Card(
+                            shape = RoundedCornerShape(8.dp),
+                            border = BorderStroke(1.5.dp, Color.Black),
+                            modifier = Modifier
+                                .padding(10.dp)
+                                .fillMaxWidth(),
+                        ) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(8.dp)
+                                    .padding(start = 10.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.Start
+                            ) {
 
+                                Text(
+                                    text = snackBarData.message,
+                                    fontSize = 15.sp,
+                                    lineHeight = 20.sp,
+                                    fontWeight = FontWeight.Medium
+                                )
+
+                                Spacer(modifier = Modifier.weight(1f))
+
+                                Text(
+                                    modifier = Modifier
+                                        .padding(8.dp)
+                                        .clickable {
+                                            mainScreenSnackBarHostState.currentSnackbarData?.dismiss()
+                                        },
+                                    text = "닫기",
+                                    fontWeight = FontWeight.Medium
+                                )
+                            }
+                        }
+                    })
             }
-
-            DropdownMenu(
-                scrollState = rememberScrollState(),
-                modifier = Modifier
-                    .wrapContentSize(),
-                offset = DpOffset(x = 23.dp, y = 5.dp),
-                expanded = dropdownExpanded,
-                onDismissRequest = {
-                    dropdownExpanded = false
-                }
-            ) {
-                DropdownMenuItem(
-                    modifier = Modifier
-                        .fillMaxWidth(),
-                    text = {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth(),
-                            contentAlignment = Alignment.TopStart
-                        ) {
-                            Text(
-                                text = "매수 기록",
-                                color = Color.Black,
-                                fontSize = 13.sp
-                            )
-                        }
-                    }, onClick = {
-                        dropdownExpanded = false
-                        buyButtonClicked.invoke()
-                    })
-
-
-                DropdownMenuItem(
-                    modifier = Modifier
-                        .fillMaxWidth(),
-                    text = {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth(),
-                            contentAlignment = Alignment.TopStart
-                        ) {
-                            Text(
-                                text = "총 수익 조회",
-                                color = Color.Black,
-                                fontSize = 13.sp
-                            )
-                        }
-                    }, onClick = {
-                        dropdownExpanded = false
-                        totalMoneyCheckClicked.invoke()
-                    })
-
-                DropdownMenuItem(
-                    modifier = Modifier
-                        .fillMaxWidth(),
-                    text = {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth(),
-                            contentAlignment = Alignment.TopStart
-                        ) {
-                            Text(
-                                text = "새로고침",
-                                color = Color.Black,
-                                fontSize = 13.sp
-                            )
-                        }
-                    }, onClick = {
-                        dropdownExpanded = false
-                        refreshClicked.invoke()
-                    })
-
-            }
-
         }
 
 
     }
-
-
 }
 
 
-@Composable
-fun GetMoneyView(
-    getMoney: String,
-    onClicked: () -> Unit,
-    allViewModel: AllViewModel
-) {
-
-    val mathContext = MathContext(0, RoundingMode.HALF_UP)
-
-    val startDate = allViewModel.startDateFlow.collectAsState()
-
-    val stringGetMoney = if (getMoney == "") "" else {
-        getMoney
-    }
-
-    var endDate = allViewModel.endDateFlow.collectAsState()
-
-    val date = if (startDate.value == "" && endDate.value == "")
-        "조회기간: 달력에서 조회 해주세요" else "조회기간: ${startDate.value}~${endDate.value}"
-
-    val profitColor = if (getMoney == "") {
-        Color.Black
-    } else {
-        if (BigDecimal(getMoney.replace(",", ""), mathContext).signum() == -1) {
-            Color.Blue
-        } else {
-            Color.Red
-        }
-    }
-
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(start = 15.dp, end = 15.dp),
-        horizontalAlignment = Alignment.Start,
-        verticalArrangement = Arrangement.spacedBy(5.dp)
-    ) {
-
-        Row {
-            Text(text = "매도 총 수익: ", fontSize = 15.sp)
-
-            Text(text = "${stringGetMoney}", fontSize = 15.sp, color = profitColor)
-        }
 
 
-        Text(text = date, fontSize = 15.sp)
-    }
 
 
-}
+
+
+
+
+
 

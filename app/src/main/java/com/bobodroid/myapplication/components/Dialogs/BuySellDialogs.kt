@@ -116,7 +116,7 @@ fun SellDialog(
                             .fillMaxWidth(),
                         horizontalArrangement = Arrangement.Center
                     ) {
-                        Buttons(label = "매도",
+                        Buttons(
                             onClicked = {
                                 if(openDialog.value == false) openDialog.value = !openDialog.value else null
                                 dollarViewModel.sellCalculation()
@@ -127,18 +127,22 @@ fun SellDialog(
                             modifier = Modifier
                                 .height(40.dp)
                                 .width(80.dp),
-                            enabled = isBtnActive,
-                            fontSize = 15)
+                            enabled = isBtnActive) {
+                            Text("매도", fontSize = 15.sp)
+                        }
+
+
                         Spacer(modifier = Modifier.width(25.dp))
 
-                        Buttons(label = "닫기",
+                        Buttons(
                             onClicked = {onDismissRequest(false)},
                             color = SellButtonColor,
                             fontColor = Color.White,
                             modifier = Modifier
                                 .height(40.dp)
-                                .width(80.dp)
-                            , fontSize = 15)
+                                .width(80.dp)) {
+                            Text("닫기", fontSize = 15.sp)
+                        }
                     }
 
 
@@ -248,7 +252,8 @@ fun YenSellDialog(
                             .fillMaxWidth(),
                         horizontalArrangement = Arrangement.Center
                     ) {
-                        Buttons(label = "매도",
+
+                        Buttons(
                             onClicked = {
                                 if(openDialog.value == false) openDialog.value = !openDialog.value else null
                                 yenViewModel.sellCalculation()
@@ -259,18 +264,23 @@ fun YenSellDialog(
                             modifier = Modifier
                                 .height(40.dp)
                                 .width(80.dp),
-                            enabled = isBtnActive,
-                            fontSize = 15)
+                            enabled = isBtnActive) {
+                            Text("매도", fontSize = 15.sp)
+                        }
+
+
                         Spacer(modifier = Modifier.width(25.dp))
 
-                        Buttons(label = "닫기",
+
+                        Buttons(
                             onClicked = {onDismissRequest(false)},
                             color = SellButtonColor,
                             fontColor = Color.White,
                             modifier = Modifier
                                 .height(40.dp)
-                                .width(80.dp)
-                            , fontSize = 15)
+                                .width(80.dp)) {
+                            Text("닫기", fontSize = 15.sp)
+                        }
                     }
 
 
@@ -380,11 +390,10 @@ fun WonSellDialog(
                             .fillMaxWidth(),
                         horizontalArrangement = Arrangement.Center
                     ) {
-                        Buttons(label = "매도",
+                        Buttons(
                             onClicked = {
                                 if(openDialog.value == false) openDialog.value = !openDialog.value else null
                                 wonViewModel.sellCalculation()
-
                             },
 
                             color = SellButtonColor,
@@ -392,18 +401,22 @@ fun WonSellDialog(
                             modifier = Modifier
                                 .height(40.dp)
                                 .width(80.dp),
-                            enabled = isBtnActive,
-                            fontSize = 15)
+                            enabled = isBtnActive) {
+                            Text("매도", fontSize = 15.sp)
+                        }
+
+
                         Spacer(modifier = Modifier.width(25.dp))
 
-                        Buttons(label = "닫기",
+                        Buttons(
                             onClicked = {onDismissRequest(false)},
                             color = SellButtonColor,
                             fontColor = Color.White,
                             modifier = Modifier
                                 .height(40.dp)
-                                .width(80.dp)
-                            , fontSize = 15)
+                                .width(80.dp)) {
+                            Text("닫기", fontSize = 15.sp)
+                        }
                     }
 
 

@@ -38,6 +38,7 @@ import androidx.compose.ui.unit.sp
 import com.bobodroid.myapplication.components.AutoSizeText
 import com.bobodroid.myapplication.models.viewmodels.WebViewModel
 import com.bobodroid.myapplication.components.WebView
+import com.bobodroid.myapplication.ui.theme.InverstCalculatorTheme
 import com.bobodroid.myapplication.ui.theme.TopBarColor
 
 class WebActivity : AppCompatActivity() {
@@ -51,7 +52,10 @@ class WebActivity : AppCompatActivity() {
 
             val url = intent.getStringExtra("url") ?: ""
 
-            WebScreen(webViewModel, url, this)
+            InverstCalculatorTheme {
+                WebScreen(webViewModel, url, this)
+            }
+
 
         }
     }

@@ -18,7 +18,8 @@ import com.bobodroid.myapplication.models.datamodels.DrBuyRecord
     YenSellRecord::class,
     WonBuyRecord::class,
     WonSellRecord::class,
-    LocalUserData::class],
+    LocalUserData::class,
+    ExchangeRate::class],
     autoMigrations = [
         AutoMigration(from = 5, to = 6),
         AutoMigration(from = 6, to = 7),
@@ -45,22 +46,18 @@ import com.bobodroid.myapplication.models.datamodels.DrBuyRecord
         AutoMigration(
             from = 16,
             to = 17,
-            spec = InvestDatabase.MyAutoMigration::class)],
-    version = 17, exportSchema = true)
+            spec = InvestDatabase.MyAutoMigration::class),
+        AutoMigration(from = 17, to = 18)],
+    version = 18, exportSchema = true)
 abstract class InvestDatabase: RoomDatabase() {
     abstract fun DrBuyDao() : DollarBuyDatabaseDao
-
     abstract fun DrSellDao() : DollarSellDatabaseDao
-
     abstract fun YenBuyDao() : YenBuyDatabaseDao
-
     abstract fun YenSellDao() : YenSellDatabaseDao
-
     abstract fun WonBuyDao() : WonBuyDatabaseDao
-
     abstract fun WonSellDao() : WonSellDatabaseDao
-
     abstract fun LocalUserDao() : LocalUserDatabaseDao
+    abstract fun exchangeRateDao() : ExchangeRateDataBaseDao
 
     @RenameColumn(
         tableName = "LocalUserData_table",
@@ -131,8 +128,5 @@ abstract class InvestDatabase: RoomDatabase() {
         tableName = "LocalUserData_table",
         columnName = "user_Reset_State"
     )
-
-
-
     class MyAutoMigration : AutoMigrationSpec
 }

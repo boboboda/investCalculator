@@ -26,7 +26,7 @@ import com.bobodroid.myapplication.ui.theme.TopBarColor
 import kotlinx.coroutines.launch
 
 @Composable
-fun MainTopBar(menuBarClinked: () -> Unit) {
+fun MainTopBar() {
 
 
     Row(
@@ -55,11 +55,5 @@ fun MainTopBar(menuBarClinked: () -> Unit) {
 
 
         Spacer(modifier = Modifier.weight(1f))
-        IconButton(
-            imageVector = Icons.Outlined.AccountCircle,
-            onClicked = {
-                menuBarClinked.invoke()
-
-            }, modifier = Modifier.padding(end = 10.dp))
     }
 }

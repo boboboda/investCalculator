@@ -19,6 +19,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.bobodroid.myapplication.components.Buttons
@@ -69,25 +70,27 @@ fun RateRefreshDialog(
                     .fillMaxWidth(),
                 horizontalArrangement = Arrangement.Center
             ) {
-                Buttons(label = "예",
+                Buttons(
                     onClicked = onClicked,
 
                     color = SellButtonColor,
                     fontColor = Color.White,
                     modifier = Modifier
                         .height(40.dp)
-                        .width(80.dp),
-                    fontSize = 15)
+                        .width(80.dp)) {
+                    Text(text = "예", fontSize = 15.sp)
+                }
                 Spacer(modifier = Modifier.width(25.dp))
 
-                Buttons(label = "아니요",
+                Buttons(
                     onClicked = {onDismissRequest(false)},
                     color = SellButtonColor,
                     fontColor = Color.White,
                     modifier = Modifier
                         .height(40.dp)
-                        .wrapContentSize()
-                    , fontSize = 15)
+                        .wrapContentSize()) {
+                    Text(text = "아니요", fontSize = 15.sp)
+                }
             }
         }
     }

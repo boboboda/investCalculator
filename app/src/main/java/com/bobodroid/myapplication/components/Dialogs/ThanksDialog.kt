@@ -66,7 +66,7 @@ fun ThanksDialog(
                 fontWeight = FontWeight.Bold,
                 fontSize = 18.sp,
                 modifier = Modifier.padding(bottom = 5.dp))
-            Text("더 좋은 컨텐츠로 보답하겠습니다.", fontSize = 16.sp)
+            Text("하루동안 배너광고가 제거됩니다.", fontSize = 16.sp)
 
             Spacer(modifier = Modifier.height(20.dp))
             Row(
@@ -75,15 +75,16 @@ fun ThanksDialog(
                     .fillMaxWidth(),
                 horizontalArrangement = Arrangement.Center
             ) {
-                Buttons(label = "확인",
+                Buttons(
                     onClicked = {onDismissRequest(false)},
 
                     color = SellButtonColor,
                     fontColor = Color.White,
                     modifier = Modifier
                         .height(40.dp)
-                        .width(80.dp),
-                    fontSize = 15)
+                        .width(80.dp)) {
+                    Text(text = "확인", fontSize = 15.sp)
+                }
             }
         }
     }

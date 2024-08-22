@@ -12,7 +12,6 @@ android.buildFeatures.buildConfig true
 Properties properties = new Properties()
 properties.load(project.rootProject.file('local.properties').newDataInputStream())
 
-
 android {
     namespace 'com.bobodroid.myapplication'
     compileSdk 34
@@ -21,14 +20,17 @@ android {
         applicationId "com.bobodroid.myapplication"
         minSdk 26
         targetSdk 33
-        compileSdk 33
-        versionCode 35
-//        compileSdkPreview "UpsideDownCake"
-        versionName "24.7.1"
-
+        versionCode 38
+        versionName "25.1.3"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
             useSupportLibrary true
+        }
+        // Room의 schemaLocation 설정
+        javaCompileOptions {
+            annotationProcessorOptions {
+                arguments += ["room.schemaLocation": "$projectDir/schemas".toString()]
+            }
         }
 
         buildConfigField("String", "BANNER_AD_KEY", properties['banner_ad_key'])
@@ -36,48 +38,44 @@ android {
         buildConfigField("String", "FONT_AD_KEY", properties['font_ad_key'])
         buildConfigField("String", "REWARD_FRONT_AD_KEY", properties['reward_font_ad_key'])
         buildConfigField("String", "REWARD_TARGET_FONT_AD_KEY", properties['reward_target_font_ad_key'])
-
-
-
-        javaCompileOptions {
-            annotationProcessorOptions {
-                arguments += ["room.schemaLocation": "$projectDir/schemas".toString()]
-            }
-            }
-
     }
 
     buildTypes {
         release {
-
-            buildConfigField("String", "BANNER_AD_KEY", properties['banner_ad_key'])
-            buildConfigField("String", "BUY_BANNER_AD_KEY", properties['buy_banner_ad_key'])
-            buildConfigField("String", "FONT_AD_KEY", properties['font_ad_key'])
-            buildConfigField("String", "REWARD_FRONT_AD_KEY", properties['reward_font_ad_key'])
-
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
             signingConfig signingConfigs.debug
         }
     }
+
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_18
         targetCompatibility JavaVersion.VERSION_18
     }
+
     kotlinOptions {
         jvmTarget = '18'
     }
+
     buildFeatures {
         compose true
     }
+
     composeOptions {
         kotlinCompilerExtensionVersion compose_version
     }
+
     packagingOptions {
         resources {
             excludes += '/META-INF/{AL2.0,LGPL2.1}'
         }
     }
+}
+
+repositories {
+    google()
+    mavenCentral()
+    maven { url "https://www.jitpack.io" }
 }
 
 dependencies {
@@ -103,7 +101,7 @@ dependencies {
     debugImplementation 'androidx.compose.ui:ui-tooling'
     debugImplementation 'androidx.compose.ui:ui-test-manifest'
 
-    //추가 라이브러리
+    // 추가 라이브러리
     implementation("androidx.compose.material:material:1.3.1")
     implementation("androidx.compose.material3:material3:1.2.0-alpha02")
     implementation("androidx.compose.material3:material3-window-size-class:1.2.0-alpha02")
@@ -126,7 +124,7 @@ dependencies {
     annotationProcessor "androidx.room:room-compiler:$room_version"
     kapt "androidx.room:room-compiler:$room_version"
 
-    //Coroutines & Flow
+    // Coroutines & Flow
     def coroutines_flow_version = "1.6.4"
     implementation "org.jetbrains.kotlinx:kotlinx-coroutines-core:$coroutines_flow_version"
     implementation "org.jetbrains.kotlinx:kotlinx-coroutines-android:$coroutines_flow_version"
@@ -137,19 +135,18 @@ dependencies {
     def dagger_hilt_version = "2.46.1"
     def hilt_compiler_version = "1.1.0"
 
-    //Dagger-Hilt
+    // Dagger-Hilt
     implementation "com.google.dagger:hilt-android:$dagger_hilt_version"
     kapt "com.google.dagger:hilt-compiler:$dagger_hilt_version"
 //    implementation "androidx.hilt:hilt-lifecycle-viewmodel:$hilt_lifecycle_viewmodel_version"
     kapt "androidx.hilt:hilt-compiler:$hilt_compiler_version"
 
-    androidTestImplementation  'com.google.dagger:hilt-android-testing:2.40'
+    androidTestImplementation 'com.google.dagger:hilt-android-testing:2.40'
     kaptAndroidTest "com.google.dagger:hilt-compiler:$hilt_compiler_version"
 
     // For local unit tests
     testImplementation 'com.google.dagger:hilt-android-testing:2.40'
     kaptTest 'com.google.dagger:hilt-compiler:2.40'
-
 
     // 파이어베이스
     implementation platform('com.google.firebase:firebase-bom:32.3.1')
@@ -161,35 +158,30 @@ dependencies {
     implementation("com.google.firebase:firebase-analytics")
     implementation("com.google.firebase:firebase-analytics-ktx")
 
-
-
-    //스프래쉬 화면
+    // 스프래쉬 화면
     implementation 'androidx.core:core-splashscreen:1.0.1'
 
-    // retrofit
+    // Retrofit
     def retrofit_version = "2.9.0"
     implementation "com.squareup.retrofit2:retrofit:$retrofit_version"
 
-    // retrofit - moshi
+    // Retrofit - Moshi
     implementation("com.squareup.moshi:moshi:1.14.0")
     implementation "com.squareup.retrofit2:converter-moshi:$retrofit_version"
 
-    // moshi
+    // Moshi
     def moshi_version = "1.14.0"
     implementation "com.squareup.moshi:moshi-kotlin:$moshi_version"
     kapt "com.squareup.moshi:moshi-kotlin-codegen:$moshi_version"
 
-    //OKHttp
+    // OKHttp
     implementation platform('com.squareup.okhttp3:okhttp-bom:4.9.0')
     implementation 'com.squareup.okhttp3:okhttp'
     implementation 'com.squareup.okhttp3:logging-interceptor'
 
-    //interceptorRandomUserApiService.kt
-    implementation("com.squareup.okhttp3:logging-interceptor:4.11.0")
-
     def billing_version = "6.0.1"
-
     implementation "com.android.billingclient:billing-ktx:$billing_version"
 
+    // Chart
+    implementation 'com.github.PhilJay:MPAndroidChart:v3.1.0'
 }
-

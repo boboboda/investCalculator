@@ -6,6 +6,7 @@ import android.annotation.SuppressLint
 import android.app.Activity
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.content.res.Resources.Theme
 import android.os.Build
 import android.os.Bundle
 import android.util.Log
@@ -16,42 +17,39 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
-import androidx.compose.material.BottomNavigation
-import androidx.compose.material.BottomNavigationItem
 import androidx.compose.material.DrawerState
 import androidx.compose.material.DrawerValue
-import androidx.compose.material.Icon
-import androidx.compose.material.SnackbarHostState
-import androidx.compose.material.Text
+import androidx.compose.material.Surface
 import androidx.compose.material.rememberDrawerState
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.painterResource
 import androidx.core.animation.doOnEnd
 import androidx.core.content.ContextCompat
 import androidx.core.splashscreen.SplashScreen
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
-import androidx.navigation.NavBackStackEntry
+import androidx.core.view.WindowCompat
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import com.bobodroid.myapplication.components.Dialogs.GuideDialog
+import com.bobodroid.myapplication.components.Dialogs.RewardShowAskDialog
+import com.bobodroid.myapplication.components.Dialogs.ThanksDialog
 import com.bobodroid.myapplication.components.MainBottomBar
 import com.bobodroid.myapplication.components.MainTopBar
 import com.bobodroid.myapplication.components.admobs.loadInterstitial
 import com.bobodroid.myapplication.components.admobs.loadRewardedAdvertisement
 import com.bobodroid.myapplication.components.admobs.loadTargetRewardedAdvertisement
+import com.bobodroid.myapplication.components.admobs.showTargetRewardedAdvertisement
 import com.bobodroid.myapplication.models.viewmodels.AllViewModel
 import com.bobodroid.myapplication.models.viewmodels.DollarViewModel
 import com.bobodroid.myapplication.models.viewmodels.WonViewModel
 import com.bobodroid.myapplication.models.viewmodels.YenViewModel
 import com.bobodroid.myapplication.routes.*
 import com.bobodroid.myapplication.screens.*
+import com.bobodroid.myapplication.ui.theme.InverstCalculatorTheme
 import com.google.android.gms.ads.MobileAds
 //import com.google.android.gms.ads.MobileAds
 import dagger.hilt.android.AndroidEntryPoint
@@ -79,6 +77,7 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         Log.w(TAG, "onCreate 실행")
+
         splashScreen = installSplashScreen()
 
 //        startSplash()
@@ -109,17 +108,19 @@ class MainActivity : ComponentActivity() {
         )
 
         setContent {
-            AppScreen(
-                dollarViewModel,
-                yenViewModel,
-                wonViewModel,
-                allViewModel,
-                activity = this
-            )
+            InverstCalculatorTheme {
+                AppScreen(
+                    dollarViewModel,
+                    yenViewModel,
+                    wonViewModel,
+                    allViewModel,
+                    activity = this
+                )
+            }
+
         }
     }
 
-    // 앱이 처음 실행될 때, 앱이 백그라운드에서 포그라운드로 넘올 때
     override fun onStart() {
         super.onStart()
         // 앱 초기 실행 및 백그라운드에서 포그라운드로 전환될 때 실행
@@ -217,20 +218,16 @@ fun AppScreen(
     activity: Activity
 ) {
 
+
     val scope = rememberCoroutineScope()
 
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
-
 
     Column(
         modifier = Modifier
             .fillMaxSize()
     ) {
-        MainTopBar(menuBarClinked = {
-            scope.launch {
-                drawerState.open()
-            }
-        })
+        MainTopBar()
 
         Column(
             modifier = Modifier.weight(1f),
@@ -248,6 +245,10 @@ fun AppScreen(
         }
 
     }
+
+
+
+
 
 
 }
@@ -270,6 +271,10 @@ fun InvestAppScreen(
     }
 
     val mainBackStack = investNavController.currentBackStackEntryAsState()
+
+    var guideDialog by remember {
+        mutableStateOf(false)
+    }
 
     Column(
         modifier = Modifier.fillMaxSize()
@@ -294,9 +299,20 @@ fun InvestAppScreen(
         Column(
             modifier = Modifier.wrapContentSize()
         ) {
-            MainBottomBar(mainRouteAction = investRouteAction, mainRouteBackStack = mainBackStack.value, allViewModel = allViewModel)
+            MainBottomBar(
+                mainRouteAction = investRouteAction,
+                mainRouteBackStack = mainBackStack.value,
+                allViewModel = allViewModel,
+                returnAlarmView = {
+                guideDialog = true
+            })
         }
 
+        if(guideDialog) {
+            GuideDialog(onDismissRequest = {
+                                           guideDialog = it
+            }, title = "안내", message = "아이디 생성 후 다시 시도해주세요", buttonLabel = "확인")
+        }
 
     }
 
@@ -318,6 +334,13 @@ fun InvestNavHost(
     drawerState: DrawerState,
     activity: Activity
 ) {
+
+    val rewardShowDialog = allViewModel.rewardShowDialog.collectAsState()
+
+    val localUser = allViewModel.localUserData.collectAsState()
+
+    var thankShowingDialog by remember { mutableStateOf(false) }
+
     NavHost(navController = investNavController, startDestination = startRouter.routeName!!) {
         composable(MainRoute.Main.routeName!!) {
             MainScreen(
@@ -332,17 +355,50 @@ fun InvestNavHost(
         }
 
         composable(MainRoute.Alert.routeName!!) {
-            Column {
-                Text(text = "알람")
-            }
+            AlarmScreen(allViewModel = allViewModel)
         }
 
         composable(MainRoute.MyPage.routeName!!) {
-            Column {
-                Text(text = "마이페이지")
-            }
+            MyPageScreen(routeAction = routeAction, allViewModel = allViewModel)
+        }
+
+        composable(MainRoute.CreateUser.routeName!!) {
+            CreateUSerScreen(routeAction = routeAction, allViewModel = allViewModel)
+        }
+
+        composable(MainRoute.CustomerServiceCenter.routeName!!) {
+            CustomerScreen(activity = activity, routeAction = routeAction)
+        }
+
+        composable(MainRoute.CloudService.routeName!!) {
+            CloudScreen(routeAction, allViewModel, dollarViewModel, yenViewModel, wonViewModel)
+        }
+
+        composable(MainRoute.AnalysisScreen.routeName!!) {
+            AnalysisScreen(allViewModel)
         }
     }
+
+    if(rewardShowDialog.value) {
+        RewardShowAskDialog(
+            onDismissRequest = {
+                allViewModel.rewardDelayDate(localUser.value)
+                allViewModel.rewardShowDialog.value = it
+            },
+            onClicked = {
+                showTargetRewardedAdvertisement(activity, onAdDismissed = {
+                    allViewModel.rewardDelayDate(localUser.value)
+                    allViewModel.deleteBannerDelayDate(localUser.value)
+                    allViewModel.rewardShowDialog.value = false
+                    thankShowingDialog = true
+                })
+            })
+    }
+
+    if(thankShowingDialog)
+        ThanksDialog(onDismissRequest = { value ->
+            thankShowingDialog = value
+        })
 }
 
 

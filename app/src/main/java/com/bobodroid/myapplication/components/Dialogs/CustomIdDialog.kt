@@ -100,7 +100,8 @@ fun CustomIdDialog(
                         .height(50.dp)
                         .padding(horizontal = 10.dp),
                     placeholder = {
-                        Text(text = placeholder)
+                        Text(text = placeholder,
+                            fontSize = 14.sp)
                     },
                     value = userIdInPut,
                     onValueChange = {
@@ -128,13 +129,12 @@ fun CustomIdDialog(
                         .padding(horizontal = 10.dp),
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                     placeholder = {
-                        Text(text = "8자리 숫자를 입력해주세요")
+                        Text(
+                            text = "8자리 숫자를 입력해주세요",
+                            fontSize = 14.sp)
                     },
                     value = userPinInput,
                     onValueChange = {
-
-
-
                         if(userPinInput.length >= 8) {
                             coroutineScope.launch {
                                 snackbarHostState.showSnackbar(

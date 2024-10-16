@@ -116,7 +116,8 @@ fun MainBottomBar(
     mainRouteAction: MainRouteAction,
     mainRouteBackStack: NavBackStackEntry?,
     allViewModel: AllViewModel,
-    returnAlarmView: () -> Unit
+    returnAlarmView: () -> Unit,
+    returnContent:() -> Unit
 ) {
 
     val snackBarHostState = remember { SnackbarHostState() }
@@ -193,6 +194,9 @@ fun MainBottomBar(
                 onClick = {
                     mainRouteAction.navTo(parentRoute)
                     allViewModel.nowBottomCardValue.value = parentRoute.selectValue!!
+
+//                    returnContent()
+
                 }
             )
         }

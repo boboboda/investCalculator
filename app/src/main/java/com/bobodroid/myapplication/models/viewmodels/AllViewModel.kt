@@ -22,6 +22,7 @@ import com.bobodroid.myapplication.models.datamodels.YenBuyRecord
 import com.bobodroid.myapplication.models.datamodels.YenSellRecord
 import com.bobodroid.myapplication.models.datamodels.service.NoticeApi
 import com.bobodroid.myapplication.util.InvestApplication
+import com.example.app.data.WebSocketClient
 import com.google.firebase.firestore.Query
 import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
@@ -49,6 +50,9 @@ import javax.inject.Inject
 class AllViewModel @Inject constructor(
     private val investRepository: InvestRepository
 ) : ViewModel() {
+
+
+    private val webSocketClient = WebSocketClient()
 
     var changeMoney = MutableStateFlow(1)
 
@@ -83,6 +87,23 @@ class AllViewModel @Inject constructor(
 
 
     init{
+
+
+        viewModelScope.launch(Dispatchers.IO) {
+            webSocketClient.recentRateWebReceiveData(
+                onInsert = { rateString ->
+                    // 환율 데이터 처리 로직
+                    Log.d(TAG, "Received exchange rate: $rateString")
+                },
+                onInitialData = { initialData ->
+                    // 초기 데이터 처리 로직
+                    Log.d(TAG, "Received initial data: $initialData")
+                }
+            )
+        }
+
+
+
         viewModelScope.launch() {
             onReadyRewardAd.collect {isReady ->
                 if(isReady) {
@@ -628,10 +649,6 @@ class AllViewModel @Inject constructor(
                     if (snapshot != null) {
 
                         val data = ExchangeRate.fromQuerySnapshot(snapshot)
-
-                        val jpySpread = ""
-
-                        val usdSpread = ""
 
                         Log.d(TAG, "서버에서 들어온 값 ${data}")
 

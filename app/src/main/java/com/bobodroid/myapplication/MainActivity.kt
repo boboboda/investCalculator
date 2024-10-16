@@ -276,6 +276,10 @@ fun InvestAppScreen(
         mutableStateOf(false)
     }
 
+    var returnGuideDialog by remember {
+        mutableStateOf(false)
+    }
+
     Column(
         modifier = Modifier.fillMaxSize()
     ) {
@@ -304,14 +308,23 @@ fun InvestAppScreen(
                 mainRouteBackStack = mainBackStack.value,
                 allViewModel = allViewModel,
                 returnAlarmView = {
-                guideDialog = true
-            })
+                    guideDialog = true
+                },
+                returnContent = {
+                    returnGuideDialog  = true
+                })
         }
 
         if(guideDialog) {
             GuideDialog(onDismissRequest = {
                                            guideDialog = it
             }, title = "안내", message = "아이디 생성 후 다시 시도해주세요", buttonLabel = "확인")
+        }
+
+        if(returnGuideDialog) {
+            GuideDialog(onDismissRequest = {
+                returnGuideDialog = it
+            }, title = "안내", message = "추후 출시될 예정입니다.", buttonLabel = "확인")
         }
 
     }

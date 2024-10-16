@@ -136,12 +136,6 @@ fun MainScreen(
 
     var callEndDate = allViewModel.endDateFlow.collectAsState()
 
-    val drBoxState = dollarViewModel.selectedBoxId.collectAsState()
-
-    val yenCheckBoxState = yenViewModel.selectedBoxId.collectAsState()
-
-    val wonCheckBoxState = wonViewModel.selectedBoxId.collectAsState()
-
     val coroutineScope = rememberCoroutineScope()
 
     val noticeShowDialog = allViewModel.noticeShowDialog.collectAsState()

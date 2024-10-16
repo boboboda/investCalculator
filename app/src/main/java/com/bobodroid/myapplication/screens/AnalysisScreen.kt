@@ -69,6 +69,7 @@ fun AnalysisScreen(allViewModel: AllViewModel) {
     }
 
 
+    ChartView(allViewModel = allViewModel)
 }
 
 @Composable

@@ -128,5 +128,8 @@ abstract class InvestDatabase: RoomDatabase() {
         tableName = "LocalUserData_table",
         columnName = "user_Reset_State"
     )
+
+
+
     class MyAutoMigration : AutoMigrationSpec
 }

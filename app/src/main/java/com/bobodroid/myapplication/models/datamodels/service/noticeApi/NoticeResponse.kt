@@ -1,4 +1,4 @@
-package com.bobodroid.myapplication.models.datamodels.service
+package com.bobodroid.myapplication.models.datamodels.service.noticeApi
 
 import com.squareup.moshi.Json
 

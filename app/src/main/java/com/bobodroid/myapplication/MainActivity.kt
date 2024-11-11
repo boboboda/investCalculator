@@ -191,11 +191,6 @@ class MainActivity : ComponentActivity() {
         //권한이 있을때
     }
 
-    override fun onDestroy() {
-        super.onDestroy()
-    }
-
-
     /** 권한 요청 */
     private val permissionPostNotification =
         registerForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted ->
@@ -205,6 +200,13 @@ class MainActivity : ComponentActivity() {
                 //권한 비허용
             }
         }
+
+    override fun onDestroy() {
+        super.onDestroy()
+    }
+
+
+
 
 }
 

@@ -45,6 +45,13 @@ android {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
             signingConfig signingConfigs.debug
+
+            buildConfigField "String", "BASE_URL", "\"https://buyoungsil.ddns.net:4200\""
+            buildConfigField "String", "WEBSOCKET_URL", "\"https://buyoungsil.ddns.net:3000\""
+        }
+        debug {
+            buildConfigField "String", "WEBSOCKET_URL", "\"http://10.0.2.2:4200\""
+            buildConfigField "String", "BASE_URL", "\"https://localhost:3000\""
         }
     }
 

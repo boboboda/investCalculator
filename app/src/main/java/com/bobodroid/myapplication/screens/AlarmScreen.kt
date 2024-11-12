@@ -70,7 +70,7 @@ import java.math.BigDecimal
 @Composable
 fun AlarmScreen(allViewModel: AllViewModel) {
 
-    val recentRate = allViewModel.recentExChangeRateFlow.collectAsState()
+    val recentRate = allViewModel.recentExchangeRateFlow.collectAsState()
 
     var trashExpanded by remember { mutableStateOf(false) }
 

@@ -20,7 +20,7 @@ import com.bobodroid.myapplication.models.datamodels.YenBuyRecord
 import com.bobodroid.myapplication.models.datamodels.YenSellRecord
 import com.bobodroid.myapplication.models.datamodels.service.noticeApi.NoticeApi
 import com.bobodroid.myapplication.util.InvestApplication
-import com.example.app.data.WebSocketClient
+import com.bobodroid.myapplication.models.datamodels.websocket.WebSocketClient
 import com.google.firebase.firestore.Query
 import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
@@ -43,11 +43,11 @@ import javax.inject.Inject
 
 @HiltViewModel
 class AllViewModel @Inject constructor(
-    private val investRepository: InvestRepository
+    private val investRepository: InvestRepository,
+    private val webSocketClient: WebSocketClient
 ) : ViewModel() {
 
 
-    private val webSocketClient = WebSocketClient()
 
     var changeMoney = MutableStateFlow(1)
 
@@ -79,25 +79,23 @@ class AllViewModel @Inject constructor(
 
     val deleteBannerStateFlow = MutableStateFlow(false)
 
+    // 환율 관련
+    // 항상 최신 값 가지고 있음
+    val _recentExchangeRateFlow = MutableStateFlow(ExchangeRate())
+
+    val recentExchangeRateFlow = _recentExchangeRateFlow.asStateFlow()
+
+    val totalExchangeRate = MutableStateFlow<List<ExchangeRate>>(emptyList())
+
+    // 현재 날짜와 시각
+    val nowDateTimeFlow = MutableStateFlow(LocalDateTime.now().toString())
+
+    // 오늘 자정의 시각
+    val midnightDateTimeFlow = MutableStateFlow(LocalDateTime.now().with(LocalTime.MIDNIGHT).toString())
+
 
 
     init{
-
-
-        viewModelScope.launch(Dispatchers.IO) {
-            webSocketClient.recentRateWebReceiveData(
-                onInsert = { rateString ->
-                    // 환율 데이터 처리 로직
-                    Log.d(TAG, "Received exchange rate: $rateString")
-                },
-                onInitialData = { initialData ->
-                    // 초기 데이터 처리 로직
-                    Log.d(TAG, "Received initial data: $initialData")
-                }
-            )
-        }
-
-
 
         viewModelScope.launch() {
             onReadyRewardAd.collect {isReady ->
@@ -113,6 +111,8 @@ class AllViewModel @Inject constructor(
         }
 
         loadLocalRate()
+
+        recentRateHotListener()
     }
 
     val rewardIsReadyStateFlow = MutableStateFlow(false)
@@ -582,95 +582,161 @@ class AllViewModel @Inject constructor(
 
 
 
-
-    // 환율 관련
-    // 항상 최신 값 가지고 있음
-    val recentExChangeRateFlow = MutableStateFlow(ExchangeRate())
-
-    val totalExchangeRate = MutableStateFlow<List<ExchangeRate>>(emptyList())
-
-    // 현재 날짜와 시각
-    val nowDateTimeFlow = MutableStateFlow(LocalDateTime.now().toString())
-
-    // 오늘 자정의 시각
-    val midnightDateTimeFlow = MutableStateFlow(LocalDateTime.now().with(LocalTime.MIDNIGHT).toString())
-
-
     // 최신 환율 불러오기
-    fun recentRateHotListener(response: (ExchangeRate, LocalUserData) -> Unit) {
-//        dateUpdate()
+//    fun recentRateHotListener(response: (ExchangeRate, LocalUserData) -> Unit) {
+////        dateUpdate()
+//
+//        viewModelScope.launch {
+//
+//            localExistCheck { localData ->
+//
+//                localUserData.value = localData
+//
+//                Log.d(TAG, "localData = ${localUserData.value}")
+//
+////                resetChance(localData)
+//
+//                noticeApi { noticeDate ->
+//                    noticeDialogState(localData, noticeDate)
+//
+//                }
+//
+//                fcmTokenUpdate(localData)
+//
+//                viewModelScope.launch {
+//                    refreshDateFlow.emit(localData.reFreshCreateAt ?: "새로고침 정보가 없습니다.")
+//                }
+//
+//                // 수정 필요
+//                if(!localData.customId.isNullOrEmpty()) {
+//                    targetRateLoad(localData.customId!!) { data, message->
+//                        viewModelScope.launch {
+//                            _targetRate.emit(data)
+//                            Log.w(TAG, "목표환율 불러오기 성공")
+//                        }
+//                    }
+//                }
+//
+//            }
+//
+//            webSocketClient.recentRateWebReceiveData(
+//                onInsert = { rateString ->
+//                    // 환율 데이터 처리 로직
+//                    Log.d(TAG, "Received exchange rate: $rateString")
+//                },
+//                onInitialData = { initialData ->
+//                    // 초기 데이터 처리 로직
+//                    Log.d(TAG, "Received initial data: $initialData")
+//                }
+//            )
+//
+//        }
+//    }
 
+    fun recentRateHotListener() {
         viewModelScope.launch {
-
             localExistCheck { localData ->
-
                 localUserData.value = localData
-
-                Log.d(TAG, "localData = ${localUserData.value}")
-
-//                resetChance(localData)
-
-                noticeApi { noticeDate ->
-                    noticeDialogState(localData, noticeDate)
-
-                }
-
-                fcmTokenUpdate(localData)
-
-                viewModelScope.launch {
-                    refreshDateFlow.emit(localData.reFreshCreateAt ?: "새로고침 정보가 없습니다.")
-                }
-
-                if(!localData.customId.isNullOrEmpty()) {
-                    targetRateLoad(localData.customId!!) { data, message->
-                        viewModelScope.launch {
-                            _targetRate.emit(data)
-                            Log.w(TAG, "목표환율 불러오기 성공")
-                        }
-                    }
-                }
-
+                setupNotice(localData)
+                updateFcmToken(localData)
+                loadTargetRate(localData.customId)
             }
 
-            db.collection("exchangeRates")
-                .orderBy("createAt", Query.Direction.DESCENDING)
-                .limit(1)
-                .addSnapshotListener { snapshot, e ->
-                    if (e != null) {
-                        Log.w(TAG, "Listen failed.", e)
-                        return@addSnapshotListener
-                    }
-
-                    if (snapshot != null) {
-
-                        val data = ExchangeRate.fromQuerySnapshot(snapshot)
-
-                        Log.d(TAG, "서버에서 들어온 값 ${data}")
-
-                        data?.let {
-                            response(it, localUserData.value)
-
-                            viewModelScope.launch {
-                                recentExChangeRateFlow.emit(it)
-                            }
-                        }
-
-                    } else {
-                        Log.w(TAG, "Current data: null")
-                        return@addSnapshotListener
-
-                    }
-                }
-
+            // 실시간 데이터 구독 시작
+            subscribeToExchangeRateUpdates()
         }
     }
 
+    // 알림 관련 작업
+    private fun setupNotice(localData: LocalUserData) {
+        noticeApi { noticeDate ->
+            noticeDialogState(localData, noticeDate)
+        }
+    }
+
+    // FCM 토큰 업데이트
+    private fun updateFcmToken(localData: LocalUserData) {
+        fcmTokenUpdate(localData)
+    }
+
+    // 목표 환율 로드
+    private fun loadTargetRate(customId: String?) {
+        if (!customId.isNullOrEmpty()) {
+            targetRateLoad(customId) { data, message ->
+                viewModelScope.launch {
+                    _targetRate.emit(data)
+                    Log.w(TAG, "목표환율 불러오기 성공")
+                }
+            }
+        }
+    }
 
     fun deleteTotalRates() {
         viewModelScope.launch {
             investRepository.exchangeRateDataDelete()
         }
     }
+
+
+    // 웹소켓 실시간 데이터 구독
+    private fun subscribeToExchangeRateUpdates() {
+        webSocketClient.recentRateWebReceiveData(
+            onInsert = { rateString ->
+                Log.d(TAG, "웹소켓 환율 최신 데이터: $rateString")
+                onRateUpdate(rateString)
+            },
+            onInitialData = { initialData ->
+                Log.d(TAG, "웹소켓 환율 초기화 데이터: $initialData")
+                onInitialDataReceived(initialData)
+            }
+        )
+    }
+
+    private fun onRateUpdate(rateString: String) {
+        try {
+            // rateString을 JSON으로 변환하고 ExchangeRate 객체 생성
+            val exchangeRate = ExchangeRate.fromCustomJson(rateString) ?: return
+
+            // 필요한 로직 처리 (예: 로컬 DB에 저장하거나 UI에 업데이트)
+
+            viewModelScope.launch {
+                _recentExchangeRateFlow.emit(exchangeRate)
+            }
+
+            Log.d(TAG, "환율 업데이트 파싱 완료: $exchangeRate")
+
+            // 데이터가 잘 파싱되었는지 확인하는 로그
+            Log.d(TAG, "USD 환율: ${exchangeRate.usd}, JPY 환율: ${exchangeRate.jpy}")
+
+        } catch (e: Exception) {
+            Log.e(TAG, "환율 업데이트 파싱 실패: $rateString", e)
+        }
+    }
+
+    // 초기 데이터 처리
+    private fun onInitialDataReceived(initialData: String) {
+        try {
+            // initialData를 JSON으로 변환하고 ExchangeRate 객체 생성
+            val exchangeRate = ExchangeRate.fromCustomJson(initialData) ?: return
+
+
+            viewModelScope.launch {
+                _recentExchangeRateFlow.emit(exchangeRate)
+            }
+
+            Log.d(TAG, "초기 데이터 파싱 완료: $exchangeRate")
+
+            // 데이터가 잘 파싱되었는지 확인하는 로그
+            Log.d(TAG, "초기 USD 환율: ${exchangeRate.usd}, 초기 JPY 환율: ${exchangeRate.jpy}")
+
+        } catch (e: Exception) {
+            Log.e(TAG, "초기 데이터 파싱 실패: $initialData", e)
+        }
+    }
+
+
+
+
     private fun fireStoreNowRateLoad(startOfDay: String, endOfDay: String, result:(List<ExchangeRate>) -> Unit) {
 
         viewModelScope.launch(Dispatchers.IO) {
@@ -828,7 +894,7 @@ class AllViewModel @Inject constructor(
                             localData(it)
                         }
 
-                        Log.d(TAG, "로컬 유저아이디 없음 ${userData}")
+                        Log.d(TAG, "로컬 유저 생성 ${userData}")
                     } else {
                         Log.d(TAG, "가져온 유저 데이터 ${userData}")
                         localData(userData)
@@ -850,7 +916,7 @@ class AllViewModel @Inject constructor(
 
 
     fun reFreshProfit(reFreshClicked: (ExchangeRate) -> Unit) {
-        val resentRate = recentExChangeRateFlow.value
+        val resentRate = recentExchangeRateFlow.value
 
         reFreshClicked.invoke(resentRate)
     }

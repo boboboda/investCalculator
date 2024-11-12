@@ -46,7 +46,7 @@ fun DollarMainScreen(
 
     var selectedBoxId = dollarViewModel.selectedBoxId.collectAsState()
 
-    val recentExchangeRate = allViewModel.recentExChangeRateFlow.collectAsState()
+    val recentExchangeRate = allViewModel.recentExchangeRateFlow.collectAsState()
 
 
 

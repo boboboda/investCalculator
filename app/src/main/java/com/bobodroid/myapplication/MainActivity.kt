@@ -29,6 +29,7 @@ import androidx.core.content.ContextCompat
 import androidx.core.splashscreen.SplashScreen
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.core.view.WindowCompat
+import androidx.lifecycle.lifecycleScope
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -99,6 +100,16 @@ class MainActivity : ComponentActivity() {
 
                     loadTargetRewardedAdvertisement(this@MainActivity)
 
+                    lifecycleScope.launchWhenStarted {
+                        allViewModel.recentExchangeRateFlow.collect { recentRate ->
+                            recentRate?.let { rate ->
+                                dollarViewModel.requestRate(rate)
+                                yenViewModel.requestRate(rate)
+                                wonViewModel.requestRate(rate)
+                            }
+                        }
+                    }
+
                     Thread.sleep(1500)
                     // The content is ready. Start drawing.
                     content.viewTreeObserver.removeOnPreDrawListener(this)
@@ -126,16 +137,6 @@ class MainActivity : ComponentActivity() {
         // 앱 초기 실행 및 백그라운드에서 포그라운드로 전환될 때 실행
 
         Log.w(TAG, "onStart 실행")
-
-        allViewModel.recentRateHotListener { recentRate, localData ->
-            Log.d(TAG, "실시간 데이터 수신 ${recentRate}, ${localData}")
-
-            dollarViewModel.requestRate(recentRate)
-
-            yenViewModel.requestRate(recentRate)
-
-            wonViewModel.requestRate(recentRate)
-        }
 
         checkAppPushNotification()
     }

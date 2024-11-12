@@ -141,7 +141,7 @@ fun DrawerCustom(
     if (productList.value.isNullOrEmpty()) readyBillingState = false else readyBillingState = true
 
 
-    val resentRate = allViewModel.recentExChangeRateFlow.collectAsState()
+    val resentRate = allViewModel.recentExchangeRateFlow.collectAsState()
 
     var spreadDialog by remember { mutableStateOf(false) }
 

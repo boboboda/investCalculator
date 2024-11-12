@@ -152,7 +152,7 @@ fun MainScreen(
 
     val context = LocalContext.current
 
-    val recentRate = allViewModel.recentExChangeRateFlow.collectAsState()
+    val recentRate = allViewModel.recentExchangeRateFlow.collectAsState()
 
     var dropdownExpanded by remember { mutableStateOf(false) }
 

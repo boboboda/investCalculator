@@ -2,17 +2,37 @@ package com.bobodroid.myapplication.models.datamodels.service.exchangeRateApi
 
 import com.squareup.moshi.Json
 
+//// 공통 환율 데이터
+//data class ExchangeRates(
+//    @Json(name = "USD") val usd: String,
+//    @Json(name = "JPY") val jpy: String
+//)
+//
+//// 공통 Rates 데이터 클래스 (평균, 최대, 최소값을 위해 사용)
+//data class Rates(
+//    @Json(name = "USD") val usd: String,
+//    @Json(name = "JPY") val jpy: String
+//)
+
 // 공통 환율 데이터
 data class ExchangeRates(
     @Json(name = "USD") val usd: String,
     @Json(name = "JPY") val jpy: String
-)
+) {
+    override fun toString(): String {
+        return "(USD=$usd, JPY=$jpy)"
+    }
+}
 
 // 공통 Rates 데이터 클래스 (평균, 최대, 최소값을 위해 사용)
 data class Rates(
     @Json(name = "USD") val usd: String,
     @Json(name = "JPY") val jpy: String
-)
+) {
+    override fun toString(): String {
+        return "(USD=$usd, JPY=$jpy)"
+    }
+}
 
 // 기본 응답 클래스: Exchange Rate 정보
 data class ExchangeRateResponse(

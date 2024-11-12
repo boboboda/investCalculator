@@ -18,6 +18,7 @@ import com.bobodroid.myapplication.models.datamodels.WonBuyRecord
 import com.bobodroid.myapplication.models.datamodels.WonSellRecord
 import com.bobodroid.myapplication.models.datamodels.YenBuyRecord
 import com.bobodroid.myapplication.models.datamodels.YenSellRecord
+import com.bobodroid.myapplication.models.datamodels.service.exchangeRateApi.RateStatsApi
 import com.bobodroid.myapplication.models.datamodels.service.noticeApi.NoticeApi
 import com.bobodroid.myapplication.util.InvestApplication
 import com.bobodroid.myapplication.models.datamodels.websocket.WebSocketClient
@@ -113,7 +114,15 @@ class AllViewModel @Inject constructor(
         loadLocalRate()
 
         recentRateHotListener()
+
+
     }
+
+
+
+
+
+
 
     val rewardIsReadyStateFlow = MutableStateFlow(false)
 
@@ -762,6 +771,7 @@ class AllViewModel @Inject constructor(
                 }
         }
     }
+
     fun firebaseRateLoad(loadFinished:(String) -> Unit) {
 
         // 토탈 데이터 마지막 날짜 시간, 오늘날짜 시간 비교
@@ -831,6 +841,7 @@ class AllViewModel @Inject constructor(
 
 
     }
+
     private fun loadLocalRate() {
         viewModelScope.launch(Dispatchers.IO) {
             investRepository.exchangeRateDataGet()

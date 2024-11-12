@@ -6,7 +6,6 @@ import android.annotation.SuppressLint
 import android.app.Activity
 import android.content.Intent
 import android.content.pm.PackageManager
-import android.content.res.Resources.Theme
 import android.os.Build
 import android.os.Bundle
 import android.util.Log
@@ -20,7 +19,6 @@ import androidx.activity.viewModels
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.DrawerState
 import androidx.compose.material.DrawerValue
-import androidx.compose.material.Surface
 import androidx.compose.material.rememberDrawerState
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
@@ -28,7 +26,6 @@ import androidx.core.animation.doOnEnd
 import androidx.core.content.ContextCompat
 import androidx.core.splashscreen.SplashScreen
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
-import androidx.core.view.WindowCompat
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
@@ -54,8 +51,6 @@ import com.bobodroid.myapplication.ui.theme.InverstCalculatorTheme
 import com.google.android.gms.ads.MobileAds
 //import com.google.android.gms.ads.MobileAds
 import dagger.hilt.android.AndroidEntryPoint
-import kotlinx.coroutines.launch
-import java.util.*
 
 
 @AndroidEntryPoint
@@ -391,7 +386,7 @@ fun InvestNavHost(
         }
 
         composable(MainRoute.AnalysisScreen.routeName!!) {
-            AnalysisScreen(allViewModel)
+            AnalysisScreen()
         }
     }
 

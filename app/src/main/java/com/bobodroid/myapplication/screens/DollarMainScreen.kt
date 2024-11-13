@@ -93,7 +93,7 @@ fun DollarMainScreen(
                 .padding(end = 20.dp)) {
                 GetMoneyView(
                     getMoney = "${totalDrSellProfit.value}",
-                    onClicked = { Log.d(TAG, "") },
+                    onClicked = {  },
                     allViewModel
                 )
             }

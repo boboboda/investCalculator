@@ -6,7 +6,6 @@ import androidx.room.DeleteColumn
 import androidx.room.RenameColumn
 import androidx.room.RoomDatabase
 import androidx.room.migration.AutoMigrationSpec
-import com.bobodroid.myapplication.models.datamodels.firebase.ExchangeRate
 
 
 @Database(entities = [

@@ -18,8 +18,8 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.viewinterop.AndroidView
+import com.bobodroid.myapplication.MainActivity.Companion.TAG
 import com.bobodroid.myapplication.models.viewmodels.WebViewModel
-import com.bobodroid.myapplication.screens.TAG
 import kotlinx.coroutines.flow.collectLatest
 
 
@@ -51,7 +51,7 @@ fun WebView(webViewModel: WebViewModel, url:String, activity: Activity) {
                     view: WebView?,
                     request: WebResourceRequest?
                 ): Boolean {
-                    Log.d(TAG, "팝업 호출")
+                    Log.d(TAG("webView",""), "팝업 호출")
                     return false
                 }
             }
@@ -63,7 +63,7 @@ fun WebView(webViewModel: WebViewModel, url:String, activity: Activity) {
                     result: JsResult?
                 ): Boolean {
                     result?.confirm()
-                    Log.d(TAG, "팝업 호출")
+                    Log.d(TAG("webView",""), "팝업 호출")
                     return super.onJsAlert(view, url, message, result)
                 }
 
@@ -73,7 +73,7 @@ fun WebView(webViewModel: WebViewModel, url:String, activity: Activity) {
                     isUserGesture: Boolean,
                     resultMsg: Message?
                 ): Boolean {
-                    Log.d(TAG, "팝업 호출")
+                    Log.d(TAG("webView",""), "팝업 호출")
                     val newWebView = view?.context?.let { WebView(it) }
                     if (newWebView != null) {
                         newWebView.webViewClient = WebViewClient()

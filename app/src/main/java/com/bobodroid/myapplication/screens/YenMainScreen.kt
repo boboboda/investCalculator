@@ -90,7 +90,7 @@ fun YenMainScreen
                 .padding(end = 20.dp)) {
                 GetMoneyView(
                     getMoney = "${totalYenSellProfit.value}",
-                    onClicked = { Log.d(TAG, "") },
+                    onClicked = {  },
                     allViewModel
                 )
             }

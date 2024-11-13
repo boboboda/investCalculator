@@ -1,6 +1,5 @@
 package com.bobodroid.myapplication.models.datamodels.repository
 
-import com.bobodroid.myapplication.models.datamodels.firebase.ExchangeRate
 import com.bobodroid.myapplication.models.datamodels.roomDb.LocalUserData
 import com.bobodroid.myapplication.models.datamodels.roomDb.LocalUserDatabaseDao
 import kotlinx.coroutines.Dispatchers

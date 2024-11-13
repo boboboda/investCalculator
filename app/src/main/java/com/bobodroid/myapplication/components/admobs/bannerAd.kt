@@ -54,7 +54,7 @@ fun BannerAd() {
 
                         override fun onAdFailedToLoad(adError: LoadAdError) {
                             // Code to be executed when an ad request fails.
-                            Log.d(TAG, "배너 광고 로드 실패 ${adError}")
+                            Log.d(TAG("bannerAd",""), "배너 광고 로드 실패 ${adError}")
                             isAdLoaded = false
                         }
 

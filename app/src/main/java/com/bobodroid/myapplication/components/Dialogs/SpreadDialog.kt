@@ -128,7 +128,7 @@ fun SpreadDialog(
 
                             val signFilterUserInput = filterUserInput.dropWhile {it == '-'}
 
-                            Log.d(TAG, "userInput ${userInput} filterUserInput${filterUserInput} signFilterUserInput ${signFilterUserInput}")
+                            Log.d(TAG("",""), "userInput ${userInput} filterUserInput${filterUserInput} signFilterUserInput ${signFilterUserInput}")
 
                             if(signFilterUserInput == "") {
                                 changeRate = receiveRate

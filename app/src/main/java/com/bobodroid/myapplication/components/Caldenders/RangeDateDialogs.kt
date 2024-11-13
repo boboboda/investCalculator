@@ -310,7 +310,7 @@ fun RangeDateDialog(
                     shape = RoundedCornerShape(5.dp),
                     onClick = {
                         onClicked?.invoke(selectedStartDate.value, selectedEndDate.value)
-                        Log.d(TAG, "조회날짜 ${selectedStartDate.value} ${selectedEndDate.value}")
+                        Log.d(TAG("RangeDateDialog",""), "조회날짜 ${selectedStartDate.value} ${selectedEndDate.value}")
                         onDismissRequest(false)
                     },
                     colors = ButtonDefaults.buttonColors(WelcomeScreenBackgroundColor)

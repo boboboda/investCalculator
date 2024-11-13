@@ -1,6 +1,6 @@
 package com.bobodroid.myapplication.models.datamodels.repository
 
-import com.bobodroid.myapplication.models.datamodels.firebase.ExchangeRate
+import com.bobodroid.myapplication.models.datamodels.roomDb.ExchangeRate
 import com.bobodroid.myapplication.models.datamodels.roomDb.ExchangeRateDataBaseDao
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow

@@ -81,7 +81,6 @@ import com.bobodroid.myapplication.ui.theme.BottomSheetTitleColor
 import com.bobodroid.myapplication.ui.theme.BuyColor
 import com.bobodroid.myapplication.ui.theme.MainTopButtonColor
 
-const val TAG = "메인"
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

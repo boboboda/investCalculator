@@ -40,10 +40,10 @@ class AnalysisViewModel@Inject constructor(): ViewModel() {
 
 
             } catch (error: IOException) {
-                Log.e(TAG, "$error")
+                Log.e(TAG("AnalysisViewModel", "rateStatsApi"), "$error")
                 return@launch
             } catch (error: Exception) {
-                Log.e(TAG, "$error")
+                Log.e(TAG("AnalysisViewModel", "rateStatsApi"), "$error")
                 return@launch
             }
         }

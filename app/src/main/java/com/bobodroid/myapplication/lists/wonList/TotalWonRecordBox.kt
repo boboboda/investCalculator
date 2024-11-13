@@ -29,11 +29,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import com.bobodroid.myapplication.billing.BillingClientLifecycle.Companion.TAG
 import com.bobodroid.myapplication.components.RecordHeader
 import com.bobodroid.myapplication.components.RecordTextView
 import com.bobodroid.myapplication.models.datamodels.roomDb.WonBuyRecord
 import com.bobodroid.myapplication.models.viewmodels.WonViewModel
-import com.bobodroid.myapplication.screens.TAG
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.util.UUID

@@ -8,7 +8,7 @@ import com.bobodroid.myapplication.MainActivity.Companion.TAG
 import com.bobodroid.myapplication.extensions.toBigDecimalWon
 import com.bobodroid.myapplication.models.datamodels.roomDb.DrBuyRecord
 import com.bobodroid.myapplication.models.datamodels.roomDb.DrSellRecord
-import com.bobodroid.myapplication.models.datamodels.firebase.ExchangeRate
+import com.bobodroid.myapplication.models.datamodels.roomDb.ExchangeRate
 import com.bobodroid.myapplication.models.datamodels.repository.InvestRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
@@ -55,7 +55,7 @@ class DollarViewModel @Inject constructor(private val investRepository: InvestRe
                 combineBuyAndSell(sellRecord, buyRecord)
 
                 if (buyRecord.isNullOrEmpty()) {
-                    Log.d(TAG, "Dollar Empty Buy list")
+                    Log.d(TAG("DollarViewModel", "init"), "Dollar Empty Buy list")
                     _buyRecordFlow.value = emptyList()
                     _filterBuyRecordFlow.value = emptyList()
                     _groupBuyRecordFlow.value = setGroup(emptyList())
@@ -70,7 +70,7 @@ class DollarViewModel @Inject constructor(private val investRepository: InvestRe
 
 
                 if (sellRecord.isNullOrEmpty()) {
-                    Log.d(TAG, "Dollar Empty Sell list")
+                    Log.d(TAG("DollarViewModel", "init"), "Dollar Empty Sell list")
                     _sellRecordFlow.value = emptyList()
                     _filterSellRecordFlow.value = emptyList()
                 } else {
@@ -81,7 +81,7 @@ class DollarViewModel @Inject constructor(private val investRepository: InvestRe
             }
 
             combinedFlow.collect {
-                Log.d(TAG, "init 완료")
+                Log.d(TAG("DollarViewModel", "init"), "init 완료")
             }
 
         }
@@ -113,7 +113,7 @@ class DollarViewModel @Inject constructor(private val investRepository: InvestRe
 
             }
         } else {
-            Log.d(TAG, "여기가 실행됨")
+            Log.d(TAG("DollarViewModel", "combineBuyAndSell"), "여기가 실행됨")
         }
 
     }
@@ -171,7 +171,7 @@ class DollarViewModel @Inject constructor(private val investRepository: InvestRe
         startDate: String,
         endDate: String
     ) {
-        Log.d(TAG, "전체 데이터 : ${buyRecordFlow.value}")
+        Log.d(TAG("DollarViewModel", "dateRangeInvoke"), "전체 데이터 : ${buyRecordFlow.value}")
 
 
         //수정 필요
@@ -254,7 +254,7 @@ class DollarViewModel @Inject constructor(private val investRepository: InvestRe
             DrAction.Sell -> {
                 val result = sellList?.map { BigDecimal(it.exchangeMoney) }
 
-                Log.d(TAG, "달러 ${result}")
+                Log.d(TAG("DollarViewModel", "sumProfit"), "달러 ${result}")
 
                 if (result.isNullOrEmpty()) {
                     return ""
@@ -292,7 +292,7 @@ class DollarViewModel @Inject constructor(private val investRepository: InvestRe
     fun buyDollarAdd(groupName: String) {
         viewModelScope.launch {
             exchangeMoney.emit("${lastValue(moneyInputFlow.value, rateInputFlow.value)}")
-            Log.d(TAG, "매수 달러 ${exchangeMoney.value}")
+            Log.d(TAG("DollarViewModel", "buyDollarAdd"), "매수 달러 ${exchangeMoney.value}")
             investRepository
                 .addDollarBuyRecord(
                     DrBuyRecord(
@@ -389,7 +389,7 @@ class DollarViewModel @Inject constructor(private val investRepository: InvestRe
         viewModelScope.launch {
             val buyRecordId = buyRecord.id
 
-            Log.d(TAG, "매도아이디 ${buyRecordId}")
+            Log.d(TAG("DollarViewModel", "sellRecordValue"), "매도아이디 ${buyRecordId}")
             investRepository
                 .addDollarSellRecord(
                     DrSellRecord(
@@ -407,7 +407,7 @@ class DollarViewModel @Inject constructor(private val investRepository: InvestRe
 
     fun removeSellRecord(drSellRecord: DrSellRecord) {
 
-        Log.d(TAG, "${drSellRecord}")
+        Log.d(TAG("DollarViewModel", "removeSellRecord"), "${drSellRecord}")
 
         viewModelScope.launch {
             investRepository.deleteDollarSellRecord(drSellRecord)
@@ -459,7 +459,7 @@ class DollarViewModel @Inject constructor(private val investRepository: InvestRe
 
         val buyRecordProfit = buyRecordFlow.value.map { it.profit }
 
-        Log.d(TAG, "dollarBuyList 불러온 profit 값 : ${buyRecordProfit}")
+        Log.d(TAG("DollarViewModel", "calculateProfit"), "dollarBuyList 불러온 profit 값 : ${buyRecordProfit}")
 
         _buyRecordFlow.value.forEach { drBuyRecord ->
 
@@ -474,19 +474,19 @@ class DollarViewModel @Inject constructor(private val investRepository: InvestRe
             } else {
                 if (drBuyRecord.profit == null) {
 
-                    Log.d(TAG, "기존 데이터 profit 추가 실행")
+                    Log.d(TAG("DollarViewModel", "calculateProfit"), "기존 데이터 profit 추가 실행")
 
                     val resentRate = exchangeRate.usd
 
                     if (resentRate.isNullOrEmpty()) {
-                        Log.d(TAG, "calculateProfit 최신 값 받아오기 실패")
+                        Log.d(TAG("DollarViewModel", "calculateProfit"), "calculateProfit 최신 값 받아오기 실패")
 
                     } else {
                         val exChangeMoney = drBuyRecord.exchangeMoney
 
                         val koreaMoney = drBuyRecord.money
 
-                        Log.d(TAG, "값을 받아왔니? ${resentRate}")
+                        Log.d(TAG("DollarViewModel", "calculateProfit"), "값을 받아왔니? ${resentRate}")
 
                         val profit = (((BigDecimal(exChangeMoney).times(BigDecimal(resentRate)))
                             .setScale(
@@ -494,7 +494,7 @@ class DollarViewModel @Inject constructor(private val investRepository: InvestRe
                                 RoundingMode.HALF_UP
                             )) - BigDecimal(koreaMoney)).toString()
 
-                        Log.d(TAG, "예상 수익 ${profit}")
+                        Log.d(TAG("DollarViewModel", "calculateProfit"), "예상 수익 ${profit}")
 
                         val updateDate = drBuyRecord.copy(profit = profit)
 
@@ -503,19 +503,19 @@ class DollarViewModel @Inject constructor(private val investRepository: InvestRe
                         }
                     }
                 } else {
-                    Log.d(TAG, "업데이트 데이터 profit 실행")
+                    Log.d(TAG("DollarViewModel", "calculateProfit"), "업데이트 데이터 profit 실행")
 
                     val resentRate = exchangeRate.usd
 
                     if (resentRate.isNullOrEmpty()) {
-                        Log.d(TAG, "calculateProfit 최신 값 받아오기 실패")
+                        Log.d(TAG("DollarViewModel", "calculateProfit"), "calculateProfit 최신 값 받아오기 실패")
 
                     } else {
                         val exChangeMoney = drBuyRecord.exchangeMoney
 
                         val koreaMoney = drBuyRecord.money
 
-                        Log.d(TAG, "값을 받아왔니? ${resentRate}")
+                        Log.d(TAG("DollarViewModel", "calculateProfit"), "값을 받아왔니? ${resentRate}")
 
                         val profit = (((BigDecimal(exChangeMoney).times(BigDecimal(resentRate)))
                             .setScale(
@@ -523,7 +523,7 @@ class DollarViewModel @Inject constructor(private val investRepository: InvestRe
                                 RoundingMode.HALF_UP
                             )) - BigDecimal(koreaMoney)).toString()
 
-                        Log.d(TAG, "예상 수익 ${profit}")
+                        Log.d(TAG("DollarViewModel", "calculateProfit"), "예상 수익 ${profit}")
 
                         val updateDate = drBuyRecord.copy(profit = profit)
 
@@ -544,7 +544,7 @@ class DollarViewModel @Inject constructor(private val investRepository: InvestRe
         viewModelScope.launch {
             val successValue = investRepository.updateDollarBuyRecord(updateData)
 
-            Log.d(TAG, "업데이트 성공 ${successValue}")
+            Log.d(TAG("DollarViewModel", "buyDrMemoUpdate"), "업데이트 성공 ${successValue}")
             success = if (successValue > 0) true else false
             result(success)
 
@@ -557,7 +557,7 @@ class DollarViewModel @Inject constructor(private val investRepository: InvestRe
         viewModelScope.launch {
             val successValue = investRepository.updateDollarSellRecord(updateData)
 
-            Log.d(TAG, "업데이트 성공 ${successValue}")
+            Log.d(TAG("DollarViewModel", "buyDrMemoUpdate"), "업데이트 성공 ${successValue}")
             success = if (successValue > 0) true else false
             result(success)
 
@@ -570,9 +570,9 @@ class DollarViewModel @Inject constructor(private val investRepository: InvestRe
 
         val searchSellRecord = investRepository.getDollarSellRecordById(id)
 
-        Log.d(TAG, "cancelBuyRecord: ${searchBuyRecord}, sellId: ${id}")
+        Log.d(TAG("DollarViewModel", "cancelSellRecord"), "cancelBuyRecord: ${searchBuyRecord}, sellId: ${id}")
 
-        Log.d(TAG, "cancelSellRecord: ${searchSellRecord}, sellId: ${id}")
+        Log.d(TAG("DollarViewModel", "cancelSellRecord"), "cancelSellRecord: ${searchSellRecord}, sellId: ${id}")
 
         if (searchBuyRecord == null && searchSellRecord == null) {
             return Pair(false, DrSellRecord())
@@ -616,7 +616,7 @@ class DollarViewModel @Inject constructor(private val investRepository: InvestRe
         val profit = ((BigDecimal(exchangeMoney.value).times(BigDecimal(resentUsRate)))
             .setScale(20, RoundingMode.HALF_UP)
                 ).minus(BigDecimal(moneyInputFlow.value))
-        Log.d(TAG, "개별 profit 결과 값 ${profit}")
+        Log.d(TAG("DollarViewModel", "expectSellValue"), "개별 profit 결과 값 ${profit}")
 
         return profit.toString()
     }

@@ -58,7 +58,9 @@ class MainActivity : ComponentActivity() {
 
 
     companion object {
-        const val TAG = "메인"
+        fun TAG(location: String? = "메인", function: String): String {
+            return "로그 $location $function"
+        }
     }
 
     private val dollarViewModel: DollarViewModel by viewModels()
@@ -72,7 +74,7 @@ class MainActivity : ComponentActivity() {
     private lateinit var splashScreen: SplashScreen
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        Log.w(TAG, "onCreate 실행")
+        Log.w(TAG("메인",""), "onCreate 실행")
 
         splashScreen = installSplashScreen()
 
@@ -131,7 +133,7 @@ class MainActivity : ComponentActivity() {
         super.onStart()
         // 앱 초기 실행 및 백그라운드에서 포그라운드로 전환될 때 실행
 
-        Log.w(TAG, "onStart 실행")
+        Log.w(TAG("메인", ""), "onStart 실행")
 
         checkAppPushNotification()
     }
@@ -140,7 +142,7 @@ class MainActivity : ComponentActivity() {
         super.onActivityResult(requestCode, resultCode, data)
 
         if (requestCode == 1 && resultCode == RESULT_OK) {
-            Log.w(TAG, "보상형 액티비티에서 넘어옴")
+            Log.w(TAG("메인", ""), "보상형 액티비티에서 넘어옴")
         }
     }
 
@@ -148,7 +150,7 @@ class MainActivity : ComponentActivity() {
     private fun startSplash() {
         splashScreen.setOnExitAnimationListener { splashScreenView ->
 
-            Log.w(TAG, "${splashScreenView.iconView}")
+            Log.w(TAG("메인", ""), "${splashScreenView.iconView}")
 
             val translateY =
                 PropertyValuesHolder.ofFloat(View.TRANSLATION_Y, 0f, -50f, 0f) // 위아래로 이동

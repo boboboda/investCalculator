@@ -1,10 +1,10 @@
-package com.bobodroid.myapplication.models.datamodels.firebase
+package com.bobodroid.myapplication.models.datamodels.roomDb
 
 import android.util.Log
 import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.PrimaryKey
-import com.bobodroid.myapplication.screens.TAG
+import com.bobodroid.myapplication.MainActivity.Companion.TAG
 import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.QueryDocumentSnapshot
 import com.google.firebase.firestore.QuerySnapshot
@@ -61,7 +61,7 @@ data class ExchangeRate(
         fun fromCustomJson(jsonString: String): ExchangeRate? {
             return try {
                 if (jsonString.isBlank()) {
-                    Log.e(TAG, "fromCustomJson: 빈 문자열을 수신했습니다.")
+                    Log.e(TAG("ExchangeRate","Type"), "fromCustomJson: 빈 문자열을 수신했습니다.")
                     return null
                 }
 
@@ -71,7 +71,7 @@ data class ExchangeRate(
                 // 'exchangeRates' 필드가 있는지 확인
                 val exchangeRates = jsonObject.optJSONObject("exchangeRates")
                 if (exchangeRates == null) {
-                    Log.e(TAG, "fromCustomJson: 'exchangeRates' 필드가 없습니다.")
+                    Log.e(TAG("ExchangeRate","Type"), "fromCustomJson: 'exchangeRates' 필드가 없습니다.")
                     return null
                 }
 
@@ -87,7 +87,7 @@ data class ExchangeRate(
                     jpy = jpyRate
                 )
             } catch (e: JSONException) {
-                Log.e(TAG, "fromCustomJson: JSON 파싱 오류 발생", e)
+                Log.e(TAG("ExchangeRate","Type"), "fromCustomJson: JSON 파싱 오류 발생", e)
                 null
             }
         }

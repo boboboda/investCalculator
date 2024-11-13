@@ -67,6 +67,7 @@ import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.bobodroid.myapplication.MainActivity
+import com.bobodroid.myapplication.MainActivity.Companion.TAG
 import com.bobodroid.myapplication.components.Dialogs.AskTriggerDialog
 import com.bobodroid.myapplication.components.Dialogs.InsertDialog
 import com.bobodroid.myapplication.components.Dialogs.SellDialog
@@ -170,7 +171,8 @@ fun TotalLineDrRecord(
 
     if (dismissState.isDismissed(DismissDirection.StartToEnd))
         LaunchedEffect(key1 = Unit, block = {
-            Log.d(MainActivity.TAG, "스와이프 이벤트")
+            Log.d(TAG("TotalLineDrRecord",""), "스와이프 이벤트")
+
             dismissState.reset()
             deleteAskDialog.value = true
         })
@@ -717,9 +719,6 @@ fun TotalLineDrRecord(
             }
 
             if (deleteAskDialog.value) {
-
-                Log.d(MainActivity.TAG, "다이로그 오픈")
-
                 AskTriggerDialog(
                     title = "삭제하시겠습니까?",
                     onClickedLabel = "예",

@@ -63,7 +63,6 @@ fun TopButton(mainText: String,
             .padding(7.dp)
             .width(100.dp),
         onClick = {
-            Log.d(TAG, "클릭되었습니다.")
             selectAction.invoke() }
     ) {
         Box(

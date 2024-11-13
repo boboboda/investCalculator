@@ -1,7 +1,7 @@
 package com.bobodroid.myapplication.di
 
 import com.bobodroid.myapplication.models.datamodels.repository.UserRepository
-import com.bobodroid.myapplication.models.datamodels.useCases.CreateUserUseCase
+import com.bobodroid.myapplication.models.datamodels.useCases.CustomIdCreateUser
 import com.bobodroid.myapplication.models.datamodels.useCases.DeleteUserUseCase
 import com.bobodroid.myapplication.models.datamodels.useCases.LocalExistCheckUseCase
 import com.bobodroid.myapplication.models.datamodels.useCases.LocalIdAddUseCase
@@ -24,7 +24,7 @@ object UseCaseModule {
         userRepository: UserRepository
     ): UserUseCases {
         return UserUseCases(
-            createUser = CreateUserUseCase(userRepository),
+            customIdCreateUser = CustomIdCreateUser(userRepository),
             logIn = LogInUseCase(userRepository),
             logout = LogoutUseCase(userRepository),
             localExistCheck = LocalExistCheckUseCase(userRepository, LocalIdAddUseCase(userRepository)),

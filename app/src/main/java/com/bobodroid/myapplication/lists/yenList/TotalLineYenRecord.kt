@@ -161,7 +161,6 @@ fun TotalLineYenRecord(
 
     if (dismissState.isDismissed(DismissDirection.StartToEnd))
         LaunchedEffect(key1 = Unit, block = {
-            Log.d(MainActivity.TAG, "스와이프 이벤트")
             dismissState.reset()
             deleteAskDialog.value = true
         })
@@ -693,8 +692,6 @@ fun TotalLineYenRecord(
             }
 
             if (deleteAskDialog.value) {
-
-                Log.d(MainActivity.TAG, "다이로그 오픈")
 
                 AskTriggerDialog(
                     title = "삭제하시겠습니까?",

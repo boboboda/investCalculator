@@ -41,19 +41,48 @@ android {
     }
 
     buildTypes {
-        release {
-            minifyEnabled false
-            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
-            signingConfig signingConfigs.debug
-
-            buildConfigField "String", "BASE_URL", "\"https://buyoungsil.ddns.net:4200\""
-            buildConfigField "String", "WEBSOCKET_URL", "\"https://buyoungsil.ddns.net:3000\""
+//        release {
+//            minifyEnabled false
+//            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+//            signingConfig signingConfigs.debug
+//
+//            buildConfigField "String", "BASE_URL", "\"https://buyoungsil.ddns.net:4200\""
+//            buildConfigField "String", "WEBSOCKET_URL", "\"https://buyoungsil.ddns.net:3000\""
+//        }
+//        debug {
+//            buildConfigField "String", "WEBSOCKET_URL", "\"http://10.0.2.2:4200\""
+//            buildConfigField "String", "BASE_URL", "\"http://10.0.2.2:3000\""
+//        }
+        buildTypes {
+            release {
+                minifyEnabled false
+                proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+                signingConfig signingConfigs.debug
+            }
+            debug {
+            }
         }
-        debug {
+    }
+
+    productFlavors {
+        emulator {
+            dimension "environment"
             buildConfigField "String", "WEBSOCKET_URL", "\"http://10.0.2.2:4200\""
             buildConfigField "String", "BASE_URL", "\"http://10.0.2.2:3000\""
         }
+        device {
+            dimension "environment"
+            buildConfigField "String", "WEBSOCKET_URL", "\"http://192.168.0.66:4200\""
+            buildConfigField "String", "BASE_URL", "\"http://192.168.0.66:3000\""
+        }
+        prod {
+            dimension "environment"
+            buildConfigField "String", "BASE_URL", "\"http://buyoungsil.ddns.net:3000\""
+            buildConfigField "String", "WEBSOCKET_URL", "\"http://buyoungsil.ddns.net:4200\""
+        }
     }
+
+    flavorDimensions "environment"
 
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_18

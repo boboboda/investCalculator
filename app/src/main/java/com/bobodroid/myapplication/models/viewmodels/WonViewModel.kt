@@ -4,10 +4,8 @@ package com.bobodroid.myapplication.models.viewmodels
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.bobodroid.myapplication.MainActivity
 import com.bobodroid.myapplication.MainActivity.Companion.TAG
-import com.bobodroid.myapplication.models.datamodels.*
-import com.bobodroid.myapplication.models.datamodels.firebase.ExchangeRate
+import com.bobodroid.myapplication.models.datamodels.roomDb.ExchangeRate
 import com.bobodroid.myapplication.models.datamodels.repository.InvestRepository
 import com.bobodroid.myapplication.models.datamodels.roomDb.WonBuyRecord
 import com.bobodroid.myapplication.models.datamodels.roomDb.WonSellRecord
@@ -52,7 +50,7 @@ class WonViewModel @Inject constructor(private val investRepository: InvestRepos
                 combineBuyAndSell(sellRecord, buyRecord)
 
                 if (buyRecord.isNullOrEmpty()) {
-                    Log.d(TAG, "Won Empty Buy list")
+                    Log.d(TAG("WonViewModel", "init"), "Won Empty Buy list")
                     _buyRecordFlow.value = emptyList()
                     _filterBuyRecordFlow.value = emptyList()
                     _groupBuyRecordFlow.value = setGroup(emptyList())
@@ -67,7 +65,7 @@ class WonViewModel @Inject constructor(private val investRepository: InvestRepos
 
 
                 if (sellRecord.isNullOrEmpty()) {
-                    Log.d(TAG, "Won Empty Sell list")
+                    Log.d(TAG("WonViewModel", "init"), "Won Empty Sell list")
                     _sellRecordFlow.value = emptyList()
                     _filterSellRecordFlow.value = emptyList()
                 } else {
@@ -78,7 +76,7 @@ class WonViewModel @Inject constructor(private val investRepository: InvestRepos
             }
 
             combinedFlow.collect {
-                Log.d(TAG, "init 완료")
+                Log.d(TAG("WonViewModel", "init"), "init 완료")
             }
 
         }
@@ -137,7 +135,7 @@ class WonViewModel @Inject constructor(private val investRepository: InvestRepos
 
             }
         } else {
-            Log.d(TAG, "여기가 실행됨")
+            Log.d(TAG("WonViewModel", "combineBuyAndSell"), "여기가 실행됨")
         }
 
     }
@@ -251,7 +249,7 @@ class WonViewModel @Inject constructor(private val investRepository: InvestRepos
             when(moneyCgBtnSelected.value) {
                 1-> {
                     val dollarCg = dollarLastValue(moneyInputFlow.value, rateInputFlow.value)
-                    Log.d(TAG,"값 ${dollarCg}")
+                    Log.d(TAG("WonViewModel", "buyAddRecord"),"값 ${dollarCg}")
                     exchangeMoney.emit("${dollarCg}")
                 }
                 2-> {
@@ -440,7 +438,7 @@ class WonViewModel @Inject constructor(private val investRepository: InvestRepos
 
         val buyRecordProfit = buyRecordFlow.value.map { it.profit }
 
-        Log.d(TAG, "wonBuyList 불러온 profit 값 : ${buyRecordProfit}")
+        Log.d(TAG("WonViewModel", "calculateProfit"), "wonBuyList 불러온 profit 값 : ${buyRecordProfit}")
 
         _buyRecordFlow.value.forEach { wonBuyRecord->
 
@@ -453,13 +451,13 @@ class WonViewModel @Inject constructor(private val investRepository: InvestRepos
             } else {
                 if(wonBuyRecord.profit == null) {
                     // 기존 데이터가 비어있을 때
-                    Log.d(TAG, "프로핏 데이터가 없는경우 profit 실행")
+                    Log.d(TAG("WonViewModel", "calculateProfit"), "프로핏 데이터가 없는경우 profit 실행")
 
                     val resentRateUs = exchangeRate.usd
                     val resentRateYen = exchangeRate.jpy
 
                     if(resentRateUs.isNullOrEmpty()) {
-                        Log.d(TAG, "calculateProfit 최신 값 받아오기 실패")
+                        Log.d(TAG("WonViewModel", "calculateProfit"), "calculateProfit 최신 값 받아오기 실패")
 
                     } else {
 
@@ -469,9 +467,9 @@ class WonViewModel @Inject constructor(private val investRepository: InvestRepos
                         //외화
                         val foreignCurrencyMoney = wonBuyRecord.money
 
-                        Log.d(TAG, "값을 받아왔니? us: ${resentRateUs} jpy:${resentRateYen}")
+                        Log.d(TAG("WonViewModel", "calculateProfit"), "값을 받아왔니? us: ${resentRateUs} jpy:${resentRateYen}")
 
-                        Log.d(TAG, "계산해보자 원화: ${exChangeMoney} 외화:${foreignCurrencyMoney}")
+                        Log.d(TAG("WonViewModel", "calculateProfit"), "계산해보자 원화: ${exChangeMoney} 외화:${foreignCurrencyMoney}")
 
                         val profit = when(wonBuyRecord.moneyType) {
                             1-> {  foreignCurrencyMoney!!.toBigDecimal() -(exChangeMoney!!.toBigDecimal() / (resentRateUs.toBigDecimal()))   }
@@ -482,7 +480,7 @@ class WonViewModel @Inject constructor(private val investRepository: InvestRepos
                         }
 
 
-                        Log.d(TAG, "예상 수익 ${profit}")
+                        Log.d(TAG("WonViewModel", "calculateProfit"), "예상 수익 ${profit}")
 
                         val updateDate = wonBuyRecord.copy(profit = profit.toString())
 
@@ -496,16 +494,16 @@ class WonViewModel @Inject constructor(private val investRepository: InvestRepos
                     val resentRateYen = exchangeRate.jpy
 
                     if(resentRateUs.isNullOrEmpty()) {
-                        Log.d(MainActivity.TAG, "calculateProfit 최신 값 받아오기 실패")
+                        Log.d(TAG("WonViewModel", "calculateProfit"), "calculateProfit 최신 값 받아오기 실패")
 
                     } else {
                         val exChangeMoney = wonBuyRecord.exchangeMoney
 
                         val foreignCurrencyMoney = wonBuyRecord.money
 
-                        Log.d(TAG, "값을 받아왔니? us: ${resentRateUs} jpy:${resentRateYen}")
+                        Log.d(TAG("WonViewModel", "calculateProfit"), "값을 받아왔니? us: ${resentRateUs} jpy:${resentRateYen}")
 
-                        Log.d(TAG, "계산해보자 원화: ${exChangeMoney} 외화:${foreignCurrencyMoney}")
+                        Log.d(TAG("WonViewModel", "calculateProfit"), "계산해보자 원화: ${exChangeMoney} 외화:${foreignCurrencyMoney}")
 
                         val profit = when(wonBuyRecord.moneyType) {
                             1-> {  foreignCurrencyMoney!!.toBigDecimal() -(exChangeMoney!!.toBigDecimal() / (resentRateUs.toBigDecimal()))   }
@@ -515,7 +513,7 @@ class WonViewModel @Inject constructor(private val investRepository: InvestRepos
                             else -> { "" }
                         }
 
-                        Log.d(TAG, "예상 수익 ${profit}")
+                        Log.d(TAG("WonViewModel", "calculateProfit"), "예상 수익 ${profit}")
 
                         val updateDate = wonBuyRecord.copy(profit = profit.toString())
 
@@ -548,7 +546,7 @@ class WonViewModel @Inject constructor(private val investRepository: InvestRepos
         viewModelScope.launch {
             val successValue = investRepository.updateWonBuyRecord(updateData)
 
-            Log.d(TAG, "업데이트 성공 ${successValue}")
+            Log.d(TAG("WonViewModel", "buyWonMemoUpdate"), "업데이트 성공 ${successValue}")
             success = if(successValue > 0) true else false
             result(success)
 
@@ -561,7 +559,7 @@ class WonViewModel @Inject constructor(private val investRepository: InvestRepos
         viewModelScope.launch {
             val successValue = investRepository.updateWonSellRecord(updateData)
 
-            Log.d(TAG, "업데이트 성공 ${successValue}")
+            Log.d(TAG("WonViewModel", "sellWonMemoUpdate"), "업데이트 성공 ${successValue}")
             success = if(successValue > 0) true else false
             result(success)
 
@@ -574,9 +572,9 @@ class WonViewModel @Inject constructor(private val investRepository: InvestRepos
 
         val searchSellRecord = investRepository.getWonSellRecordById(id)
 
-        Log.d(TAG, "cancelBuyRecord: ${searchBuyRecord}, sellId: ${id}")
+        Log.d(TAG("WonViewModel", "cancelSellRecord"), "cancelBuyRecord: ${searchBuyRecord}, sellId: ${id}")
 
-        Log.d(TAG, "cancelSellRecord: ${searchSellRecord}, sellId: ${id}")
+        Log.d(TAG("WonViewModel", "cancelSellRecord"), "cancelSellRecord: ${searchSellRecord}, sellId: ${id}")
 
         if (searchBuyRecord == null && searchSellRecord == null) {
             return Pair(false, WonSellRecord())
@@ -607,11 +605,11 @@ class WonViewModel @Inject constructor(private val investRepository: InvestRepos
 
     fun expectSellValue(): String {
 
-        Log.d(TAG, "머니 타입 ${moneyType.value}")
+        Log.d(TAG("WonViewModel","expectSellValue"), "머니 타입 ${moneyType.value}")
 
-        Log.d(TAG, "원화 us: ${wonResentRateStateFlow.value.usd}")
+        Log.d(TAG("WonViewModel","expectSellValue"), "원화 us: ${wonResentRateStateFlow.value.usd}")
 
-        Log.d(TAG, "원화 jpy: ${wonResentRateStateFlow.value.jpy}")
+        Log.d(TAG("WonViewModel","expectSellValue"), "원화 jpy: ${wonResentRateStateFlow.value.jpy}")
 
         val resentUsRate = when(moneyType.value) {
             1-> {wonResentRateStateFlow.value.usd}
@@ -620,12 +618,12 @@ class WonViewModel @Inject constructor(private val investRepository: InvestRepos
         }
 
         Log.d(
-            TAG,
+            TAG("WonViewModel","expectSellValue"),
             "개별 profit 실행 exchangeMoney:${exchangeMoney.value} 최신환율: ${resentUsRate} 원화: ${moneyInputFlow.value}"
         )
 
         val profit = (BigDecimal(moneyInputFlow.value) - (BigDecimal(exchangeMoney.value) / BigDecimal(resentUsRate)) )
-        Log.d(TAG, "개별 profit 결과 값 ${profit}")
+        Log.d(TAG("WonViewModel","expectSellValue"), "개별 profit 결과 값 ${profit}")
 
         return profit.toString()
     }

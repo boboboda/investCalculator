@@ -40,7 +40,6 @@ import com.bobodroid.myapplication.models.viewmodels.AllViewModel
 import com.bobodroid.myapplication.models.viewmodels.DollarViewModel
 import com.bobodroid.myapplication.models.viewmodels.WonViewModel
 import com.bobodroid.myapplication.models.viewmodels.YenViewModel
-import com.bobodroid.myapplication.screens.TAG
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 

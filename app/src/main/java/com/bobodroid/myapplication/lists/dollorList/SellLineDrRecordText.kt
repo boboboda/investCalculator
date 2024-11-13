@@ -722,7 +722,6 @@ fun SellLineDrRecordText(
             }
             if (deleteAskDialog.value) {
 
-                Log.d(TAG, "다이로그 오픈")
 
                 AskTriggerDialog(
                     title = "삭제하시겠습니까?",

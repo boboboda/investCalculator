@@ -83,7 +83,6 @@ fun DateButtonView(
             .padding(top = 5.dp, bottom = 10.dp)
             .width(60.dp),
         onClick = {
-            Log.d(MainActivity.TAG, "클릭되었습니다.")
             selectAction(currentCardId)
         }) {
         Box(
@@ -124,7 +123,6 @@ fun MoneyChButtonView(
             .width(60.dp)
             .height(50.dp),
         onClick = {
-            Log.d(MainActivity.TAG, "클릭되었습니다.")
             selectAction(currentCardId)
         }) {
         Box(
@@ -217,7 +215,6 @@ fun CardTextIconButton(
         shape = RoundedCornerShape(2.dp),
         modifier = modifier,
         onClick = {
-            Log.d(MainActivity.TAG, "클릭되었습니다.")
             onClicked.invoke()
         }) {
         Row(
@@ -262,7 +259,6 @@ fun CardIconButton(
         shape = RoundedCornerShape(2.dp),
         modifier = modifier,
         onClick = {
-            Log.d(MainActivity.TAG, "클릭되었습니다.")
             onClicked.invoke()
         }) {
         Row(

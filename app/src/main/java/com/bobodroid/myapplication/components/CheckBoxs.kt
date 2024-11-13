@@ -46,7 +46,6 @@ fun InvestCheckBox(title: String,
                 .size(45.dp)
                 .clickable {
                     selectCheckBoxAction(currentCheckBoxId)
-                    Log.d(MainActivity.TAG, "체크박스가 클릭되었습니다.")
                 })
 
 

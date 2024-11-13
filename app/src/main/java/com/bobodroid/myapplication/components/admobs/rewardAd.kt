@@ -27,13 +27,13 @@ fun loadRewardedAdvertisement(context: Context, allViewModel: AllViewModel) {
         adRequest,
         object : RewardedAdLoadCallback() {
             override fun onAdFailedToLoad(adError: LoadAdError) {
-                Log.e(TAG, "$adError")
+                Log.e(TAG("loadRewardedAdvertisement",""), "$adError")
                 rewardedAd = null
             }
 
 
             override fun onAdLoaded(ad: RewardedAd) {
-                Log.d(TAG, "Ad was loaded.")
+                Log.d(TAG("loadRewardedAdvertisement",""), "Ad was loaded.")
                 rewardedAd = ad
                 allViewModel.onReadyRewardAd.value = true
             }
@@ -49,12 +49,12 @@ fun showRewardedAdvertisement(context: Context, onAdDismissed: () -> Unit) {
 
             override fun onAdClicked() {
                 // Called when a click is recorded for an ad.
-                Log.d(TAG, "Ad was clicked.")
+                Log.d(TAG("loadRewardedAdvertisement",""), "Ad was clicked.")
             }
 
             override fun onAdFailedToShowFullScreenContent(p0: AdError) {
                 // Called when ad fails to show.
-                Log.e(TAG, "Ad failed to show fullscreen content.")
+                Log.e(TAG("loadRewardedAdvertisement",""), "Ad failed to show fullscreen content.")
                 rewardedAd = null
             }
 
@@ -71,11 +71,11 @@ fun showRewardedAdvertisement(context: Context, onAdDismissed: () -> Unit) {
                 val rewardAmount = rewardItem.amount
                 val rewardType = rewardItem.type
 
-                Log.d(TAG, "User earned the reward.")
+                Log.d(TAG("loadRewardedAdvertisement",""), "User earned the reward.")
 
             })
         } ?: run {
-            Log.d(TAG, "The rewarded ad wasn't ready yet.")
+            Log.d(TAG("loadRewardedAdvertisement",""), "The rewarded ad wasn't ready yet.")
         }
     }
 }
@@ -90,13 +90,13 @@ fun loadTargetRewardedAdvertisement(context: Context) {
         adRequest,
         object : RewardedAdLoadCallback() {
             override fun onAdFailedToLoad(adError: LoadAdError) {
-                Log.e(TAG, "adError")
+                Log.e(TAG("loadRewardedAdvertisement",""), "adError")
                 targetRewardedAd = null
             }
 
 
             override fun onAdLoaded(ad: RewardedAd) {
-                Log.d(TAG, "Ad was loaded.")
+                Log.d(TAG("loadRewardedAdvertisement",""), "Ad was loaded.")
                 targetRewardedAd = ad
             }
         })
@@ -111,12 +111,12 @@ fun showTargetRewardedAdvertisement(context: Context, onAdDismissed: () -> Unit)
 
             override fun onAdClicked() {
                 // Called when a click is recorded for an ad.
-                Log.d(TAG, "Ad was clicked.")
+                Log.d(TAG("loadRewardedAdvertisement",""), "Ad was clicked.")
             }
 
             override fun onAdFailedToShowFullScreenContent(p0: AdError) {
                 // Called when ad fails to show.
-                Log.e(TAG, "Ad failed to show fullscreen content.")
+                Log.e(TAG("loadRewardedAdvertisement",""), "Ad failed to show fullscreen content.")
                 targetRewardedAd = null
             }
 
@@ -134,11 +134,11 @@ fun showTargetRewardedAdvertisement(context: Context, onAdDismissed: () -> Unit)
                 val rewardAmount = rewardItem.amount
                 val rewardType = rewardItem.type
 
-                Log.d(TAG, "User earned the reward.")
+                Log.d(TAG("loadRewardedAdvertisement",""), "User earned the reward.")
 
             })
         } ?: run {
-            Log.d(TAG, "The rewarded ad wasn't ready yet.")
+            Log.d(TAG("loadRewardedAdvertisement",""), "The rewarded ad wasn't ready yet.")
         }
     }
 }

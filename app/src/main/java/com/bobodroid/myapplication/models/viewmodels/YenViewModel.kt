@@ -4,11 +4,9 @@ package com.bobodroid.myapplication.models.viewmodels
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.bobodroid.myapplication.MainActivity
 import com.bobodroid.myapplication.MainActivity.Companion.TAG
 import com.bobodroid.myapplication.extensions.toBigDecimalWon
-import com.bobodroid.myapplication.models.datamodels.*
-import com.bobodroid.myapplication.models.datamodels.firebase.ExchangeRate
+import com.bobodroid.myapplication.models.datamodels.roomDb.ExchangeRate
 import com.bobodroid.myapplication.models.datamodels.repository.InvestRepository
 import com.bobodroid.myapplication.models.datamodels.roomDb.YenBuyRecord
 import com.bobodroid.myapplication.models.datamodels.roomDb.YenSellRecord
@@ -60,7 +58,7 @@ class YenViewModel @Inject constructor(private val investRepository: InvestRepos
                 combineBuyAndSell(sellRecord, buyRecord)
 
                 if (buyRecord.isNullOrEmpty()) {
-                    Log.d(TAG, "Yen Empty Buy list")
+                    Log.d(TAG("YenViewModel", "init"), "Yen Empty Buy list")
                     _buyRecordFlow.value = emptyList()
                     _filterBuyRecordFlow.value = emptyList()
                     _groupBuyRecordFlow.value = setGroup(emptyList())
@@ -75,7 +73,7 @@ class YenViewModel @Inject constructor(private val investRepository: InvestRepos
 
 
                 if (sellRecord.isNullOrEmpty()) {
-                    Log.d(TAG, "Yen Empty Sell list")
+                    Log.d(TAG("YenViewModel", "init"), "Yen Empty Sell list")
                     _sellRecordFlow.value = emptyList()
                     _filterSellRecordFlow.value = emptyList()
                 } else {
@@ -86,7 +84,7 @@ class YenViewModel @Inject constructor(private val investRepository: InvestRepos
             }
 
             combinedFlow.collect {
-                Log.d(TAG, "init 완료")
+                Log.d(TAG("YenViewModel", "init"), "init 완료")
             }
 
         }
@@ -152,7 +150,7 @@ class YenViewModel @Inject constructor(private val investRepository: InvestRepos
 
             }
         } else {
-            Log.d(TAG, "여기가 실행됨")
+            Log.d(TAG("YenViewModel", "combineBuyAndSell"), "여기가 실행됨")
         }
 
     }
@@ -244,7 +242,7 @@ class YenViewModel @Inject constructor(private val investRepository: InvestRepos
             YenAction.Sell -> {
                 val result = sellList?.map { BigDecimal(it.exchangeMoney) }
 
-                Log.d(TAG, "엔화 ${result}")
+                Log.d(TAG("YenViewModel","sumProfit"), "엔화 ${result}")
 
                 if(result.isNullOrEmpty()) {
                     return ""
@@ -443,7 +441,7 @@ class YenViewModel @Inject constructor(private val investRepository: InvestRepos
 
         val buyRecordProfit = buyRecordFlow.value.map { it.profit }
 
-        Log.d(TAG, "yenBuyList 불러온 profit 값 : ${buyRecordProfit}")
+        Log.d(TAG("YenViewModel","calculateProfit"), "yenBuyList 불러온 profit 값 : ${buyRecordProfit}")
 
         _buyRecordFlow.value.forEach { yenBuyRecord ->
 
@@ -456,24 +454,24 @@ class YenViewModel @Inject constructor(private val investRepository: InvestRepos
             } else {
                 if (yenBuyRecord.profit == null) {
 
-                    Log.d(TAG, "기존 데이터 profit 추가 실행")
+                    Log.d(TAG("YenViewModel","calculateProfit"), "기존 데이터 profit 추가 실행")
 
                     val resentRate = exchangeRate.jpy
 
                     if (resentRate.isNullOrEmpty()) {
-                        Log.d(TAG, "calculateProfit 최신 값 받아오기 실패")
+                        Log.d(TAG("YenViewModel","calculateProfit"), "calculateProfit 최신 값 받아오기 실패")
 
                     } else {
                         val exChangeMoney = yenBuyRecord.exchangeMoney
 
                         val koreaMoney = yenBuyRecord.money
 
-                        Log.d(MainActivity.TAG, "값을 받아왔니? ${resentRate}")
+                        Log.d(TAG("YenViewModel","calculateProfit"), "값을 받아왔니? ${resentRate}")
 
                         val profit = (((BigDecimal(exChangeMoney).times(BigDecimal(resentRate).times(BigDecimal("100"))))
                             .setScale(20, RoundingMode.HALF_UP)) - BigDecimal(koreaMoney)).toString()
 
-                        Log.d(TAG, "예상 수익 ${profit}")
+                        Log.d(TAG("YenViewModel","calculateProfit"), "예상 수익 ${profit}")
 
                         val updateDate = yenBuyRecord.copy(profit = profit)
 
@@ -483,24 +481,24 @@ class YenViewModel @Inject constructor(private val investRepository: InvestRepos
                     }
                 } else {
 
-                    Log.d(MainActivity.TAG, "업데이트 데이터 profit 실행")
+                    Log.d(TAG("YenViewModel","calculateProfit"), "업데이트 데이터 profit 실행")
 
                     val resentRate = exchangeRate.jpy
 
                     if (resentRate.isNullOrEmpty()) {
-                        Log.d(MainActivity.TAG, "calculateProfit 최신 값 받아오기 실패")
+                        Log.d(TAG("YenViewModel","calculateProfit"), "calculateProfit 최신 값 받아오기 실패")
 
                     } else {
                         val exChangeMoney = yenBuyRecord.exchangeMoney
 
                         val koreaMoney = yenBuyRecord.money
 
-                        Log.d(MainActivity.TAG, "값을 받아왔니? ${resentRate}")
+                        Log.d(TAG("YenViewModel","calculateProfit"), "값을 받아왔니? ${resentRate}")
 
                         val profit = (((BigDecimal(exChangeMoney).times(BigDecimal(resentRate)))
                             .setScale(20, RoundingMode.HALF_UP)) - BigDecimal(koreaMoney)).toString()
 
-                        Log.d(MainActivity.TAG, "예상 수익 ${profit}")
+                        Log.d(TAG("YenViewModel","calculateProfit"), "예상 수익 ${profit}")
 
                         val updateDate = yenBuyRecord.copy(profit = profit)
 
@@ -524,7 +522,7 @@ class YenViewModel @Inject constructor(private val investRepository: InvestRepos
         viewModelScope.launch {
             val successValue = investRepository.updateYenBuyRecord(updateData)
 
-            Log.d(TAG, "업데이트 성공 ${successValue}")
+            Log.d(TAG("YenViewModel","buyYenMemoUpdate"), "업데이트 성공 ${successValue}")
             success = if(successValue > 0) true else false
             result(success)
 
@@ -537,7 +535,7 @@ class YenViewModel @Inject constructor(private val investRepository: InvestRepos
         viewModelScope.launch {
             val successValue = investRepository.updateYenSellRecord(updateData)
 
-            Log.d(TAG, "업데이트 성공 ${successValue}")
+            Log.d(TAG("YenViewModel","sellYenMemoUpdate"), "업데이트 성공 ${successValue}")
             success = if(successValue > 0) true else false
             result(success)
 
@@ -550,9 +548,9 @@ class YenViewModel @Inject constructor(private val investRepository: InvestRepos
 
         val searchSellRecord = investRepository.getYenSellRecordById(id)
 
-        Log.d(TAG, "cancelBuyRecord: ${searchBuyRecord}, sellId: ${id}")
+        Log.d(TAG("YenViewModel","cancelSellRecord"), "cancelBuyRecord: ${searchBuyRecord}, sellId: ${id}")
 
-        Log.d(TAG, "cancelSellRecord: ${searchSellRecord}, sellId: ${id}")
+        Log.d(TAG("YenViewModel","cancelSellRecord"), "cancelSellRecord: ${searchSellRecord}, sellId: ${id}")
 
         if (searchBuyRecord == null && searchSellRecord == null) {
             return Pair(false, YenSellRecord())
@@ -599,14 +597,14 @@ class YenViewModel @Inject constructor(private val investRepository: InvestRepos
         val resentUsRate = yenResentRateStateFlow.value.jpy
 
         Log.d(
-            TAG,
+            TAG("YenViewModel","expectSellValue"),
             "개별 profit 실행 exchangeMoney:${exchangeMoney.value} 최신환율: ${resentUsRate} 원화: ${moneyInputFlow.value}"
         )
 
         val profit = ((BigDecimal(exchangeMoney.value).times(BigDecimal(resentUsRate)))
             .setScale(20, RoundingMode.HALF_UP)
                 ).minus(BigDecimal(moneyInputFlow.value))
-        Log.d(TAG, "개별 profit 결과 값 ${profit}")
+        Log.d(TAG("YenViewModel","expectSellValue"), "개별 profit 결과 값 ${profit}")
 
         return profit.toString()
     }

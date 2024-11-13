@@ -3,17 +3,12 @@ package com.bobodroid.myapplication.models.viewmodels
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import androidx.lifecycle.viewmodel.compose.viewModel
 import com.bobodroid.myapplication.MainActivity.Companion.TAG
-import com.bobodroid.myapplication.extensions.toDate
-import com.bobodroid.myapplication.extensions.toDateTime
 import com.bobodroid.myapplication.models.datamodels.roomDb.CloudUserData
 import com.bobodroid.myapplication.models.datamodels.roomDb.DrBuyRecord
 import com.bobodroid.myapplication.models.datamodels.roomDb.DrSellRecord
-import com.bobodroid.myapplication.models.datamodels.firebase.ExchangeRate
+import com.bobodroid.myapplication.models.datamodels.roomDb.ExchangeRate
 import com.bobodroid.myapplication.models.datamodels.repository.ExchangeRateRepository
-import com.bobodroid.myapplication.models.datamodels.repository.InvestRepository
-import com.bobodroid.myapplication.models.datamodels.repository.UserRepository
 import com.bobodroid.myapplication.models.datamodels.roomDb.LocalUserData
 import com.bobodroid.myapplication.models.datamodels.roomDb.TargetRate
 import com.bobodroid.myapplication.models.datamodels.roomDb.TargetRateList
@@ -25,14 +20,12 @@ import com.bobodroid.myapplication.models.datamodels.service.noticeApi.NoticeApi
 import com.bobodroid.myapplication.models.datamodels.useCases.UserUseCases
 import com.bobodroid.myapplication.util.InvestApplication
 import com.bobodroid.myapplication.models.datamodels.websocket.WebSocketClient
-import com.google.firebase.firestore.Query
 import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
 import java.io.IOException
 import java.text.SimpleDateFormat
@@ -102,10 +95,15 @@ class AllViewModel @Inject constructor(
 
     init {
         viewModelScope.launch {
-            // 첫 번째 작업: localUserExistCheck
-            localUserExistCheck() // 이 작업이 완료된 후에 다음으로 넘어감
 
-            // 두 번째 작업: onReadyRewardAd.collect
+//            deleteLocalUser()
+//
+//            delay(2000L)
+
+            localUserExistCheck()
+
+            recentRateHotListener()
+
             onReadyRewardAd.collect { isReady ->
                 if (isReady) {
                     rewardIsReadyStateFlow.value = true
@@ -114,8 +112,7 @@ class AllViewModel @Inject constructor(
                 }
             }
 
-            // 세 번째 작업: recentRateHotListener
-            recentRateHotListener() // 위 작업들이 끝난 후에 시작됨
+
         }
     }
 
@@ -346,13 +343,13 @@ class AllViewModel @Inject constructor(
 
                     targetRateData.invoke(data, "알람설정을 성공적으로 불러왔습니다.")
 
-                    Log.d(TAG, "목표환율 변경 수신${data}")
+                    Log.d(TAG("AllViewModel", "targetRateLoad"), "목표환율 변경 수신${data}")
                 } else {
-                    Log.d(TAG, "목표환율 null")
+                    Log.d(TAG("AllViewModel", "targetRateLoad"), "목표환율 null")
                 }
 
                 if (e != null) {
-                    Log.w(TAG, "Listen failed.", e)
+                    Log.w(TAG("AllViewModel", "targetRateLoad"), "Listen failed.", e)
                     return@addSnapshotListener
                 }
 
@@ -363,20 +360,20 @@ class AllViewModel @Inject constructor(
     // 리워드 다이로그 상태 관리
     private fun rewardAdState() {
 
-        Log.d(TAG, "연기날짜: ${_localUser.value.rewardAdShowingDate} 오늘날짜: ${todayDateFlow.value}")
+        Log.d(TAG("AllViewModel", "rewardAdState"), "연기날짜: ${_localUser.value.rewardAdShowingDate} 오늘날짜: ${todayDateFlow.value}")
 
         // 닫기 후 호출 방지
         if (!_localUser.value.rewardAdShowingDate.isNullOrEmpty()) {
             if (todayDateFlow.value > _localUser.value.rewardAdShowingDate!!) {
-                Log.d(TAG, "오늘 날짜가 더 큽니다.")
+                Log.d(TAG("AllViewModel", "rewardAdState"), "오늘 날짜가 더 큽니다.")
                 rewardShowDialog.value = true
 
             } else {
-                Log.d(TAG, "연기된 날짜가 더 큽니다.")
+                Log.d(TAG("AllViewModel", "rewardAdState"), "연기된 날짜가 더 큽니다.")
 
             }
         } else {
-            Log.d(TAG, "날짜 값이 없습니다.")
+            Log.d(TAG("AllViewModel", "rewardAdState"), "날짜 값이 없습니다.")
             rewardShowDialog.value = true
         }
     }
@@ -385,7 +382,7 @@ class AllViewModel @Inject constructor(
     fun rewardDelayDate() {
         viewModelScope.launch {
 
-            Log.d(TAG, "날짜 연기 신청")
+            Log.d(TAG("AllViewModel", "rewardDelayDate"), "날짜 연기 신청")
 
             val updateUserData = localUserFlow.value.copy(
                 rewardAdShowingDate = delayDate(inputDate = todayDateFlow.value, delayDay = 1)
@@ -393,7 +390,7 @@ class AllViewModel @Inject constructor(
 
             userUseCases.localUserUpdate(updateUserData)
 
-            Log.d(TAG, "딜레이리워드날짜: ${updateUserData.rewardAdShowingDate}")
+            Log.d(TAG("AllViewModel", "rewardDelayDate"), "딜레이리워드날짜: ${updateUserData.rewardAdShowingDate}")
         }
     }
 
@@ -401,19 +398,19 @@ class AllViewModel @Inject constructor(
     //배너 삭제
     private fun bannerAdState() {
 
-        Log.d(TAG, "배너 광고 제거 연기날짜: ${_localUser.value.userResetDate} 오늘날짜: ${todayDateFlow.value}")
+        Log.d(TAG("AllViewModel", "bannerAdState"), "배너 광고 제거 연기날짜: ${_localUser.value.userResetDate} 오늘날짜: ${todayDateFlow.value}")
 
         // 닫기 후 호출 방지
 
         _localUser.value.userResetDate?.let {
             if (todayDateFlow.value > _localUser.value.userResetDate!!) {
-                Log.d(TAG, "오늘 날짜가 더 큽니다.")
+                Log.d(TAG("AllViewModel", "bannerAdState"), "오늘 날짜가 더 큽니다.")
             } else {
-                Log.d(TAG, "연기된 날짜가 더 큽니다.")
+                Log.d(TAG("AllViewModel", "bannerAdState"), "연기된 날짜가 더 큽니다.")
                 deleteBannerStateFlow.value = true
             }
         } ?: run {
-            Log.d(TAG, "날짜 값이 없습니다.")
+            Log.d(TAG("AllViewModel", "bannerAdState"), "날짜 값이 없습니다.")
         }
     }
 
@@ -422,7 +419,7 @@ class AllViewModel @Inject constructor(
     fun deleteBannerDelayDate() {
         viewModelScope.launch {
 
-            Log.d(TAG, "날짜 연기 신청")
+            Log.d(TAG("AllViewModel", "deleteBannerDelayDate"), "날짜 연기 신청")
 
             val updateUserData = localUserFlow.value.copy(
                 userResetDate = delayDate(inputDate = todayDateFlow.value, delayDay = 1)
@@ -430,7 +427,7 @@ class AllViewModel @Inject constructor(
 
             userUseCases.localUserUpdate(updateUserData)
 
-            Log.d(TAG, "배너광고 삭제 딜레이리워드날짜: ${updateUserData.userResetDate}")
+            Log.d(TAG("AllViewModel", "deleteBannerDelayDate"), "배너광고 삭제 딜레이리워드날짜: ${updateUserData.userResetDate}")
 
             deleteBannerStateFlow.value = true
 
@@ -452,10 +449,10 @@ class AllViewModel @Inject constructor(
                 noticeDate.invoke(res.createdAt)
                 noticeDateFlow.emit(res.createdAt)
             } catch (error: IOException) {
-                Log.e(TAG, "$error")
+                Log.e(TAG("AllViewModel", "noticeApi"), "$error")
                 return@launch
             } catch (error: Exception) {
-                Log.e(TAG, "$error")
+                Log.e(TAG("AllViewModel", "noticeApi"), "$error")
                 return@launch
             }
         }
@@ -467,7 +464,7 @@ class AllViewModel @Inject constructor(
 
         // 저장한 날짜와 같으면 실행
         Log.d(
-            TAG,
+            TAG("AllViewModel", "noticeDialogState"),
             "공지사항 날짜: ${noticeDate},  연기날짜: ${localUserDate.userShowNoticeDate} 오늘날짜 ${
                 LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))
             }"
@@ -477,13 +474,13 @@ class AllViewModel @Inject constructor(
         if (openAppNoticeDateState.value) {
             if (!localUserDate.userShowNoticeDate.isNullOrEmpty()) {
                 if (noticeDate > localUserDate.userShowNoticeDate!!) {
-                    Log.d(TAG, "공지사항 날짜가 더 큽니다.")
+                    Log.d(TAG("AllViewModel", "noticeDialogState"), "공지사항 날짜가 더 큽니다.")
                     noticeShowDialog.value = true
                 } else {
-                    Log.d(TAG, "로컬에 저장된 날짜가 더 큽니다.")
+                    Log.d(TAG("AllViewModel", "noticeDialogState"), "로컬에 저장된 날짜가 더 큽니다.")
                 }
             } else {
-                Log.d(TAG, "날짜 값이 없습니다.")
+                Log.d(TAG("AllViewModel", "noticeDialogState"), "날짜 값이 없습니다.")
                 noticeShowDialog.value = true
             }
         } else {
@@ -496,7 +493,7 @@ class AllViewModel @Inject constructor(
     fun selectDelayDate(localUser: LocalUserData) {
         viewModelScope.launch {
 
-            Log.d(TAG, "날짜 연기 신청")
+            Log.d(TAG("AllViewModel", "selectDelayDate"), "날짜 연기 신청")
 
             val updateUserData = localUser.copy(
                 userShowNoticeDate = noticeDateFlow.value
@@ -504,13 +501,9 @@ class AllViewModel @Inject constructor(
 
             userUseCases.localUserUpdate(updateUserData)
 
-            Log.d(TAG, "날짜 수정 실행, ${noticeDateFlow.value}")
+            Log.d(TAG("AllViewModel", "selectDelayDate"), "날짜 수정 실행, ${noticeDateFlow.value}")
         }
     }
-
-
-
-
 
 
     fun dateWeek(week: Int): String? {
@@ -541,6 +534,9 @@ class AllViewModel @Inject constructor(
 
 
     fun recentRateHotListener() {
+
+        Log.d(TAG("AllViewModel", "recentRateHotListener"), "최신환율 실행")
+
         viewModelScope.launch {
             setupNotice(localUserFlow.value)
             updateFcmToken(localUserFlow.value)
@@ -569,7 +565,7 @@ class AllViewModel @Inject constructor(
             targetRateLoad(customId) { data, message ->
                 viewModelScope.launch {
                     _targetRate.emit(data)
-                    Log.w(TAG, "목표환율 불러오기 성공")
+                    Log.w(TAG("AllViewModel", "loadTargetRate"), "목표환율 불러오기 성공")
                 }
             }
         }
@@ -586,11 +582,11 @@ class AllViewModel @Inject constructor(
     private fun subscribeToExchangeRateUpdates() {
         webSocketClient.recentRateWebReceiveData(
             onInsert = { rateString ->
-                Log.d(TAG, "웹소켓 환율 최신 데이터: $rateString")
+                Log.d(TAG("AllViewModel", "subscribeToExchangeRateUpdates"), "웹소켓 환율 최신 데이터: $rateString")
                 onRateUpdate(rateString)
             },
             onInitialData = { initialData ->
-                Log.d(TAG, "웹소켓 환율 초기화 데이터: $initialData")
+                Log.d(TAG("AllViewModel", "subscribeToExchangeRateUpdates"), "웹소켓 환율 초기화 데이터: $initialData")
                 onInitialDataReceived(initialData)
             }
         )
@@ -602,18 +598,17 @@ class AllViewModel @Inject constructor(
             val exchangeRate = ExchangeRate.fromCustomJson(rateString) ?: return
 
             // 필요한 로직 처리 (예: 로컬 DB에 저장하거나 UI에 업데이트)
-
             viewModelScope.launch {
                 _recentExchangeRateFlow.emit(exchangeRate)
             }
 
-            Log.d(TAG, "환율 업데이트 파싱 완료: $exchangeRate")
+            Log.d(TAG("AllViewModel", "onRateUpdate"), "환율 업데이트 파싱 완료: $exchangeRate")
 
             // 데이터가 잘 파싱되었는지 확인하는 로그
-            Log.d(TAG, "USD 환율: ${exchangeRate.usd}, JPY 환율: ${exchangeRate.jpy}")
+            Log.d(TAG("AllViewModel", "onRateUpdate"), "USD 환율: ${exchangeRate.usd}, JPY 환율: ${exchangeRate.jpy}")
 
         } catch (e: Exception) {
-            Log.e(TAG, "환율 업데이트 파싱 실패: $rateString", e)
+            Log.e(TAG("AllViewModel", "onRateUpdate"), "환율 업데이트 파싱 실패: $rateString", e)
         }
     }
 
@@ -628,13 +623,13 @@ class AllViewModel @Inject constructor(
                 _recentExchangeRateFlow.emit(exchangeRate)
             }
 
-            Log.d(TAG, "초기 데이터 파싱 완료: $exchangeRate")
+            Log.d(TAG("AllViewModel", "onInitialDataReceived"), "초기 데이터 파싱 완료: $exchangeRate")
 
             // 데이터가 잘 파싱되었는지 확인하는 로그
-            Log.d(TAG, "초기 USD 환율: ${exchangeRate.usd}, 초기 JPY 환율: ${exchangeRate.jpy}")
+            Log.d(TAG("AllViewModel", "onInitialDataReceived"), "초기 USD 환율: ${exchangeRate.usd}, 초기 JPY 환율: ${exchangeRate.jpy}")
 
         } catch (e: Exception) {
-            Log.e(TAG, "초기 데이터 파싱 실패: $initialData", e)
+            Log.e(TAG("AllViewModel", "onInitialDataReceived"), "초기 데이터 파싱 실패: $initialData", e)
         }
     }
 
@@ -643,7 +638,7 @@ class AllViewModel @Inject constructor(
 
         val updateToken = InvestApplication.prefs.getData("fcm_token", "")
 
-        Log.d(TAG, "토큰값${updateToken}")
+        Log.d(TAG("AllViewModel", "fcmTokenUpdate"), "토큰값${updateToken}")
 
         val updateLocalUserData = localUser.copy(fcmToken = updateToken)
 
@@ -677,7 +672,10 @@ class AllViewModel @Inject constructor(
     fun createUser(customId: String, pin: String, resultMessage: (String) -> Unit) {
 
         viewModelScope.launch {
-            userUseCases.createUser(customId, pin, resultMessage)
+
+            val createUser = _localUser.value.copy(customId = customId, pin =  pin)
+
+            userUseCases.customIdCreateUser(createUser)
         }
     }
 
@@ -700,14 +698,16 @@ class AllViewModel @Inject constructor(
         viewModelScope.launch {
             val localUser = userUseCases.localExistCheck()
             _localUser.emit(localUser)
+
+            Log.d(TAG("AllViewModel", "localUserExistCheck"), localUser.toString())
         }
     }
 
     // 로컬 아이디 삭제
     fun deleteLocalUser() {
         viewModelScope.launch {
-            userUseCases.deleteUser{
-
+            userUseCases.deleteUser {
+                Log.d(TAG("AllViewModel", "deleteLocalUser"), it)
             }
         }
     }

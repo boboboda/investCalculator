@@ -701,8 +701,6 @@ fun SellLineYenRecordText(
             }
             if (deleteAskDialog.value) {
 
-                Log.d(MainActivity.TAG, "다이로그 오픈")
-
                 AskTriggerDialog(
                     title = "삭제하시겠습니까?",
                     onClickedLabel = "예",

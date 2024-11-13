@@ -1,6 +1,5 @@
 package com.bobodroid.myapplication.lists
 
-import android.util.Log
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -14,18 +13,13 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
-import com.bobodroid.myapplication.MainActivity.Companion.TAG
 import com.bobodroid.myapplication.components.CardButton
-import com.bobodroid.myapplication.components.CustomCard
-import com.bobodroid.myapplication.components.Dialogs.TargetRateDialog
-import com.bobodroid.myapplication.models.datamodels.TargetRate
 import com.bobodroid.myapplication.models.viewmodels.AllViewModel
 import com.bobodroid.myapplication.ui.theme.TitleCardColor
 

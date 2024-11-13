@@ -124,7 +124,7 @@ fun MainBottomBar(
 
     val coroutineScope = rememberCoroutineScope()
 
-    val localUser = allViewModel.localUserData.collectAsState()
+    val localUser = allViewModel.localUserFlow.collectAsState()
 
 
 

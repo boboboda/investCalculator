@@ -20,9 +20,9 @@ import com.bobodroid.myapplication.extensions.toDecUs
 import com.bobodroid.myapplication.extensions.toPer
 import com.bobodroid.myapplication.extensions.toWon
 import com.bobodroid.myapplication.extensions.toYen
-import com.bobodroid.myapplication.models.datamodels.DrBuyRecord
-import com.bobodroid.myapplication.models.datamodels.WonBuyRecord
-import com.bobodroid.myapplication.models.datamodels.YenBuyRecord
+import com.bobodroid.myapplication.models.datamodels.roomDb.DrBuyRecord
+import com.bobodroid.myapplication.models.datamodels.roomDb.WonBuyRecord
+import com.bobodroid.myapplication.models.datamodels.roomDb.YenBuyRecord
 import com.bobodroid.myapplication.models.viewmodels.DollarViewModel
 import com.bobodroid.myapplication.models.viewmodels.WonViewModel
 import com.bobodroid.myapplication.models.viewmodels.YenViewModel

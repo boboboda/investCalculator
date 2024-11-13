@@ -27,9 +27,9 @@ import java.time.LocalDate
 import androidx.compose.material.SnackbarHostState
 import com.bobodroid.myapplication.components.Buttons
 import com.bobodroid.myapplication.components.DrSellDatePickerDialog
-import com.bobodroid.myapplication.models.datamodels.DrBuyRecord
-import com.bobodroid.myapplication.models.datamodels.WonBuyRecord
-import com.bobodroid.myapplication.models.datamodels.YenBuyRecord
+import com.bobodroid.myapplication.models.datamodels.roomDb.DrBuyRecord
+import com.bobodroid.myapplication.models.datamodels.roomDb.WonBuyRecord
+import com.bobodroid.myapplication.models.datamodels.roomDb.YenBuyRecord
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

@@ -11,22 +11,16 @@ import android.os.Build
 import android.util.Log
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.ui.graphics.Color
 import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat
 import com.bobodroid.myapplication.MainActivity
 import com.bobodroid.myapplication.R
-import com.bobodroid.myapplication.models.datamodels.InvestRepository
 import com.bobodroid.myapplication.util.InvestApplication
-import com.google.firebase.appcheck.interop.AppCheckTokenListener
 import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
 import com.google.firebase.messaging.FirebaseMessaging
 import com.google.firebase.messaging.FirebaseMessagingService
 import com.google.firebase.messaging.RemoteMessage
-import javax.inject.Inject
-
 
 
 class RateFirebaseMessagingService: FirebaseMessagingService() {

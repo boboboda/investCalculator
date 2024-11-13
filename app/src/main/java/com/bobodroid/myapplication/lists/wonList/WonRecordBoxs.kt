@@ -1,12 +1,8 @@
 package com.bobodroid.myapplication.lists.wonList
 
-import android.annotation.SuppressLint
-import android.util.Log
-import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.*
@@ -17,13 +13,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.bobodroid.myapplication.components.*
-import com.bobodroid.myapplication.lists.dollorList.TotalLineDrRecord
-import com.bobodroid.myapplication.models.datamodels.*
+import com.bobodroid.myapplication.models.datamodels.roomDb.WonSellRecord
 import com.bobodroid.myapplication.models.viewmodels.*
-import com.bobodroid.myapplication.screens.TAG
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import java.util.UUID
 
 
 @Composable

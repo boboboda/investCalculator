@@ -24,7 +24,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.bobodroid.myapplication.extensions.toLongWon
-import com.bobodroid.myapplication.models.datamodels.CalculateAction
+import com.bobodroid.myapplication.util.CalculateAction
 import com.bobodroid.myapplication.ui.theme.ActionButtonBgColor
 import com.bobodroid.myapplication.ui.theme.DollarColor
 import java.text.NumberFormat

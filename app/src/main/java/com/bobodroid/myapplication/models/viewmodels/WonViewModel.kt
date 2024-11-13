@@ -7,6 +7,10 @@ import androidx.lifecycle.viewModelScope
 import com.bobodroid.myapplication.MainActivity
 import com.bobodroid.myapplication.MainActivity.Companion.TAG
 import com.bobodroid.myapplication.models.datamodels.*
+import com.bobodroid.myapplication.models.datamodels.firebase.ExchangeRate
+import com.bobodroid.myapplication.models.datamodels.repository.InvestRepository
+import com.bobodroid.myapplication.models.datamodels.roomDb.WonBuyRecord
+import com.bobodroid.myapplication.models.datamodels.roomDb.WonSellRecord
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.*
@@ -106,7 +110,7 @@ class WonViewModel @Inject constructor(private val investRepository: InvestRepos
 
             val updateData = wonBuyrecord.copy(buyWonCategoryName = groupName)
 
-            investRepository.updateRecord(updateData)
+            investRepository.updateWonBuyRecord(updateData)
         }
     }
 
@@ -256,7 +260,7 @@ class WonViewModel @Inject constructor(private val investRepository: InvestRepos
                 }
                 else -> {null}}
             investRepository
-                .addRecord(
+                .addWonBuyRecord(
                     WonBuyRecord(
                         date = dateFlow.value,
                         money = moneyInputFlow.value,
@@ -303,7 +307,7 @@ class WonViewModel @Inject constructor(private val investRepository: InvestRepos
                         expectProfit = "0",
                         exchangeMoney = dollarLastValue(insertMoney, insertRate).toString())
 
-                    investRepository.updateRecord(insertDate)
+                    investRepository.updateWonBuyRecord(insertDate)
                 }
             }
             2 -> {
@@ -318,7 +322,7 @@ class WonViewModel @Inject constructor(private val investRepository: InvestRepos
                         expectProfit = "0",
                         exchangeMoney = yenLastValue(insertMoney, insertRate).toString())
 
-                    investRepository.updateRecord(insertDate)
+                    investRepository.updateWonBuyRecord(insertDate)
                 }
             }
         }
@@ -349,14 +353,14 @@ class WonViewModel @Inject constructor(private val investRepository: InvestRepos
 
     fun removeBuyRecord(wonBuyRecord: WonBuyRecord) {
         viewModelScope.launch {
-            investRepository.deleteRecord(wonBuyRecord)
+            investRepository.deleteWonBuyRecord(wonBuyRecord)
         }
     }
 
 
     fun removeSellRecord(wonSellRecord: WonSellRecord) {
         viewModelScope.launch {
-            investRepository.deleteRecord(wonSellRecord)
+            investRepository.deleteWonSellRecord(wonSellRecord)
 
             val sellRecordState = _sellRecordFlow.value
 
@@ -380,7 +384,7 @@ class WonViewModel @Inject constructor(private val investRepository: InvestRepos
 
     fun updateBuyRecord(wonBuyRecord: WonBuyRecord) {
         viewModelScope.launch {
-            investRepository.updateRecord(
+            investRepository.updateWonBuyRecord(
                 WonBuyRecord(
                     id = wonBuyRecord.id,
                     date = wonBuyRecord.date,
@@ -409,7 +413,7 @@ class WonViewModel @Inject constructor(private val investRepository: InvestRepos
 
         viewModelScope.launch {
             investRepository
-                .addRecord(
+                .addWonSellRecord(
                     WonSellRecord(
                         id = buyRecordId,
                         date = sellDateFlow.value,
@@ -444,7 +448,7 @@ class WonViewModel @Inject constructor(private val investRepository: InvestRepos
                 val updateDate = wonBuyRecord.copy(profit = "")
 
                 viewModelScope.launch {
-                    investRepository.updateRecord(updateDate)
+                    investRepository.updateWonBuyRecord(updateDate)
                 }
             } else {
                 if(wonBuyRecord.profit == null) {
@@ -483,7 +487,7 @@ class WonViewModel @Inject constructor(private val investRepository: InvestRepos
                         val updateDate = wonBuyRecord.copy(profit = profit.toString())
 
                         viewModelScope.launch {
-                            investRepository.updateRecord(updateDate)
+                            investRepository.updateWonBuyRecord(updateDate)
                         }
                     }
                 } else {
@@ -516,7 +520,7 @@ class WonViewModel @Inject constructor(private val investRepository: InvestRepos
                         val updateDate = wonBuyRecord.copy(profit = profit.toString())
 
                         viewModelScope.launch {
-                            investRepository.updateRecord(updateDate)
+                            investRepository.updateWonBuyRecord(updateDate)
                         }
                     }
                 }
@@ -542,7 +546,7 @@ class WonViewModel @Inject constructor(private val investRepository: InvestRepos
 
         var success: Boolean = false
         viewModelScope.launch {
-            val successValue = investRepository.updateRecord(updateData)
+            val successValue = investRepository.updateWonBuyRecord(updateData)
 
             Log.d(TAG, "업데이트 성공 ${successValue}")
             success = if(successValue > 0) true else false
@@ -555,7 +559,7 @@ class WonViewModel @Inject constructor(private val investRepository: InvestRepos
 
         var success: Boolean = false
         viewModelScope.launch {
-            val successValue = investRepository.updateRecord(updateData)
+            val successValue = investRepository.updateWonSellRecord(updateData)
 
             Log.d(TAG, "업데이트 성공 ${successValue}")
             success = if(successValue > 0) true else false
@@ -566,9 +570,9 @@ class WonViewModel @Inject constructor(private val investRepository: InvestRepos
 
     suspend fun cancelSellRecord(id: UUID): Pair<Boolean, WonSellRecord> {
 
-        val searchBuyRecord = investRepository.getWonRecordId(id)
+        val searchBuyRecord = investRepository.getWonBuyRecordById(id)
 
-        val searchSellRecord = investRepository.getWonSellRecordId(id)
+        val searchSellRecord = investRepository.getWonSellRecordById(id)
 
         Log.d(TAG, "cancelBuyRecord: ${searchBuyRecord}, sellId: ${id}")
 
@@ -579,7 +583,7 @@ class WonViewModel @Inject constructor(private val investRepository: InvestRepos
         } else {
             val updateData = searchBuyRecord.copy(recordColor = false)
 
-            investRepository.updateRecord(updateData)
+            investRepository.updateWonBuyRecord(updateData)
 
             return Pair(true, WonSellRecord())
         }
@@ -590,9 +594,9 @@ class WonViewModel @Inject constructor(private val investRepository: InvestRepos
         viewModelScope.launch {
             viewModelScope.launch {
 
-                investRepository.wonBuyAddListRecord(buyRecord)
+                investRepository.addWonBuyRecords(buyRecord)
 
-                investRepository.wonSellAddListRecord(sellRecord)
+                investRepository.addWonSellRecords(sellRecord)
 
             }
         }

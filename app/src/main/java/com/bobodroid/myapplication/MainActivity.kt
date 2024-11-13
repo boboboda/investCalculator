@@ -95,15 +95,15 @@ class MainActivity : ComponentActivity() {
 
                     loadTargetRewardedAdvertisement(this@MainActivity)
 
-                    lifecycleScope.launchWhenStarted {
-                        allViewModel.recentExchangeRateFlow.collect { recentRate ->
-                            recentRate?.let { rate ->
-                                dollarViewModel.requestRate(rate)
-                                yenViewModel.requestRate(rate)
-                                wonViewModel.requestRate(rate)
-                            }
-                        }
-                    }
+//                    lifecycleScope.launchWhenStarted {
+//                        allViewModel.recentExchangeRateFlow.collect { recentRate ->
+//                            recentRate?.let { rate ->
+//                                dollarViewModel.requestRate(rate)
+//                                yenViewModel.requestRate(rate)
+//                                wonViewModel.requestRate(rate)
+//                            }
+//                        }
+//                    }
 
                     Thread.sleep(1500)
                     // The content is ready. Start drawing.
@@ -348,8 +348,6 @@ fun InvestNavHost(
 
     val rewardShowDialog = allViewModel.rewardShowDialog.collectAsState()
 
-    val localUser = allViewModel.localUserData.collectAsState()
-
     var thankShowingDialog by remember { mutableStateOf(false) }
 
     NavHost(navController = investNavController, startDestination = startRouter.routeName!!) {
@@ -393,13 +391,13 @@ fun InvestNavHost(
     if(rewardShowDialog.value) {
         RewardShowAskDialog(
             onDismissRequest = {
-                allViewModel.rewardDelayDate(localUser.value)
+                allViewModel.rewardDelayDate()
                 allViewModel.rewardShowDialog.value = it
             },
             onClicked = {
                 showTargetRewardedAdvertisement(activity, onAdDismissed = {
-                    allViewModel.rewardDelayDate(localUser.value)
-                    allViewModel.deleteBannerDelayDate(localUser.value)
+                    allViewModel.rewardDelayDate()
+                    allViewModel.deleteBannerDelayDate()
                     allViewModel.rewardShowDialog.value = false
                     thankShowingDialog = true
                 })

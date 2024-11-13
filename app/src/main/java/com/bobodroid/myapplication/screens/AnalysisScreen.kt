@@ -19,11 +19,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.bobodroid.myapplication.components.Buttons
 import com.bobodroid.myapplication.components.Dialogs.LoadingDialog
-import com.bobodroid.myapplication.components.chart.CandleChartView
-import com.bobodroid.myapplication.components.chart.CombinedChartView
 import com.bobodroid.myapplication.models.viewmodels.AllViewModel
 import com.bobodroid.myapplication.models.viewmodels.AnalysisViewModel
-import com.github.mikephil.charting.data.BarEntry
 import androidx.hilt.navigation.compose.hiltViewModel
 
 @Composable

@@ -69,16 +69,12 @@ import androidx.compose.ui.unit.sp
 import com.bobodroid.myapplication.MainActivity
 import com.bobodroid.myapplication.components.Dialogs.AskTriggerDialog
 import com.bobodroid.myapplication.components.Dialogs.InsertDialog
-import com.bobodroid.myapplication.components.Dialogs.SellDialog
 import com.bobodroid.myapplication.components.Dialogs.TextFieldDialog
 import com.bobodroid.myapplication.components.Dialogs.YenSellDialog
 import com.bobodroid.myapplication.components.RecordTextView
-import com.bobodroid.myapplication.extensions.toBigDecimalUs
 import com.bobodroid.myapplication.extensions.toBigDecimalWon
 import com.bobodroid.myapplication.extensions.toBigDecimalYen
-import com.bobodroid.myapplication.models.datamodels.DrBuyRecord
-import com.bobodroid.myapplication.models.datamodels.YenBuyRecord
-import com.bobodroid.myapplication.models.viewmodels.DollarViewModel
+import com.bobodroid.myapplication.models.datamodels.roomDb.YenBuyRecord
 import com.bobodroid.myapplication.models.viewmodels.YenViewModel
 import com.bobodroid.myapplication.ui.theme.DeleteColor
 import com.bobodroid.myapplication.ui.theme.SelectedColor

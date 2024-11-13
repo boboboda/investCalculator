@@ -77,11 +77,11 @@ fun DrawerCustom(
 
     val coroutineScope = rememberCoroutineScope()
 
-    val userData = allViewModel.localUserData.collectAsState()
+    val userData = allViewModel.localUserFlow.collectAsState()
 
     val chargeDialog = remember { mutableStateOf(false) }
 
-    val localUser = allViewModel.localUserData.collectAsState()
+    val localUser = allViewModel.localUserFlow.collectAsState()
 
     var dropdownExpanded by remember { mutableStateOf(false) }
 

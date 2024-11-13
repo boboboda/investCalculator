@@ -1,4 +1,4 @@
-package com.bobodroid.myapplication.models.datamodels
+package com.bobodroid.myapplication.models.datamodels.firebase
 
 import android.util.Log
 import androidx.room.ColumnInfo

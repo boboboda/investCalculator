@@ -51,7 +51,7 @@ fun CloudScreen(routeAction: MainRouteAction,
                 yenViewModel: YenViewModel,
                 wonViewModel: WonViewModel) {
 
-    val localUser = allViewModel.localUserData.collectAsState()
+    val localUser = allViewModel.localUserFlow.collectAsState()
 
     val context = LocalContext.current
 

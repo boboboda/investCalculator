@@ -1,8 +1,8 @@
-package com.bobodroid.myapplication.models.datamodels
+package com.bobodroid.myapplication.models.datamodels.roomDb
 
 import androidx.room.*
+import com.bobodroid.myapplication.models.datamodels.firebase.ExchangeRate
 import kotlinx.coroutines.flow.Flow
-import okhttp3.internal.connection.Exchange
 import java.util.UUID
 
 

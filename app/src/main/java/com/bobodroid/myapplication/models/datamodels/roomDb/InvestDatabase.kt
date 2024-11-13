@@ -1,14 +1,12 @@
-package com.bobodroid.myapplication.models.datamodels
+package com.bobodroid.myapplication.models.datamodels.roomDb
 
 import androidx.room.AutoMigration
-import androidx.room.ColumnInfo
 import androidx.room.Database
 import androidx.room.DeleteColumn
 import androidx.room.RenameColumn
-import androidx.room.RenameTable
 import androidx.room.RoomDatabase
 import androidx.room.migration.AutoMigrationSpec
-import com.bobodroid.myapplication.models.datamodels.DrBuyRecord
+import com.bobodroid.myapplication.models.datamodels.firebase.ExchangeRate
 
 
 @Database(entities = [

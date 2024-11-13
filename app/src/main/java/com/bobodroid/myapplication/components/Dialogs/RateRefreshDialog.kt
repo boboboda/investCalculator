@@ -34,7 +34,7 @@ fun RateRefreshDialog(
     onClicked: () -> Unit,
 ) {
 
-    val localUserData = allViewModel.localUserData.collectAsState()
+    val localUserData = allViewModel.localUserFlow.collectAsState()
 
     val freeChance = localUserData.value.rateResetCount
 

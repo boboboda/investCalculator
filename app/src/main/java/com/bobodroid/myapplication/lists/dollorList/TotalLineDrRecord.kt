@@ -5,7 +5,6 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -75,8 +74,7 @@ import com.bobodroid.myapplication.components.Dialogs.TextFieldDialog
 import com.bobodroid.myapplication.components.RecordTextView
 import com.bobodroid.myapplication.extensions.toBigDecimalUs
 import com.bobodroid.myapplication.extensions.toBigDecimalWon
-import com.bobodroid.myapplication.models.datamodels.DrBuyRecord
-import com.bobodroid.myapplication.models.viewmodels.AllViewModel
+import com.bobodroid.myapplication.models.datamodels.roomDb.DrBuyRecord
 import com.bobodroid.myapplication.models.viewmodels.DollarViewModel
 import com.bobodroid.myapplication.ui.theme.DeleteColor
 import com.bobodroid.myapplication.ui.theme.SelectedColor

@@ -142,7 +142,7 @@ fun MainScreen(
 
     val noticeContent = allViewModel.noticeContent.collectAsState()
 
-    val localUser = allViewModel.localUserData.collectAsState()
+    val localUser = allViewModel.localUserFlow.collectAsState()
 
     val bottomRefreshPadding = remember { mutableStateOf(5) }
 

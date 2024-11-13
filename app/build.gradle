@@ -186,9 +186,22 @@ dependencies {
     def billing_version = "6.0.1"
     implementation "com.android.billingclient:billing-ktx:$billing_version"
 
-    // Chart
-    implementation 'com.github.PhilJay:MPAndroidChart:v3.1.0'
-
     // 웹소켓
     implementation 'io.socket:socket.io-client:2.0.0'
+
+//    // 차트 라이브러리
+//    // For Jetpack Compose.
+//    implementation("com.patrykandpatrick.vico:compose:2.0.0-beta.2")
+//
+//    // For `compose`. Creates a `ChartStyle` based on an M2 Material Theme.
+//    implementation("com.patrykandpatrick.vico:compose-m2:2.0.0-beta.2")
+//
+//    // For `compose`. Creates a `ChartStyle` based on an M3 Material Theme.
+//    implementation("com.patrykandpatrick.vico:compose-m3:2.0.0-beta.2")
+//
+//    // Houses the core logic for charts and other elements. Included in all other modules.
+//    implementation("com.patrykandpatrick.vico:core:2.0.0-beta.2")
+//
+//    // For the view system.
+//    implementation("com.patrykandpatrick.vico:views:2.0.0-beta.2")
 }

@@ -13,7 +13,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.SnackbarHostState
@@ -32,8 +31,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.bobodroid.myapplication.components.RecordHeader
 import com.bobodroid.myapplication.components.RecordTextView
-import com.bobodroid.myapplication.models.datamodels.WonBuyRecord
-import com.bobodroid.myapplication.models.datamodels.YenBuyRecord
+import com.bobodroid.myapplication.models.datamodels.roomDb.WonBuyRecord
 import com.bobodroid.myapplication.models.viewmodels.WonViewModel
 import com.bobodroid.myapplication.screens.TAG
 import kotlinx.coroutines.delay

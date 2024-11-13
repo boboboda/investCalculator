@@ -1,0 +1,36 @@
+package com.bobodroid.myapplication.di
+
+import com.bobodroid.myapplication.models.datamodels.repository.UserRepository
+import com.bobodroid.myapplication.models.datamodels.useCases.CreateUserUseCase
+import com.bobodroid.myapplication.models.datamodels.useCases.DeleteUserUseCase
+import com.bobodroid.myapplication.models.datamodels.useCases.LocalExistCheckUseCase
+import com.bobodroid.myapplication.models.datamodels.useCases.LocalIdAddUseCase
+import com.bobodroid.myapplication.models.datamodels.useCases.LocalUserUpdate
+import com.bobodroid.myapplication.models.datamodels.useCases.LogInUseCase
+import com.bobodroid.myapplication.models.datamodels.useCases.LogoutUseCase
+import com.bobodroid.myapplication.models.datamodels.useCases.UserUseCases
+import dagger.Module
+import dagger.Provides
+import dagger.hilt.InstallIn
+import dagger.hilt.components.SingletonComponent
+
+
+@Module
+@InstallIn(SingletonComponent::class)
+object UseCaseModule {
+
+    @Provides
+    fun provideUserUseCases(
+        userRepository: UserRepository
+    ): UserUseCases {
+        return UserUseCases(
+            createUser = CreateUserUseCase(userRepository),
+            logIn = LogInUseCase(userRepository),
+            logout = LogoutUseCase(userRepository),
+            localExistCheck = LocalExistCheckUseCase(userRepository, LocalIdAddUseCase(userRepository)),
+            deleteUser = DeleteUserUseCase(userRepository),
+            localUserUpdate = LocalUserUpdate(userRepository)
+        )
+    }
+
+}

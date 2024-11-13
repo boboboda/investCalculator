@@ -48,7 +48,7 @@ fun MyPageScreen(routeAction: MainRouteAction, allViewModel: AllViewModel) {
         mutableStateOf(false)
     }
 
-    val localUser = allViewModel.localUserData.collectAsState()
+    val localUser = allViewModel.localUserFlow.collectAsState()
 
     var id = if (localUser.value.customId != null && localUser.value.customId != "") { localUser.value.customId } else { "아이디를 만들어주세요" }
 

@@ -1,4 +1,4 @@
-package com.bobodroid.myapplication.models.datamodels
+package com.bobodroid.myapplication.models.datamodels.roomDb
 
 import androidx.room.ColumnInfo
 import androidx.room.Entity

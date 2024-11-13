@@ -8,6 +8,10 @@ import com.bobodroid.myapplication.MainActivity
 import com.bobodroid.myapplication.MainActivity.Companion.TAG
 import com.bobodroid.myapplication.extensions.toBigDecimalWon
 import com.bobodroid.myapplication.models.datamodels.*
+import com.bobodroid.myapplication.models.datamodels.firebase.ExchangeRate
+import com.bobodroid.myapplication.models.datamodels.repository.InvestRepository
+import com.bobodroid.myapplication.models.datamodels.roomDb.YenBuyRecord
+import com.bobodroid.myapplication.models.datamodels.roomDb.YenSellRecord
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.*
@@ -281,7 +285,7 @@ class YenViewModel @Inject constructor(private val investRepository: InvestRepos
         viewModelScope.launch {
             exchangeMoney.emit("${lastValue(moneyInputFlow.value, rateInputFlow.value)}")
             investRepository
-                .addRecord(
+                .addYenBuyRecord(
                     YenBuyRecord(
                         date = dateFlow.value,
                         money = moneyInputFlow.value,
@@ -324,7 +328,7 @@ class YenViewModel @Inject constructor(private val investRepository: InvestRepos
                 expectProfit = "0",
                 exchangeMoney = lastValue(insertMoney, insertRate).toString())
 
-            investRepository.updateRecord(insertDate)
+            investRepository.updateYenBuyRecord(insertDate)
         }
 
     }
@@ -332,13 +336,13 @@ class YenViewModel @Inject constructor(private val investRepository: InvestRepos
 
     fun removeBuyRecord(yenBuyRecord: YenBuyRecord) {
         viewModelScope.launch {
-            investRepository.deleteRecord(yenBuyRecord)
+            investRepository.deleteYenBuyRecord(yenBuyRecord)
         }
     }
 
     fun updateBuyRecord(yenBuyRecord: YenBuyRecord) {
         viewModelScope.launch {
-            investRepository.updateRecord(
+            investRepository.updateYenBuyRecord(
                 YenBuyRecord(
                     id = yenBuyRecord.id,
                     date = yenBuyRecord.date,
@@ -367,7 +371,7 @@ class YenViewModel @Inject constructor(private val investRepository: InvestRepos
             val buyRecordId = buyRecord.id
 
             investRepository
-                .addRecord(
+                .addYenSellRecord(
                     YenSellRecord(
                         id = buyRecordId,
                         date = sellDateFlow.value,
@@ -383,7 +387,7 @@ class YenViewModel @Inject constructor(private val investRepository: InvestRepos
 
     fun removeSellRecord(yenSellRecord: YenSellRecord) {
         viewModelScope.launch {
-            investRepository.deleteRecord(yenSellRecord)
+            investRepository.deleteYenSellRecord(yenSellRecord)
 
             val sellRecordState = _sellRecordFlow.value
 
@@ -422,7 +426,7 @@ class YenViewModel @Inject constructor(private val investRepository: InvestRepos
 
             val updateData = yenBuyrecord.copy(buyYenCategoryName = groupName)
 
-            investRepository.updateRecord(updateData)
+            investRepository.updateYenBuyRecord(updateData)
         }
     }
 
@@ -447,7 +451,7 @@ class YenViewModel @Inject constructor(private val investRepository: InvestRepos
                 val updateDate = yenBuyRecord.copy(profit = "")
 
                 viewModelScope.launch {
-                    investRepository.updateRecord(updateDate)
+                    investRepository.updateYenBuyRecord(updateDate)
                 }
             } else {
                 if (yenBuyRecord.profit == null) {
@@ -474,7 +478,7 @@ class YenViewModel @Inject constructor(private val investRepository: InvestRepos
                         val updateDate = yenBuyRecord.copy(profit = profit)
 
                         viewModelScope.launch {
-                            investRepository.updateRecord(updateDate)
+                            investRepository.updateYenBuyRecord(updateDate)
                         }
                     }
                 } else {
@@ -501,7 +505,7 @@ class YenViewModel @Inject constructor(private val investRepository: InvestRepos
                         val updateDate = yenBuyRecord.copy(profit = profit)
 
                         viewModelScope.launch {
-                            investRepository.updateRecord(updateDate)
+                            investRepository.updateYenBuyRecord(updateDate)
                         }
                     }
 
@@ -518,7 +522,7 @@ class YenViewModel @Inject constructor(private val investRepository: InvestRepos
 
         var success: Boolean = false
         viewModelScope.launch {
-            val successValue = investRepository.updateRecord(updateData)
+            val successValue = investRepository.updateYenBuyRecord(updateData)
 
             Log.d(TAG, "업데이트 성공 ${successValue}")
             success = if(successValue > 0) true else false
@@ -531,7 +535,7 @@ class YenViewModel @Inject constructor(private val investRepository: InvestRepos
 
         var success: Boolean = false
         viewModelScope.launch {
-            val successValue = investRepository.updateRecord(updateData)
+            val successValue = investRepository.updateYenSellRecord(updateData)
 
             Log.d(TAG, "업데이트 성공 ${successValue}")
             success = if(successValue > 0) true else false
@@ -542,9 +546,9 @@ class YenViewModel @Inject constructor(private val investRepository: InvestRepos
 
     suspend fun cancelSellRecord(id: UUID): Pair<Boolean, YenSellRecord> {
 
-        val searchBuyRecord = investRepository.getYenRecordId(id)
+        val searchBuyRecord = investRepository.getYenBuyRecordById(id)
 
-        val searchSellRecord = investRepository.getYenSellRecordId(id)
+        val searchSellRecord = investRepository.getYenSellRecordById(id)
 
         Log.d(TAG, "cancelBuyRecord: ${searchBuyRecord}, sellId: ${id}")
 
@@ -555,7 +559,7 @@ class YenViewModel @Inject constructor(private val investRepository: InvestRepos
         } else {
             val updateData = searchBuyRecord.copy(recordColor = false)
 
-            investRepository.updateRecord(updateData)
+            investRepository.updateYenBuyRecord(updateData)
 
             return Pair(true, YenSellRecord())
         }
@@ -565,9 +569,9 @@ class YenViewModel @Inject constructor(private val investRepository: InvestRepos
 
         viewModelScope.launch {
 
-                investRepository.yenBuyAddListRecord(buyRecord)
+                investRepository.addYenBuyRecords(buyRecord)
 
-                investRepository.yenSellAddListRecord(sellRecord)
+                investRepository.addYenSellRecords(sellRecord)
 
         }
 

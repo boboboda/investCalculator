@@ -3,23 +3,26 @@ package com.bobodroid.myapplication.models.viewmodels
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.bobodroid.myapplication.MainActivity.Companion.TAG
 import com.bobodroid.myapplication.extensions.toDate
 import com.bobodroid.myapplication.extensions.toDateTime
-import com.bobodroid.myapplication.models.datamodels.CloudUserData
-import com.bobodroid.myapplication.models.datamodels.DrBuyRecord
-import com.bobodroid.myapplication.models.datamodels.DrSellRecord
-import com.bobodroid.myapplication.models.datamodels.ExchangeRate
-import com.bobodroid.myapplication.models.datamodels.InvestRepository
-import com.bobodroid.myapplication.models.datamodels.LocalUserData
-import com.bobodroid.myapplication.models.datamodels.TargetRate
-import com.bobodroid.myapplication.models.datamodels.TargetRateList
-import com.bobodroid.myapplication.models.datamodels.WonBuyRecord
-import com.bobodroid.myapplication.models.datamodels.WonSellRecord
-import com.bobodroid.myapplication.models.datamodels.YenBuyRecord
-import com.bobodroid.myapplication.models.datamodels.YenSellRecord
-import com.bobodroid.myapplication.models.datamodels.service.exchangeRateApi.RateStatsApi
+import com.bobodroid.myapplication.models.datamodels.roomDb.CloudUserData
+import com.bobodroid.myapplication.models.datamodels.roomDb.DrBuyRecord
+import com.bobodroid.myapplication.models.datamodels.roomDb.DrSellRecord
+import com.bobodroid.myapplication.models.datamodels.firebase.ExchangeRate
+import com.bobodroid.myapplication.models.datamodels.repository.ExchangeRateRepository
+import com.bobodroid.myapplication.models.datamodels.repository.InvestRepository
+import com.bobodroid.myapplication.models.datamodels.repository.UserRepository
+import com.bobodroid.myapplication.models.datamodels.roomDb.LocalUserData
+import com.bobodroid.myapplication.models.datamodels.roomDb.TargetRate
+import com.bobodroid.myapplication.models.datamodels.roomDb.TargetRateList
+import com.bobodroid.myapplication.models.datamodels.roomDb.WonBuyRecord
+import com.bobodroid.myapplication.models.datamodels.roomDb.WonSellRecord
+import com.bobodroid.myapplication.models.datamodels.roomDb.YenBuyRecord
+import com.bobodroid.myapplication.models.datamodels.roomDb.YenSellRecord
 import com.bobodroid.myapplication.models.datamodels.service.noticeApi.NoticeApi
+import com.bobodroid.myapplication.models.datamodels.useCases.UserUseCases
 import com.bobodroid.myapplication.util.InvestApplication
 import com.bobodroid.myapplication.models.datamodels.websocket.WebSocketClient
 import com.google.firebase.firestore.Query
@@ -44,10 +47,10 @@ import javax.inject.Inject
 
 @HiltViewModel
 class AllViewModel @Inject constructor(
-    private val investRepository: InvestRepository,
+    private val userUseCases: UserUseCases,
+    private val exchangeRateRepository: ExchangeRateRepository,
     private val webSocketClient: WebSocketClient
 ) : ViewModel() {
-
 
 
     var changeMoney = MutableStateFlow(1)
@@ -56,7 +59,8 @@ class AllViewModel @Inject constructor(
 
     val db = Firebase.firestore
 
-    val localUserData = MutableStateFlow(LocalUserData())
+    val _localUser = MutableStateFlow(LocalUserData())
+    val localUserFlow = _localUser.asStateFlow()
 
     val noticeShowDialog = MutableStateFlow(false)
 
@@ -96,31 +100,24 @@ class AllViewModel @Inject constructor(
 
 
 
-    init{
+    init {
+        viewModelScope.launch {
+            // 첫 번째 작업: localUserExistCheck
+            localUserExistCheck() // 이 작업이 완료된 후에 다음으로 넘어감
 
-        viewModelScope.launch() {
-            onReadyRewardAd.collect {isReady ->
-                if(isReady) {
-
+            // 두 번째 작업: onReadyRewardAd.collect
+            onReadyRewardAd.collect { isReady ->
+                if (isReady) {
                     rewardIsReadyStateFlow.value = true
-
-                    rewardAdState(localUserData.value)
-
-                    bannerAdState(localUserData.value)
+                    rewardAdState()
+                    bannerAdState()
                 }
             }
+
+            // 세 번째 작업: recentRateHotListener
+            recentRateHotListener() // 위 작업들이 끝난 후에 시작됨
         }
-
-        loadLocalRate()
-
-        recentRateHotListener()
-
-
     }
-
-
-
-
 
 
 
@@ -140,12 +137,12 @@ class AllViewModel @Inject constructor(
             }?.toList()
 
             val addRateData = targetRateFlow.value.copy(
-                customId = localUserData.value.customId,
-                fcmToken = localUserData.value.fcmToken,
+                customId = _localUser.value.customId,
+                fcmToken = _localUser.value.fcmToken,
                 dollarHighRateList = updateDollarRateList?.let { sortTargetRateList(type="달러고점", it) } as List<TargetRate>
             )
-            db.collection("userTargetRate").document(localUserData.value.customId!!)
-                .set(addRateData.asHasMap())
+            //목표환율 api 추가 로직 !!!!!!!
+
             viewModelScope.launch {
                 _targetRate.emit(addRateData)
             }
@@ -157,12 +154,12 @@ class AllViewModel @Inject constructor(
             }?.toList()
 
             val addRateData = targetRateFlow.value.copy(
-                customId = localUserData.value.customId,
-                fcmToken = localUserData.value.fcmToken,
+                customId = _localUser.value.customId,
+                fcmToken = _localUser.value.fcmToken,
                 dollarLowRateList = updateDollarRateList?.let { sortTargetRateList(type="달러저점", it) } as List<TargetRate>
             )
-            db.collection("userTargetRate").document(localUserData.value.customId!!)
-                .set(addRateData.asHasMap())
+            //목표환율 api 추가 로직 !!!!!!!
+
             viewModelScope.launch {
                 _targetRate.emit(addRateData)
             }
@@ -174,12 +171,12 @@ class AllViewModel @Inject constructor(
             }?.toList()
 
             val addRateData = targetRateFlow.value.copy(
-                customId = localUserData.value.customId,
-                fcmToken = localUserData.value.fcmToken,
+                customId = _localUser.value.customId,
+                fcmToken = _localUser.value.fcmToken,
                 yenHighRateList = updateYenRateList?.let { sortTargetRateList(type="엔화고점", it) } as List<TargetRate>
             )
-            db.collection("userTargetRate").document(localUserData.value.customId!!)
-                .set(addRateData.asHasMap())
+            //목표환율 api 추가 로직 !!!!!!!
+
             viewModelScope.launch {
                 _targetRate.emit(addRateData)
             }
@@ -191,12 +188,12 @@ class AllViewModel @Inject constructor(
             }?.toList()
 
             val addRateData = targetRateFlow.value.copy(
-                customId = localUserData.value.customId,
-                fcmToken = localUserData.value.fcmToken,
+                customId = _localUser.value.customId,
+                fcmToken = _localUser.value.fcmToken,
                 yenLowRateList = updateYenRateList?.let { sortTargetRateList(type="엔화저점", it) } as List<TargetRate>
             )
-            db.collection("userTargetRate").document(localUserData.value.customId!!)
-                .set(addRateData.asHasMap())
+            //목표환율 api 추가 로직 !!!!!!!
+
             viewModelScope.launch {
                 _targetRate.emit(addRateData)
             }
@@ -218,12 +215,13 @@ class AllViewModel @Inject constructor(
             }?.toList()
 
             val removeRateData = targetRateFlow.value.copy(
-                customId = localUserData.value.customId,
-                fcmToken = localUserData.value.fcmToken,
+                customId = _localUser.value.customId,
+                fcmToken = _localUser.value.fcmToken,
                 dollarHighRateList = updateDollarRateList?.let { sortTargetRateList(type="달러고점", it) } as List<TargetRate>
             )
-            db.collection("userTargetRate").document(localUserData.value.customId!!)
-                .set(removeRateData.asHasMap())
+
+            //목표환율 api 추가 로직 !!!!!!!
+
             viewModelScope.launch {
                 _targetRate.emit(removeRateData)
             }
@@ -235,12 +233,13 @@ class AllViewModel @Inject constructor(
             }?.toList()
 
             val removeRateData = targetRateFlow.value.copy(
-                customId = localUserData.value.customId,
-                fcmToken = localUserData.value.fcmToken,
+                customId = _localUser.value.customId,
+                fcmToken = _localUser.value.fcmToken,
                 dollarLowRateList = updateDollarRateList?.let { sortTargetRateList(type="달러저점", it) } as List<TargetRate>
             )
-            db.collection("userTargetRate").document(localUserData.value.customId!!)
-                .set(removeRateData.asHasMap())
+
+            //목표환율 api 추가 로직 !!!!!!!
+
             viewModelScope.launch {
                 _targetRate.emit(removeRateData)
             }
@@ -252,12 +251,13 @@ class AllViewModel @Inject constructor(
             }?.toList()
 
             val removeRateData = targetRateFlow.value.copy(
-                customId = localUserData.value.customId,
-                fcmToken = localUserData.value.fcmToken,
+                customId = _localUser.value.customId,
+                fcmToken = _localUser.value.fcmToken,
                 yenHighRateList = updateYenRateList?.let { sortTargetRateList(type="엔화고점", it) } as List<TargetRate>
             )
-            db.collection("userTargetRate").document(localUserData.value.customId!!)
-                .set(removeRateData.asHasMap())
+
+            //목표환율 api 추가 로직 !!!!!!!
+
             viewModelScope.launch {
                 _targetRate.emit(removeRateData)
             }
@@ -269,12 +269,13 @@ class AllViewModel @Inject constructor(
             }?.toList()
 
             val removeRateData = targetRateFlow.value.copy(
-                customId = localUserData.value.customId,
-                fcmToken = localUserData.value.fcmToken,
+                customId = _localUser.value.customId,
+                fcmToken = _localUser.value.fcmToken,
                 yenLowRateList = updateYenRateList?.let { sortTargetRateList(type="엔화저점", it) } as List<TargetRate>
             )
-            db.collection("userTargetRate").document(localUserData.value.customId!!)
-                .set(removeRateData.asHasMap())
+
+            //목표환율 api 추가 로직 !!!!!!!
+
             viewModelScope.launch {
                 _targetRate.emit(removeRateData)
             }
@@ -360,13 +361,13 @@ class AllViewModel @Inject constructor(
 
 
     // 리워드 다이로그 상태 관리
-    private fun rewardAdState(localUserDate: LocalUserData) {
+    private fun rewardAdState() {
 
-        Log.d(TAG, "연기날짜: ${localUserDate.rewardAdShowingDate} 오늘날짜: ${todayDateFlow.value}")
+        Log.d(TAG, "연기날짜: ${_localUser.value.rewardAdShowingDate} 오늘날짜: ${todayDateFlow.value}")
 
         // 닫기 후 호출 방지
-        if (!localUserDate.rewardAdShowingDate.isNullOrEmpty()) {
-            if (todayDateFlow.value > localUserDate.rewardAdShowingDate!!) {
+        if (!_localUser.value.rewardAdShowingDate.isNullOrEmpty()) {
+            if (todayDateFlow.value > _localUser.value.rewardAdShowingDate!!) {
                 Log.d(TAG, "오늘 날짜가 더 큽니다.")
                 rewardShowDialog.value = true
 
@@ -381,31 +382,31 @@ class AllViewModel @Inject constructor(
     }
 
     // 리워드 다이로그 연기 설정
-    fun rewardDelayDate(localUser: LocalUserData) {
+    fun rewardDelayDate() {
         viewModelScope.launch {
 
             Log.d(TAG, "날짜 연기 신청")
 
-            val updateUserData = localUser.copy(
+            val updateUserData = localUserFlow.value.copy(
                 rewardAdShowingDate = delayDate(inputDate = todayDateFlow.value, delayDay = 1)
             )
 
-            investRepository.localUserUpdate(updateUserData)
+            userUseCases.localUserUpdate(updateUserData)
 
-            Log.d(TAG, "딜레이리워드날짜: ${localUserData.value.rewardAdShowingDate}")
+            Log.d(TAG, "딜레이리워드날짜: ${updateUserData.rewardAdShowingDate}")
         }
     }
 
 
     //배너 삭제
-    private fun bannerAdState(localUserDate: LocalUserData) {
+    private fun bannerAdState() {
 
-        Log.d(TAG, "배너 광고 제거 연기날짜: ${localUserDate.userResetDate} 오늘날짜: ${todayDateFlow.value}")
+        Log.d(TAG, "배너 광고 제거 연기날짜: ${_localUser.value.userResetDate} 오늘날짜: ${todayDateFlow.value}")
 
         // 닫기 후 호출 방지
 
-        localUserDate.userResetDate?.let {
-            if (todayDateFlow.value > localUserDate.userResetDate!!) {
+        _localUser.value.userResetDate?.let {
+            if (todayDateFlow.value > _localUser.value.userResetDate!!) {
                 Log.d(TAG, "오늘 날짜가 더 큽니다.")
             } else {
                 Log.d(TAG, "연기된 날짜가 더 큽니다.")
@@ -418,18 +419,18 @@ class AllViewModel @Inject constructor(
 
 
     // 배너 광고 제거 딜레이
-    fun deleteBannerDelayDate(localUser: LocalUserData) {
+    fun deleteBannerDelayDate() {
         viewModelScope.launch {
 
             Log.d(TAG, "날짜 연기 신청")
 
-            val updateUserData = localUser.copy(
+            val updateUserData = localUserFlow.value.copy(
                 userResetDate = delayDate(inputDate = todayDateFlow.value, delayDay = 1)
             )
 
-            investRepository.localUserUpdate(updateUserData)
+            userUseCases.localUserUpdate(updateUserData)
 
-            Log.d(TAG, "배너광고 삭제 딜레이리워드날짜: ${localUserData.value.userResetDate}")
+            Log.d(TAG, "배너광고 삭제 딜레이리워드날짜: ${updateUserData.userResetDate}")
 
             deleteBannerStateFlow.value = true
 
@@ -501,63 +502,12 @@ class AllViewModel @Inject constructor(
                 userShowNoticeDate = noticeDateFlow.value
             )
 
-            investRepository.localUserUpdate(updateUserData)
+            userUseCases.localUserUpdate(updateUserData)
 
             Log.d(TAG, "날짜 수정 실행, ${noticeDateFlow.value}")
         }
     }
 
-
-    // 로컬 아이디 생성
-    fun localIdAdd(localUser: (LocalUserData) -> Unit) {
-        viewModelScope.launch(Dispatchers.IO) {
-            Log.d(TAG, "로컬 유저 생성 실행")
-
-            val createLocalUser = LocalUserData(
-                userResetDate = "",
-                rateAdCount = 0,
-                rateResetCount = 3
-            )
-            investRepository.localUserAdd(createLocalUser)
-
-            investRepository.localUserDataGet().distinctUntilChanged()
-                .collect { localUser ->
-                    if (localUser.userResetDate.isNullOrEmpty()) {
-                        Log.d(TAG, "LocalUserData null")
-                    } else {
-                        localUser(localUser)
-                    }
-                }
-
-
-        }
-    }
-
-
-
-    fun dateReset() {
-        viewModelScope.launch {
-            Log.d(TAG, "날짜 초기화")
-
-            val user = localUserData.value
-
-            val updateUserData = user.copy(
-                userShowNoticeDate = "",
-                userResetDate = "",
-                rewardAdShowingDate = ""
-
-
-            )
-            investRepository.localUserUpdate(updateUserData)
-        }
-    }
-
-    // 로컬 아이디 삭제
-    fun deleteLocalUser() {
-        viewModelScope.launch {
-            investRepository.localUserDataDelete()
-        }
-    }
 
 
 
@@ -590,66 +540,11 @@ class AllViewModel @Inject constructor(
     }
 
 
-
-    // 최신 환율 불러오기
-//    fun recentRateHotListener(response: (ExchangeRate, LocalUserData) -> Unit) {
-////        dateUpdate()
-//
-//        viewModelScope.launch {
-//
-//            localExistCheck { localData ->
-//
-//                localUserData.value = localData
-//
-//                Log.d(TAG, "localData = ${localUserData.value}")
-//
-////                resetChance(localData)
-//
-//                noticeApi { noticeDate ->
-//                    noticeDialogState(localData, noticeDate)
-//
-//                }
-//
-//                fcmTokenUpdate(localData)
-//
-//                viewModelScope.launch {
-//                    refreshDateFlow.emit(localData.reFreshCreateAt ?: "새로고침 정보가 없습니다.")
-//                }
-//
-//                // 수정 필요
-//                if(!localData.customId.isNullOrEmpty()) {
-//                    targetRateLoad(localData.customId!!) { data, message->
-//                        viewModelScope.launch {
-//                            _targetRate.emit(data)
-//                            Log.w(TAG, "목표환율 불러오기 성공")
-//                        }
-//                    }
-//                }
-//
-//            }
-//
-//            webSocketClient.recentRateWebReceiveData(
-//                onInsert = { rateString ->
-//                    // 환율 데이터 처리 로직
-//                    Log.d(TAG, "Received exchange rate: $rateString")
-//                },
-//                onInitialData = { initialData ->
-//                    // 초기 데이터 처리 로직
-//                    Log.d(TAG, "Received initial data: $initialData")
-//                }
-//            )
-//
-//        }
-//    }
-
     fun recentRateHotListener() {
         viewModelScope.launch {
-            localExistCheck { localData ->
-                localUserData.value = localData
-                setupNotice(localData)
-                updateFcmToken(localData)
-                loadTargetRate(localData.customId)
-            }
+            setupNotice(localUserFlow.value)
+            updateFcmToken(localUserFlow.value)
+            loadTargetRate(localUserFlow.value.customId)
 
             // 실시간 데이터 구독 시작
             subscribeToExchangeRateUpdates()
@@ -682,7 +577,7 @@ class AllViewModel @Inject constructor(
 
     fun deleteTotalRates() {
         viewModelScope.launch {
-            investRepository.exchangeRateDataDelete()
+            exchangeRateRepository.exchangeRateDataDelete()
         }
     }
 
@@ -744,177 +639,23 @@ class AllViewModel @Inject constructor(
     }
 
 
+    private fun fcmTokenUpdate(localUser: LocalUserData) {
 
+        val updateToken = InvestApplication.prefs.getData("fcm_token", "")
 
-    private fun fireStoreNowRateLoad(startOfDay: String, endOfDay: String, result:(List<ExchangeRate>) -> Unit) {
+        Log.d(TAG, "토큰값${updateToken}")
 
-        viewModelScope.launch(Dispatchers.IO) {
-            db.collection("exchangeRates")
-                .whereGreaterThanOrEqualTo("createAt", startOfDay)
-                .whereLessThan("createAt", endOfDay)
-                .orderBy("createAt", Query.Direction.DESCENDING)
-                .get()
-                .addOnSuccessListener { snapshot  ->
-                    if (snapshot != null && !snapshot.isEmpty) {
-                        val data = snapshot.documents.mapNotNull { doc ->
-                            ExchangeRate.fromDocumentSnapshot(doc)
-                        }
+        val updateLocalUserData = localUser.copy(fcmToken = updateToken)
 
-                        result(data)
-
-                    } else {
-                        Log.w(TAG, "Current data: null")
-                    }
-                }
-                .addOnFailureListener { e ->
-                    Log.w(TAG, "Data load failed: ", e)
-                }
+        viewModelScope.launch {
+            userUseCases.localUserUpdate(updateLocalUserData)
         }
-    }
 
-    fun firebaseRateLoad(loadFinished:(String) -> Unit) {
-
-        // 토탈 데이터 마지막 날짜 시간, 오늘날짜 시간 비교
-        // 오늘 날짜가 더 클 경우 오늘 자정부터, 현재시간 데이터 요청
-
-        val totalRateLastDay = totalExchangeRate.value.lastOrNull()?.createAt
-
-        val todayTime = nowDateTimeFlow.value.toDateTime()
-
-
-        if(totalExchangeRate.value.isEmpty()) {
-            totalRateLoad {
-                viewModelScope.launch {
-                    totalExchangeRate.emit(it)
-
-                    investRepository.saveAllExchangeRates(it)
-
-                    loadFinished("성공적으로 데이터를 불러왔습니다.")
-
-                }
-            }
-
-        } else {
-
-            totalRateLastDay?.let {
-                if(todayTime > totalRateLastDay) {
-                    fireStoreNowRateLoad(
-                        startOfDay = totalRateLastDay,
-                        endOfDay = todayTime) {
-                        viewModelScope.launch {
-                            investRepository.saveAllExchangeRates(it)
-                            loadFinished("성공적으로 데이터를 불러왔습니다.")
-                        }
-                    }
-
-                } else {
-                    loadFinished("데이터가 최신값입니다.")
-                }
-            }
-        }
-    }
-
-    private fun totalRateLoad(loadFinished:(List<ExchangeRate>) -> Unit){
-
-        viewModelScope.launch(Dispatchers.IO) {
-            db.collection("exchangeRates")
-                .get()
-                .addOnSuccessListener { querySnapShot ->
-                    if (querySnapShot != null) {
-
-                        Log.d(TAG, "서버에서 모든 데이터 불러오기 실행")
-
-                        val exchangeRates = querySnapShot.map { ExchangeRate.fromQuerySnapshot(querySnapShot) }
-
-                        Log.d(TAG, "서버에서 들어온 토탈 환율 값 갯수: ${exchangeRates.count()}")
-
-                        loadFinished(exchangeRates.filterNotNull())
-                    } else {
-                        Log.w(TAG, "Current data: null")
-                        return@addOnSuccessListener
-                    }
-                }
-                .addOnFailureListener { e ->
-                    Log.w(TAG, "Data load failed: ", e)
-                }
-        }
 
 
     }
 
-    private fun loadLocalRate() {
-        viewModelScope.launch(Dispatchers.IO) {
-            investRepository.exchangeRateDataGet()
-                .distinctUntilChanged()  // 중복 데이터 필터링
-                .collect { localRateData ->  // collect로 데이터 처리
-                    totalExchangeRate.emit(localRateData) // 변화된 데이터 emit
-                    processRates()
-                }
-        }
-    }
 
-    private fun processRates() {
-        val dateToRatesMap = mutableMapOf<String, MutableList<Float>>()
-
-        // 데이터를 날짜별로 그룹화
-        for (exchangeRate in totalExchangeRate.value) {
-            val date = exchangeRate.createAt.toDate() ?: continue
-            val rate = exchangeRate.jpy?.toFloat() ?: continue  // Rate 객체의 값을 얻는 부분은 Rate 클래스에 맞게 수정
-
-            dateToRatesMap.getOrPut(date) { mutableListOf() }.add(rate)
-        }
-
-        // 날짜별로 최대값, 최소값, 날짜를 구하여 트리플 리스트로 변환
-        val processedExchangeRates = dateToRatesMap.map { (date, rates) ->
-            Triple(date, rates.minOrNull() ?: 0f, rates.maxOrNull() ?: 0f)
-        }
-
-        Log.d(TAG, "서버에서 들어온 가공된 값 $processedExchangeRates")
-    }
-
-
-    fun dateFormat(localDateCreateAt: String, serverDateCreateAt: String): Boolean {
-
-
-        val serverDate = serverDateCreateAt!!.split(" ")[0]
-        val serverTime = serverDateCreateAt!!.split(" ")[1]
-        val localDate = localDateCreateAt!!.split(" ")[0]
-        val localTime = localDateCreateAt!!.split(" ")[1]
-
-        val serverDateFormat = SimpleDateFormat("yyyy-MM-dd HH:mm:ss")
-        val serverDateObj = serverDateFormat.parse(serverDate + " " + serverTime)
-        val localDateFormat = SimpleDateFormat("yyyy-MM-dd HH:mm:ss")
-        val localDateObj = localDateFormat.parse(localDate + " " + localTime)
-
-        val difference = serverDateObj.time - localDateObj.time
-
-        // 시간 차이가 1시간 이상이면 true를 반환합니다.
-        val diffHours = difference / (60 * 60 * 1000)
-
-        return diffHours >= 1
-    }
-
-    private fun localExistCheck(localData: (LocalUserData) -> Unit) {
-
-        viewModelScope.launch(Dispatchers.IO) {
-            investRepository.localUserDataGet().distinctUntilChanged()
-                .collect() { userData ->
-                    Log.d(TAG, "로컬아이디 체크 실행")
-                    if (userData == null) {
-                        localIdAdd {
-                            localData(it)
-                        }
-
-                        Log.d(TAG, "로컬 유저 생성 ${userData}")
-                    } else {
-                        Log.d(TAG, "가져온 유저 데이터 ${userData}")
-                        localData(userData)
-
-                        localUserData.emit(userData)
-                    }
-                }
-        }
-    }
 
 
     val startDateFlow = MutableStateFlow("")
@@ -933,133 +674,42 @@ class AllViewModel @Inject constructor(
     }
 
 
+    fun createUser(customId: String, pin: String, resultMessage: (String) -> Unit) {
 
-//    fun chargeChance() {
-//        val localUser = localUserData.value
-//
-//        val payChance = localUser.rateAdCount
-//
-//        viewModelScope.launch {
-//            val chargeChance = payChance!! + 1
-//
-//            val updateDate = localUser.copy(
-//                rateAdCount = chargeChance
-//            )
-//            investRepository.localUserUpdate(updateDate)
-//        }
-//    }
-
-//    private fun resetChance(localUser: LocalUserData) {
-//        val lastResetDate = localUser.userResetDate!!
-//
-//        if (todayDateFlow.value > lastResetDate) {
-//            Log.w(TAG, "무료기회 리셋 진행")
-//            viewModelScope.launch {
-//                val updateData = localUser.copy(
-//                    userResetDate = todayDateFlow.value,
-//                    rateResetCount = 3 // 사용자에게 다시 리셋 기회 제공
-//                )
-//                investRepository.localUserUpdate(updateData)
-//            }
-//        } else if (todayDateFlow.value == lastResetDate) {
-//            Log.w(TAG, "오늘 이미 무료기회를 리셋 받았습니다.")
-//        } else {
-//            Log.w(TAG, "리셋 날짜가 미래로 설정되어 있습니다. 설정 오류가 있는지 확인하세요.")
-//        }
-//    }
-
-    fun idCustom(customId: String, pin: String, resultMessage: (String) -> Unit) {
-        // 파이어스토어 id 생성
-        // 중복 생성 방지
-        val userDocument = db.collection("user").document(customId)
-        val checkUserdata = userDocument.get()
-
-        checkUserdata.addOnSuccessListener { docSnapShot ->
-
-            if (docSnapShot.exists()) {
-                resultMessage.invoke("이미 생성된 아이디 입니다.")
-            } else {
-                //파이어 베이스에 생성
-                val makeCustomId = LocalUserData(
-                    customId = customId,
-                    pin = pin
-                )
-
-                userDocument.set(makeCustomId)
-
-                // 로컬에 생성
-                val localUser = localUserData.value
-
-                viewModelScope.launch {
-                    Log.d(TAG, "localId custom 실행")
-
-                    val updateDate = localUser.copy(
-                        customId = customId
-                    )
-
-                    investRepository.localUserUpdate(updateDate)
-
-                    resultMessage.invoke("서버에 아이디가 생성되었습니다.")
-                }
-            }
+        viewModelScope.launch {
+            userUseCases.createUser(customId, pin, resultMessage)
         }
     }
 
     fun logIn(id: String, pin: String, successFind: (message: String) -> Unit) {
 
-        val localUser = localUserData.value
-
-        val userDocument = db.collection("user").document(id)
-        val checkUserdata = userDocument.get()
-
-        checkUserdata.addOnSuccessListener { docSnapShot ->
-
-            val userData = LocalUserData(docSnapShot)
-
-            Log.w(TAG, "${userData}")
-
-            if (docSnapShot.exists()) {
-                if (userData.pin != pin) {
-                    successFind.invoke("핀이 틀렸습니다.")
-                } else {
-
-                    viewModelScope.launch {
-                        Log.d(TAG, "localId custom 실행")
-
-                        val updateDate = localUser.copy(
-                            customId = id
-                        )
-                        investRepository.localUserUpdate(updateDate)
-
-                        successFind.invoke("로그인 되었습니다.")
-                    }
-
-                }
-            } else {
-                successFind.invoke("아이디가 없습니다.")
-            }
-
+        viewModelScope.launch {
+            userUseCases.logIn(id, pin, successFind)
         }
 
     }
 
-
-
     fun logout(result: (message: String) -> Unit) {
 
-        val localUser = localUserData.value
-
         viewModelScope.launch {
-            Log.d(TAG, "localId custom 실행")
-
-            val updateDate = localUser.copy(
-                customId = ""
-            )
-            investRepository.localUserUpdate(updateDate)
-
-            result.invoke("로그아웃되었습니다.")
+            userUseCases.logout(result)
         }
+    }
 
+    private fun localUserExistCheck() {
+        viewModelScope.launch {
+            val localUser = userUseCases.localExistCheck()
+            _localUser.emit(localUser)
+        }
+    }
+
+    // 로컬 아이디 삭제
+    fun deleteLocalUser() {
+        viewModelScope.launch {
+            userUseCases.deleteUser{
+
+            }
+        }
     }
 
 
@@ -1077,7 +727,7 @@ class AllViewModel @Inject constructor(
         wonBuyRecord: List<WonBuyRecord>,
         wonSellRecord: List<WonSellRecord>
     ) {
-        val localUser = localUserData.value
+        val localUser = _localUser.value
 
         val uploadCloudData = CloudUserData(
             id = localUser.id.toString(),
@@ -1109,19 +759,5 @@ class AllViewModel @Inject constructor(
             }
     }
 
-    private fun fcmTokenUpdate(localUser: LocalUserData) {
 
-        val updateToken = InvestApplication.prefs.getData("fcm_token", "")
-
-        Log.d(TAG, "토큰값${updateToken}")
-
-        val updateLocalUserData = localUser.copy(fcmToken = updateToken)
-
-        viewModelScope.launch {
-            investRepository.localUserUpdate(updateLocalUserData)
-        }
-
-
-
-    }
 }

@@ -6,19 +6,15 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.bobodroid.myapplication.MainActivity.Companion.TAG
 import com.bobodroid.myapplication.extensions.toBigDecimalWon
-import com.bobodroid.myapplication.models.datamodels.DrBuyRecord
-import com.bobodroid.myapplication.models.datamodels.DrSellRecord
-import com.bobodroid.myapplication.models.datamodels.ExchangeRate
-import com.bobodroid.myapplication.models.datamodels.InvestRepository
+import com.bobodroid.myapplication.models.datamodels.roomDb.DrBuyRecord
+import com.bobodroid.myapplication.models.datamodels.roomDb.DrSellRecord
+import com.bobodroid.myapplication.models.datamodels.firebase.ExchangeRate
+import com.bobodroid.myapplication.models.datamodels.repository.InvestRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.sync.Mutex
-import java.lang.reflect.Array.set
 import java.math.BigDecimal
-import java.math.BigInteger
-import java.math.MathContext
 import java.math.RoundingMode
 import java.text.SimpleDateFormat
 import java.time.LocalDate
@@ -52,8 +48,8 @@ class DollarViewModel @Inject constructor(private val investRepository: InvestRe
     init {
         viewModelScope.launch(Dispatchers.IO) {
 
-            val buyRecordFlow = investRepository.getAllBuyRecords().distinctUntilChanged()
-            val sellRecordFlow = investRepository.getAllSellRecords().distinctUntilChanged()
+            val buyRecordFlow = investRepository.getAllDollarBuyRecords().distinctUntilChanged()
+            val sellRecordFlow = investRepository.getAllDollarSellRecords().distinctUntilChanged()
 
             val combinedFlow = buyRecordFlow.combine(sellRecordFlow) { buyRecord, sellRecord ->
                 combineBuyAndSell(sellRecord, buyRecord)
@@ -298,7 +294,7 @@ class DollarViewModel @Inject constructor(private val investRepository: InvestRe
             exchangeMoney.emit("${lastValue(moneyInputFlow.value, rateInputFlow.value)}")
             Log.d(TAG, "매수 달러 ${exchangeMoney.value}")
             investRepository
-                .addRecord(
+                .addDollarBuyRecord(
                     DrBuyRecord(
                         date = dateFlow.value,
                         money = moneyInputFlow.value,
@@ -340,7 +336,7 @@ class DollarViewModel @Inject constructor(private val investRepository: InvestRe
                 expectProfit = "0",
                 exchangeMoney = lastValue(insertMoney, insertRate).toString())
 
-            investRepository.updateRecord(insertDate)
+            investRepository.updateDollarBuyRecord(insertDate)
         }
 
     }
@@ -348,7 +344,7 @@ class DollarViewModel @Inject constructor(private val investRepository: InvestRe
     fun removeBuyRecord(drBuyrecord: DrBuyRecord) {
         viewModelScope.launch {
 
-            investRepository.deleteRecord(drBuyrecord)
+            investRepository.deleteDollarBuyRecord(drBuyrecord)
 
         }
     }
@@ -357,7 +353,7 @@ class DollarViewModel @Inject constructor(private val investRepository: InvestRe
     //매도 시 컬러색 변경 예상 수익 초기화
     fun updateBuyRecord(drBuyrecord: DrBuyRecord) {
         viewModelScope.launch {
-            investRepository.updateRecord(
+            investRepository.updateDollarBuyRecord(
                 DrBuyRecord(
                     id = drBuyrecord.id,
                     date = drBuyrecord.date,
@@ -384,7 +380,7 @@ class DollarViewModel @Inject constructor(private val investRepository: InvestRe
 
             val updateData = drBuyrecord.copy(buyDrCategoryName = groupName)
 
-            investRepository.updateRecord(updateData)
+            investRepository.updateDollarBuyRecord(updateData)
         }
     }
 
@@ -395,7 +391,7 @@ class DollarViewModel @Inject constructor(private val investRepository: InvestRe
 
             Log.d(TAG, "매도아이디 ${buyRecordId}")
             investRepository
-                .addRecord(
+                .addDollarSellRecord(
                     DrSellRecord(
                         id = buyRecordId,
                         date = sellDateFlow.value,
@@ -414,7 +410,7 @@ class DollarViewModel @Inject constructor(private val investRepository: InvestRe
         Log.d(TAG, "${drSellRecord}")
 
         viewModelScope.launch {
-            investRepository.deleteRecord(drSellRecord)
+            investRepository.deleteDollarSellRecord(drSellRecord)
 
             val sellRecordState = _sellRecordFlow.value
             val filterSellRecord = _filterSellRecordFlow.value
@@ -473,7 +469,7 @@ class DollarViewModel @Inject constructor(private val investRepository: InvestRe
                 val updateDate = drBuyRecord.copy(profit = "")
 
                 viewModelScope.launch {
-                    investRepository.updateRecord(updateDate)
+                    investRepository.updateDollarBuyRecord(updateDate)
                 }
             } else {
                 if (drBuyRecord.profit == null) {
@@ -503,7 +499,7 @@ class DollarViewModel @Inject constructor(private val investRepository: InvestRe
                         val updateDate = drBuyRecord.copy(profit = profit)
 
                         viewModelScope.launch {
-                            investRepository.updateRecord(updateDate)
+                            investRepository.updateDollarBuyRecord(updateDate)
                         }
                     }
                 } else {
@@ -532,7 +528,7 @@ class DollarViewModel @Inject constructor(private val investRepository: InvestRe
                         val updateDate = drBuyRecord.copy(profit = profit)
 
                         viewModelScope.launch {
-                            investRepository.updateRecord(updateDate)
+                            investRepository.updateDollarBuyRecord(updateDate)
                         }
                     }
                 }
@@ -546,7 +542,7 @@ class DollarViewModel @Inject constructor(private val investRepository: InvestRe
 
         var success: Boolean = false
         viewModelScope.launch {
-            val successValue = investRepository.updateRecord(updateData)
+            val successValue = investRepository.updateDollarBuyRecord(updateData)
 
             Log.d(TAG, "업데이트 성공 ${successValue}")
             success = if (successValue > 0) true else false
@@ -559,7 +555,7 @@ class DollarViewModel @Inject constructor(private val investRepository: InvestRe
 
         var success: Boolean = false
         viewModelScope.launch {
-            val successValue = investRepository.updateRecord(updateData)
+            val successValue = investRepository.updateDollarSellRecord(updateData)
 
             Log.d(TAG, "업데이트 성공 ${successValue}")
             success = if (successValue > 0) true else false
@@ -570,9 +566,9 @@ class DollarViewModel @Inject constructor(private val investRepository: InvestRe
 
     suspend fun cancelSellRecord(id: UUID): Pair<Boolean, DrSellRecord> {
 
-        val searchBuyRecord = investRepository.getRecordId(id)
+        val searchBuyRecord = investRepository.getDollarBuyRecordById(id)
 
-        val searchSellRecord = investRepository.getSellRecordId(id)
+        val searchSellRecord = investRepository.getDollarSellRecordById(id)
 
         Log.d(TAG, "cancelBuyRecord: ${searchBuyRecord}, sellId: ${id}")
 
@@ -583,7 +579,7 @@ class DollarViewModel @Inject constructor(private val investRepository: InvestRe
         } else {
             val updateData = searchBuyRecord.copy(recordColor = false)
 
-            investRepository.updateRecord(updateData)
+            investRepository.updateDollarBuyRecord(updateData)
 
             return Pair(true, searchSellRecord)
         }
@@ -593,9 +589,9 @@ class DollarViewModel @Inject constructor(private val investRepository: InvestRe
 
         viewModelScope.launch {
 
-            investRepository.drBuyAddListRecord(buyRecord)
+            investRepository.addDollarBuyRecords(buyRecord)
 
-            investRepository.drSellAddListRecord(sellRecord)
+            investRepository.addDollarSellRecords(sellRecord)
         }
 
     }

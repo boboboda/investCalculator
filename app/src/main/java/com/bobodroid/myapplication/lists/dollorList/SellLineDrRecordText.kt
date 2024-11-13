@@ -21,7 +21,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.bobodroid.myapplication.extensions.*
-import com.bobodroid.myapplication.models.datamodels.*
 import com.bobodroid.myapplication.models.viewmodels.DollarViewModel
 import androidx.compose.material.SnackbarHostState
 import androidx.compose.material.icons.Icons
@@ -47,6 +46,7 @@ import androidx.compose.ui.unit.sp
 import com.bobodroid.myapplication.MainActivity.Companion.TAG
 import com.bobodroid.myapplication.components.Dialogs.AskTriggerDialog
 import com.bobodroid.myapplication.components.RecordTextView
+import com.bobodroid.myapplication.models.datamodels.roomDb.DrSellRecord
 import com.bobodroid.myapplication.ui.theme.TopButtonColor
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch

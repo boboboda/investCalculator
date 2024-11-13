@@ -57,7 +57,7 @@ fun CreateUSerScreen(routeAction: MainRouteAction, allViewModel: AllViewModel) {
 
     var logInDialog by remember { mutableStateOf(false) }
 
-    var localUser = allViewModel.localUserData.collectAsState()
+    var localUser = allViewModel.localUserFlow.collectAsState()
 
 
     Column(
@@ -223,7 +223,7 @@ fun CreateUSerScreen(routeAction: MainRouteAction, allViewModel: AllViewModel) {
                 placeholder = "커스텀 아이디를 입력해주세요",
                 buttonLabel = "확인",
                 onClicked = { customId, pin ->
-                    allViewModel.idCustom(customId, pin) { resultMessage ->
+                    allViewModel.createUser(customId, pin) { resultMessage ->
 
                         coroutineScope.launch {
                             customDialog = false

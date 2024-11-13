@@ -1,7 +1,5 @@
 package com.bobodroid.myapplication.components.Dialogs
 
-import android.app.Activity
-import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -16,7 +14,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.SnackbarHostState
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Divider
@@ -37,19 +34,16 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
-import com.bobodroid.myapplication.MainActivity.Companion.TAG
-import com.bobodroid.myapplication.components.CardButton
 import com.bobodroid.myapplication.components.CustomCard
 import com.bobodroid.myapplication.components.CustomOutLinedTextField
 import com.bobodroid.myapplication.components.addFocusCleaner
 import com.bobodroid.myapplication.components.admobs.showTargetRewardedAdvertisement
-import com.bobodroid.myapplication.models.datamodels.TargetRate
-import com.bobodroid.myapplication.models.datamodels.TargetRateList
+import com.bobodroid.myapplication.models.datamodels.roomDb.TargetRate
+import com.bobodroid.myapplication.models.datamodels.roomDb.TargetRateList
 import com.bobodroid.myapplication.models.viewmodels.AllViewModel
 import com.bobodroid.myapplication.ui.theme.DialogBackgroundColor
 import com.bobodroid.myapplication.ui.theme.TitleCardColor
 import com.bobodroid.myapplication.ui.theme.WelcomeScreenBackgroundColor
-import io.grpc.Context
 
 @Composable
 fun TargetRateDialog(

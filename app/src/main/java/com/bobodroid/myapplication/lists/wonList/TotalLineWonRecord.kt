@@ -74,7 +74,7 @@ import com.bobodroid.myapplication.components.RecordTextView
 import com.bobodroid.myapplication.extensions.toBigDecimalUs
 import com.bobodroid.myapplication.extensions.toBigDecimalWon
 import com.bobodroid.myapplication.extensions.toBigDecimalYen
-import com.bobodroid.myapplication.models.datamodels.WonBuyRecord
+import com.bobodroid.myapplication.models.datamodels.roomDb.WonBuyRecord
 import com.bobodroid.myapplication.models.viewmodels.WonViewModel
 import com.bobodroid.myapplication.ui.theme.DeleteColor
 import com.bobodroid.myapplication.ui.theme.SelectedColor

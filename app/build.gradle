@@ -80,6 +80,14 @@ android {
             buildConfigField "String", "BASE_URL", "\"http://buyoungsil.ddns.net:3000\""
             buildConfigField "String", "WEBSOCKET_URL", "\"http://buyoungsil.ddns.net:4200\""
         }
+
+
+
+        mac {
+            dimension "environment"
+            buildConfigField "String", "BASE_URL", "\"http://192.168.166.213:3000\""
+            buildConfigField "String", "WEBSOCKET_URL", "\"http://192.168.166.213:4200\""
+        }
     }
 
     flavorDimensions "environment"

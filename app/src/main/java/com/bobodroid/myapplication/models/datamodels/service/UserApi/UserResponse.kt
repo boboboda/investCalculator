@@ -9,22 +9,27 @@ data class Rate(
     val rate: Int
 )
 
-// 전체 응답 클래스
+// 전체 응답 클래스 (메시지 포함)
 @JsonClass(generateAdapter = true)
 data class UserResponse(
-    val customId: String,
-    val deviceId: String,
-    val pin: String,
+    val message: String, // 메시지 필드 추가
+    val data: UserData? = null// 데이터를 별도로 포함하는 구조로 변경
+)
+
+@JsonClass(generateAdapter = true)
+data class UserData(
+    val customId: String? = null,
+    val deviceId: String? = null,
+    val pin: String? = null,
     val createAt: String,
     val fcmToken: String,
-    val usdHighRates: List<Rate>,
-    val usdLowRates: List<Rate>,
-    val jpyHighRates: List<Rate>,
-    val jpyLowRates: List<Rate>,
+    val usdHighRates: List<Rate>? = emptyList(),
+    val usdLowRates: List<Rate>? = emptyList(),
+    val jpyHighRates: List<Rate>? = emptyList(),
+    val jpyLowRates: List<Rate>? = emptyList(),
     @Json(name = "_id") val id: String,
     @Json(name = "__v") val version: Int
 )
-
 
 // 업데이트 요청 데이터 클래스
 @JsonClass(generateAdapter = true)

@@ -174,8 +174,19 @@ interface LocalUserDatabaseDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(localUserData: LocalUserData)
 
+    @Transaction
+    suspend fun updateAndGetUser(user: LocalUserData): LocalUserData? {
+        val updateCount = update(user)
+        return if (updateCount > 0) {
+            getUserById(user.id)
+        } else null
+    }
+
     @Update(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun update(localUserData: LocalUserData)
+    suspend fun update(localUserData: LocalUserData): Int
+
+    @Query("SELECT * from LocalUserData_table where id=:id")
+    suspend fun getUserById(id: UUID): LocalUserData
 
     @Query("DELETE from LocalUserData_table")
     suspend fun deleteAll()

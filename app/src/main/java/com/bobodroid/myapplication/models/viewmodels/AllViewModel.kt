@@ -20,6 +20,8 @@ import com.bobodroid.myapplication.models.datamodels.service.noticeApi.NoticeApi
 import com.bobodroid.myapplication.models.datamodels.useCases.UserUseCases
 import com.bobodroid.myapplication.util.InvestApplication
 import com.bobodroid.myapplication.models.datamodels.websocket.WebSocketClient
+import com.bobodroid.myapplication.util.result.UiState
+import com.bobodroid.myapplication.util.result.Result
 import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -97,7 +99,7 @@ class AllViewModel @Inject constructor(
         viewModelScope.launch {
 
 //            deleteLocalUser()
-//
+
 //            delay(2000L)
 
             localUserExistCheck()
@@ -643,7 +645,7 @@ class AllViewModel @Inject constructor(
         val updateLocalUserData = localUser.copy(fcmToken = updateToken)
 
         viewModelScope.launch {
-            userUseCases.localUserUpdate(updateLocalUserData)
+//            userUseCases.localUserUpdate(updateLocalUserData)
         }
 
 
@@ -694,20 +696,41 @@ class AllViewModel @Inject constructor(
         }
     }
 
-    private fun localUserExistCheck() {
-        viewModelScope.launch {
-            val localUser = userUseCases.localExistCheck()
-            _localUser.emit(localUser)
 
-            Log.d(TAG("AllViewModel", "localUserExistCheck"), localUser.toString())
+    fun localUserExistCheck() {
+        viewModelScope.launch {
+            try {
+                when (val result = userUseCases.localExistCheck()) {
+
+
+                    is Result.Success -> {
+                        _localUser.value = result.data
+                        Log.d(TAG("AllViewModel", "localUserExistCheck"), "${result.message}")
+                    }
+                    is Result.Error -> {
+                        Log.d(TAG("AllViewModel", "localUserExistCheck"), "${result.message}")
+                    }
+                    else -> Unit
+                }
+            } catch (e: Exception) {
+                Log.d(TAG("AllViewModel", "localUserExistCheck"), "유저 데이터 체크 중 오류 발생")
+            }
         }
     }
 
     // 로컬 아이디 삭제
     fun deleteLocalUser() {
         viewModelScope.launch {
-            userUseCases.deleteUser {
-                Log.d(TAG("AllViewModel", "deleteLocalUser"), it)
+            when (val result = userUseCases.deleteUser()) {
+                is Result.Success -> {
+                    Log.d(TAG("AllViewModel", "deleteLocalUser"), "${result.message}")
+                }
+                is Result.Error -> {
+                    Log.d(TAG("AllViewModel", "deleteLocalUser"), "${result.message}")
+                }
+                is Result.Loading -> {
+                    // 로딩 처리
+                }
             }
         }
     }

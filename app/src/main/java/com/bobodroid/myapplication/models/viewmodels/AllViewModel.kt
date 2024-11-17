@@ -10,18 +10,22 @@ import com.bobodroid.myapplication.models.datamodels.roomDb.DrSellRecord
 import com.bobodroid.myapplication.models.datamodels.roomDb.ExchangeRate
 import com.bobodroid.myapplication.models.datamodels.repository.ExchangeRateRepository
 import com.bobodroid.myapplication.models.datamodels.roomDb.LocalUserData
-import com.bobodroid.myapplication.models.datamodels.roomDb.TargetRate
-import com.bobodroid.myapplication.models.datamodels.roomDb.TargetRateList
+import com.bobodroid.myapplication.models.datamodels.roomDb.RateType
+import com.bobodroid.myapplication.models.datamodels.roomDb.TargetRates
 import com.bobodroid.myapplication.models.datamodels.roomDb.WonBuyRecord
 import com.bobodroid.myapplication.models.datamodels.roomDb.WonSellRecord
 import com.bobodroid.myapplication.models.datamodels.roomDb.YenBuyRecord
 import com.bobodroid.myapplication.models.datamodels.roomDb.YenSellRecord
+import com.bobodroid.myapplication.models.datamodels.service.UserApi.Rate
 import com.bobodroid.myapplication.models.datamodels.service.noticeApi.NoticeApi
+import com.bobodroid.myapplication.models.datamodels.useCases.TargetRateUseCases
 import com.bobodroid.myapplication.models.datamodels.useCases.UserUseCases
 import com.bobodroid.myapplication.util.InvestApplication
 import com.bobodroid.myapplication.models.datamodels.websocket.WebSocketClient
 import com.bobodroid.myapplication.util.result.UiState
 import com.bobodroid.myapplication.util.result.Result
+import com.bobodroid.myapplication.util.result.onError
+import com.bobodroid.myapplication.util.result.onSuccess
 import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -43,7 +47,8 @@ import javax.inject.Inject
 @HiltViewModel
 class AllViewModel @Inject constructor(
     private val userUseCases: UserUseCases,
-    private val exchangeRateRepository: ExchangeRateRepository,
+    private val targetRateUseCases: TargetRateUseCases,
+//    private val exchangeRateRepository: ExchangeRateRepository,
     private val webSocketClient: WebSocketClient
 ) : ViewModel() {
 
@@ -71,13 +76,15 @@ class AllViewModel @Inject constructor(
 
     val alarmPermissionState = MutableStateFlow(false)
 
-    val _targetRate = MutableStateFlow(TargetRateList())
+    val _targetRate = MutableStateFlow(TargetRates())
 
     val targetRateFlow = _targetRate.asStateFlow()
 
     val onReadyRewardAd = MutableStateFlow(false)
 
     val deleteBannerStateFlow = MutableStateFlow(false)
+
+    val rewardIsReadyStateFlow = MutableStateFlow(false)
 
     // 환율 관련
     // 항상 최신 값 가지고 있음
@@ -120,243 +127,183 @@ class AllViewModel @Inject constructor(
 
 
 
-    val rewardIsReadyStateFlow = MutableStateFlow(false)
+
 
     // 목표 환율 추가
-    fun targetRateAdd(
-        drHighRate: TargetRate? = null,
-        drLowRate: TargetRate? = null,
-        yenHighRate: TargetRate? = null,
-        yenLowRate: TargetRate? = null
-    ) {
-        if(drHighRate != null) {
+    fun addTargetRate(
+        type: RateType,
+        rate: Rate) {
+        viewModelScope.launch {
+           targetRateUseCases.targetRateAddUseCase(
+               deviceId = localUserFlow.value.id.toString(),
+               targetRates = targetRateFlow.value,
+               type = type,
+               newRate = rate
+           ).onSuccess {
 
-            val updateDollarRateList = targetRateFlow.value.dollarHighRateList?.toMutableList()?.apply {
-                add(drHighRate)
-            }?.toList()
+           }.onError {
 
-            val addRateData = targetRateFlow.value.copy(
-                customId = _localUser.value.customId,
-                fcmToken = _localUser.value.fcmToken,
-                dollarHighRateList = updateDollarRateList?.let { sortTargetRateList(type="달러고점", it) } as List<TargetRate>
-            )
-            //목표환율 api 추가 로직 !!!!!!!
-
-            viewModelScope.launch {
-                _targetRate.emit(addRateData)
-            }
-        }
-
-        if(drLowRate != null) {
-            val updateDollarRateList = targetRateFlow.value.dollarLowRateList?.toMutableList()?.apply {
-                add(drLowRate)
-            }?.toList()
-
-            val addRateData = targetRateFlow.value.copy(
-                customId = _localUser.value.customId,
-                fcmToken = _localUser.value.fcmToken,
-                dollarLowRateList = updateDollarRateList?.let { sortTargetRateList(type="달러저점", it) } as List<TargetRate>
-            )
-            //목표환율 api 추가 로직 !!!!!!!
-
-            viewModelScope.launch {
-                _targetRate.emit(addRateData)
-            }
-        }
-
-        if(yenHighRate != null) {
-            val updateYenRateList = targetRateFlow.value.yenHighRateList?.toMutableList()?.apply {
-                add(yenHighRate)
-            }?.toList()
-
-            val addRateData = targetRateFlow.value.copy(
-                customId = _localUser.value.customId,
-                fcmToken = _localUser.value.fcmToken,
-                yenHighRateList = updateYenRateList?.let { sortTargetRateList(type="엔화고점", it) } as List<TargetRate>
-            )
-            //목표환율 api 추가 로직 !!!!!!!
-
-            viewModelScope.launch {
-                _targetRate.emit(addRateData)
-            }
-        }
-
-        if(yenLowRate != null) {
-            val updateYenRateList = targetRateFlow.value.yenLowRateList?.toMutableList()?.apply {
-                add(yenLowRate)
-            }?.toList()
-
-            val addRateData = targetRateFlow.value.copy(
-                customId = _localUser.value.customId,
-                fcmToken = _localUser.value.fcmToken,
-                yenLowRateList = updateYenRateList?.let { sortTargetRateList(type="엔화저점", it) } as List<TargetRate>
-            )
-            //목표환율 api 추가 로직 !!!!!!!
-
-            viewModelScope.launch {
-                _targetRate.emit(addRateData)
-            }
-        }
-
-    }
-
-    // 목표 환율 삭제
-    fun targetRateRemove(
-        drHighRate: TargetRate? = null,
-        drLowRate: TargetRate? = null,
-        yenHighRate: TargetRate? = null,
-        yenLowRate: TargetRate? = null
-    ) {
-        if(drHighRate != null) {
-
-            val updateDollarRateList = targetRateFlow.value.dollarHighRateList?.toMutableList()?.apply {
-                remove(drHighRate)
-            }?.toList()
-
-            val removeRateData = targetRateFlow.value.copy(
-                customId = _localUser.value.customId,
-                fcmToken = _localUser.value.fcmToken,
-                dollarHighRateList = updateDollarRateList?.let { sortTargetRateList(type="달러고점", it) } as List<TargetRate>
-            )
-
-            //목표환율 api 추가 로직 !!!!!!!
-
-            viewModelScope.launch {
-                _targetRate.emit(removeRateData)
-            }
-        }
-
-        if(drLowRate != null) {
-            val updateDollarRateList = targetRateFlow.value.dollarLowRateList?.toMutableList()?.apply {
-                remove(drLowRate)
-            }?.toList()
-
-            val removeRateData = targetRateFlow.value.copy(
-                customId = _localUser.value.customId,
-                fcmToken = _localUser.value.fcmToken,
-                dollarLowRateList = updateDollarRateList?.let { sortTargetRateList(type="달러저점", it) } as List<TargetRate>
-            )
-
-            //목표환율 api 추가 로직 !!!!!!!
-
-            viewModelScope.launch {
-                _targetRate.emit(removeRateData)
-            }
-        }
-
-        if(yenHighRate != null) {
-            val updateYenRateList = targetRateFlow.value.yenHighRateList?.toMutableList()?.apply {
-                remove(yenHighRate)
-            }?.toList()
-
-            val removeRateData = targetRateFlow.value.copy(
-                customId = _localUser.value.customId,
-                fcmToken = _localUser.value.fcmToken,
-                yenHighRateList = updateYenRateList?.let { sortTargetRateList(type="엔화고점", it) } as List<TargetRate>
-            )
-
-            //목표환율 api 추가 로직 !!!!!!!
-
-            viewModelScope.launch {
-                _targetRate.emit(removeRateData)
-            }
-        }
-
-        if(yenLowRate != null) {
-            val updateYenRateList = targetRateFlow.value.yenLowRateList?.toMutableList()?.apply {
-                remove(yenLowRate)
-            }?.toList()
-
-            val removeRateData = targetRateFlow.value.copy(
-                customId = _localUser.value.customId,
-                fcmToken = _localUser.value.fcmToken,
-                yenLowRateList = updateYenRateList?.let { sortTargetRateList(type="엔화저점", it) } as List<TargetRate>
-            )
-
-            //목표환율 api 추가 로직 !!!!!!!
-
-            viewModelScope.launch {
-                _targetRate.emit(removeRateData)
-            }
-        }
-
-    }
-
-
-    // 목표 환율 정렬
-    fun sortTargetRateList(type: String, rateList: List<Any>): List<Any>  {
-
-        when(type) {
-            "달러고점" -> {
-                rateList as List<TargetRate>
-
-                var sortList = rateList.sortedByDescending { it.rate }
-
-                sortList = sortList.mapIndexed { index, element ->
-                    element.copy(number = "${index + 1}") }.toMutableList()
-
-                return sortList
-            }
-            "달러저점" -> {
-                rateList as List<TargetRate>
-
-                var sortList = rateList.sortedByDescending { it.rate }
-
-                sortList = sortList.mapIndexed { index, element ->
-                    element.copy(number = "${index + 1}") }.toMutableList()
-
-                return sortList
-            }
-            "엔화고점" -> {
-                rateList as List<TargetRate>
-
-                var sortList = rateList.sortedByDescending { it.rate }
-
-                sortList = sortList.mapIndexed { index, element ->
-                    element.copy(number = "${index + 1}") }.toMutableList()
-
-                return sortList
-            }
-            "엔화저점" -> {
-                rateList as List<TargetRate>
-
-                var sortList = rateList.sortedByDescending { it.rate }
-
-                sortList = sortList.mapIndexed { index, element ->
-                    element.copy(number = "${index + 1}") }.toMutableList()
-
-                return sortList
-            }
-
-
-            else -> return emptyList()
+           }
         }
     }
 
-
-    // 목표 환율 로딩
-    fun targetRateLoad(customId: String, targetRateData: (TargetRateList, resultMessage: String) -> Unit) {
-        db.collection("userTargetRate")
-            .whereEqualTo("customId", customId)
-            .addSnapshotListener { querySnapShot, e ->
-
-                if(querySnapShot != null) {
-                    val data = TargetRateList(querySnapShot)
-
-                    targetRateData.invoke(data, "알람설정을 성공적으로 불러왔습니다.")
-
-                    Log.d(TAG("AllViewModel", "targetRateLoad"), "목표환율 변경 수신${data}")
-                } else {
-                    Log.d(TAG("AllViewModel", "targetRateLoad"), "목표환율 null")
-                }
-
-                if (e != null) {
-                    Log.w(TAG("AllViewModel", "targetRateLoad"), "Listen failed.", e)
-                    return@addSnapshotListener
-                }
-
-            }
-    }
+//    // 목표 환율 삭제
+//    fun targetRateRemove(
+//        drHighRate: Rate? = null,
+//        drLowRate: Rate? = null,
+//        yenHighRate: Rate? = null,
+//        yenLowRate: Rate? = null
+//    ) {
+//        if(drHighRate != null) {
+//
+//            val updateDollarRateList = targetRateFlow.value.dollarHighRateList?.toMutableList()?.apply {
+//                remove(drHighRate)
+//            }?.toList()
+//
+//            val removeRateData = targetRateFlow.value.copy(
+//                customId = _localUser.value.customId,
+//                fcmToken = _localUser.value.fcmToken,
+//                dollarHighRateList = updateDollarRateList?.let { sortTargetRateList(type="달러고점", it) } as List<TargetRate>
+//            )
+//
+//            //목표환율 api 추가 로직 !!!!!!!
+//
+//            viewModelScope.launch {
+//                _targetRate.emit(removeRateData)
+//            }
+//        }
+//
+//        if(drLowRate != null) {
+//            val updateDollarRateList = targetRateFlow.value.dollarLowRateList?.toMutableList()?.apply {
+//                remove(drLowRate)
+//            }?.toList()
+//
+//            val removeRateData = targetRateFlow.value.copy(
+//                customId = _localUser.value.customId,
+//                fcmToken = _localUser.value.fcmToken,
+//                dollarLowRateList = updateDollarRateList?.let { sortTargetRateList(type="달러저점", it) } as List<TargetRate>
+//            )
+//
+//            //목표환율 api 추가 로직 !!!!!!!
+//
+//            viewModelScope.launch {
+//                _targetRate.emit(removeRateData)
+//            }
+//        }
+//
+//        if(yenHighRate != null) {
+//            val updateYenRateList = targetRateFlow.value.yenHighRateList?.toMutableList()?.apply {
+//                remove(yenHighRate)
+//            }?.toList()
+//
+//            val removeRateData = targetRateFlow.value.copy(
+//                customId = _localUser.value.customId,
+//                fcmToken = _localUser.value.fcmToken,
+//                yenHighRateList = updateYenRateList?.let { sortTargetRateList(type="엔화고점", it) } as List<TargetRate>
+//            )
+//
+//            //목표환율 api 추가 로직 !!!!!!!
+//
+//            viewModelScope.launch {
+//                _targetRate.emit(removeRateData)
+//            }
+//        }
+//
+//        if(yenLowRate != null) {
+//            val updateYenRateList = targetRateFlow.value.yenLowRateList?.toMutableList()?.apply {
+//                remove(yenLowRate)
+//            }?.toList()
+//
+//            val removeRateData = targetRateFlow.value.copy(
+//                customId = _localUser.value.customId,
+//                fcmToken = _localUser.value.fcmToken,
+//                yenLowRateList = updateYenRateList?.let { sortTargetRateList(type="엔화저점", it) } as List<TargetRate>
+//            )
+//
+//            //목표환율 api 추가 로직 !!!!!!!
+//
+//            viewModelScope.launch {
+//                _targetRate.emit(removeRateData)
+//            }
+//        }
+//
+//    }
+//
+//
+//    // 목표 환율 정렬
+//    fun sortTargetRateList(type: String, rateList: List<Any>): List<Any>  {
+//
+//        when(type) {
+//            "달러고점" -> {
+//                rateList as List<TargetRate>
+//
+//                var sortList = rateList.sortedByDescending { it.rate }
+//
+//                sortList = sortList.mapIndexed { index, element ->
+//                    element.copy(number = "${index + 1}") }.toMutableList()
+//
+//                return sortList
+//            }
+//            "달러저점" -> {
+//                rateList as List<TargetRate>
+//
+//                var sortList = rateList.sortedByDescending { it.rate }
+//
+//                sortList = sortList.mapIndexed { index, element ->
+//                    element.copy(number = "${index + 1}") }.toMutableList()
+//
+//                return sortList
+//            }
+//            "엔화고점" -> {
+//                rateList as List<TargetRate>
+//
+//                var sortList = rateList.sortedByDescending { it.rate }
+//
+//                sortList = sortList.mapIndexed { index, element ->
+//                    element.copy(number = "${index + 1}") }.toMutableList()
+//
+//                return sortList
+//            }
+//            "엔화저점" -> {
+//                rateList as List<TargetRate>
+//
+//                var sortList = rateList.sortedByDescending { it.rate }
+//
+//                sortList = sortList.mapIndexed { index, element ->
+//                    element.copy(number = "${index + 1}") }.toMutableList()
+//
+//                return sortList
+//            }
+//
+//
+//            else -> return emptyList()
+//        }
+//    }
+//
+//
+//    // 목표 환율 로딩
+//    fun targetRateLoad(customId: String, targetRateData: (TargetRateList, resultMessage: String) -> Unit) {
+//        db.collection("userTargetRate")
+//            .whereEqualTo("customId", customId)
+//            .addSnapshotListener { querySnapShot, e ->
+//
+//                if(querySnapShot != null) {
+//                    val data = TargetRateList(querySnapShot)
+//
+//                    targetRateData.invoke(data, "알람설정을 성공적으로 불러왔습니다.")
+//
+//                    Log.d(TAG("AllViewModel", "targetRateLoad"), "목표환율 변경 수신${data}")
+//                } else {
+//                    Log.d(TAG("AllViewModel", "targetRateLoad"), "목표환율 null")
+//                }
+//
+//                if (e != null) {
+//                    Log.w(TAG("AllViewModel", "targetRateLoad"), "Listen failed.", e)
+//                    return@addSnapshotListener
+//                }
+//
+//            }
+//    }
 
 
     // 리워드 다이로그 상태 관리
@@ -541,8 +488,6 @@ class AllViewModel @Inject constructor(
 
         viewModelScope.launch {
             setupNotice(localUserFlow.value)
-            updateFcmToken(localUserFlow.value)
-            loadTargetRate(localUserFlow.value.customId)
 
             // 실시간 데이터 구독 시작
             subscribeToExchangeRateUpdates()
@@ -561,23 +506,23 @@ class AllViewModel @Inject constructor(
         fcmTokenUpdate(localData)
     }
 
-    // 목표 환율 로드
-    private fun loadTargetRate(customId: String?) {
-        if (!customId.isNullOrEmpty()) {
-            targetRateLoad(customId) { data, message ->
-                viewModelScope.launch {
-                    _targetRate.emit(data)
-                    Log.w(TAG("AllViewModel", "loadTargetRate"), "목표환율 불러오기 성공")
-                }
-            }
-        }
-    }
-
-    fun deleteTotalRates() {
-        viewModelScope.launch {
-            exchangeRateRepository.exchangeRateDataDelete()
-        }
-    }
+//    // 목표 환율 로드
+//    private fun loadTargetRate(customId: String?) {
+//        if (!customId.isNullOrEmpty()) {
+//            targetRateLoad(customId) { data, message ->
+//                viewModelScope.launch {
+//                    _targetRate.emit(data)
+//                    Log.w(TAG("AllViewModel", "loadTargetRate"), "목표환율 불러오기 성공")
+//                }
+//            }
+//        }
+//    }
+//
+//    fun deleteTotalRates() {
+//        viewModelScope.launch {
+//            exchangeRateRepository.exchangeRateDataDelete()
+//        }
+//    }
 
 
     // 웹소켓 실시간 데이터 구독
@@ -704,8 +649,15 @@ class AllViewModel @Inject constructor(
 
 
                     is Result.Success -> {
-                        _localUser.value = result.data
+                        _localUser.value = result.data.localUserData
+
+                        if(result.data.exchangeRates != null) {
+                            _targetRate.value = result.data.exchangeRates
+                        }
+
                         Log.d(TAG("AllViewModel", "localUserExistCheck"), "${result.message}")
+                        Log.d(TAG("AllViewModel", "localUserExistCheck"), "${targetRateFlow.value}")
+
                     }
                     is Result.Error -> {
                         Log.d(TAG("AllViewModel", "localUserExistCheck"), "${result.message}")

@@ -3,6 +3,7 @@ package com.bobodroid.myapplication.models.datamodels.roomDb
 import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.PrimaryKey
+import com.bobodroid.myapplication.models.datamodels.service.UserApi.Rate
 import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.QuerySnapshot
 import java.util.*
@@ -539,9 +540,6 @@ data class CloudUserData(
 
     fun asHasMap(): HashMap<String, Any?> {
         return hashMapOf(
-            "id" to this.id,
-            "customId" to this.customId,
-            "createAt" to this.createAt,
             "drBuyRecord" to this.drBuyRecord?.map { it.asHasMap() },
             "drSellRecord" to this.drSellRecord?.map { it.asHasMap() },
             "yenBuyRecord" to this.yenBuyRecord?.map { it.asHasMap() },
@@ -555,60 +553,31 @@ data class CloudUserData(
 }
 
 
-data class TargetRateList(
-    var customId: String? = null,
-    var fcmToken: String? = null,
-    var dollarHighRateList : List<TargetRate>? = emptyList(),
-    var dollarLowRateList: List<TargetRate>? = emptyList(),
-    var yenHighRateList : List<TargetRate>? = emptyList(),
-    var yenLowRateList : List<TargetRate>? = emptyList()
-){
-    fun asHasMap(): HashMap<String, Any?> {
-        return hashMapOf(
-            "customId" to this.customId,
-            "fcmToken" to this.fcmToken,
-            "dollarHighRateList" to this.dollarHighRateList?.map { it.asHasMap() },
-            "dollarLowRateList" to this.dollarLowRateList?.map { it.asHasMap() },
-            "yenHighRateList" to this.yenHighRateList?.map { it.asHasMap() },
-            "yenLowRateList" to this.yenLowRateList?.map { it.asHasMap() },
-        )
-    }
+data class TargetRates(
+    var dollarHighRates : List<Rate>? = emptyList(),
+    var dollarLowRates: List<Rate>? = emptyList(),
+    var yenHighRates : List<Rate>? = emptyList(),
+    var yenLowRates : List<Rate>? = emptyList()
+)
 
-    constructor(data: QuerySnapshot) : this() {
-        for (document in data.documents) {
-            this.customId = document["customId"] as String? ?: ""
-            this.fcmToken = document["fcmToken"] as String? ?: ""
-            this.dollarHighRateList = createDrHighRateList(document["dollarHighRateList"]!!) as List<TargetRate>? ?: emptyList()
-            this.dollarLowRateList = createDrLowRateList(document["dollarLowRateList"]!!) as List<TargetRate>? ?: emptyList()
-            this.yenHighRateList = createYenHighRateList(document["yenHighRateList"]!!) as List<TargetRate>? ?: emptyList()
-            this.yenLowRateList = createYenLowRateList(document["yenLowRateList"]!!) as List<TargetRate>? ?: emptyList()
-        }
-    }
+enum class CurrencyType {
+    USD,
+    JPY
 }
 
-fun createDrHighRateList(data: Any) = (data as? List<Map<String, Any>>)?.map { TargetRate(it) }!!
-
-fun createDrLowRateList(data: Any) = (data as? List<Map<String, Any>>)?.map { TargetRate(it) }!!
-
-fun createYenHighRateList(data: Any) = (data as? List<Map<String, Any>>)?.map { TargetRate(it) }!!
-
-fun createYenLowRateList(data: Any) = (data as? List<Map<String, Any>>)?.map { TargetRate(it) }!!
+// 목표환율 방향 (고점, 저점)
+enum class RateDirection {
+    HIGH,
+    LOW
+}
 
 
-data class TargetRate(
-    var number: String? = null,
-    var rate: String? = null,
+sealed class RateType(
+    val currency: CurrencyType,
+    val direction: RateDirection
 ) {
-    fun asHasMap(): HashMap<String, Any?> {
-        return  hashMapOf(
-            "number" to this.number,
-            "rate" to this.rate,
-        )
-    }
-    constructor(data: Map<String, Any>) : this(
-        number = data["number"] as String?,
-        rate = data["rate"] as String?
-    )
+    object USD_HIGH : RateType(CurrencyType.USD, RateDirection.HIGH)
+    object USD_LOW : RateType(CurrencyType.USD, RateDirection.LOW)
+    object JPY_HIGH : RateType(CurrencyType.JPY, RateDirection.HIGH)
+    object JPY_LOW : RateType(CurrencyType.JPY, RateDirection.LOW)
 }
-
-

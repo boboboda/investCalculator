@@ -38,8 +38,8 @@ import com.bobodroid.myapplication.components.CustomCard
 import com.bobodroid.myapplication.components.CustomOutLinedTextField
 import com.bobodroid.myapplication.components.addFocusCleaner
 import com.bobodroid.myapplication.components.admobs.showTargetRewardedAdvertisement
-import com.bobodroid.myapplication.models.datamodels.roomDb.TargetRate
-import com.bobodroid.myapplication.models.datamodels.roomDb.TargetRateList
+import com.bobodroid.myapplication.models.datamodels.roomDb.RateType
+import com.bobodroid.myapplication.models.datamodels.roomDb.TargetRates
 import com.bobodroid.myapplication.models.viewmodels.AllViewModel
 import com.bobodroid.myapplication.ui.theme.DialogBackgroundColor
 import com.bobodroid.myapplication.ui.theme.TitleCardColor
@@ -48,7 +48,7 @@ import com.bobodroid.myapplication.ui.theme.WelcomeScreenBackgroundColor
 @Composable
 fun TargetRateDialog(
     onDismissRequest: (Boolean) -> Unit,
-    targetRate: TargetRateList,
+    targetRate: TargetRates,
     currency: String,
     highAndLowState: String,
     context: android.content.Context,
@@ -59,30 +59,30 @@ fun TargetRateDialog(
 
     val scope = rememberCoroutineScope()
 
-    val highDollarNumber = if (targetRate.dollarHighRateList.isNullOrEmpty()) {
+    val highDollarNumber = if (targetRate.dollarHighRates.isNullOrEmpty()) {
         "0"
-    } else { "${targetRate.dollarHighRateList?.size ?: "" }"}
+    } else { "${targetRate.dollarHighRates?.size ?: "" }"}
 
-    val filterDollarHighRate = targetRate.dollarHighRateList?.filter { it.number == highDollarNumber } ?: emptyList()
+    val filterDollarHighRate = targetRate.dollarHighRates?.filter { it.number.toString() == highDollarNumber } ?: emptyList()
 
-    val lowDollarNumber = if (targetRate.dollarLowRateList.isNullOrEmpty()) {
+    val lowDollarNumber = if (targetRate.dollarLowRates.isNullOrEmpty()) {
         "0"
-    } else { "${targetRate.dollarLowRateList?.size ?: "" }"}
+    } else { "${targetRate.dollarLowRates?.size ?: "" }"}
 
-    val filterDollarLowRate = targetRate.dollarLowRateList?.filter { it.number == lowDollarNumber } ?: emptyList()
+    val filterDollarLowRate = targetRate.dollarLowRates?.filter { it.number.toString() == lowDollarNumber } ?: emptyList()
 
 
-    val highYenNumber = if (targetRate.yenHighRateList.isNullOrEmpty()) {
+    val highYenNumber = if (targetRate.yenHighRates.isNullOrEmpty()) {
         "0"
-    } else { "${targetRate.yenHighRateList?.size ?: ""}"}
+    } else { "${targetRate.yenHighRates?.size ?: ""}"}
 
-    val filterYenHighRate = targetRate.yenHighRateList?.filter { it.number == highYenNumber } ?: emptyList()
+    val filterYenHighRate = targetRate.yenHighRates?.filter { it.number.toString() == highYenNumber } ?: emptyList()
 
-    val lowYenNumber = if (targetRate.yenLowRateList.isNullOrEmpty()) {
+    val lowYenNumber = if (targetRate.yenLowRates.isNullOrEmpty()) {
         "0"
-    } else { "${targetRate.yenLowRateList?.size ?: ""}"}
+    } else { "${targetRate.yenLowRates?.size ?: ""}"}
 
-    val filterYenLowRate = targetRate.yenLowRateList?.filter { it.number == lowYenNumber } ?: emptyList()
+    val filterYenLowRate = targetRate.yenLowRates?.filter { it.number.toString() == lowYenNumber } ?: emptyList()
 
     var rate by remember { mutableStateOf("") }
 
@@ -660,25 +660,11 @@ fun TargetRateDialog(
                         "달러"-> {
                             when(highAndLowState) {
                                 "고점" -> {
-                                    allViewModel.targetRateAdd(
-                                        drHighRate = TargetRate(
-                                            number = highDollarNumber.toInt().plus(1).toString(),
-                                            rate = rate),
-                                        drLowRate = null,
-                                        yenHighRate = null,
-                                        yenLowRate = null
-                                    )
+
                                     onClicked?.invoke()
                                 }
                                 "저점" -> {
-                                    allViewModel.targetRateAdd(
-                                        drHighRate = null,
-                                        drLowRate = TargetRate(
-                                            number = lowDollarNumber.toInt().plus(1).toString(),
-                                            rate = rate),
-                                        yenHighRate = null,
-                                        yenLowRate = null
-                                    )
+
                                     onClicked?.invoke()
                                 }
                             }
@@ -687,27 +673,11 @@ fun TargetRateDialog(
                         "엔화"-> {
                             when(highAndLowState) {
                                 "고점" -> {
-                                    allViewModel.run {
-                                        targetRateAdd(
-                                                                        drHighRate = null,
-                                                                        drLowRate = null,
-                                                                        yenHighRate = TargetRate(
-                                                                            number = highYenNumber.toInt().plus(1).toString(),
-                                                                            rate = rate),
-                                                                        yenLowRate = null
-                                                                    )
-                                    }
+
                                     onClicked?.invoke()
                                 }
                                 "저점" -> {
-                                    allViewModel.targetRateAdd(
-                                        drHighRate = null,
-                                        drLowRate = null,
-                                        yenHighRate = null,
-                                        yenLowRate = TargetRate(
-                                            number = lowYenNumber.toInt().plus(1).toString(),
-                                            rate = rate)
-                                    )
+
                                     onClicked?.invoke()
                                 }
                             }

@@ -32,13 +32,13 @@ fun TargetRateList(
 ) {
     val targetRate = allViewModel.targetRateFlow.collectAsState()
 
-    val dollarHighRate = targetRate.value.dollarHighRateList ?: emptyList()
+    val dollarHighRate = targetRate.value.dollarHighRates ?: emptyList()
 
-    val dollarLowRate = targetRate.value.dollarLowRateList ?: emptyList()
+    val dollarLowRate = targetRate.value.dollarLowRates ?: emptyList()
 
-    val yenHighRate = targetRate.value.yenHighRateList ?: emptyList()
+    val yenHighRate = targetRate.value.yenHighRates ?: emptyList()
 
-    val yenLowRate = targetRate.value.yenLowRateList ?: emptyList()
+    val yenLowRate = targetRate.value.yenLowRates ?: emptyList()
 
     val highAndLowState = remember { mutableStateOf("고점") }
 
@@ -46,18 +46,18 @@ fun TargetRateList(
 
     var lowDollarNumberState = remember { mutableStateOf("1") }
 
-    val filterHighDrData = dollarHighRate?.filter { it.number == highDollarNumberState.value }
+    val filterHighDrData = dollarHighRate?.filter { it.number.toString() == highDollarNumberState.value }
 
-    val filterLowDrData = dollarLowRate?.filter { it.number == lowDollarNumberState.value }
+    val filterLowDrData = dollarLowRate?.filter { it.number.toString() == lowDollarNumberState.value }
 
 
     var highYenNumberState = remember { mutableStateOf("1") }
 
     var lowYenNumberState = remember { mutableStateOf("1") }
 
-    val filterHighYenData = yenHighRate?.filter { it.number == highYenNumberState.value }
+    val filterHighYenData = yenHighRate?.filter { it.number.toString() == highYenNumberState.value }
 
-    val filterLowYenData = yenLowRate?.filter { it.number == lowYenNumberState.value }
+    val filterLowYenData = yenLowRate?.filter { it.number.toString() == lowYenNumberState.value }
 
     val currencyState = remember { mutableStateOf("달러") }
 

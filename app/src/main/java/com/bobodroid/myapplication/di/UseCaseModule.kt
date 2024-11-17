@@ -8,6 +8,8 @@ import com.bobodroid.myapplication.models.datamodels.useCases.LocalIdAddUseCase
 import com.bobodroid.myapplication.models.datamodels.useCases.LocalUserUpdate
 import com.bobodroid.myapplication.models.datamodels.useCases.LogInUseCase
 import com.bobodroid.myapplication.models.datamodels.useCases.LogoutUseCase
+import com.bobodroid.myapplication.models.datamodels.useCases.TargetRateAddUseCase
+import com.bobodroid.myapplication.models.datamodels.useCases.TargetRateUseCases
 import com.bobodroid.myapplication.models.datamodels.useCases.UserUseCases
 import dagger.Module
 import dagger.Provides
@@ -31,6 +33,13 @@ object UseCaseModule {
             deleteUser = DeleteUserUseCase(userRepository),
             localUserUpdate = LocalUserUpdate(userRepository)
         )
+    }
+
+
+    @Provides
+    fun provideTargetRateUseCases(): TargetRateUseCases {
+        return  TargetRateUseCases(
+           targetRateAddUseCase =  TargetRateAddUseCase())
     }
 
 }

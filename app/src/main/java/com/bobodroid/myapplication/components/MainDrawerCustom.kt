@@ -504,7 +504,7 @@ fun DrawerCustom(
 
                                                 when (selectedHighAndLow) {
                                                     "고점" -> {
-                                                        if (targetRateData.value.dollarHighRateList?.size == 5) {
+                                                        if (targetRateData.value.dollarHighRates?.size == 5) {
                                                             coroutineScope.launch {
                                                                 dropdownExpanded = false
                                                                 drawerState.close()
@@ -521,7 +521,7 @@ fun DrawerCustom(
                                                     }
 
                                                     "저점" -> {
-                                                        if (targetRateData.value.dollarLowRateList?.size == 5) {
+                                                        if (targetRateData.value.dollarLowRates?.size == 5) {
                                                             coroutineScope.launch {
                                                                 dropdownExpanded = false
                                                                 drawerState.close()
@@ -545,7 +545,7 @@ fun DrawerCustom(
 
                                                 when (selectedHighAndLow) {
                                                     "고점" -> {
-                                                        if (targetRateData.value.yenHighRateList?.size == 5) {
+                                                        if (targetRateData.value.yenHighRates?.size == 5) {
                                                             coroutineScope.launch {
                                                                 dropdownExpanded = false
                                                                 drawerState.close()
@@ -562,7 +562,7 @@ fun DrawerCustom(
                                                     }
 
                                                     "저점" -> {
-                                                        if (targetRateData.value.yenLowRateList?.size == 5) {
+                                                        if (targetRateData.value.yenLowRates?.size == 5) {
                                                             coroutineScope.launch {
                                                                 dropdownExpanded = false
                                                                 drawerState.close()
@@ -607,7 +607,7 @@ fun DrawerCustom(
                                                 when (selectedHighAndLow) {
                                                     "고점" -> {
                                                         val removeData =
-                                                            targetRateData.value.dollarHighRateList?.filter { it.number == selectedNumber }
+                                                            targetRateData.value.dollarHighRates?.filter { it.number.toString() == selectedNumber }
                                                                 ?.firstOrNull()
 
                                                         if (removeData == null) {
@@ -621,19 +621,19 @@ fun DrawerCustom(
                                                                 )
                                                             }
                                                         } else {
-                                                            allViewModel.targetRateRemove(
-                                                                drHighRate = removeData,
-                                                                drLowRate = null,
-                                                                yenHighRate = null,
-                                                                yenLowRate = null
-                                                            )
+//                                                            allViewModel.targetRateRemove(
+//                                                                drHighRate = removeData,
+//                                                                drLowRate = null,
+//                                                                yenHighRate = null,
+//                                                                yenLowRate = null
+//                                                            )
                                                             dropdownExpanded = false
                                                         }
                                                     }
 
                                                     "저점" -> {
                                                         val removeData =
-                                                            targetRateData.value.dollarLowRateList?.filter { it.number == selectedNumber }
+                                                            targetRateData.value.dollarLowRates?.filter { it.number.toString() == selectedNumber }
                                                                 ?.firstOrNull()
 
                                                         if (removeData == null) {
@@ -647,12 +647,12 @@ fun DrawerCustom(
                                                                 )
                                                             }
                                                         } else {
-                                                            allViewModel.targetRateRemove(
-                                                                drHighRate = null,
-                                                                drLowRate = removeData,
-                                                                yenHighRate = null,
-                                                                yenLowRate = null
-                                                            )
+//                                                            allViewModel.targetRateRemove(
+//                                                                drHighRate = null,
+//                                                                drLowRate = removeData,
+//                                                                yenHighRate = null,
+//                                                                yenLowRate = null
+//                                                            )
                                                             dropdownExpanded = false
                                                         }
                                                     }
@@ -666,7 +666,7 @@ fun DrawerCustom(
                                                 when (selectedHighAndLow) {
                                                     "고점" -> {
                                                         val removeData =
-                                                            targetRateData.value.yenHighRateList?.filter { it.number == selectedNumber }
+                                                            targetRateData.value.yenHighRates?.filter { it.number.toString() == selectedNumber }
                                                                 ?.firstOrNull()
 
                                                         if (removeData == null) {
@@ -680,19 +680,19 @@ fun DrawerCustom(
                                                                 )
                                                             }
                                                         } else {
-                                                            allViewModel.targetRateRemove(
-                                                                drHighRate = null,
-                                                                drLowRate = null,
-                                                                yenHighRate = removeData,
-                                                                yenLowRate = null
-                                                            )
+//                                                            allViewModel.targetRateRemove(
+//                                                                drHighRate = null,
+//                                                                drLowRate = null,
+//                                                                yenHighRate = removeData,
+//                                                                yenLowRate = null
+//                                                            )
                                                             dropdownExpanded = false
                                                         }
                                                     }
 
                                                     "저점" -> {
                                                         val removeData =
-                                                            targetRateData.value.yenLowRateList?.filter { it.number == selectedNumber }
+                                                            targetRateData.value.yenLowRates?.filter { it.number.toString() == selectedNumber }
                                                                 ?.firstOrNull()
 
                                                         if (removeData == null) {
@@ -706,12 +706,12 @@ fun DrawerCustom(
                                                                 )
                                                             }
                                                         } else {
-                                                            allViewModel.targetRateRemove(
-                                                                drHighRate = null,
-                                                                drLowRate = null,
-                                                                yenHighRate = null,
-                                                                yenLowRate = removeData
-                                                            )
+//                                                            allViewModel.targetRateRemove(
+//                                                                drHighRate = null,
+//                                                                drLowRate = null,
+//                                                                yenHighRate = null,
+//                                                                yenLowRate = removeData
+//                                                            )
                                                             dropdownExpanded = false
                                                         }
                                                     }

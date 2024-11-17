@@ -14,6 +14,20 @@ sealed class Result<out T> {
     object Loading : Result<Nothing>()
 }
 
+inline fun <T> Result<T>.onSuccess(action: (T) -> Unit): Result<T> {
+    if (this is Result.Success) {
+        action(data)
+    }
+    return this
+}
+
+inline fun <T> Result<T>.onError(action: (Result.Error) -> Unit): Result<T> {
+    if (this is Result.Error) {
+        action(this)
+    }
+    return this
+}
+
 sealed class UiState<out T> {
     object Initial : UiState<Nothing>()
     object Loading : UiState<Nothing>()

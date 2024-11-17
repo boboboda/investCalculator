@@ -6,8 +6,10 @@ import com.bobodroid.myapplication.billing.BillingClientLifecycle.Companion.TAG
 import com.bobodroid.myapplication.fcm.FCMTokenEvent
 import com.bobodroid.myapplication.models.datamodels.repository.UserRepository
 import com.bobodroid.myapplication.models.datamodels.roomDb.LocalUserData
+import com.bobodroid.myapplication.models.datamodels.roomDb.TargetRates
 import com.bobodroid.myapplication.models.datamodels.service.UserApi.UserApi
 import com.bobodroid.myapplication.models.datamodels.service.UserApi.UserRequest
+import com.bobodroid.myapplication.models.datamodels.service.UserApi.UserResponse
 import com.bobodroid.myapplication.util.InvestApplication
 import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
@@ -130,19 +132,17 @@ class LocalExistCheckUseCase @Inject constructor(
     private val userRepository: UserRepository,
     private val localIdAddUseCase: LocalIdAddUseCase
 ) {
-    suspend operator fun invoke(): Result<LocalUserData> {
+    suspend operator fun invoke(): Result<UserDataType> {
         return try {
-
             val fcmToken = FCMTokenEvent.tokenFlow.firstOrNull()
                 ?: InvestApplication.prefs.getData("fcm_token", "")
-            Log.d(TAG("userUseCase", "LocalExistCheckUseCase"), "실행")
 
-            // 기존 사용자 확인
             val existingUserResult = userRepository.localUserDataGet()
                 .distinctUntilChanged()
                 .firstOrNull()
 
-            // 사용자 생성 또는 가져오기
+
+
             val userResult = when {
                 existingUserResult is Result.Success && existingUserResult.data != null ->
                     Result.Success(existingUserResult.data)
@@ -150,7 +150,6 @@ class LocalExistCheckUseCase @Inject constructor(
                     if (fcmToken.isNotEmpty()) {
                         localIdAddUseCase()
                     } else {
-                        // FCM 토큰이 없으면 대기
                         FCMTokenEvent.tokenFlow
                             .filterNotNull()
                             .first()
@@ -159,21 +158,36 @@ class LocalExistCheckUseCase @Inject constructor(
                 }
             }
 
-            // userResult에 따라 서버 동기화 처리
             when (userResult) {
                 is Result.Success -> {
                     val user = userResult.data
-                    if (user != null) {
-                        syncWithServer(user) // user가 null이 아닌 경우에만 동기화
+                    val serverResult = syncWithServer(user)
+
+                    when(serverResult) {
+                        is Result.Success -> {
+                            val serverUser = serverResult.data
+                            Result.Success(
+                                data = UserDataType(
+                                    localUserData = user,
+                                    exchangeRates = TargetRates(
+                                        dollarHighRates = serverUser.data?.usdHighRates,
+                                        dollarLowRates = serverUser.data?.usdLowRates,
+                                        yenHighRates = serverUser.data?.jpyHighRates,
+                                        yenLowRates = serverUser.data?.jpyLowRates
+                                    )
+                                ),
+                                message = serverResult.message
+                            )
+                        }
+                        is Result.Error -> serverResult
+                        is Result.Loading -> Result.Loading
                     }
-                    userResult
                 }
                 is Result.Error -> userResult
                 is Result.Loading -> Result.Loading
             }
 
         } catch (e: Exception) {
-            Log.e(TAG("userUseCase", "LocalExistCheckUseCase"), "에러 발생: ${e.message}")
             Result.Error(
                 message = "사용자 확인 중 오류가 발생했습니다.",
                 exception = e
@@ -181,12 +195,9 @@ class LocalExistCheckUseCase @Inject constructor(
         }
     }
 
-
-    private suspend fun syncWithServer(user: LocalUserData): Result<LocalUserData> {
+    private suspend fun syncWithServer(user: LocalUserData): Result<UserResponse> {
         return try {
             val fcmToken = InvestApplication.prefs.getData("fcm_token", "")
-
-            Log.d(TAG("userUseCase", "LocalExistCheckUseCase"), "토큰: ${fcmToken}")
 
             val createServerUser = UserRequest(
                 deviceId = user.id.toString(),
@@ -195,35 +206,29 @@ class LocalExistCheckUseCase @Inject constructor(
                 fcmToken = user.fcmToken ?: fcmToken
             )
 
-            Log.d(TAG("userUseCase", "LocalExistCheckUseCase"), "서버 동기화 시작: ${user}")
-
             if (user.id != null) {
-                val serverUserCheckId = UserApi.userService.getUserRequest(user.id.toString())
+                val serverUser = UserApi.userService.getUserRequest(user.id.toString())
 
-                if (serverUserCheckId.data == null) {
-                    Log.d(TAG("userUseCase", "LocalExistCheckUseCase"), "서버에 유저 없음, 신규 생성")
-                    UserApi.userService.userAddRequest(createServerUser)
+                if (serverUser.data == null) {
+                    val newServerUser = UserApi.userService.userAddRequest(createServerUser)
                     Result.Success(
-                        data = user,
+                        data = newServerUser,
                         message = "로컬 및 서버에 새로운 사용자가 등록되었습니다."
                     )
                 } else {
-                    Log.d(TAG("userUseCase", "LocalExistCheckUseCase"), "서버에 유저 존재: ${user}")
                     Result.Success(
-                        data = user,
+                        data = serverUser,
                         message = "기존 사용자 정보로 동기화되었습니다."
                     )
                 }
             } else {
-                Log.d(TAG("userUseCase", "LocalExistCheckUseCase"), "ID 없음, 신규 유저 생성")
-                UserApi.userService.userAddRequest(createServerUser)
+                val newServerUser = UserApi.userService.userAddRequest(createServerUser)
                 Result.Success(
-                    data = user,
+                    data = newServerUser,
                     message = "새로운 사용자가 생성되었습니다."
                 )
             }
         } catch (e: Exception) {
-            Log.e(TAG("userUseCase", "LocalExistCheckUseCase"), "서버 동기화 실패: ${e.message}")
             Result.Error(
                 message = "서버 동기화에 실패했습니다.",
                 exception = e
@@ -231,4 +236,9 @@ class LocalExistCheckUseCase @Inject constructor(
         }
     }
 }
+
+data class UserDataType (
+        val localUserData: LocalUserData,
+        val exchangeRates: TargetRates? = null
+        )
 

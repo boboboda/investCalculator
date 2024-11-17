@@ -54,7 +54,8 @@ import com.bobodroid.myapplication.components.Dialogs.GuideDialog
 import com.bobodroid.myapplication.components.Dialogs.TextFieldDialog
 import com.bobodroid.myapplication.components.RateView
 import com.bobodroid.myapplication.components.shadowCustom
-import com.bobodroid.myapplication.models.datamodels.roomDb.TargetRate
+import com.bobodroid.myapplication.models.datamodels.roomDb.TargetRates
+import com.bobodroid.myapplication.models.datamodels.service.UserApi.Rate
 import com.bobodroid.myapplication.models.viewmodels.AllViewModel
 import com.bobodroid.myapplication.ui.theme.HighRateColor
 import com.bobodroid.myapplication.ui.theme.LowRateColor
@@ -99,13 +100,13 @@ fun AlarmScreen(allViewModel: AllViewModel) {
     val targetRateData = allViewModel.targetRateFlow.collectAsState()
 
     val highTargetRate = when(targetRateMoneyType) {
-        TargetRateMoneyType.Dollar -> targetRateData.value.dollarHighRateList
-        TargetRateMoneyType.Yen -> targetRateData.value.yenHighRateList
+        TargetRateMoneyType.Dollar -> targetRateData.value.dollarHighRates
+        TargetRateMoneyType.Yen -> targetRateData.value.yenHighRates
     }
 
     val lowTargetRate = when(targetRateMoneyType) {
-       TargetRateMoneyType.Dollar -> targetRateData.value.dollarLowRateList
-        TargetRateMoneyType.Yen -> targetRateData.value.yenLowRateList
+       TargetRateMoneyType.Dollar -> targetRateData.value.dollarLowRates
+        TargetRateMoneyType.Yen -> targetRateData.value.yenLowRates
     }
 
     val addTargetTitle = when(targetRateState) {
@@ -113,7 +114,7 @@ fun AlarmScreen(allViewModel: AllViewModel) {
         TargetRateState.Low -> "저점 목표 환율"
     }
 
-    val addTargetMsg: TargetRate? = when(targetRateState) {
+    val addTargetMsg: Rate? = when(targetRateState) {
         TargetRateState.High -> highTargetRate?.lastOrNull()
         TargetRateState.Low -> lowTargetRate?.lastOrNull()
     }
@@ -285,7 +286,7 @@ fun AlarmScreen(allViewModel: AllViewModel) {
                                         items(it) { aRateValue ->
 
                                             aRateValue.rate?.let {aRate ->
-                                                NumberGrid(aRate)
+                                                NumberGrid(aRate.toString())
                                             }
                                         }
 
@@ -427,7 +428,7 @@ fun AlarmScreen(allViewModel: AllViewModel) {
                                         items(it) { aRateValue ->
 
                                             aRateValue.rate?.let {aRate ->
-                                                NumberGrid(aRate)
+                                                NumberGrid(aRate.toString())
                                             }
                                         }
 
@@ -749,7 +750,7 @@ fun AlarmScreen(allViewModel: AllViewModel) {
                                         verticalAlignment = Alignment.CenterVertically
                                     ) {
                                         Text(
-                                            text = targetRate.number ?: "없음",
+                                            text = targetRate.number.toString() ?: "없음",
                                             color = Color.Black,
                                             fontSize = 13.sp
                                         )
@@ -761,10 +762,10 @@ fun AlarmScreen(allViewModel: AllViewModel) {
                                 }
                             },
                             onClick = {
-                                when(targetRateMoneyType) {
-                                    TargetRateMoneyType.Dollar -> allViewModel.targetRateRemove(drHighRate = targetRate)
-                                    TargetRateMoneyType.Yen -> allViewModel.targetRateRemove(yenHighRate = targetRate)
-                                }
+//                                when(targetRateMoneyType) {
+//                                    TargetRateMoneyType.Dollar -> allViewModel.targetRateRemove(drHighRate = targetRate)
+//                                    TargetRateMoneyType.Yen -> allViewModel.targetRateRemove(yenHighRate = targetRate)
+//                                }
                             })
                     }
                 }
@@ -792,7 +793,7 @@ fun AlarmScreen(allViewModel: AllViewModel) {
                                         verticalAlignment = Alignment.CenterVertically
                                     ) {
                                         Text(
-                                            text = targetRate.number ?: "없음",
+                                            text = targetRate.number.toString() ?: "없음",
                                             color = Color.Black,
                                             fontSize = 13.sp
                                         )
@@ -805,10 +806,10 @@ fun AlarmScreen(allViewModel: AllViewModel) {
                             },
                             onClick = {
 
-                                when(targetRateMoneyType) {
-                                    TargetRateMoneyType.Dollar -> allViewModel.targetRateRemove(drLowRate = targetRate)
-                                    TargetRateMoneyType.Yen -> allViewModel.targetRateRemove(yenLowRate = targetRate)
-                                }
+//                                when(targetRateMoneyType) {
+//                                    TargetRateMoneyType.Dollar -> allViewModel.targetRateRemove(drLowRate = targetRate)
+//                                    TargetRateMoneyType.Yen -> allViewModel.targetRateRemove(yenLowRate = targetRate)
+//                                }
 
                             })
                     }
@@ -845,30 +846,30 @@ fun AlarmScreen(allViewModel: AllViewModel) {
 
                     val addNumber = addTargetMsg?.number?.toInt()?.plus(1) ?: 1
 
-                    val newTargetRate = TargetRate(number = addNumber.toString(), rate = rate)
+                    val newTargetRate = Rate(number = addNumber, rate = rate.toInt())
 
-                            when(targetRateMoneyType) {
-                                TargetRateMoneyType.Dollar -> when(targetRateState) {
-                                    TargetRateState.High -> {
-                                        allViewModel.targetRateAdd(drHighRate = newTargetRate)
-                                        addTargetDialog = false
-                                    }
-                                        TargetRateState.Low -> {
-                                            allViewModel.targetRateAdd(drLowRate = newTargetRate)
-                                            addTargetDialog = false
-                                        }
-                                }
-                                    TargetRateMoneyType.Yen -> when(targetRateState) {
-                                        TargetRateState.High -> {
-                                            allViewModel.targetRateAdd(yenHighRate = newTargetRate)
-                                            addTargetDialog = false
-                                        }
-                                            TargetRateState.Low -> {
-                                                allViewModel.targetRateAdd(yenLowRate = newTargetRate)
-                                                addTargetDialog = false
-                                            }
-                                    }
-                            }
+//                            when(targetRateMoneyType) {
+//                                TargetRateMoneyType.Dollar -> when(targetRateState) {
+//                                    TargetRateState.High -> {
+//                                        allViewModel.targetRateAdd(drHighRate = newTargetRate)
+//                                        addTargetDialog = false
+//                                    }
+//                                        TargetRateState.Low -> {
+//                                            allViewModel.targetRateAdd(drLowRate = newTargetRate)
+//                                            addTargetDialog = false
+//                                        }
+//                                }
+//                                    TargetRateMoneyType.Yen -> when(targetRateState) {
+//                                        TargetRateState.High -> {
+//                                            allViewModel.targetRateAdd(yenHighRate = newTargetRate)
+//                                            addTargetDialog = false
+//                                        }
+//                                            TargetRateState.Low -> {
+//                                                allViewModel.targetRateAdd(yenLowRate = newTargetRate)
+//                                                addTargetDialog = false
+//                                            }
+//                                    }
+//                            }
 
 
                 },

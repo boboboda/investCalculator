@@ -34,8 +34,8 @@ data class UserData(
 // 업데이트 요청 데이터 클래스
 @JsonClass(generateAdapter = true)
 data class UserRatesUpdateRequest(
-    val usdHighRates: List<Rate>,
-    val usdLowRates: List<Rate>,
-    val jpyHighRates: List<Rate>,
-    val jpyLowRates: List<Rate>
+    val usdHighRates: List<Rate>? = null,
+    val usdLowRates: List<Rate>? = null,
+    val jpyHighRates: List<Rate>? = null,
+    val jpyLowRates: List<Rate>? = null
 )

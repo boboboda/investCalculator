@@ -43,9 +43,9 @@ interface UserApiService {
     suspend fun userAddRequest(@Body userRequest: UserRequest): UserResponse
 
 
-    @POST("user/{customId}")
+    @POST("user/{deviceId}")
     suspend fun updateUserRates(
-        @Path("customId") customId: String,
+        @Path("deviceId") deviceId: String,
         @Body userRatesUpdateRequest: UserRatesUpdateRequest
     ): NoticeResponse
 

@@ -40,7 +40,9 @@ import com.bobodroid.myapplication.components.addFocusCleaner
 import com.bobodroid.myapplication.components.admobs.showTargetRewardedAdvertisement
 import com.bobodroid.myapplication.models.datamodels.roomDb.RateType
 import com.bobodroid.myapplication.models.datamodels.roomDb.TargetRates
+import com.bobodroid.myapplication.models.datamodels.service.UserApi.Rate
 import com.bobodroid.myapplication.models.viewmodels.AllViewModel
+import com.bobodroid.myapplication.screens.TargetRateState
 import com.bobodroid.myapplication.ui.theme.DialogBackgroundColor
 import com.bobodroid.myapplication.ui.theme.TitleCardColor
 import com.bobodroid.myapplication.ui.theme.WelcomeScreenBackgroundColor
@@ -48,49 +50,21 @@ import com.bobodroid.myapplication.ui.theme.WelcomeScreenBackgroundColor
 @Composable
 fun TargetRateDialog(
     onDismissRequest: (Boolean) -> Unit,
-    targetRate: TargetRates,
+    rate: Rate? = null,
     currency: String,
-    highAndLowState: String,
-    context: android.content.Context,
-    onClicked: (() -> Unit)? = null,
-    allViewModel: AllViewModel,
-) {
-
-
-    val scope = rememberCoroutineScope()
-
-    val highDollarNumber = if (targetRate.dollarHighRates.isNullOrEmpty()) {
-        "0"
-    } else { "${targetRate.dollarHighRates?.size ?: "" }"}
-
-    val filterDollarHighRate = targetRate.dollarHighRates?.filter { it.number.toString() == highDollarNumber } ?: emptyList()
-
-    val lowDollarNumber = if (targetRate.dollarLowRates.isNullOrEmpty()) {
-        "0"
-    } else { "${targetRate.dollarLowRates?.size ?: "" }"}
-
-    val filterDollarLowRate = targetRate.dollarLowRates?.filter { it.number.toString() == lowDollarNumber } ?: emptyList()
-
-
-    val highYenNumber = if (targetRate.yenHighRates.isNullOrEmpty()) {
-        "0"
-    } else { "${targetRate.yenHighRates?.size ?: ""}"}
-
-    val filterYenHighRate = targetRate.yenHighRates?.filter { it.number.toString() == highYenNumber } ?: emptyList()
-
-    val lowYenNumber = if (targetRate.yenLowRates.isNullOrEmpty()) {
-        "0"
-    } else { "${targetRate.yenLowRates?.size ?: ""}"}
-
-    val filterYenLowRate = targetRate.yenLowRates?.filter { it.number.toString() == lowYenNumber } ?: emptyList()
-
-    var rate by remember { mutableStateOf("") }
+    highAndRowRate: String,
+    selected: (Int) -> Unit
+    ) {
 
     val focusManager = LocalFocusManager.current
 
     var adViewAskDialog by remember { mutableStateOf(false) }
 
     val focusRequester by remember { mutableStateOf(FocusRequester()) }
+
+    var userInput by remember {
+        mutableStateOf("")
+    }
 
 
     Dialog(onDismissRequest = {
@@ -122,471 +96,93 @@ fun TargetRateDialog(
             }
             Divider(Modifier.fillMaxWidth())
 
-            when(currency) {
-                "달러"-> {
-                    when(highAndLowState) {
-                        "고점" -> {
-                            Row(
-                                modifier = Modifier
-                                    .wrapContentHeight()
-                                    .fillMaxWidth()
-                                    .padding(horizontal = 10.dp)
-                                    .padding(),
-                                verticalAlignment = Alignment.Top,
-                                horizontalArrangement = Arrangement.spacedBy(10.dp, alignment = Alignment.Start),
-                            ) {
-                                Column {
-                                    CustomCard(
-                                        label = currency,
-                                        fontSize = 15,
-                                        modifier = Modifier
-                                            .padding(start = 5.dp, top = 8.dp)
-                                            .width(50.dp)
-                                            .height(40.dp)
-                                            .padding(bottom = 5.dp),
-                                        fontColor = Color.Black,
-                                        cardColor = Color.White,
-                                    )
-
-                                    CustomCard(
-                                        label = highAndLowState,
-                                        fontSize = 15,
-                                        modifier = Modifier
-                                            .padding(start = 5.dp, top = 8.dp)
-                                            .width(50.dp)
-                                            .height(40.dp),
-                                        fontColor = Color.Black,
-                                        cardColor = Color.White,
-                                    )
-                                }
-                                Column(
-                                    modifier = Modifier
-                                        .weight(1f)
-                                        .padding(start = 5.dp)
-                                        .padding(vertical = 5.dp)
-                                        .border(
-                                            width = 1.dp,
-                                            color = Color.Black,
-                                            shape = RoundedCornerShape(10.dp)
-                                        ),
-                                    verticalArrangement = Arrangement.spacedBy(2.dp),
-                                    horizontalAlignment = Alignment.Start
-                                ) {
-                                    if (!filterDollarHighRate.isNullOrEmpty()) {
-                                        Text(
-                                            modifier = Modifier
-                                                .padding(all = 5.dp),
-                                            text = "현재 설정된 마지막 목표환율"
-                                        )
-
-                                        Row(
-                                            modifier = Modifier
-                                                .wrapContentSize(),
-                                            verticalAlignment = Alignment.CenterVertically,
-                                            horizontalArrangement = Arrangement.spacedBy(
-                                                5.dp,
-                                                alignment = Alignment.Start
-                                            )
-                                        ) {
-                                            CustomCard(
-                                                label = "$highDollarNumber",
-                                                fontSize = 12,
-                                                modifier = Modifier
-                                                    .height(20.dp)
-                                                    .width(25.dp)
-                                                    .padding(horizontal = 5.dp),
-                                                fontColor = Color.Black,
-                                                cardColor = TitleCardColor
-                                            )
-
-                                            Column(
-                                                modifier = Modifier
-                                                    .wrapContentSize()
-                                                    .padding(bottom = 3.dp)
-                                            ) {
-                                                Text(
-                                                    modifier = Modifier
-                                                        .padding(start = 5.dp),
-                                                    text = "목표환율: ${filterDollarHighRate?.first()?.rate ?: ""}"
-                                                )
-                                            }
-                                        }
-                                    } else {
-                                        Text(
-                                            modifier = Modifier
-                                                .padding(all = 5.dp),
-                                            text = "목표 환율 고점은 목표환율보다 이상일 때 알림을 받을 수 있습니다." +
-                                                    "저점은 목표환율보다 이하일 때 알림을 받을 수 있습니다."
-                                        )
-                                    }
-                                }
-
-                            }
-
-
-                        }
-                        "저점" -> {
-                            Row(
-                                modifier = Modifier
-                                    .wrapContentHeight()
-                                    .fillMaxWidth()
-                                    .padding(horizontal = 10.dp)
-                                    .padding(),
-                                verticalAlignment = Alignment.Top,
-                                horizontalArrangement = Arrangement.spacedBy(10.dp, alignment = Alignment.Start),
-                            ) {
-                                Column {
-                                    CustomCard(
-                                        label = currency,
-                                        fontSize = 15,
-                                        modifier = Modifier
-                                            .padding(start = 5.dp, top = 8.dp)
-                                            .width(50.dp)
-                                            .height(40.dp)
-                                            .padding(bottom = 5.dp),
-                                        fontColor = Color.Black,
-                                        cardColor = Color.White,
-                                    )
-
-                                    CustomCard(
-                                        label = highAndLowState,
-                                        fontSize = 15,
-                                        modifier = Modifier
-                                            .padding(start = 5.dp, top = 8.dp)
-                                            .width(50.dp)
-                                            .height(40.dp),
-                                        fontColor = Color.Black,
-                                        cardColor = Color.White,
-                                    )
-                                }
-                                Column(
-                                    modifier = Modifier
-                                        .weight(1f)
-                                        .padding(start = 5.dp)
-                                        .padding(vertical = 5.dp)
-                                        .border(
-                                            width = 1.dp,
-                                            color = Color.Black,
-                                            shape = RoundedCornerShape(10.dp)
-                                        ),
-                                    verticalArrangement = Arrangement.spacedBy(2.dp),
-                                    horizontalAlignment = Alignment.Start
-                                ) {
-                                    if (!filterDollarLowRate.isNullOrEmpty()) {
-                                        Text(
-                                            modifier = Modifier
-                                                .padding(all = 5.dp),
-                                            text = "현재 설정된 마지막 목표환율"
-                                        )
-
-                                        Row(
-                                            modifier = Modifier
-                                                .wrapContentSize(),
-                                            verticalAlignment = Alignment.CenterVertically,
-                                            horizontalArrangement = Arrangement.spacedBy(
-                                                5.dp,
-                                                alignment = Alignment.Start
-                                            )
-                                        ) {
-                                            CustomCard(
-                                                label = "$lowDollarNumber",
-                                                fontSize = 12,
-                                                modifier = Modifier
-                                                    .height(20.dp)
-                                                    .width(25.dp)
-                                                    .padding(horizontal = 5.dp),
-                                                fontColor = Color.Black,
-                                                cardColor = TitleCardColor
-                                            )
-
-                                            Column(
-                                                modifier = Modifier
-                                                    .wrapContentSize()
-                                                    .padding(bottom = 3.dp)
-                                            ) {
-                                                Text(
-                                                    modifier = Modifier
-                                                        .padding(start = 5.dp),
-                                                    text = "목표환율: ${filterDollarLowRate?.first()?.rate ?: ""}"
-                                                )
-                                            }
-                                        }
-                                    } else {
-                                        Text(
-                                            modifier = Modifier
-                                                .padding(all = 5.dp),
-                                            text = "목표 환율 고점은 목표환율보다 이상일 때 알림을 받을 수 있습니다." +
-                                                    "저점은 목표환율보다 이하일 때 알림을 받을 수 있습니다."
-                                        )
-                                    }
-                                }
-
-                            }
-                        }
-                    }
-
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(start = 15.dp, end = 15.dp)
-                    ) {
+            Row(
+                modifier = Modifier
+                    .wrapContentHeight()
+                    .fillMaxWidth()
+                    .padding(horizontal = 10.dp)
+                    .padding(),
+                verticalAlignment = Alignment.Top,
+                horizontalArrangement = Arrangement.spacedBy(10.dp, alignment = Alignment.Start),
+            ) {
+                Column(
+                    modifier = Modifier
+                        .weight(1f)
+                        .padding(start = 5.dp)
+                        .padding(vertical = 5.dp),
+                    verticalArrangement = Arrangement.spacedBy(2.dp),
+                    horizontalAlignment = Alignment.Start
+                ) {
+                    if (rate != null) {
+                        Text(
+                            modifier = Modifier
+                                .padding(all = 5.dp),
+                            text = "현재 설정된 마지막 목표환율"
+                        )
 
                         Row(
                             modifier = Modifier
                                 .wrapContentSize(),
-                            horizontalArrangement = Arrangement.spacedBy(5.dp)
-                        ) {
-                            CustomOutLinedTextField(
-                                modifier = Modifier
-                                    .focusRequester(focusRequester = focusRequester)
-                                    .weight(1f),
-                                value = rate,
-                                placeholder = "목표환율을 입력해주세요",
-                                onValueChange = {
-                                    rate = it.filter { it != '-' && it != ',' }
-                                }
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(
+                                5.dp,
+                                alignment = Alignment.Start
                             )
-                        }
-
-                    }
-                }
-
-                "엔화"-> {
-                    when(highAndLowState) {
-                        "고점" -> {
-                            Row(
+                        ) {
+                            CustomCard(
+                                label = "${rate.number}",
+                                fontSize = 12,
                                 modifier = Modifier
-                                    .wrapContentHeight()
-                                    .fillMaxWidth()
-                                    .padding(horizontal = 10.dp)
-                                    .padding(),
-                                verticalAlignment = Alignment.Top,
-                                horizontalArrangement = Arrangement.spacedBy(10.dp, alignment = Alignment.Start),
-                            ) {
-                                Column {
-                                    CustomCard(
-                                        label = currency,
-                                        fontSize = 15,
-                                        modifier = Modifier
-                                            .padding(start = 5.dp, top = 8.dp)
-                                            .width(50.dp)
-                                            .height(40.dp)
-                                            .padding(bottom = 5.dp),
-                                        fontColor = Color.Black,
-                                        cardColor = Color.White,
-                                    )
+                                    .height(20.dp)
+                                    .width(25.dp)
+                                    .padding(horizontal = 5.dp),
+                                fontColor = Color.Black,
+                                cardColor = TitleCardColor
+                            )
 
-                                    CustomCard(
-                                        label = highAndLowState,
-                                        fontSize = 15,
-                                        modifier = Modifier
-                                            .padding(start = 5.dp, top = 8.dp)
-                                            .width(50.dp)
-                                            .height(40.dp),
-                                        fontColor = Color.Black,
-                                        cardColor = Color.White,
-                                    )
-                                }
-                                Column(
-                                    modifier = Modifier
-                                        .weight(1f)
-                                        .padding(start = 5.dp)
-                                        .padding(vertical = 5.dp)
-                                        .border(
-                                            width = 1.dp,
-                                            color = Color.Black,
-                                            shape = RoundedCornerShape(10.dp)
-                                        ),
-                                    verticalArrangement = Arrangement.spacedBy(2.dp),
-                                    horizontalAlignment = Alignment.Start
-                                ) {
-                                    if (!filterYenHighRate.isNullOrEmpty()) {
-                                        Text(
-                                            modifier = Modifier
-                                                .padding(all = 5.dp),
-                                            text = "현재 설정된 마지막 목표환율"
-                                        )
-
-                                        Row(
-                                            modifier = Modifier
-                                                .wrapContentSize(),
-                                            verticalAlignment = Alignment.CenterVertically,
-                                            horizontalArrangement = Arrangement.spacedBy(
-                                                5.dp,
-                                                alignment = Alignment.Start
-                                            )
-                                        ) {
-                                            CustomCard(
-                                                label = "$highYenNumber",
-                                                fontSize = 12,
-                                                modifier = Modifier
-                                                    .height(20.dp)
-                                                    .width(25.dp)
-                                                    .padding(horizontal = 5.dp),
-                                                fontColor = Color.Black,
-                                                cardColor = TitleCardColor
-                                            )
-
-                                            Column(
-                                                modifier = Modifier
-                                                    .wrapContentSize()
-                                                    .padding(bottom = 3.dp)
-                                            ) {
-                                                Text(
-                                                    modifier = Modifier
-                                                        .padding(start = 5.dp),
-                                                    text = "목표환율: ${filterYenHighRate?.first()?.rate ?: ""}"
-                                                )
-                                            }
-                                        }
-                                    } else {
-                                        Text(
-                                            modifier = Modifier
-                                                .padding(all = 5.dp),
-                                            text = "목표 환율 고점은 목표환율보다 이상일 때 알림을 받을 수 있습니다." +
-                                                    "저점은 목표환율보다 이하일 때 알림을 받을 수 있습니다."
-                                        )
-                                    }
-                                }
-
-                            }
-
-
-                        }
-                        "저점" -> {
-                            Row(
+                            Column(
                                 modifier = Modifier
-                                    .wrapContentHeight()
-                                    .fillMaxWidth()
-                                    .padding(horizontal = 10.dp)
-                                    .padding(),
-                                verticalAlignment = Alignment.Top,
-                                horizontalArrangement = Arrangement.spacedBy(10.dp, alignment = Alignment.Start),
+                                    .wrapContentSize()
+                                    .padding(bottom = 3.dp)
                             ) {
-                                Column {
-                                    CustomCard(
-                                        label = currency,
-                                        fontSize = 15,
-                                        modifier = Modifier
-                                            .padding(start = 5.dp, top = 8.dp)
-                                            .width(50.dp)
-                                            .height(40.dp)
-                                            .padding(bottom = 5.dp),
-                                        fontColor = Color.Black,
-                                        cardColor = Color.White,
-                                    )
-
-                                    CustomCard(
-                                        label = highAndLowState,
-                                        fontSize = 15,
-                                        modifier = Modifier
-                                            .padding(start = 5.dp, top = 8.dp)
-                                            .width(50.dp)
-                                            .height(40.dp),
-                                        fontColor = Color.Black,
-                                        cardColor = Color.White,
-                                    )
-                                }
-                                Column(
+                                Text(
                                     modifier = Modifier
-                                        .weight(1f)
-                                        .padding(start = 5.dp)
-                                        .padding(vertical = 5.dp)
-                                        .border(
-                                            width = 1.dp,
-                                            color = Color.Black,
-                                            shape = RoundedCornerShape(10.dp)
-                                        ),
-                                    verticalArrangement = Arrangement.spacedBy(2.dp),
-                                    horizontalAlignment = Alignment.Start
-                                ) {
-                                    if (!filterYenLowRate.isNullOrEmpty()) {
-                                        Text(
-                                            modifier = Modifier
-                                                .padding(all = 5.dp),
-                                            text = "현재 설정된 마지막 목표환율"
-                                        )
-
-                                        Row(
-                                            modifier = Modifier
-                                                .wrapContentSize(),
-                                            verticalAlignment = Alignment.CenterVertically,
-                                            horizontalArrangement = Arrangement.spacedBy(
-                                                5.dp,
-                                                alignment = Alignment.Start
-                                            )
-                                        ) {
-                                            CustomCard(
-                                                label = "$lowYenNumber",
-                                                fontSize = 12,
-                                                modifier = Modifier
-                                                    .height(20.dp)
-                                                    .width(25.dp)
-                                                    .padding(horizontal = 5.dp),
-                                                fontColor = Color.Black,
-                                                cardColor = TitleCardColor
-                                            )
-
-                                            Column(
-                                                modifier = Modifier
-                                                    .wrapContentSize()
-                                                    .padding(bottom = 3.dp)
-                                            ) {
-                                                Text(
-                                                    modifier = Modifier
-                                                        .padding(start = 5.dp),
-                                                    text = "목표환율: ${filterYenLowRate?.first()?.rate ?: ""}"
-                                                )
-                                            }
-                                        }
-                                    } else {
-                                        Text(
-                                            modifier = Modifier
-                                                .padding(all = 5.dp),
-                                            text = "목표 환율 고점은 목표환율보다 이상일 때 알림을 받을 수 있습니다." +
-                                                    "저점은 목표환율보다 이하일 때 알림을 받을 수 있습니다."
-                                        )
-                                    }
-                                }
-
+                                        .padding(start = 5.dp),
+                                    text = "목표환율: ${rate.rate}"
+                                )
                             }
                         }
-                    }
-
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(start = 15.dp, end = 15.dp)
-                    ) {
-
-                        Row(
+                    } else {
+                        Text(
                             modifier = Modifier
-                                .wrapContentSize(),
-                            horizontalArrangement = Arrangement.spacedBy(5.dp)
-                        ) {
-                            CustomOutLinedTextField(
-                                modifier = Modifier
-                                    .focusRequester(focusRequester = focusRequester)
-                                    .weight(1f),
-                                value = rate,
-                                placeholder = "목표환율 입력해주세요",
-                                onValueChange = {
-                                    rate = it.filter { it != '-' && it != ',' }
-                                }
-                            )
-                        }
-
+                                .padding(all = 5.dp),
+                            text = "목표 환율 고점은 목표환율보다 이상일 때 알림을 받을 수 있습니다." +
+                                    "저점은 목표환율보다 이하일 때 알림을 받을 수 있습니다."
+                        )
                     }
-
-
-
                 }
+
+            }
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.Center
+            ) {
+                CustomOutLinedTextField(
+                    modifier = Modifier,
+                    value = userInput,
+                    placeholder = "목표환율을 입력해주세요",
+                    onValueChange = {
+                        userInput = it
+                    }
+                )
             }
 
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
                     .wrapContentSize()
+                    .padding(top = 10.dp)
                     .padding(horizontal = 20.dp),
                 horizontalArrangement = Arrangement.spacedBy(10.dp)
             ) {
@@ -647,50 +243,5 @@ fun TargetRateDialog(
             Spacer(modifier = Modifier.height(10.dp))
 
         }
-
-        if(adViewAskDialog) {
-            AskTriggerDialog(
-                onDismissRequest = {
-                    adViewAskDialog = false
-                },
-                title = "광고 시청하여 목표환율을 설정하시겠습니까?",
-                onClickedLabel = "예") {
-                showTargetRewardedAdvertisement(context, onAdDismissed = {
-                    when(currency) {
-                        "달러"-> {
-                            when(highAndLowState) {
-                                "고점" -> {
-
-                                    onClicked?.invoke()
-                                }
-                                "저점" -> {
-
-                                    onClicked?.invoke()
-                                }
-                            }
-
-                        }
-                        "엔화"-> {
-                            when(highAndLowState) {
-                                "고점" -> {
-
-                                    onClicked?.invoke()
-                                }
-                                "저점" -> {
-
-                                    onClicked?.invoke()
-                                }
-                            }
-
-                        }
-                    }
-                    adViewAskDialog = false
-                })
-            }
-        }
-
-
-
-
     }
 }

@@ -9,6 +9,7 @@ import com.bobodroid.myapplication.models.datamodels.roomDb.DrBuyRecord
 import com.bobodroid.myapplication.models.datamodels.roomDb.DrSellRecord
 import com.bobodroid.myapplication.models.datamodels.roomDb.ExchangeRate
 import com.bobodroid.myapplication.models.datamodels.repository.ExchangeRateRepository
+import com.bobodroid.myapplication.models.datamodels.repository.UserRepository
 import com.bobodroid.myapplication.models.datamodels.roomDb.LocalUserData
 import com.bobodroid.myapplication.models.datamodels.roomDb.RateType
 import com.bobodroid.myapplication.models.datamodels.roomDb.TargetRates
@@ -47,7 +48,7 @@ import javax.inject.Inject
 @HiltViewModel
 class AllViewModel @Inject constructor(
     private val userUseCases: UserUseCases,
-    private val targetRateUseCases: TargetRateUseCases,
+    private val userRepository: UserRepository,
     private val webSocketClient: WebSocketClient
 ) : ViewModel() {
 
@@ -74,42 +75,6 @@ class AllViewModel @Inject constructor(
     val noticeContent = MutableStateFlow("")
 
     val alarmPermissionState = MutableStateFlow(false)
-
-    val sampleDollarHighRates = listOf(
-        Rate(number = 1, rate = 1320),
-        Rate(number = 2, rate = 1350),
-        Rate(number = 3, rate = 1380),
-        Rate(number = 4, rate = 1400),
-        Rate(number = 5, rate = 1420)
-    )
-
-    val sampleDollarLowRates = listOf(
-        Rate(number = 1, rate = 1250),
-        Rate(number = 2, rate = 1270),
-        Rate(number = 3, rate = 1290)
-    )
-
-    val sampleYenHighRates = listOf(
-        Rate(number = 1, rate = 890),
-        Rate(number = 2, rate = 920),
-        Rate(number = 3, rate = 950),
-        Rate(number = 4, rate = 980)
-    )
-
-    val sampleYenLowRates = listOf(
-        Rate(number = 1, rate = 850),
-        Rate(number = 2, rate = 870),
-        Rate(number = 3, rate = 890)
-    )
-
-   private val _targetRate = MutableStateFlow(TargetRates(
-        dollarHighRates = sampleDollarHighRates,
-        dollarLowRates = sampleDollarLowRates,
-        yenHighRates = sampleYenHighRates,
-        yenLowRates = sampleYenLowRates
-    ))
-
-    val targetRateFlow = _targetRate.asStateFlow()
 
     val onReadyRewardAd = MutableStateFlow(false)
 
@@ -377,16 +342,19 @@ class AllViewModel @Inject constructor(
 
     // 웹소켓 실시간 데이터 구독
     private fun subscribeToExchangeRateUpdates() {
-        webSocketClient.recentRateWebReceiveData(
-            onInsert = { rateString ->
-                Log.d(TAG("AllViewModel", "subscribeToExchangeRateUpdates"), "웹소켓 환율 최신 데이터: $rateString")
-                onRateUpdate(rateString)
-            },
-            onInitialData = { initialData ->
-                Log.d(TAG("AllViewModel", "subscribeToExchangeRateUpdates"), "웹소켓 환율 초기화 데이터: $initialData")
-                onInitialDataReceived(initialData)
-            }
-        )
+        viewModelScope.launch {
+            webSocketClient.recentRateWebReceiveData(
+                onInsert = { rateString ->
+                    Log.d(TAG("AllViewModel", "subscribeToExchangeRateUpdates"), "웹소켓 환율 최신 데이터: $rateString")
+                    onRateUpdate(rateString)
+                },
+                onInitialData = { initialData ->
+                    Log.d(TAG("AllViewModel", "subscribeToExchangeRateUpdates"), "웹소켓 환율 초기화 데이터: $initialData")
+                    onInitialDataReceived(initialData)
+                }
+            )
+        }
+
     }
 
     private fun onRateUpdate(rateString: String) {
@@ -491,50 +459,16 @@ class AllViewModel @Inject constructor(
         }
     }
 
-
     fun localUserExistCheck() {
         viewModelScope.launch {
-            try {
-                when (val result = userUseCases.localExistCheck()) {
-
-
-                    is Result.Success -> {
-                        _localUser.value = result.data.localUserData
-
-                        if(result.data.exchangeRates != null) {
-//                            _targetRate.value = result.data.exchangeRates
-                        }
-
-                        Log.d(TAG("AllViewModel", "localUserExistCheck"), "${result.message}")
-                        Log.d(TAG("AllViewModel", "localUserExistCheck"), "${targetRateFlow.value}")
-
-                    }
-                    is Result.Error -> {
-                        Log.d(TAG("AllViewModel", "localUserExistCheck"), "${result.message}")
-                    }
-                    else -> Unit
-                }
-            } catch (e: Exception) {
-                Log.d(TAG("AllViewModel", "localUserExistCheck"), "유저 데이터 체크 중 오류 발생")
-            }
+          val initUserdata = userRepository.waitForUserData()
+            _localUser.emit(initUserdata.localUserData)
         }
+
     }
 
     // 로컬 아이디 삭제
     fun deleteLocalUser() {
-        viewModelScope.launch {
-            when (val result = userUseCases.deleteUser()) {
-                is Result.Success -> {
-                    Log.d(TAG("AllViewModel", "deleteLocalUser"), "${result.message}")
-                }
-                is Result.Error -> {
-                    Log.d(TAG("AllViewModel", "deleteLocalUser"), "${result.message}")
-                }
-                is Result.Loading -> {
-                    // 로딩 처리
-                }
-            }
-        }
     }
 
 

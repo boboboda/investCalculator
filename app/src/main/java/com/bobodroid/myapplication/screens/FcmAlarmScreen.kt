@@ -3,15 +3,20 @@ package com.bobodroid.myapplication.screens
 import android.util.Log
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.ExperimentalAnimationApi
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.with
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -22,8 +27,10 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.lazy.LazyColumn
@@ -35,8 +42,10 @@ import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.Card
 import androidx.compose.material.MaterialTheme
+import androidx.compose.material.SnackbarDuration
+import androidx.compose.material.SnackbarHost
+import androidx.compose.material.SnackbarHostState
 import androidx.compose.material.Surface
 import androidx.compose.material.Tab
 import androidx.compose.material.TabRow
@@ -44,11 +53,15 @@ import androidx.compose.material.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.sharp.Delete
+import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Divider
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -70,40 +83,56 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
+import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.DpOffset
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.bobodroid.myapplication.MainActivity.Companion.TAG
 import com.bobodroid.myapplication.R
 import com.bobodroid.myapplication.components.AutoSizeText
 import com.bobodroid.myapplication.components.Dialogs.GuideDialog
+import com.bobodroid.myapplication.components.Dialogs.TargetRateDialog
 import com.bobodroid.myapplication.components.Dialogs.TextFieldDialog
 import com.bobodroid.myapplication.components.RateView
+import com.bobodroid.myapplication.components.addFocusCleaner
 import com.bobodroid.myapplication.components.shadowCustom
 import com.bobodroid.myapplication.models.datamodels.service.UserApi.Rate
 import com.bobodroid.myapplication.models.viewmodels.AllViewModel
 import com.bobodroid.myapplication.models.viewmodels.AnalysisViewModel
 import com.bobodroid.myapplication.models.viewmodels.FcmAlarmViewModel
+import com.bobodroid.myapplication.ui.theme.DialogBackgroundColor
 import com.bobodroid.myapplication.ui.theme.HighRateColor
 import com.bobodroid.myapplication.ui.theme.LowRateColor
+import com.bobodroid.myapplication.ui.theme.WelcomeScreenBackgroundColor
 import kotlinx.coroutines.launch
 import java.math.BigDecimal
 import java.text.NumberFormat
 import java.util.Locale
+import javax.annotation.meta.When
+import kotlin.math.abs
 import kotlin.math.absoluteValue
+import kotlin.math.roundToInt
 
 
 @Composable
 fun AlarmScreen(allViewModel: AllViewModel) {
+
+    val coroutineScope = rememberCoroutineScope()
     val fcmAlarmViewModel: FcmAlarmViewModel = hiltViewModel()
     val recentRate = allViewModel.recentExchangeRateFlow.collectAsState()
-    val targetRateData = allViewModel.targetRateFlow.collectAsState()
+    val targetRateData = fcmAlarmViewModel.targetRateFlow.collectAsState()
 
     var selectedTabIndex by remember { mutableStateOf(0) }
     var currencyExpanded by remember { mutableStateOf(false) }
@@ -122,292 +151,441 @@ fun AlarmScreen(allViewModel: AllViewModel) {
     val highRateColor = Color(0xFFE3F2FD)
     val lowRateColor = Color(0xFFFFEBEE)
 
-    // 디버그용 로그
-    LaunchedEffect(targetRateData.value) {
-        println("Target Rate Data: ${targetRateData.value}")
-    }
-
-
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp)
-    ) {
-        // 상단 헤더
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Image(
-                    painter = painterResource(id = R.drawable.alarm),
-                    contentDescription = "",
-                    modifier = Modifier.padding(end = 8.dp)
-                )
-                Text(
-                    text = "목표 환율 설정",
-                    fontSize = 20.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.Black
-                )
-            }
-
-            // 통화 선택 드롭다운
-            Box {
-                TextButton(
-                    onClick = { currencyExpanded = true },
-                    colors = ButtonDefaults.textButtonColors(
-                        contentColor = primaryColor
-                    )
-                ) {
-                    Text(
-                        when(targetRateMoneyType) {
-                            TargetRateMoneyType.Dollar -> "달러(USD)"
-                            TargetRateMoneyType.Yen -> "엔화(JPY)"
-                        }
-                    )
-                    Icon(Icons.Filled.ArrowDropDown, null)
-                }
-
-                DropdownMenu(
-                    expanded = currencyExpanded,
-                    onDismissRequest = { currencyExpanded = false }
-                ) {
-                    DropdownMenuItem(
-                        onClick = {
-                            targetRateMoneyType = TargetRateMoneyType.Dollar
-                            currencyExpanded = false
-                        },
-                        text = { Text("달러(USD)") }
-                    )
-                    DropdownMenuItem(
-                        onClick = {
-                            targetRateMoneyType = TargetRateMoneyType.Yen
-                            currencyExpanded = false
-                        },
-                        text = { Text("엔화(JPY)") }
-                    )
-                }
-            }
+    val rates = when(selectedTabIndex) {
+        0 -> when(targetRateMoneyType) {
+            TargetRateMoneyType.Dollar -> targetRateData.value.dollarHighRates
+            TargetRateMoneyType.Yen -> targetRateData.value.yenHighRates
         }
-
-        // 현재 환율 표시
-        RateView(
-            title = "USD",
-            recentRate = "${recentRate.value.usd}",
-            subTitle = "JPY",
-            subRecentRate = "${BigDecimal(recentRate.value.jpy).times(BigDecimal("100"))}",
-            createAt = "${recentRate.value.createAt}"
-        )
-
-        // 탭과 리스트
-        Card(
-            modifier = Modifier
-                .fillMaxWidth()
-                .weight(1f)
-                .padding(vertical = 8.dp),
-            elevation = 4.dp,
-            backgroundColor = Color.White
-        ) {
-            Column {
-                TabRow(
-                    selectedTabIndex = selectedTabIndex,
-                    modifier = Modifier.fillMaxWidth(),
-                    backgroundColor = surfaceColor,
-                    indicator = { tabPositions ->
-                        Box(
-                            Modifier
-                                .tabIndicatorOffset(tabPositions[selectedTabIndex])
-                                .height(4.dp)
-                                .padding(horizontal = 24.dp)
-                                .background(
-                                    color = when(selectedTabIndex) {
-                                        0 -> Color(0xFF1976D2)
-                                        else -> Color(0xFFD32F2F)
-                                    },
-                                    shape = RoundedCornerShape(topStart = 3.dp, topEnd = 3.dp)
-                                )
-                        )
-                    }
-                ) {
-                    Tab(
-                        selected = selectedTabIndex == 0,
-                        onClick = { selectedTabIndex = 0 },
-                        text = {
-                            Text(
-                                "고점 목표 환율",
-                                color = if(selectedTabIndex == 0) Color(0xFF1976D2) else Color.Gray,
-                                fontWeight = if(selectedTabIndex == 0) FontWeight.Bold else FontWeight.Normal
-                            )
-                        }
-                    )
-                    Tab(
-                        selected = selectedTabIndex == 1,
-                        onClick = { selectedTabIndex = 1 },
-                        text = {
-                            Text(
-                                "저점 목표 환율",
-                                color = if(selectedTabIndex == 1) Color(0xFFD32F2F) else Color.Gray,
-                                fontWeight = if(selectedTabIndex == 1) FontWeight.Bold else FontWeight.Normal
-                            )
-                        }
-                    )
-                }
-
-                val rates = when(selectedTabIndex) {
-                    0 -> when(targetRateMoneyType) {
-                        TargetRateMoneyType.Dollar -> targetRateData.value.dollarHighRates
-                        TargetRateMoneyType.Yen -> targetRateData.value.yenHighRates
-                    }
-                    else -> when(targetRateMoneyType) {
-                        TargetRateMoneyType.Dollar -> targetRateData.value.dollarLowRates
-                        TargetRateMoneyType.Yen -> targetRateData.value.yenLowRates
-                    }
-                }
-
-
-                Log.d(TAG("FcmAlarmScreen", "ListItem"), rates.toString())
-                LazyColumn(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .weight(1f)
-                        .padding(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    if(rates == null) {
-                        item() {
-                            Row {
-                                Text("데이터가 없다.")
-                            }
-                        }
-                    } else {
-                        items(rates) { rate ->
-                            RateItem(
-                                rate = rate,
-                                targetRateMoneyType = targetRateMoneyType,
-                                backgroundColor = if(selectedTabIndex == 0) highRateColor else lowRateColor
-                            )
-                        }
-                    }
-
-                }
-            }
-        }
-
-        // Add FAB
-        FloatingActionButton(
-            onClick = {
-                targetRateState = if(selectedTabIndex == 0) TargetRateState.High else TargetRateState.Low
-                addTargetDialog = true
-            },
-            modifier = Modifier
-                .align(Alignment.End)
-                .padding(16.dp),
-            containerColor = primaryColor
-        ) {
-            Icon(
-                Icons.Filled.Add,
-                contentDescription = "Add target rate",
-                tint = Color.White
-            )
+        else -> when(targetRateMoneyType) {
+            TargetRateMoneyType.Dollar -> targetRateData.value.dollarLowRates
+            TargetRateMoneyType.Yen -> targetRateData.value.yenLowRates
         }
     }
 
-    if(addTargetDialog) {
-        TextFieldDialog(
-            onDismissRequest = { addTargetDialog = it },
-            keyboardType = KeyboardType.Number,
-            onClickedLabel = "확인",
-            placeholder = "목표환율을 입력해주세요",
-            onClicked = { rate ->
-                // 목표환율 추가 로직
-                addTargetDialog = false
-            },
-            closeButtonLabel = "닫기"
-        ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(bottom = 15.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                Text(
-                    text = if(targetRateState == TargetRateState.High) "고점 목표 환율" else "저점 목표 환율",
-                    fontSize = 17.sp,
-                    fontWeight = FontWeight.Bold
-                )
-            }
-        }
-    }
-}
+    val fcmAlarmScreenSnackBarHostState = remember { SnackbarHostState() }
 
-@Composable
-fun RateItem(
-    rate: Rate,
-    targetRateMoneyType: TargetRateMoneyType,
-    backgroundColor: Color
-) {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 4.dp),
-        backgroundColor = backgroundColor,
-        elevation = 2.dp
-    ) {
+    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.BottomCenter)
+    {
         Column(
             modifier = Modifier
+                .fillMaxSize()
                 .padding(16.dp)
-                .fillMaxWidth()
         ) {
+            // 상단 헤더
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(
-                    text = "목표 ${
-                        when(targetRateMoneyType) {
-                            TargetRateMoneyType.Dollar -> "달러"
-                            TargetRateMoneyType.Yen -> "엔화"
-                        }
-                    } #${rate.number}",
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 16.sp,
-                    color = Color.Black
-                )
+                Row(
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Image(
+                        painter = painterResource(id = R.drawable.alarm),
+                        contentDescription = "",
+                        modifier = Modifier.padding(end = 8.dp)
+                    )
+                    Text(
+                        text = "목표 환율 설정",
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.Black
+                    )
+                }
 
-                Text(
-                    text = when(targetRateMoneyType) {
-                        TargetRateMoneyType.Dollar -> "${rate.rate} USD"
-                        TargetRateMoneyType.Yen -> "${rate.rate} JPY"
+                // 통화 선택 드롭다운
+                Box {
+                    TextButton(
+                        onClick = { currencyExpanded = true },
+                        colors = ButtonDefaults.textButtonColors(
+                            contentColor = primaryColor
+                        )
+                    ) {
+                        Text(
+                            when(targetRateMoneyType) {
+                                TargetRateMoneyType.Dollar -> "달러(USD)"
+                                TargetRateMoneyType.Yen -> "엔화(JPY)"
+                            }
+                        )
+                        Icon(Icons.Filled.ArrowDropDown, null)
+                    }
+
+                    DropdownMenu(
+                        expanded = currencyExpanded,
+                        onDismissRequest = { currencyExpanded = false }
+                    ) {
+                        DropdownMenuItem(
+                            onClick = {
+                                targetRateMoneyType = TargetRateMoneyType.Dollar
+                                currencyExpanded = false
+                            },
+                            text = { Text("달러(USD)") }
+                        )
+                        DropdownMenuItem(
+                            onClick = {
+                                targetRateMoneyType = TargetRateMoneyType.Yen
+                                currencyExpanded = false
+                            },
+                            text = { Text("엔화(JPY)") }
+                        )
+                    }
+                }
+            }
+
+            // 현재 환율 표시
+
+            when(targetRateMoneyType) {
+                TargetRateMoneyType.Dollar -> {
+                    RateView(
+                        title = "USD",
+                        recentRate = "${recentRate.value.usd}",
+                        createAt = "${recentRate.value.createAt}"
+                    )
+                }
+                TargetRateMoneyType.Yen -> {
+                    RateView(
+                        title = "JPY",
+                        recentRate = "${BigDecimal(recentRate.value.jpy).times(BigDecimal("100"))}",
+                        createAt = "${recentRate.value.createAt}"
+                    )
+                }
+            }
+
+
+            // 탭과 리스트
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f)
+                    .padding(vertical = 8.dp),
+                elevation = CardDefaults.elevatedCardElevation(4.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = Color.White
+                ),
+            ) {
+                Column {
+                    TabRow(
+                        selectedTabIndex = selectedTabIndex,
+                        modifier = Modifier.fillMaxWidth(),
+                        backgroundColor = surfaceColor,
+                        indicator = { tabPositions ->
+                            Box(
+                                Modifier
+                                    .tabIndicatorOffset(tabPositions[selectedTabIndex])
+                                    .height(4.dp)
+                                    .padding(horizontal = 24.dp)
+                                    .background(
+                                        color = when (selectedTabIndex) {
+                                            0 -> Color(0xFF1976D2)
+                                            else -> Color(0xFFD32F2F)
+                                        },
+                                        shape = RoundedCornerShape(topStart = 3.dp, topEnd = 3.dp)
+                                    )
+                            )
+                        }
+                    ) {
+                        Tab(
+                            selected = selectedTabIndex == 0,
+                            onClick = { selectedTabIndex = 0 },
+                            text = {
+                                Text(
+                                    "고점 목표 환율",
+                                    color = if(selectedTabIndex == 0) Color(0xFF1976D2) else Color.Gray,
+                                    fontWeight = if(selectedTabIndex == 0) FontWeight.Bold else FontWeight.Normal
+                                )
+                            }
+                        )
+                        Tab(
+                            selected = selectedTabIndex == 1,
+                            onClick = { selectedTabIndex = 1 },
+                            text = {
+                                Text(
+                                    "저점 목표 환율",
+                                    color = if(selectedTabIndex == 1) Color(0xFFD32F2F) else Color.Gray,
+                                    fontWeight = if(selectedTabIndex == 1) FontWeight.Bold else FontWeight.Normal
+                                )
+                            }
+                        )
+                    }
+
+
+
+
+                    Log.d(TAG("FcmAlarmScreen", "ListItem"), rates.toString())
+                    LazyColumn(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .weight(1f)
+                            .padding(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        if(rates?.isEmpty() == true) {
+                            item {
+                                Row {
+                                    Text("목표환율이 없습니다. 추가해주세요")
+                                }
+                            }
+                        } else {
+                            items(rates ?: emptyList()) { rate ->
+
+                                RateItem(
+                                    rate = rate,
+                                    backgroundColor = if(selectedTabIndex == 0) highRateColor else lowRateColor,
+                                    onEdit = {
+
+                                    },
+                                    onDelete = {
+
+                                    })
+
+                            }
+                        }
+
+                    }
+                }
+            }
+
+            // Add FAB
+            FloatingActionButton(
+                onClick = {
+                    if(rates != null && rates.last().number < 5) {
+                        targetRateState = if(selectedTabIndex == 0) TargetRateState.High else TargetRateState.Low
+                        addTargetDialog = true
+                    } else {
+                        if (fcmAlarmScreenSnackBarHostState.currentSnackbarData == null) {
+                            coroutineScope.launch {
+                                fcmAlarmScreenSnackBarHostState.showSnackbar(
+                                    "목표환율은 최대 5개까지 생성가능합니다.",
+                                    actionLabel = "닫기",
+                                    SnackbarDuration.Short
+                                )
+                            }
+                        }
+                    }
+
+                },
+                modifier = Modifier
+                    .align(Alignment.End)
+                    .padding(16.dp),
+                containerColor = primaryColor
+            ) {
+                Icon(
+                    Icons.Filled.Add,
+                    contentDescription = "Add target rate",
+                    tint = Color.White
+                )
+            }
+        }
+
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .wrapContentHeight()
+        ) {
+            SnackbarHost(
+                hostState = fcmAlarmScreenSnackBarHostState, modifier = Modifier,
+                snackbar = { snackBarData ->
+
+                    Card(
+                        shape = RoundedCornerShape(8.dp),
+                        border = BorderStroke(1.5.dp, Color.Black),
+                        modifier = Modifier
+                            .padding(10.dp)
+                            .fillMaxWidth(),
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(8.dp)
+                                .padding(start = 10.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.Start
+                        ) {
+
+                            Text(
+                                text = snackBarData.message,
+                                fontSize = 15.sp,
+                                lineHeight = 20.sp,
+                                fontWeight = FontWeight.Medium
+                            )
+
+                            Spacer(modifier = Modifier.weight(1f))
+
+                            Text(
+                                modifier = Modifier
+                                    .padding(8.dp)
+                                    .clickable {
+                                        fcmAlarmScreenSnackBarHostState.currentSnackbarData?.dismiss()
+                                    },
+                                text = "닫기",
+                                fontWeight = FontWeight.Medium
+                            )
+                        }
+                    }
+                })
+        }
+    }
+
+
+
+    if(addTargetDialog) {
+
+        val lastRate = if(rates == null) {
+            null
+        } else { rates.last()}
+
+        val currentCurrency = when(targetRateMoneyType) {
+            TargetRateMoneyType.Dollar -> "달러"
+            TargetRateMoneyType.Yen -> "엔화"
+        }
+        val currentHighAndRowRate = when(targetRateState){
+            TargetRateState.High -> "고점"
+            TargetRateState.Low -> "저점"
+        }
+
+        TargetRateDialog(
+            onDismissRequest = {
+                addTargetDialog = it
+            },
+            rate = lastRate,
+            currency = currentCurrency,
+            highAndRowRate = currentHighAndRowRate,
+            selected = {
+
+            }
+        )
+
+    }
+}
+
+
+@Composable
+fun RateItem(
+    rate: Rate,
+    backgroundColor: Color,
+    onEdit: () ->Unit,
+    onDelete: () -> Unit
+) {
+    var offsetX by remember { mutableStateOf(0f) }
+    val buttonWidth = 100.dp
+    val buttonWidthPx = with(LocalDensity.current) { buttonWidth.toPx() }
+
+    val offsetXAnimated by animateFloatAsState(
+        targetValue = offsetX.coerceIn(-buttonWidthPx, buttonWidthPx),  // 버튼 너비만큼만 애니메이션
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioMediumBouncy,
+            stiffness = Spring.StiffnessLow
+        )
+    )
+
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(100.dp)
+            .padding(horizontal = 16.dp, vertical = 8.dp),
+        elevation = CardDefaults.elevatedCardElevation(5.dp)
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .fillMaxSize()
+        ) {
+            // 수정 버튼 (왼쪽)
+            Box(
+                modifier = Modifier
+                    .align(Alignment.CenterStart)
+                    .fillMaxHeight()
+                    .width(buttonWidth)
+                    .background(Color(0xFFFF9800))
+                    .clickable {
+                        onEdit()
+                        offsetX = 0f
                     },
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color(0xFF1976D2)
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Edit,
+                    contentDescription = "Edit",
+                    tint = Color.White
                 )
             }
 
-            Spacer(modifier = Modifier.height(4.dp))
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.End
-            ) {
-                Text(
-                    text = when(targetRateMoneyType) {
-                        TargetRateMoneyType.Dollar -> "₩${NumberFormat.getNumberInstance(Locale.US).format(rate.rate * 1300)}"
-                        TargetRateMoneyType.Yen -> "₩${NumberFormat.getNumberInstance(Locale.US).format(rate.rate * 8.5)}"
+            // 삭제 버튼 (오른쪽)
+            Box(
+                modifier = Modifier
+                    .align(Alignment.CenterEnd)
+                    .fillMaxHeight()
+                    .width(buttonWidth)
+                    .background(Color.Red)
+                    .clickable {
+                        onDelete()
+                        offsetX = 0f
                     },
-                    color = Color.Gray,
-                    fontSize = 14.sp
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Delete,
+                    contentDescription = "Delete",
+                    tint = Color.White
                 )
+            }
+
+            // 메인 컨텐츠
+            Box(
+                modifier = Modifier
+                    .offset { IntOffset(offsetXAnimated.roundToInt(), 0) }
+                    .fillMaxWidth()
+                    .background(backgroundColor)
+                    .pointerInput(Unit) {
+                        detectHorizontalDragGestures(
+                            onDragEnd = {
+                                offsetX = when {
+                                    abs(offsetX) < buttonWidthPx / 2 -> 0f
+                                    offsetX > 0 -> buttonWidthPx
+                                    else -> -buttonWidthPx
+                                }
+                            }
+                        ) { _, dragAmount ->
+                            val newOffset = offsetX + dragAmount
+                            offsetX = newOffset.coerceIn(-buttonWidthPx, buttonWidthPx)
+                        }
+                    }
+            ) {
+                Column(
+                    modifier = Modifier
+                        .padding(16.dp)
+                        .fillMaxSize()
+                        .background(backgroundColor)
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .weight(1f),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "목표 환율 ${rate.number}",
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 16.sp,
+                            color = Color.Black
+                        )
+
+                        Text(
+                            text = "${rate.rate} 원",
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color(0xFF1976D2)
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(4.dp))
+                }
             }
         }
     }
 }
+
 
 enum class TargetRateMoneyType {
     Dollar,
@@ -418,33 +596,4 @@ enum class TargetRateState {
     High,
     Low
 }
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun NumberGrid(number: String) {
-    Card(
-        colors = CardDefaults.cardColors(Color.White),
-        elevation = CardDefaults.cardElevation(2.dp),
-    ) {
-
-        Box(
-            modifier = Modifier.fillMaxSize(),
-            contentAlignment = Alignment.Center
-        ) {
-            AutoSizeText(
-                value = number,
-                fontSize = 15.sp,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier
-                    .padding(vertical = 20.dp)
-                    .padding(horizontal = 1.dp),
-                maxLines = 1,
-                minFontSize = 8.sp,
-                color = Color.Black
-            )
-        }
-
-    }
-}
-
 

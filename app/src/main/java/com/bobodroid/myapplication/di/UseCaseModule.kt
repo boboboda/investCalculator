@@ -11,6 +11,7 @@ import com.bobodroid.myapplication.models.datamodels.useCases.LogoutUseCase
 import com.bobodroid.myapplication.models.datamodels.useCases.TargetRateAddUseCase
 import com.bobodroid.myapplication.models.datamodels.useCases.TargetRateUseCases
 import com.bobodroid.myapplication.models.datamodels.useCases.UserUseCases
+import com.bobodroid.myapplication.models.datamodels.websocket.WebSocketClient
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn

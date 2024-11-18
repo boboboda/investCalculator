@@ -276,12 +276,6 @@ fun MainScreen(
                                 RateView(
                                     title = "USD",
                                     recentRate = "${recentRate.value.usd}",
-                                    subTitle = "JPY",
-                                    subRecentRate = "${
-                                        BigDecimal(recentRate.value.jpy).times(
-                                            BigDecimal("100").setScale(-2)
-                                        )
-                                    }",
                                     createAt = "${recentRate.value.createAt}"
                                 )
                             }

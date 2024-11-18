@@ -39,48 +39,26 @@ class UserUseCases(
 class LocalIdAddUseCase @Inject constructor(
     private val userRepository: UserRepository
 ) {
-    suspend operator fun invoke(): Result<LocalUserData> {
-        return try {
-            val fcmToken = FCMTokenEvent.tokenFlow.filterNotNull().first()
+    suspend operator fun invoke(): LocalUserData {
+        val fcmToken = FCMTokenEvent.tokenFlow.filterNotNull().first()
 
-            val createLocalUser = LocalUserData(
-                userResetDate = "",
-                rateAdCount = 0,
-                rateResetCount = 3,
-                fcmToken = fcmToken
-            )
+        val createLocalUser = LocalUserData(
+            userResetDate = "",
+            rateAdCount = 0,
+            rateResetCount = 3,
+            fcmToken = fcmToken
+        )
 
-            userRepository.localUserAdd(createLocalUser).let { result ->
-                when (result) {
-                    is Result.Success -> {
-                        Result.Success(
-                            data = result.data,
-                            message = "새로운 사용자가 생성되었습니다."
-                        )
-                    }
-                    is Result.Error -> {
-                        Result.Error(
-                            message = "사용자 생성 실패: ${result.message}",
-                            exception = result.exception
-                        )
-                    }
-                    is Result.Loading -> Result.Loading
-                }
-            }
-        } catch (e: Exception) {
-            Result.Error(
-                message = "사용자 생성 중 오류가 발생했습니다.",
-                exception = e
-            )
-        }
+        userRepository.localUserAdd(createLocalUser)
+        return createLocalUser
     }
 }
 
 class LocalUserUpdate @Inject constructor(
     private val userRepository: UserRepository
 ) {
-    suspend operator fun invoke(localUserData: LocalUserData): Result<LocalUserData> {
-        return userRepository.localUserUpdate(localUserData)
+    suspend operator fun invoke(localUserData: LocalUserData) {
+        userRepository.localUserUpdate(localUserData)
     }
 }
 
@@ -115,18 +93,8 @@ class LogoutUseCase @Inject constructor(
 class DeleteUserUseCase @Inject constructor(
     private val userRepository: UserRepository
 ) {
-    suspend operator fun invoke(): Result<Unit> {
-        return when (val deleteResult = userRepository.localUserDataDelete()) {
-            is Result.Success -> Result.Success(
-                data = Unit,
-                message = "사용자 데이터가 삭제되었습니다."
-            )
-            is Result.Error -> Result.Error(
-                message = deleteResult.message,
-                exception = deleteResult.exception
-            )
-            is Result.Loading -> Result.Loading
-        }
+    suspend operator fun invoke() {
+        userRepository.localUserDataDelete()
     }
 }
 
@@ -134,81 +102,61 @@ class LocalExistCheckUseCase @Inject constructor(
     private val userRepository: UserRepository,
     private val localIdAddUseCase: LocalIdAddUseCase
 ) {
-    private val _userData = MutableStateFlow<UserDataType?>(null)
-    val userData = _userData.asStateFlow()
-
-    suspend operator fun invoke(): Result<UserDataType> {
-        return try {
+    suspend operator fun invoke() {
+        try {
             val fcmToken = FCMTokenEvent.tokenFlow.firstOrNull()
                 ?: InvestApplication.prefs.getData("fcm_token", "")
+            Log.d(TAG("LocalExistCheckUseCase", "invoke"), "FCM 토큰: $fcmToken")
 
-            val existingUserResult = userRepository.localUserDataGet()
+            val existingUser = userRepository.localUserDataGet()
                 .distinctUntilChanged()
                 .firstOrNull()
+            Log.d(TAG("LocalExistCheckUseCase", "invoke"), "기존 유저 데이터: $existingUser")
 
-            val userResult = when {
-                existingUserResult is Result.Success && existingUserResult.data != null ->
-                    Result.Success(existingUserResult.data)
-                else -> {
-                    if (fcmToken.isNotEmpty()) {
-                        localIdAddUseCase()
-                    } else {
-                        FCMTokenEvent.tokenFlow
-                            .filterNotNull()
-                            .first()
-                        localIdAddUseCase()
-                    }
+            val user = if (existingUser != null) {
+                Log.d(TAG("LocalExistCheckUseCase", "invoke"), "기존 유저 사용")
+                existingUser
+            } else {
+                Log.d(TAG("LocalExistCheckUseCase", "invoke"), "새 유저 생성 시작")
+                if (fcmToken.isNotEmpty()) {
+                    localIdAddUseCase()
+                } else {
+                    FCMTokenEvent.tokenFlow
+                        .filterNotNull()
+                        .first()
+                    localIdAddUseCase()
+                }.also {
+                    Log.d(TAG("LocalExistCheckUseCase", "invoke"), "새 유저 생성 완료: $it")
                 }
             }
 
-            when (userResult) {
-                is Result.Success -> {
-                    val user = userResult.data
-                    val serverResult = syncWithServer(user)
+            Log.d(TAG("LocalExistCheckUseCase", "invoke"), "서버 동기화 시작: ${user.id}")
+            val serverUser = syncWithServer(user)
+            Log.d(TAG("LocalExistCheckUseCase", "invoke"), "서버 동기화 완료: $serverUser")
 
-                    when(serverResult) {
-                        is Result.Success -> {
-                            val serverUser = serverResult.data
-                            val userDataType = UserDataType(
-                                localUserData = user,
-                                exchangeRates = TargetRates(
-                                    dollarHighRates = serverUser.data?.usdHighRates,
-                                    dollarLowRates = serverUser.data?.usdLowRates,
-                                    yenHighRates = serverUser.data?.jpyHighRates,
-                                    yenLowRates = serverUser.data?.jpyLowRates
-                                )
-                            )
-                            _userData.value = userDataType // StateFlow 업데이트
-                            Result.Success(
-                                data = userDataType,
-                                message = serverResult.message
-                            )
-                        }
-                        is Result.Error -> serverResult
-                        is Result.Loading -> Result.Loading
-                    }
+            val userDataType = UserDataType(
+                localUserData = user,
+                exchangeRates = serverUser?.data?.let { serverData ->
+                    TargetRates(
+                        dollarHighRates = serverData.usdHighRates,
+                        dollarLowRates = serverData.usdLowRates,
+                        yenHighRates = serverData.jpyHighRates,
+                        yenLowRates = serverData.jpyLowRates
+                    )
                 }
-                is Result.Error -> userResult
-                is Result.Loading -> Result.Loading
-            }
-
-        } catch (e: Exception) {
-            Result.Error(
-                message = "사용자 확인 중 오류가 발생했습니다.",
-                exception = e
             )
+            Log.d(TAG("LocalExistCheckUseCase", "invoke"), "최종 UserDataType 생성: $userDataType")
+            userRepository.updateUserData(userDataType)
+            Log.d(TAG("LocalExistCheckUseCase", "invoke"), "UserRepository 업데이트 완료")
+        } catch (e: Exception) {
+            Log.e(TAG("LocalExistCheckUseCase", "invoke"), "사용자 확인 중 오류", e)
         }
     }
 
-    // 다른 ViewModel들이 사용할 수 있는 suspend 함수
-    suspend fun waitForUserData(): UserDataType {
-        return userData.filterNotNull().first()
-    }
-
-
-    private suspend fun syncWithServer(user: LocalUserData): Result<UserResponse> {
+    private suspend fun syncWithServer(user: LocalUserData): UserResponse? {
         return try {
             val fcmToken = InvestApplication.prefs.getData("fcm_token", "")
+            Log.d(TAG("LocalExistCheckUseCase", "syncWithServer"), "서버 동기화 FCM 토큰: $fcmToken")
 
             val createServerUser = UserRequest(
                 deviceId = user.id.toString(),
@@ -216,34 +164,28 @@ class LocalExistCheckUseCase @Inject constructor(
                 pin = "",
                 fcmToken = user.fcmToken ?: fcmToken
             )
+            Log.d(TAG("LocalExistCheckUseCase", "syncWithServer"), "서버 요청 데이터: $createServerUser")
 
             if (user.id != null) {
                 val serverUser = UserApi.userService.getUserRequest(user.id.toString())
-
+                Log.d(TAG("LocalExistCheckUseCase", "syncWithServer"), "서버 응답: $serverUser")
                 if (serverUser.data == null) {
-                    val newServerUser = UserApi.userService.userAddRequest(createServerUser)
-                    Result.Success(
-                        data = newServerUser,
-                        message = "로컬 및 서버에 새로운 사용자가 등록되었습니다."
-                    )
+                    UserApi.userService.userAddRequest(createServerUser).also {
+                        Log.d(TAG("LocalExistCheckUseCase", "syncWithServer"), "새 서버 유저 생성: $it")
+                    }
                 } else {
-                    Result.Success(
-                        data = serverUser,
-                        message = "기존 사용자 정보로 동기화되었습니다."
-                    )
+                    serverUser.also {
+                        Log.d(TAG("LocalExistCheckUseCase", "syncWithServer"), "기존 서버 유저 사용: $it")
+                    }
                 }
             } else {
-                val newServerUser = UserApi.userService.userAddRequest(createServerUser)
-                Result.Success(
-                    data = newServerUser,
-                    message = "새로운 사용자가 생성되었습니다."
-                )
+                UserApi.userService.userAddRequest(createServerUser).also {
+                    Log.d(TAG("LocalExistCheckUseCase", "syncWithServer"), "ID 없는 새 서버 유저 생성: $it")
+                }
             }
         } catch (e: Exception) {
-            Result.Error(
-                message = "서버 동기화에 실패했습니다.",
-                exception = e
-            )
+            Log.e(TAG("LocalExistCheckUseCase", "syncWithServer"), "서버 동기화 실패", e)
+            null
         }
     }
 }

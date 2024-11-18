@@ -1,4 +1,5 @@
 package com.bobodroid.myapplication.models.datamodels.websocket
+import com.bobodroid.myapplication.models.datamodels.repository.UserRepository
 import com.bobodroid.myapplication.models.datamodels.websocket.WebSocketClient
 import dagger.Module
 import dagger.Provides
@@ -12,7 +13,11 @@ object WebSocketModule {
 
     @Provides
     @Singleton
-    fun provideWebSocketClient(): WebSocketClient {
-        return WebSocketClient()
+    fun provideWebSocketClient(
+    userRepository: UserRepository
+    ): WebSocketClient {
+        return WebSocketClient(
+            userRepository
+        )
     }
 }

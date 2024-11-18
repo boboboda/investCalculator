@@ -18,17 +18,11 @@ import androidx.compose.ui.unit.sp
 @Composable
 fun RateView(
     title: String,
-    subTitle: String? = "",
     recentRate: String,
-    subRecentRate: String? = "",
     createAt: String
 ) {
 
-    val useTitle = if (subTitle == "") {
-        "${title}: ${recentRate}"
-    } else {
-        "${title}: ${recentRate} | ${subTitle}: ${subRecentRate}"
-    }
+    val useTitle =  "${title}: ${recentRate}"
 
     Column(
         modifier = Modifier

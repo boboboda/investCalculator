@@ -25,6 +25,8 @@ class TargetRateUseCases(
 
 
 class TargetRateAddUseCase @Inject constructor() {
+
+
     suspend operator fun invoke(
         deviceId: String,
         targetRates: TargetRates,

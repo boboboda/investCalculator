@@ -15,31 +15,48 @@ import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
+import javax.inject.Singleton
 
 
 @Module
 @InstallIn(SingletonComponent::class)
 object UseCaseModule {
 
+    @Singleton  // LocalExistCheckUseCase를 싱글톤으로 선언
+    @Provides
+    fun provideLocalExistCheckUseCase(
+        userRepository: UserRepository,
+        localIdAddUseCase: LocalIdAddUseCase
+    ): LocalExistCheckUseCase {
+        return LocalExistCheckUseCase(userRepository, localIdAddUseCase)
+    }
+
+    @Provides
+    fun provideLocalIdAddUseCase(
+        userRepository: UserRepository
+    ): LocalIdAddUseCase {
+        return LocalIdAddUseCase(userRepository)
+    }
+
     @Provides
     fun provideUserUseCases(
-        userRepository: UserRepository
+        userRepository: UserRepository,
+        localExistCheckUseCase: LocalExistCheckUseCase,
     ): UserUseCases {
         return UserUseCases(
             customIdCreateUser = CustomIdCreateUser(userRepository),
             logIn = LogInUseCase(userRepository),
             logout = LogoutUseCase(userRepository),
-            localExistCheck = LocalExistCheckUseCase(userRepository, LocalIdAddUseCase(userRepository)),
+            localExistCheck = localExistCheckUseCase,  // 주입받은 인스턴스 사용
             deleteUser = DeleteUserUseCase(userRepository),
             localUserUpdate = LocalUserUpdate(userRepository)
         )
     }
 
-
     @Provides
     fun provideTargetRateUseCases(): TargetRateUseCases {
-        return  TargetRateUseCases(
-           targetRateAddUseCase =  TargetRateAddUseCase())
+        return TargetRateUseCases(
+            targetRateAddUseCase = TargetRateAddUseCase()
+        )
     }
-
 }

@@ -560,6 +560,7 @@ data class TargetRates(
     var yenLowRates : List<Rate>? = emptyList()
 )
 
+
 enum class CurrencyType {
     USD,
     JPY

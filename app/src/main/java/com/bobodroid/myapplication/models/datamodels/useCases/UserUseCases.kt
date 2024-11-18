@@ -18,6 +18,8 @@ import kotlinx.coroutines.flow.firstOrNull
 import javax.inject.Inject
 import com.bobodroid.myapplication.util.result.Result
 import com.google.firebase.messaging.FirebaseMessaging
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import kotlin.coroutines.resume
@@ -132,6 +134,9 @@ class LocalExistCheckUseCase @Inject constructor(
     private val userRepository: UserRepository,
     private val localIdAddUseCase: LocalIdAddUseCase
 ) {
+    private val _userData = MutableStateFlow<UserDataType?>(null)
+    val userData = _userData.asStateFlow()
+
     suspend operator fun invoke(): Result<UserDataType> {
         return try {
             val fcmToken = FCMTokenEvent.tokenFlow.firstOrNull()
@@ -140,8 +145,6 @@ class LocalExistCheckUseCase @Inject constructor(
             val existingUserResult = userRepository.localUserDataGet()
                 .distinctUntilChanged()
                 .firstOrNull()
-
-
 
             val userResult = when {
                 existingUserResult is Result.Success && existingUserResult.data != null ->
@@ -166,16 +169,18 @@ class LocalExistCheckUseCase @Inject constructor(
                     when(serverResult) {
                         is Result.Success -> {
                             val serverUser = serverResult.data
+                            val userDataType = UserDataType(
+                                localUserData = user,
+                                exchangeRates = TargetRates(
+                                    dollarHighRates = serverUser.data?.usdHighRates,
+                                    dollarLowRates = serverUser.data?.usdLowRates,
+                                    yenHighRates = serverUser.data?.jpyHighRates,
+                                    yenLowRates = serverUser.data?.jpyLowRates
+                                )
+                            )
+                            _userData.value = userDataType // StateFlow 업데이트
                             Result.Success(
-                                data = UserDataType(
-                                    localUserData = user,
-                                    exchangeRates = TargetRates(
-                                        dollarHighRates = serverUser.data?.usdHighRates,
-                                        dollarLowRates = serverUser.data?.usdLowRates,
-                                        yenHighRates = serverUser.data?.jpyHighRates,
-                                        yenLowRates = serverUser.data?.jpyLowRates
-                                    )
-                                ),
+                                data = userDataType,
                                 message = serverResult.message
                             )
                         }
@@ -194,6 +199,12 @@ class LocalExistCheckUseCase @Inject constructor(
             )
         }
     }
+
+    // 다른 ViewModel들이 사용할 수 있는 suspend 함수
+    suspend fun waitForUserData(): UserDataType {
+        return userData.filterNotNull().first()
+    }
+
 
     private suspend fun syncWithServer(user: LocalUserData): Result<UserResponse> {
         return try {

@@ -147,27 +147,27 @@ class MainActivity : ComponentActivity() {
     }
 
     // 스플래쉬 애니메이션
-    private fun startSplash() {
-        splashScreen.setOnExitAnimationListener { splashScreenView ->
-
-            Log.w(TAG("메인", ""), "${splashScreenView.iconView}")
-
-            val translateY =
-                PropertyValuesHolder.ofFloat(View.TRANSLATION_Y, 0f, -50f, 0f) // 위아래로 이동
-
-            ObjectAnimator.ofPropertyValuesHolder(splashScreenView.iconView, translateY).run {
-                duration = 1500L
-                interpolator = LinearInterpolator()
-                repeatCount = 2
-                repeatMode = ObjectAnimator.REVERSE
-                doOnEnd {
-                    splashScreenView.remove()
-
-                }
-                start()
-            }
-        }
-    }
+//    private fun startSplash() {
+//        splashScreen.setOnExitAnimationListener { splashScreenView ->
+//
+//            Log.w(TAG("메인", ""), "${splashScreenView.iconView}")
+//
+//            val translateY =
+//                PropertyValuesHolder.ofFloat(View.TRANSLATION_Y, 0f, -50f, 0f) // 위아래로 이동
+//
+//            ObjectAnimator.ofPropertyValuesHolder(splashScreenView.iconView, translateY).run {
+//                duration = 1500L
+//                interpolator = LinearInterpolator()
+//                repeatCount = 2
+//                repeatMode = ObjectAnimator.REVERSE
+//                doOnEnd {
+//                    splashScreenView.remove()
+//
+//                }
+//                start()
+//            }
+//        }
+//    }
 
 
 
@@ -306,13 +306,7 @@ fun InvestAppScreen(
             MainBottomBar(
                 mainRouteAction = investRouteAction,
                 mainRouteBackStack = mainBackStack.value,
-                allViewModel = allViewModel,
-                returnAlarmView = {
-                    guideDialog = true
-                },
-                returnContent = {
-                    returnGuideDialog  = true
-                })
+                allViewModel = allViewModel)
         }
 
         if(guideDialog) {

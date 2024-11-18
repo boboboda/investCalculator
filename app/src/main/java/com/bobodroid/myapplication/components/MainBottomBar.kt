@@ -114,9 +114,7 @@ fun TopButtonView(allViewModel: AllViewModel) {
 fun MainBottomBar(
     mainRouteAction: MainRouteAction,
     mainRouteBackStack: NavBackStackEntry?,
-    allViewModel: AllViewModel,
-    returnAlarmView: () -> Unit,
-    returnContent:() -> Unit
+    allViewModel: AllViewModel
 ) {
 
     val snackBarHostState = remember { SnackbarHostState() }
@@ -161,17 +159,8 @@ fun MainBottomBar(
                 unselectedContentColor = Color.LightGray,
                 selected = (mainRouteBackStack?.destination?.route) == it.routeName,
                 onClick = {
-                    localUser.value.customId?.let { id ->
-                        if(id.isNotEmpty()) {
-                            mainRouteAction.navTo(it)
-                            allViewModel.nowBottomCardValue.value = it.selectValue!!
-                        } else {
-                            returnAlarmView()
-                        }
-                    } ?: run {
-                        returnAlarmView()
-                }
-
+                    mainRouteAction.navTo(it)
+                    allViewModel.nowBottomCardValue.value = it.selectValue!!
                 }
 
             )

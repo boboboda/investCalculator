@@ -48,7 +48,6 @@ import javax.inject.Inject
 class AllViewModel @Inject constructor(
     private val userUseCases: UserUseCases,
     private val targetRateUseCases: TargetRateUseCases,
-//    private val exchangeRateRepository: ExchangeRateRepository,
     private val webSocketClient: WebSocketClient
 ) : ViewModel() {
 
@@ -76,7 +75,39 @@ class AllViewModel @Inject constructor(
 
     val alarmPermissionState = MutableStateFlow(false)
 
-    val _targetRate = MutableStateFlow(TargetRates())
+    val sampleDollarHighRates = listOf(
+        Rate(number = 1, rate = 1320),
+        Rate(number = 2, rate = 1350),
+        Rate(number = 3, rate = 1380),
+        Rate(number = 4, rate = 1400),
+        Rate(number = 5, rate = 1420)
+    )
+
+    val sampleDollarLowRates = listOf(
+        Rate(number = 1, rate = 1250),
+        Rate(number = 2, rate = 1270),
+        Rate(number = 3, rate = 1290)
+    )
+
+    val sampleYenHighRates = listOf(
+        Rate(number = 1, rate = 890),
+        Rate(number = 2, rate = 920),
+        Rate(number = 3, rate = 950),
+        Rate(number = 4, rate = 980)
+    )
+
+    val sampleYenLowRates = listOf(
+        Rate(number = 1, rate = 850),
+        Rate(number = 2, rate = 870),
+        Rate(number = 3, rate = 890)
+    )
+
+   private val _targetRate = MutableStateFlow(TargetRates(
+        dollarHighRates = sampleDollarHighRates,
+        dollarLowRates = sampleDollarLowRates,
+        yenHighRates = sampleYenHighRates,
+        yenLowRates = sampleYenLowRates
+    ))
 
     val targetRateFlow = _targetRate.asStateFlow()
 
@@ -124,187 +155,6 @@ class AllViewModel @Inject constructor(
 
         }
     }
-
-
-
-
-
-    // 목표 환율 추가
-    fun addTargetRate(
-        type: RateType,
-        rate: Rate) {
-        viewModelScope.launch {
-           targetRateUseCases.targetRateAddUseCase(
-               deviceId = localUserFlow.value.id.toString(),
-               targetRates = targetRateFlow.value,
-               type = type,
-               newRate = rate
-           ).onSuccess {
-
-           }.onError {
-
-           }
-        }
-    }
-
-//    // 목표 환율 삭제
-//    fun targetRateRemove(
-//        drHighRate: Rate? = null,
-//        drLowRate: Rate? = null,
-//        yenHighRate: Rate? = null,
-//        yenLowRate: Rate? = null
-//    ) {
-//        if(drHighRate != null) {
-//
-//            val updateDollarRateList = targetRateFlow.value.dollarHighRateList?.toMutableList()?.apply {
-//                remove(drHighRate)
-//            }?.toList()
-//
-//            val removeRateData = targetRateFlow.value.copy(
-//                customId = _localUser.value.customId,
-//                fcmToken = _localUser.value.fcmToken,
-//                dollarHighRateList = updateDollarRateList?.let { sortTargetRateList(type="달러고점", it) } as List<TargetRate>
-//            )
-//
-//            //목표환율 api 추가 로직 !!!!!!!
-//
-//            viewModelScope.launch {
-//                _targetRate.emit(removeRateData)
-//            }
-//        }
-//
-//        if(drLowRate != null) {
-//            val updateDollarRateList = targetRateFlow.value.dollarLowRateList?.toMutableList()?.apply {
-//                remove(drLowRate)
-//            }?.toList()
-//
-//            val removeRateData = targetRateFlow.value.copy(
-//                customId = _localUser.value.customId,
-//                fcmToken = _localUser.value.fcmToken,
-//                dollarLowRateList = updateDollarRateList?.let { sortTargetRateList(type="달러저점", it) } as List<TargetRate>
-//            )
-//
-//            //목표환율 api 추가 로직 !!!!!!!
-//
-//            viewModelScope.launch {
-//                _targetRate.emit(removeRateData)
-//            }
-//        }
-//
-//        if(yenHighRate != null) {
-//            val updateYenRateList = targetRateFlow.value.yenHighRateList?.toMutableList()?.apply {
-//                remove(yenHighRate)
-//            }?.toList()
-//
-//            val removeRateData = targetRateFlow.value.copy(
-//                customId = _localUser.value.customId,
-//                fcmToken = _localUser.value.fcmToken,
-//                yenHighRateList = updateYenRateList?.let { sortTargetRateList(type="엔화고점", it) } as List<TargetRate>
-//            )
-//
-//            //목표환율 api 추가 로직 !!!!!!!
-//
-//            viewModelScope.launch {
-//                _targetRate.emit(removeRateData)
-//            }
-//        }
-//
-//        if(yenLowRate != null) {
-//            val updateYenRateList = targetRateFlow.value.yenLowRateList?.toMutableList()?.apply {
-//                remove(yenLowRate)
-//            }?.toList()
-//
-//            val removeRateData = targetRateFlow.value.copy(
-//                customId = _localUser.value.customId,
-//                fcmToken = _localUser.value.fcmToken,
-//                yenLowRateList = updateYenRateList?.let { sortTargetRateList(type="엔화저점", it) } as List<TargetRate>
-//            )
-//
-//            //목표환율 api 추가 로직 !!!!!!!
-//
-//            viewModelScope.launch {
-//                _targetRate.emit(removeRateData)
-//            }
-//        }
-//
-//    }
-//
-//
-//    // 목표 환율 정렬
-//    fun sortTargetRateList(type: String, rateList: List<Any>): List<Any>  {
-//
-//        when(type) {
-//            "달러고점" -> {
-//                rateList as List<TargetRate>
-//
-//                var sortList = rateList.sortedByDescending { it.rate }
-//
-//                sortList = sortList.mapIndexed { index, element ->
-//                    element.copy(number = "${index + 1}") }.toMutableList()
-//
-//                return sortList
-//            }
-//            "달러저점" -> {
-//                rateList as List<TargetRate>
-//
-//                var sortList = rateList.sortedByDescending { it.rate }
-//
-//                sortList = sortList.mapIndexed { index, element ->
-//                    element.copy(number = "${index + 1}") }.toMutableList()
-//
-//                return sortList
-//            }
-//            "엔화고점" -> {
-//                rateList as List<TargetRate>
-//
-//                var sortList = rateList.sortedByDescending { it.rate }
-//
-//                sortList = sortList.mapIndexed { index, element ->
-//                    element.copy(number = "${index + 1}") }.toMutableList()
-//
-//                return sortList
-//            }
-//            "엔화저점" -> {
-//                rateList as List<TargetRate>
-//
-//                var sortList = rateList.sortedByDescending { it.rate }
-//
-//                sortList = sortList.mapIndexed { index, element ->
-//                    element.copy(number = "${index + 1}") }.toMutableList()
-//
-//                return sortList
-//            }
-//
-//
-//            else -> return emptyList()
-//        }
-//    }
-//
-//
-//    // 목표 환율 로딩
-//    fun targetRateLoad(customId: String, targetRateData: (TargetRateList, resultMessage: String) -> Unit) {
-//        db.collection("userTargetRate")
-//            .whereEqualTo("customId", customId)
-//            .addSnapshotListener { querySnapShot, e ->
-//
-//                if(querySnapShot != null) {
-//                    val data = TargetRateList(querySnapShot)
-//
-//                    targetRateData.invoke(data, "알람설정을 성공적으로 불러왔습니다.")
-//
-//                    Log.d(TAG("AllViewModel", "targetRateLoad"), "목표환율 변경 수신${data}")
-//                } else {
-//                    Log.d(TAG("AllViewModel", "targetRateLoad"), "목표환율 null")
-//                }
-//
-//                if (e != null) {
-//                    Log.w(TAG("AllViewModel", "targetRateLoad"), "Listen failed.", e)
-//                    return@addSnapshotListener
-//                }
-//
-//            }
-//    }
-
 
     // 리워드 다이로그 상태 관리
     private fun rewardAdState() {
@@ -652,7 +502,7 @@ class AllViewModel @Inject constructor(
                         _localUser.value = result.data.localUserData
 
                         if(result.data.exchangeRates != null) {
-                            _targetRate.value = result.data.exchangeRates
+//                            _targetRate.value = result.data.exchangeRates
                         }
 
                         Log.d(TAG("AllViewModel", "localUserExistCheck"), "${result.message}")

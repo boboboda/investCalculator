@@ -254,7 +254,4 @@ fun CloudScreen(routeAction: MainRouteAction,
         }
     }
 
-
-
-
 }

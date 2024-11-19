@@ -44,3 +44,6 @@ var MyPageButtonColor = Color(0xFFBADEFF)
 
 var HighRateColor = Color (0xFFFFD7C5)
 var LowRateColor = Color (0xFFBADEFF)
+
+val primaryColor = Color(0xFF2196F3)
+val surfaceColor = Color(0xFFF5F5F5)

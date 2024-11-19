@@ -561,9 +561,9 @@ data class TargetRates(
 )
 
 
-enum class CurrencyType {
-    USD,
-    JPY
+enum class CurrencyType(val koreanName: String) {
+    USD("달러"),
+    JPY("엔화")
 }
 
 // 목표환율 방향 (고점, 저점)

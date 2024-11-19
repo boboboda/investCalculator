@@ -27,15 +27,12 @@ data class UserResponse(
 data class UserData(
     val customId: String? = null,
     val deviceId: String? = null,
-    val pin: String? = null,
     val createAt: String,
     val fcmToken: String,
     val usdHighRates: List<Rate>? = emptyList(),
     val usdLowRates: List<Rate>? = emptyList(),
     val jpyHighRates: List<Rate>? = emptyList(),
     val jpyLowRates: List<Rate>? = emptyList(),
-    @Json(name = "_id") val id: String,
-    @Json(name = "__v") val version: Int
 ) {
 
     companion object {

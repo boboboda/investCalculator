@@ -22,6 +22,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import com.bobodroid.myapplication.components.AutoSizeText
 import com.bobodroid.myapplication.components.Buttons
 import com.bobodroid.myapplication.components.shadowCustom
 import com.bobodroid.myapplication.ui.theme.SellButtonColor
@@ -60,7 +61,7 @@ fun GuideDialog(
                 fontWeight = FontWeight.Bold,
                 fontSize = 18.sp,
                 modifier = Modifier.padding(bottom = 5.dp))
-            Text(message, fontSize = 16.sp)
+            AutoSizeText(value = message, minFontSize = 12.sp, color = Color.Black, maxLines = 1)
 
             Spacer(modifier = Modifier.height(20.dp))
             Row(

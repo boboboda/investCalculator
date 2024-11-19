@@ -110,18 +110,33 @@ class FcmAlarmViewModel@Inject constructor(
         addRate: Rate,
         type: RateType) {
         viewModelScope.launch {
-            Log.d(TAG("FcmAlarmViewModel", "addTargetRate"), "Starting with rate: $addRate")
-
-            Log.d(TAG("FcmAlarmViewModel", "RateType"), "Created type: $type")
-
             fcmUseCases.targetRateAddUseCase(
                 deviceId = deviceId.value,
                 targetRates = targetRateFlow.value,
                 type = type,
                 newRate = addRate
-            ).onSuccess {
-                Log.d(TAG("FcmAlarmViewModel", "Success"), "Result: $it")
-                _targetRate.emit(it)
+            ).onSuccess { targetRate, _ ->
+                Log.d(TAG("FcmAlarmViewModel", "Success"), "Result: $targetRate")
+                _targetRate.emit(targetRate)
+                Log.d(TAG("FcmAlarmViewModel", "Emit"), "Emitted to _targetRate")
+            }.onError { error ->
+                Log.e(TAG("FcmAlarmViewModel", "Error"), "Error occurred", error.exception)
+            }
+        }
+    }
+
+    fun deleteTargetRate(
+        deleteRate: Rate,
+        type: RateType) {
+        viewModelScope.launch {
+            fcmUseCases.targetRateDeleteUseCase(
+                deviceId = deviceId.value,
+                targetRates = targetRateFlow.value,
+                type = type,
+                deleteRate = deleteRate
+            ).onSuccess { updateTargetRate, _  ->
+                Log.d(TAG("FcmAlarmViewModel", "Success"), "Result: $updateTargetRate")
+                _targetRate.emit(updateTargetRate)
                 Log.d(TAG("FcmAlarmViewModel", "Emit"), "Emitted to _targetRate")
             }.onError { error ->
                 Log.e(TAG("FcmAlarmViewModel", "Error"), "Error occurred", error.exception)

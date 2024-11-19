@@ -14,12 +14,14 @@ sealed class Result<out T> {
     object Loading : Result<Nothing>()
 }
 
-inline fun <T> Result<T>.onSuccess(action: (T) -> Unit): Result<T> {
+inline fun <T> Result<T>.onSuccess(action: (T, String?) -> Unit): Result<T> {
     if (this is Result.Success) {
-        action(data)
+        action(data, message)
     }
     return this
 }
+
+
 
 inline fun <T> Result<T>.onError(action: (Result.Error) -> Unit): Result<T> {
     if (this is Result.Error) {

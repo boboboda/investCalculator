@@ -9,6 +9,7 @@ import com.bobodroid.myapplication.models.datamodels.useCases.LocalUserUpdate
 import com.bobodroid.myapplication.models.datamodels.useCases.LogInUseCase
 import com.bobodroid.myapplication.models.datamodels.useCases.LogoutUseCase
 import com.bobodroid.myapplication.models.datamodels.useCases.TargetRateAddUseCase
+import com.bobodroid.myapplication.models.datamodels.useCases.TargetRateDeleteUseCase
 import com.bobodroid.myapplication.models.datamodels.useCases.TargetRateUpdateUseCase
 import com.bobodroid.myapplication.models.datamodels.useCases.TargetRateUseCases
 import com.bobodroid.myapplication.models.datamodels.useCases.UserUseCases
@@ -60,7 +61,8 @@ object UseCaseModule {
     ): TargetRateUseCases {
         return TargetRateUseCases(
             targetRateAddUseCase = TargetRateAddUseCase(),
-            targetRateUpdateUseCase = TargetRateUpdateUseCase(webSocketClient)
+            targetRateUpdateUseCase = TargetRateUpdateUseCase(webSocketClient),
+            targetRateDeleteUseCase = TargetRateDeleteUseCase()
         )
     }
 }

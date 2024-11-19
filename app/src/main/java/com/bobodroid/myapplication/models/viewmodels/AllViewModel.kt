@@ -60,6 +60,7 @@ class AllViewModel @Inject constructor(
     val db = Firebase.firestore
 
     val _localUser = MutableStateFlow(LocalUserData())
+
     val localUserFlow = _localUser.asStateFlow()
 
     val noticeShowDialog = MutableStateFlow(false)
@@ -101,10 +102,6 @@ class AllViewModel @Inject constructor(
     init {
         viewModelScope.launch {
 
-//            deleteLocalUser()
-
-//            delay(2000L)
-
             localUserExistCheck()
 
             recentRateHotListener()
@@ -116,8 +113,6 @@ class AllViewModel @Inject constructor(
                     bannerAdState()
                 }
             }
-
-
         }
     }
 
@@ -224,7 +219,7 @@ class AllViewModel @Inject constructor(
 
 
     // 공지사항 상태 관리
-    fun noticeDialogState(localUserDate: LocalUserData, noticeDate: String) {
+    private fun noticeDialogState(localUserDate: LocalUserData, noticeDate: String) {
 
         // 저장한 날짜와 같으면 실행
         Log.d(
@@ -270,7 +265,7 @@ class AllViewModel @Inject constructor(
     }
 
 
-    fun dateWeek(week: Int): String? {
+    private fun dateWeek(week: Int): String? {
         val c = GregorianCalendar()
         c.add(Calendar.DAY_OF_WEEK, +week)
         val sdfr = SimpleDateFormat("yyyy-MM-dd")
@@ -280,7 +275,7 @@ class AllViewModel @Inject constructor(
 
     val delayDay = dateWeek(7)
 
-    fun delayDate(inputDate: String, delayDay: Int): String? {
+    private fun delayDate(inputDate: String, delayDay: Int): String? {
         val dateFormat = SimpleDateFormat("yyyy-MM-dd")
         val date: Date? = dateFormat.parse(inputDate)
 
@@ -297,7 +292,7 @@ class AllViewModel @Inject constructor(
     }
 
 
-    fun recentRateHotListener() {
+    private fun recentRateHotListener() {
 
         Log.d(TAG("AllViewModel", "recentRateHotListener"), "최신환율 실행")
 
@@ -315,29 +310,6 @@ class AllViewModel @Inject constructor(
             noticeDialogState(localData, noticeDate)
         }
     }
-
-    // FCM 토큰 업데이트
-    private fun updateFcmToken(localData: LocalUserData) {
-        fcmTokenUpdate(localData)
-    }
-
-//    // 목표 환율 로드
-//    private fun loadTargetRate(customId: String?) {
-//        if (!customId.isNullOrEmpty()) {
-//            targetRateLoad(customId) { data, message ->
-//                viewModelScope.launch {
-//                    _targetRate.emit(data)
-//                    Log.w(TAG("AllViewModel", "loadTargetRate"), "목표환율 불러오기 성공")
-//                }
-//            }
-//        }
-//    }
-//
-//    fun deleteTotalRates() {
-//        viewModelScope.launch {
-//            exchangeRateRepository.exchangeRateDataDelete()
-//        }
-//    }
 
 
     // 웹소켓 실시간 데이터 구독
@@ -399,22 +371,6 @@ class AllViewModel @Inject constructor(
     }
 
 
-    private fun fcmTokenUpdate(localUser: LocalUserData) {
-
-        val updateToken = InvestApplication.prefs.getData("fcm_token", "")
-
-        Log.d(TAG("AllViewModel", "fcmTokenUpdate"), "토큰값${updateToken}")
-
-        val updateLocalUserData = localUser.copy(fcmToken = updateToken)
-
-        viewModelScope.launch {
-//            userUseCases.localUserUpdate(updateLocalUserData)
-        }
-
-
-
-    }
-
 
 
 
@@ -435,27 +391,39 @@ class AllViewModel @Inject constructor(
 
 
     fun createUser(customId: String, pin: String, resultMessage: (String) -> Unit) {
-
         viewModelScope.launch {
-
-            val createUser = _localUser.value.copy(customId = customId, pin =  pin)
-
-            userUseCases.customIdCreateUser(createUser)
+            userUseCases.customIdCreateUser(
+                localUserData = _localUser.value,
+                customId = customId,
+                pin = pin)
+                .onSuccess { updateData, _ ->
+                    _localUser.emit(updateData)
+                    resultMessage("성공적으로 아이디가 생성되었습니다.")
+                }
+                .onError { _ ->
+                    resultMessage("아이디 생성이 실패되었습니다.")
+                }
         }
     }
 
     fun logIn(id: String, pin: String, successFind: (message: String) -> Unit) {
-
         viewModelScope.launch {
-            userUseCases.logIn(id, pin, successFind)
+            userUseCases.logIn(_localUser.value, id, pin)
+                .onSuccess { localData, msg ->
+                    _localUser.emit(localData)
+                    successFind(msg ?: "")
+                }
         }
-
     }
 
     fun logout(result: (message: String) -> Unit) {
 
         viewModelScope.launch {
-            userUseCases.logout(result)
+            userUseCases.logout(_localUser.value)
+                .onSuccess { localUserData, msg ->
+                    _localUser.emit(localUserData)
+                    result(msg ?: "")
+                }
         }
     }
 
@@ -469,6 +437,7 @@ class AllViewModel @Inject constructor(
 
     // 로컬 아이디 삭제
     fun deleteLocalUser() {
+
     }
 
 

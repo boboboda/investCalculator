@@ -119,7 +119,10 @@ import com.bobodroid.myapplication.ui.theme.DialogBackgroundColor
 import com.bobodroid.myapplication.ui.theme.HighRateColor
 import com.bobodroid.myapplication.ui.theme.LowRateColor
 import com.bobodroid.myapplication.ui.theme.WelcomeScreenBackgroundColor
+import com.bobodroid.myapplication.ui.theme.primaryColor
+import com.bobodroid.myapplication.ui.theme.surfaceColor
 import kotlinx.coroutines.launch
+import okhttp3.internal.wait
 import java.math.BigDecimal
 import java.text.NumberFormat
 import java.util.Locale
@@ -149,10 +152,7 @@ fun AlarmScreen(allViewModel: AllViewModel) {
         mutableStateOf(RateDirection.HIGH)
     }
 
-    val primaryColor = Color(0xFF2196F3)
-    val surfaceColor = Color(0xFFF5F5F5)
-    val highRateColor = Color(0xFFE3F2FD)
-    val lowRateColor = Color(0xFFFFEBEE)
+
 
     val rates = when(selectedTabIndex) {
         0 -> when(targetRateMoneyType) {
@@ -189,7 +189,7 @@ fun AlarmScreen(allViewModel: AllViewModel) {
                         modifier = Modifier.padding(end = 8.dp)
                     )
                     Text(
-                        text = "목표 환율 설정",
+                        text = "목표 환율 알람 설정",
                         fontSize = 20.sp,
                         fontWeight = FontWeight.Bold,
                         color = Color.Black
@@ -237,22 +237,29 @@ fun AlarmScreen(allViewModel: AllViewModel) {
 
             // 현재 환율 표시
 
-            when(targetRateMoneyType) {
-                CurrencyType.USD -> {
-                    RateView(
-                        title = "USD",
-                        recentRate = "${recentRate.value.usd}",
-                        createAt = "${recentRate.value.createAt}"
-                    )
-                }
-                CurrencyType.JPY -> {
-                    RateView(
-                        title = "JPY",
-                        recentRate = "${BigDecimal(recentRate.value.jpy).times(BigDecimal("100"))}",
-                        createAt = "${recentRate.value.createAt}"
-                    )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.Center
+            ) {
+                when(targetRateMoneyType) {
+                    CurrencyType.USD -> {
+                        RateView(
+                            title = "USD",
+                            recentRate = "${recentRate.value.usd}",
+                            createAt = "${recentRate.value.createAt}"
+                        )
+                    }
+                    CurrencyType.JPY -> {
+                        RateView(
+                            title = "JPY",
+                            recentRate = "${BigDecimal(recentRate.value.jpy).times(BigDecimal("100"))}",
+                            createAt = "${recentRate.value.createAt}"
+                        )
+                    }
                 }
             }
+
+
 
 
             // 탭과 리스트
@@ -279,8 +286,10 @@ fun AlarmScreen(allViewModel: AllViewModel) {
                                     .padding(horizontal = 24.dp)
                                     .background(
                                         color = when (selectedTabIndex) {
-                                            0 -> Color(0xFF1976D2)
-                                            else -> Color(0xFFD32F2F)
+                                            0 -> Color(0xFFD32F2F)
+                                            else -> Color(0xFF1976D2)
+
+
                                         },
                                         shape = RoundedCornerShape(topStart = 3.dp, topEnd = 3.dp)
                                     )
@@ -293,7 +302,7 @@ fun AlarmScreen(allViewModel: AllViewModel) {
                             text = {
                                 Text(
                                     "고점 목표 환율",
-                                    color = if(selectedTabIndex == 0) Color(0xFF1976D2) else Color.Gray,
+                                    color = if(selectedTabIndex == 0) Color(0xFFD32F2F) else Color.Gray,
                                     fontWeight = if(selectedTabIndex == 0) FontWeight.Bold else FontWeight.Normal
                                 )
                             }
@@ -304,7 +313,7 @@ fun AlarmScreen(allViewModel: AllViewModel) {
                             text = {
                                 Text(
                                     "저점 목표 환율",
-                                    color = if(selectedTabIndex == 1) Color(0xFFD32F2F) else Color.Gray,
+                                    color = if(selectedTabIndex == 1) Color(0xFF1976D2) else Color.Gray,
                                     fontWeight = if(selectedTabIndex == 1) FontWeight.Bold else FontWeight.Normal
                                 )
                             }
@@ -333,12 +342,15 @@ fun AlarmScreen(allViewModel: AllViewModel) {
 
                                 RateItem(
                                     rate = rate,
-                                    backgroundColor = if(selectedTabIndex == 0) highRateColor else lowRateColor,
-                                    onEdit = {
+                                    backgroundColor = if(selectedTabIndex == 0) HighRateColor else LowRateColor,
+                                    onDelete = { deleteRate ->
 
-                                    },
-                                    onDelete = {
+                                        val rateType = RateType.from(targetRateMoneyType, targetRateState)
 
+                                        fcmAlarmViewModel.deleteTargetRate(
+                                            deleteRate = deleteRate,
+                                            type = rateType
+                                        )
                                     })
 
                             }
@@ -464,8 +476,7 @@ fun AlarmScreen(allViewModel: AllViewModel) {
 fun RateItem(
     rate: Rate,
     backgroundColor: Color,
-    onEdit: () ->Unit,
-    onDelete: () -> Unit
+    onDelete: (Rate) -> Unit
 ) {
     var offsetX by remember { mutableStateOf(0f) }
     val buttonWidth = 100.dp
@@ -490,26 +501,27 @@ fun RateItem(
             modifier = Modifier
                 .fillMaxWidth()
                 .fillMaxSize()
+                .background(Color.White)
         ) {
             // 수정 버튼 (왼쪽)
-            Box(
-                modifier = Modifier
-                    .align(Alignment.CenterStart)
-                    .fillMaxHeight()
-                    .width(buttonWidth)
-                    .background(Color(0xFFFF9800))
-                    .clickable {
-                        onEdit()
-                        offsetX = 0f
-                    },
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Edit,
-                    contentDescription = "Edit",
-                    tint = Color.White
-                )
-            }
+//            Box(
+//                modifier = Modifier
+//                    .align(Alignment.CenterStart)
+//                    .fillMaxHeight()
+//                    .width(buttonWidth)
+//                    .background(Color(0xFFFF9800))
+//                    .clickable {
+//                        onEdit()
+//                        offsetX = 0f
+//                    },
+//                contentAlignment = Alignment.Center
+//            ) {
+//                Icon(
+//                    imageVector = Icons.Default.Edit,
+//                    contentDescription = "Edit",
+//                    tint = Color.White
+//                )
+//            }
 
             // 삭제 버튼 (오른쪽)
             Box(
@@ -519,7 +531,7 @@ fun RateItem(
                     .width(buttonWidth)
                     .background(Color.Red)
                     .clickable {
-                        onDelete()
+                        onDelete(rate)
                         offsetX = 0f
                     },
                 contentAlignment = Alignment.Center
@@ -542,13 +554,13 @@ fun RateItem(
                             onDragEnd = {
                                 offsetX = when {
                                     abs(offsetX) < buttonWidthPx / 2 -> 0f
-                                    offsetX > 0 -> buttonWidthPx
-                                    else -> -buttonWidthPx
+                                    offsetX < 0 -> -buttonWidthPx
+                                    else -> 0f
                                 }
                             }
                         ) { _, dragAmount ->
                             val newOffset = offsetX + dragAmount
-                            offsetX = newOffset.coerceIn(-buttonWidthPx, buttonWidthPx)
+                            offsetX = newOffset.coerceIn(-buttonWidthPx, 0f)
                         }
                     }
             ) {

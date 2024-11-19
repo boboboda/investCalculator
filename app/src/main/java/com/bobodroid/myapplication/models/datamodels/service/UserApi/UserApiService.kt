@@ -55,10 +55,22 @@ interface UserApiService {
         @Body userRatesUpdateRequest: UserRatesUpdateRequest
     ): UserResponse
 
-
-    @GET("user/{id}")
-    suspend fun getUserRequest(
-        @Path("id") id: String
+    @POST("user/{deviceId}")
+    suspend fun userUpdate(
+        @Path("deviceId") deviceId: String,
+        @Body userRequest: UserRequest
     ): UserResponse
+
+
+    @GET("user/findUser/{customId}")
+    suspend fun getUserRequest(
+        @Path("customId") customId: String
+    ): UserResponse
+
+    @POST("user/login")
+    suspend fun login(
+        @Body authUser: AuthUser
+    ): UserResponse
+
 
 }

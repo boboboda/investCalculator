@@ -23,6 +23,7 @@ import androidx.compose.material.DrawerState
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.SnackbarHostState
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.DateRange
@@ -61,6 +62,7 @@ import java.math.MathContext
 import java.math.RoundingMode
 import androidx.compose.material3.Text
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.DropdownMenu
 import com.bobodroid.myapplication.ui.theme.WelcomeScreenBackgroundColor
 import androidx.compose.material3.Icon
@@ -75,11 +77,13 @@ import com.bobodroid.myapplication.components.Dialogs.RewardShowAskDialog
 import com.bobodroid.myapplication.components.Dialogs.TextFieldDialog
 import com.bobodroid.myapplication.components.Dialogs.ThanksDialog
 import com.bobodroid.myapplication.components.admobs.showTargetRewardedAdvertisement
+import com.bobodroid.myapplication.models.datamodels.roomDb.CurrencyType
 import com.bobodroid.myapplication.routes.InvestRoute
 import com.bobodroid.myapplication.routes.MainRouteAction
 import com.bobodroid.myapplication.ui.theme.BottomSheetTitleColor
 import com.bobodroid.myapplication.ui.theme.BuyColor
 import com.bobodroid.myapplication.ui.theme.MainTopButtonColor
+import com.bobodroid.myapplication.ui.theme.primaryColor
 
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -161,22 +165,8 @@ fun MainScreen(
 
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
-    val dropdownMenuName = when (rowViewController.value) {
-        1 -> {
-            "달러"
-        }
-
-        2 -> {
-            "엔화"
-        }
-
-        3 -> {
-            "원화"
-        }
-
-        else -> {
-            "오류"
-        }
+    var targetRateMoneyType by remember {
+        mutableStateOf(CurrencyType.USD)
     }
 
     var numberPadPopViewIsVible by remember { mutableStateOf(false) }
@@ -283,113 +273,44 @@ fun MainScreen(
                     }
 
                     Column(modifier = Modifier.weight(0.3f)) {
-                        Card(
-                            colors = CardDefaults.cardColors(MainTopButtonColor),
-                            elevation = CardDefaults.cardElevation(8.dp),
-                            shape = RoundedCornerShape(10.dp),
-                            modifier = Modifier
-                                .height(50.dp)
-                                .wrapContentWidth(),
-                            onClick = {
-                                if (!dropdownExpanded) dropdownExpanded = true
-                            }
-                        ) {
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxHeight()
-                                    .wrapContentWidth()
-                                    .padding(horizontal = 15.dp)
-                                    .padding(vertical = 5.dp),
-                                horizontalArrangement = Arrangement.Center,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Text(text = dropdownMenuName, fontSize = 18.sp)
 
-                                Spacer(modifier = Modifier.width(5.dp))
-                                Icon(
-                                    imageVector = Icons.Rounded.KeyboardArrowDown,
-                                    contentDescription = ""
+                        Box {
+                            TextButton(
+                                onClick = { dropdownExpanded = true },
+                                colors = ButtonDefaults.textButtonColors(
+                                    contentColor = primaryColor
+                                )
+                            ) {
+                                Text(
+                                    when(targetRateMoneyType) {
+                                        CurrencyType.USD -> "달러(USD)"
+                                        CurrencyType.JPY -> "엔화(JPY)"
+                                    }
+                                )
+                                Icon(Icons.Filled.ArrowDropDown, null)
+                            }
+
+                            DropdownMenu(
+                                expanded = dropdownExpanded,
+                                onDismissRequest = { dropdownExpanded = false }
+                            ) {
+                                DropdownMenuItem(
+                                    onClick = {
+                                        targetRateMoneyType = CurrencyType.USD
+                                        dropdownExpanded = false
+                                    },
+                                    text = { Text("달러(USD)") }
+                                )
+                                DropdownMenuItem(
+                                    onClick = {
+                                        targetRateMoneyType = CurrencyType.JPY
+                                        dropdownExpanded = false
+                                    },
+                                    text = { Text("엔화(JPY)") }
                                 )
                             }
                         }
 
-                        DropdownMenu(
-                            scrollState = rememberScrollState(),
-                            modifier = Modifier
-                                .wrapContentHeight()
-                                .background(Color.White)
-                                .heightIn(max = 200.dp)
-                                .width(100.dp),
-                            offset = DpOffset(x = 0.dp, y = 5.dp),
-                            expanded = dropdownExpanded,
-                            onDismissRequest = {
-                                dropdownExpanded = false
-                            }
-                        ) {
-                            DropdownMenuItem(
-                                modifier = Modifier
-                                    .fillMaxWidth(),
-                                text = {
-                                    Box(
-                                        modifier = Modifier
-                                            .fillMaxWidth(),
-                                        contentAlignment = Alignment.TopStart
-                                    ) {
-                                        Text(
-                                            text = "달러",
-                                            color = Color.Black,
-                                            fontSize = 13.sp
-                                        )
-                                    }
-                                }, onClick = {
-
-                                    allViewModel.changeMoney.value = 1
-                                    dropdownExpanded = false
-
-                                })
-
-
-                            DropdownMenuItem(
-                                modifier = Modifier
-                                    .fillMaxWidth(),
-                                text = {
-                                    Box(
-                                        modifier = Modifier
-                                            .fillMaxWidth(),
-                                        contentAlignment = Alignment.TopStart
-                                    ) {
-                                        Text(
-                                            text = "엔화",
-                                            color = Color.Black,
-                                            fontSize = 13.sp
-                                        )
-                                    }
-                                }, onClick = {
-                                    allViewModel.changeMoney.value = 2
-                                    dropdownExpanded = false
-                                })
-
-                            DropdownMenuItem(
-                                modifier = Modifier
-                                    .fillMaxWidth(),
-                                text = {
-                                    Box(
-                                        modifier = Modifier
-                                            .fillMaxWidth(),
-                                        contentAlignment = Alignment.TopStart
-                                    ) {
-                                        Text(
-                                            text = "원화",
-                                            color = Color.Black,
-                                            fontSize = 13.sp
-                                        )
-                                    }
-                                }, onClick = {
-                                    allViewModel.changeMoney.value = 3
-                                    dropdownExpanded = false
-                                })
-
-                        }
                     }
 
 //                    TopButtonView(allViewModel = allViewModel)
@@ -453,7 +374,7 @@ fun MainScreen(
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 CustomCard(
-                                    label = dropdownMenuName,
+                                    label = targetRateMoneyType.koreanName,
                                     fontSize = 15,
                                     modifier = Modifier
                                         .width(60.dp)

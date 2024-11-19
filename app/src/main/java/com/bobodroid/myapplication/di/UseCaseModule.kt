@@ -9,6 +9,7 @@ import com.bobodroid.myapplication.models.datamodels.useCases.LocalUserUpdate
 import com.bobodroid.myapplication.models.datamodels.useCases.LogInUseCase
 import com.bobodroid.myapplication.models.datamodels.useCases.LogoutUseCase
 import com.bobodroid.myapplication.models.datamodels.useCases.TargetRateAddUseCase
+import com.bobodroid.myapplication.models.datamodels.useCases.TargetRateUpdateUseCase
 import com.bobodroid.myapplication.models.datamodels.useCases.TargetRateUseCases
 import com.bobodroid.myapplication.models.datamodels.useCases.UserUseCases
 import com.bobodroid.myapplication.models.datamodels.websocket.WebSocketClient
@@ -47,17 +48,19 @@ object UseCaseModule {
         return UserUseCases(
             customIdCreateUser = CustomIdCreateUser(userRepository),
             logIn = LogInUseCase(userRepository),
-            logout = LogoutUseCase(userRepository),
-            localExistCheck = localExistCheckUseCase,  // 주입받은 인스턴스 사용
+            logout = LogoutUseCase(userRepository), // 주입받은 인스턴스 사용
             deleteUser = DeleteUserUseCase(userRepository),
             localUserUpdate = LocalUserUpdate(userRepository)
         )
     }
 
     @Provides
-    fun provideTargetRateUseCases(): TargetRateUseCases {
+    fun provideTargetRateUseCases(
+        webSocketClient: WebSocketClient
+    ): TargetRateUseCases {
         return TargetRateUseCases(
-            targetRateAddUseCase = TargetRateAddUseCase()
+            targetRateAddUseCase = TargetRateAddUseCase(),
+            targetRateUpdateUseCase = TargetRateUpdateUseCase(webSocketClient)
         )
     }
 }

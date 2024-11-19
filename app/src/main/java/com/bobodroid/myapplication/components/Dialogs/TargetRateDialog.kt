@@ -14,9 +14,11 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Divider
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -30,6 +32,8 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -50,15 +54,13 @@ import com.bobodroid.myapplication.ui.theme.WelcomeScreenBackgroundColor
 @Composable
 fun TargetRateDialog(
     onDismissRequest: (Boolean) -> Unit,
-    rate: Rate? = null,
-    currency: String,
-    highAndRowRate: String,
-    selected: (Int) -> Unit
+    lastRate: Rate? = null,
+    selected: (Rate) -> Unit
     ) {
 
     val focusManager = LocalFocusManager.current
 
-    var adViewAskDialog by remember { mutableStateOf(false) }
+
 
     val focusRequester by remember { mutableStateOf(FocusRequester()) }
 
@@ -113,7 +115,7 @@ fun TargetRateDialog(
                     verticalArrangement = Arrangement.spacedBy(2.dp),
                     horizontalAlignment = Alignment.Start
                 ) {
-                    if (rate != null) {
+                    if (lastRate != null) {
                         Text(
                             modifier = Modifier
                                 .padding(all = 5.dp),
@@ -130,7 +132,7 @@ fun TargetRateDialog(
                             )
                         ) {
                             CustomCard(
-                                label = "${rate.number}",
+                                label = "${lastRate.number}",
                                 fontSize = 12,
                                 modifier = Modifier
                                     .height(20.dp)
@@ -148,7 +150,7 @@ fun TargetRateDialog(
                                 Text(
                                     modifier = Modifier
                                         .padding(start = 5.dp),
-                                    text = "목표환율: ${rate.rate}"
+                                    text = "목표환율: ${lastRate.rate}"
                                 )
                             }
                         }
@@ -168,13 +170,25 @@ fun TargetRateDialog(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.Center
             ) {
-                CustomOutLinedTextField(
-                    modifier = Modifier,
+//                CustomOutLinedTextField(
+//                    modifier = Modifier,
+//                    value = userInput,
+//                    placeholder = "목표환율을 입력해주세요",
+//                    onValueChange = {
+//                        userInput = it
+//                    }
+//                )
+
+                OutlinedTextField(
                     value = userInput,
-                    placeholder = "목표환율을 입력해주세요",
+                    placeholder = {
+                        Text("목표환율을 입력해주세요")
+                    },
                     onValueChange = {
                         userInput = it
-                    }
+                    },
+                    maxLines = 1,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
                 )
             }
 
@@ -191,7 +205,15 @@ fun TargetRateDialog(
                     shape = RoundedCornerShape(5.dp),
                     onClick = {
 
-                        adViewAskDialog = true
+
+                        val countUpRateNumber = (lastRate?.number ?: 0) + 1
+
+                        val addRate = Rate(
+                            number = countUpRateNumber,
+                            rate = userInput.toInt()
+                        )
+
+                        selected(addRate)
 
                     },
                     colors = ButtonDefaults.buttonColors(WelcomeScreenBackgroundColor)

@@ -581,4 +581,16 @@ sealed class RateType(
     object USD_LOW : RateType(CurrencyType.USD, RateDirection.LOW)
     object JPY_HIGH : RateType(CurrencyType.JPY, RateDirection.HIGH)
     object JPY_LOW : RateType(CurrencyType.JPY, RateDirection.LOW)
+
+    companion object {
+        fun from(currency: CurrencyType, direction: RateDirection): RateType {
+            return when (currency to direction) {  // 모든 케이스 처리
+                CurrencyType.USD to RateDirection.HIGH -> USD_HIGH
+                CurrencyType.USD to RateDirection.LOW -> USD_LOW
+                CurrencyType.JPY to RateDirection.HIGH -> JPY_HIGH
+                CurrencyType.JPY to RateDirection.LOW -> JPY_LOW
+                else -> USD_HIGH
+            }
+        }
+    }
 }

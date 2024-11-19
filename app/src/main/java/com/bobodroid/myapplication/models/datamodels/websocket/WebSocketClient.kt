@@ -4,6 +4,10 @@ import android.util.Log
 import com.bobodroid.myapplication.BuildConfig
 import com.bobodroid.myapplication.MainActivity.Companion.TAG
 import com.bobodroid.myapplication.models.datamodels.repository.UserRepository
+import com.bobodroid.myapplication.models.datamodels.roomDb.ExchangeRate
+import com.bobodroid.myapplication.models.datamodels.roomDb.TargetRates
+import com.bobodroid.myapplication.models.datamodels.service.UserApi.UserData
+import com.bobodroid.myapplication.models.datamodels.service.exchangeRateApi.ExchangeRates
 import io.socket.client.IO
 import io.socket.client.Socket
 import kotlinx.coroutines.CompletableDeferred
@@ -21,7 +25,6 @@ class WebSocketClient @Inject constructor(
 ) {
     private var socket: Socket? = null
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
-    private var isInitialized = false
     private val initializationComplete = CompletableDeferred<Unit>()
 
     init {
@@ -70,6 +73,21 @@ class WebSocketClient @Inject constructor(
                 Log.d(TAG("WebSocketClient",""), "초기 데이터 $initialDataObject")
                 onInitialData(initialDataObject.toString())
             }
+        }
+    }
+
+    suspend fun targetRateUpdateReceiveData(
+        onUpdate: (String) -> Unit
+    ) {
+        socket?.let { socket ->
+            socket.on("targetUpdate") { args->
+                val targetUpdateObject = args[0] as JSONObject
+                Log.d(TAG("WebSocketClient","targetRateUpdate"), "목표환율 업데이트 ${targetUpdateObject}")
+
+                onUpdate(targetUpdateObject.toString())
+
+            }
+
         }
     }
 

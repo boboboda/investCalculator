@@ -6,12 +6,18 @@ import androidx.lifecycle.viewModelScope
 import com.bobodroid.myapplication.MainActivity.Companion.TAG
 import com.bobodroid.myapplication.billing.BillingClientLifecycle.Companion.TAG
 import com.bobodroid.myapplication.models.datamodels.repository.UserRepository
+import com.bobodroid.myapplication.models.datamodels.roomDb.CurrencyType
+import com.bobodroid.myapplication.models.datamodels.roomDb.RateDirection
+import com.bobodroid.myapplication.models.datamodels.roomDb.RateType
 import com.bobodroid.myapplication.models.datamodels.roomDb.TargetRates
 import com.bobodroid.myapplication.models.datamodels.service.UserApi.Rate
 import com.bobodroid.myapplication.models.datamodels.service.UserApi.UserData
 import com.bobodroid.myapplication.models.datamodels.useCases.TargetRateUseCases
 import com.bobodroid.myapplication.models.datamodels.useCases.UserDataType
 import com.bobodroid.myapplication.models.datamodels.useCases.UserUseCases
+import com.bobodroid.myapplication.models.datamodels.websocket.WebSocketClient
+import com.bobodroid.myapplication.util.result.onError
+import com.bobodroid.myapplication.util.result.onSuccess
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -21,7 +27,7 @@ import javax.inject.Inject
 @HiltViewModel
 class FcmAlarmViewModel@Inject constructor(
    private val userRepository: UserRepository,
-   private val fcmUseCases: TargetRateUseCases
+   private val fcmUseCases: TargetRateUseCases,
 ): ViewModel()  {
 
     val sampleDollarHighRates = listOf(
@@ -62,18 +68,34 @@ class FcmAlarmViewModel@Inject constructor(
 
     val targetRateFlow = _targetRate.asStateFlow()
 
+    private val deviceId = MutableStateFlow("")
+
 
     init {
+        initViewModel()
+    }
+
+    fun initViewModel() {
         viewModelScope.launch {
             // 유저 데이터가 준비될 때까지 대기
             val userData = userRepository.waitForUserData()
 
             if(userData.exchangeRates != null) {
                 initTarRates(userData.exchangeRates)
+                deviceId.emit(userData.localUserData.id.toString())
             }
 
             // 이후 초기화 작업 진행
             Log.d(TAG("FcmAlarmViewModel", "init") , "${userData}")
+
+
+            fcmUseCases.targetRateUpdateUseCase(
+                onUpdate = {
+                    viewModelScope.launch {
+                        _targetRate.emit(it)
+                    }
+                }
+            )
         }
     }
 
@@ -83,14 +105,29 @@ class FcmAlarmViewModel@Inject constructor(
     }
 
 
-//    fun addTargetRate() {
-//        viewModelScope.launch {
-//            fcmUseCases.targetRateAddUseCase(
-//
-//            )
-//        }
-//
-//    }
+
+    fun addTargetRate(
+        addRate: Rate,
+        type: RateType) {
+        viewModelScope.launch {
+            Log.d(TAG("FcmAlarmViewModel", "addTargetRate"), "Starting with rate: $addRate")
+
+            Log.d(TAG("FcmAlarmViewModel", "RateType"), "Created type: $type")
+
+            fcmUseCases.targetRateAddUseCase(
+                deviceId = deviceId.value,
+                targetRates = targetRateFlow.value,
+                type = type,
+                newRate = addRate
+            ).onSuccess {
+                Log.d(TAG("FcmAlarmViewModel", "Success"), "Result: $it")
+                _targetRate.emit(it)
+                Log.d(TAG("FcmAlarmViewModel", "Emit"), "Emitted to _targetRate")
+            }.onError { error ->
+                Log.e(TAG("FcmAlarmViewModel", "Error"), "Error occurred", error.exception)
+            }
+        }
+    }
 
 
 }

@@ -29,7 +29,6 @@ import kotlin.coroutines.suspendCoroutine
 class UserUseCases(
     val logIn: LogInUseCase,
     val logout: LogoutUseCase,
-    val localExistCheck: LocalExistCheckUseCase,
     val deleteUser: DeleteUserUseCase,
     val localUserUpdate: LocalUserUpdate,
     val customIdCreateUser: CustomIdCreateUser
@@ -59,7 +58,44 @@ class LocalUserUpdate @Inject constructor(
 ) {
     suspend operator fun invoke(localUserData: LocalUserData) {
         userRepository.localUserUpdate(localUserData)
+
+
     }
+
+    private suspend fun syncWithServer(user: LocalUserData): UserResponse? {
+        return try {
+
+            val createServerUser = UserRequest(
+                deviceId = user.id.toString(),
+                customId =  user.customId ?: "",
+                pin = user.pin ?:"",
+                fcmToken = user.fcmToken ?: ""
+            )
+            Log.d(TAG("LocalExistCheckUseCase", "syncWithServer"), "서버 요청 데이터: $createServerUser")
+
+            if (user.id != null) {
+                val serverUser = UserApi.userService.getUserRequest(user.id.toString())
+                Log.d(TAG("LocalExistCheckUseCase", "syncWithServer"), "서버 응답: $serverUser")
+                if (serverUser.data == null) {
+                    UserApi.userService.userAddRequest(createServerUser).also {
+                        Log.d(TAG("LocalExistCheckUseCase", "syncWithServer"), "새 서버 유저 생성: $it")
+                    }
+                } else {
+                    serverUser.also {
+                        Log.d(TAG("LocalExistCheckUseCase", "syncWithServer"), "기존 서버 유저 사용: $it")
+                    }
+                }
+            } else {
+                UserApi.userService.userAddRequest(createServerUser).also {
+                    Log.d(TAG("LocalExistCheckUseCase", "syncWithServer"), "ID 없는 새 서버 유저 생성: $it")
+                }
+            }
+        } catch (e: Exception) {
+            Log.e(TAG("LocalExistCheckUseCase", "syncWithServer"), "서버 동기화 실패", e)
+            null
+        }
+    }
+
 }
 
 class CustomIdCreateUser @Inject constructor(
@@ -95,7 +131,10 @@ class DeleteUserUseCase @Inject constructor(
 ) {
     suspend operator fun invoke() {
         userRepository.localUserDataDelete()
+
     }
+
+
 }
 
 class LocalExistCheckUseCase @Inject constructor(

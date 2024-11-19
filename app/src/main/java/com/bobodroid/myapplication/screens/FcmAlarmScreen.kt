@@ -108,6 +108,9 @@ import com.bobodroid.myapplication.components.Dialogs.TextFieldDialog
 import com.bobodroid.myapplication.components.RateView
 import com.bobodroid.myapplication.components.addFocusCleaner
 import com.bobodroid.myapplication.components.shadowCustom
+import com.bobodroid.myapplication.models.datamodels.roomDb.CurrencyType
+import com.bobodroid.myapplication.models.datamodels.roomDb.RateDirection
+import com.bobodroid.myapplication.models.datamodels.roomDb.RateType
 import com.bobodroid.myapplication.models.datamodels.service.UserApi.Rate
 import com.bobodroid.myapplication.models.viewmodels.AllViewModel
 import com.bobodroid.myapplication.models.viewmodels.AnalysisViewModel
@@ -139,11 +142,11 @@ fun AlarmScreen(allViewModel: AllViewModel) {
     var addTargetDialog by remember { mutableStateOf(false) }
 
     var targetRateMoneyType by remember {
-        mutableStateOf(TargetRateMoneyType.Dollar)
+        mutableStateOf(CurrencyType.USD)
     }
 
     var targetRateState by remember {
-        mutableStateOf(TargetRateState.High)
+        mutableStateOf(RateDirection.HIGH)
     }
 
     val primaryColor = Color(0xFF2196F3)
@@ -153,12 +156,12 @@ fun AlarmScreen(allViewModel: AllViewModel) {
 
     val rates = when(selectedTabIndex) {
         0 -> when(targetRateMoneyType) {
-            TargetRateMoneyType.Dollar -> targetRateData.value.dollarHighRates
-            TargetRateMoneyType.Yen -> targetRateData.value.yenHighRates
+            CurrencyType.USD -> targetRateData.value.dollarHighRates
+            CurrencyType.JPY -> targetRateData.value.yenHighRates
         }
         else -> when(targetRateMoneyType) {
-            TargetRateMoneyType.Dollar -> targetRateData.value.dollarLowRates
-            TargetRateMoneyType.Yen -> targetRateData.value.yenLowRates
+            CurrencyType.USD -> targetRateData.value.dollarLowRates
+            CurrencyType.JPY -> targetRateData.value.yenLowRates
         }
     }
 
@@ -203,8 +206,8 @@ fun AlarmScreen(allViewModel: AllViewModel) {
                     ) {
                         Text(
                             when(targetRateMoneyType) {
-                                TargetRateMoneyType.Dollar -> "달러(USD)"
-                                TargetRateMoneyType.Yen -> "엔화(JPY)"
+                                CurrencyType.USD -> "달러(USD)"
+                                CurrencyType.JPY -> "엔화(JPY)"
                             }
                         )
                         Icon(Icons.Filled.ArrowDropDown, null)
@@ -216,14 +219,14 @@ fun AlarmScreen(allViewModel: AllViewModel) {
                     ) {
                         DropdownMenuItem(
                             onClick = {
-                                targetRateMoneyType = TargetRateMoneyType.Dollar
+                                targetRateMoneyType = CurrencyType.USD
                                 currencyExpanded = false
                             },
                             text = { Text("달러(USD)") }
                         )
                         DropdownMenuItem(
                             onClick = {
-                                targetRateMoneyType = TargetRateMoneyType.Yen
+                                targetRateMoneyType = CurrencyType.JPY
                                 currencyExpanded = false
                             },
                             text = { Text("엔화(JPY)") }
@@ -235,14 +238,14 @@ fun AlarmScreen(allViewModel: AllViewModel) {
             // 현재 환율 표시
 
             when(targetRateMoneyType) {
-                TargetRateMoneyType.Dollar -> {
+                CurrencyType.USD -> {
                     RateView(
                         title = "USD",
                         recentRate = "${recentRate.value.usd}",
                         createAt = "${recentRate.value.createAt}"
                     )
                 }
-                TargetRateMoneyType.Yen -> {
+                CurrencyType.JPY -> {
                     RateView(
                         title = "JPY",
                         recentRate = "${BigDecimal(recentRate.value.jpy).times(BigDecimal("100"))}",
@@ -349,7 +352,7 @@ fun AlarmScreen(allViewModel: AllViewModel) {
             FloatingActionButton(
                 onClick = {
                     if(rates != null && rates.last().number < 5) {
-                        targetRateState = if(selectedTabIndex == 0) TargetRateState.High else TargetRateState.Low
+                        targetRateState = if(selectedTabIndex == 0) RateDirection.HIGH else RateDirection.LOW
                         addTargetDialog = true
                     } else {
                         if (fcmAlarmScreenSnackBarHostState.currentSnackbarData == null) {
@@ -434,24 +437,22 @@ fun AlarmScreen(allViewModel: AllViewModel) {
             null
         } else { rates.last()}
 
-        val currentCurrency = when(targetRateMoneyType) {
-            TargetRateMoneyType.Dollar -> "달러"
-            TargetRateMoneyType.Yen -> "엔화"
-        }
-        val currentHighAndRowRate = when(targetRateState){
-            TargetRateState.High -> "고점"
-            TargetRateState.Low -> "저점"
-        }
 
         TargetRateDialog(
             onDismissRequest = {
                 addTargetDialog = it
             },
-            rate = lastRate,
-            currency = currentCurrency,
-            highAndRowRate = currentHighAndRowRate,
-            selected = {
+            lastRate = lastRate,
+            selected = { addTargetRate ->
 
+                val rateType = RateType.from(targetRateMoneyType, targetRateState)
+
+                fcmAlarmViewModel.addTargetRate(
+                    addRate = addTargetRate,
+                    type = rateType
+                )
+
+                addTargetDialog = false
             }
         )
 

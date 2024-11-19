@@ -2,7 +2,9 @@ package com.bobodroid.myapplication.models.datamodels.service.UserApi
 
 import com.bobodroid.myapplication.BuildConfig
 import com.bobodroid.myapplication.models.datamodels.service.noticeApi.NoticeResponse
+import com.squareup.moshi.FromJson
 import com.squareup.moshi.Moshi
+import com.squareup.moshi.ToJson
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
@@ -12,6 +14,10 @@ import retrofit2.http.Body
 import retrofit2.http.GET
 import retrofit2.http.POST
 import retrofit2.http.Path
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
+import java.util.TimeZone
 
 
 private val moshi = Moshi.Builder()
@@ -47,7 +53,7 @@ interface UserApiService {
     suspend fun updateUserRates(
         @Path("deviceId") deviceId: String,
         @Body userRatesUpdateRequest: UserRatesUpdateRequest
-    ): NoticeResponse
+    ): UserResponse
 
 
     @GET("user/{id}")

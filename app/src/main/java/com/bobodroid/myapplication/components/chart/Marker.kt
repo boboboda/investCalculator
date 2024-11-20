@@ -13,12 +13,14 @@ import com.patrykandpatrick.vico.compose.common.component.rememberShapeComponent
 import com.patrykandpatrick.vico.compose.common.component.rememberTextComponent
 import com.patrykandpatrick.vico.compose.common.component.shadow
 import com.patrykandpatrick.vico.compose.common.dimensions
+import com.patrykandpatrick.vico.compose.common.fill
 import com.patrykandpatrick.vico.compose.common.shape.markerCorneredShape
 import com.patrykandpatrick.vico.core.cartesian.CartesianMeasuringContext
 import com.patrykandpatrick.vico.core.cartesian.HorizontalDimensions
 import com.patrykandpatrick.vico.core.cartesian.data.CartesianChartModel
 import com.patrykandpatrick.vico.core.cartesian.marker.CartesianMarker
 import com.patrykandpatrick.vico.core.cartesian.marker.DefaultCartesianMarker
+import com.patrykandpatrick.vico.core.common.Fill
 import com.patrykandpatrick.vico.core.common.Insets
 import com.patrykandpatrick.vico.core.common.LayeredComponent
 import com.patrykandpatrick.vico.core.common.component.Shadow
@@ -49,7 +51,7 @@ internal fun rememberMarker(
             minWidth = TextComponent.MinWidth.fixed(40.dp),
         )
     val indicatorFrontComponent =
-        rememberShapeComponent(MaterialTheme.colorScheme.surface, CorneredShape.Pill)
+        rememberShapeComponent(color = MaterialTheme.colorScheme.surface, CorneredShape.Pill)
     val indicatorCenterComponent = rememberShapeComponent(shape = CorneredShape.Pill)
     val indicatorRearComponent = rememberShapeComponent(shape = CorneredShape.Pill)
     val indicator =
@@ -73,7 +75,8 @@ internal fun rememberMarker(
                 if (showIndicator) {
                     { color ->
                         LayeredComponent(
-                            rear = ShapeComponent(ColorUtils.setAlphaComponent(color, 38), CorneredShape.Pill),
+                            rear =
+                            ShapeComponent(color = ColorUtils.setAlphaComponent(color, 38), CorneredShape.Pill),
                             front =
                             LayeredComponent(
                                 rear =

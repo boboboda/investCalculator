@@ -211,7 +211,7 @@ dependencies {
     implementation "com.squareup.retrofit2:converter-moshi:$retrofit_version"
 
     // Moshi
-    def moshi_version = "1.14.0"
+    def moshi_version = "1.15.0"
     implementation "com.squareup.moshi:moshi-kotlin:$moshi_version"
     kapt "com.squareup.moshi:moshi-kotlin-codegen:$moshi_version"
 
@@ -226,19 +226,20 @@ dependencies {
     // 웹소켓
     implementation 'io.socket:socket.io-client:2.0.0'
 
-//    // 차트 라이브러리
-//    // For Jetpack Compose.
-//    implementation("com.patrykandpatrick.vico:compose:2.0.0-beta.2")
-//
-//    // For `compose`. Creates a `ChartStyle` based on an M2 Material Theme.
-//    implementation("com.patrykandpatrick.vico:compose-m2:2.0.0-beta.2")
-//
-//    // For `compose`. Creates a `ChartStyle` based on an M3 Material Theme.
-//    implementation("com.patrykandpatrick.vico:compose-m3:2.0.0-beta.2")
-//
-//    // Houses the core logic for charts and other elements. Included in all other modules.
-//    implementation("com.patrykandpatrick.vico:core:2.0.0-beta.2")
-//
-//    // For the view system.
-//    implementation("com.patrykandpatrick.vico:views:2.0.0-beta.2")
+    def chart_version = "2.0.0-beta.2"
+    // 차트 라이브러리
+    // For Jetpack Compose.
+    implementation("com.patrykandpatrick.vico:compose:$chart_version")
+
+    // For `compose`. Creates a `ChartStyle` based on an M2 Material Theme.
+    implementation("com.patrykandpatrick.vico:compose-m2:$chart_version")
+
+    // For `compose`. Creates a `ChartStyle` based on an M3 Material Theme.
+    implementation("com.patrykandpatrick.vico:compose-m3:$chart_version")
+
+    // Houses the core logic for charts and other elements. Included in all other modules.
+    implementation("com.patrykandpatrick.vico:core:$chart_version")
+
+    // For the view system.
+    implementation("com.patrykandpatrick.vico:views:$chart_version")
 }

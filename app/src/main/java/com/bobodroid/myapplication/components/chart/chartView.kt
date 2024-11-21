@@ -1,5 +1,7 @@
 package com.bobodroid.myapplication.components.chart
 
+import android.text.Layout
+import android.text.TextUtils
 import androidx.compose.material.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
@@ -9,15 +11,20 @@ import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.unit.dp
 import com.bobodroid.myapplication.models.datamodels.service.exchangeRateApi.ExchangeRates
 import com.patrykandpatrick.vico.compose.cartesian.CartesianChartHost
+import com.patrykandpatrick.vico.compose.cartesian.VicoScrollState
 import com.patrykandpatrick.vico.compose.cartesian.axis.rememberBottom
 import com.patrykandpatrick.vico.compose.cartesian.axis.rememberStart
 import com.patrykandpatrick.vico.compose.cartesian.layer.rememberColumnCartesianLayer
 import com.patrykandpatrick.vico.compose.cartesian.layer.rememberLine
 import com.patrykandpatrick.vico.compose.cartesian.layer.rememberLineCartesianLayer
 import com.patrykandpatrick.vico.compose.cartesian.rememberCartesianChart
+import com.patrykandpatrick.vico.compose.cartesian.rememberVicoScrollState
 import com.patrykandpatrick.vico.compose.cartesian.rememberVicoZoomState
 import com.patrykandpatrick.vico.compose.common.component.rememberLineComponent
+import com.patrykandpatrick.vico.compose.common.component.shapeComponent
+import com.patrykandpatrick.vico.compose.common.dimensions
 import com.patrykandpatrick.vico.compose.common.fill
+import com.patrykandpatrick.vico.core.cartesian.Scroll
 import com.patrykandpatrick.vico.core.cartesian.axis.BaseAxis
 import com.patrykandpatrick.vico.core.cartesian.axis.HorizontalAxis
 import com.patrykandpatrick.vico.core.cartesian.axis.VerticalAxis
@@ -28,9 +35,11 @@ import com.patrykandpatrick.vico.core.cartesian.decoration.HorizontalLine
 import com.patrykandpatrick.vico.core.cartesian.layer.ColumnCartesianLayer
 import com.patrykandpatrick.vico.core.cartesian.layer.LineCartesianLayer
 import com.patrykandpatrick.vico.core.common.Dimensions
+import com.patrykandpatrick.vico.core.common.HorizontalPosition
 import com.patrykandpatrick.vico.core.common.component.LineComponent
 import com.patrykandpatrick.vico.core.common.component.ShapeComponent
 import com.patrykandpatrick.vico.core.common.component.TextComponent
+import com.patrykandpatrick.vico.core.common.data.CartesianLayerDrawingModelInterpolator
 import com.patrykandpatrick.vico.core.common.shape.CorneredShape
 import java.text.DecimalFormat
 import java.text.SimpleDateFormat
@@ -42,25 +51,41 @@ import java.util.Locale
 @Composable
 fun ExchangeRateChart(
     modelProducer: CartesianChartModelProducer,
-    chartPeriod: ChartPeriod,
     modifier: Modifier
 ) {
 
     CartesianChartHost(
         chart = rememberCartesianChart(
-            rememberColumnCartesianLayer(
-                ColumnCartesianLayer.ColumnProvider.series(
-                    rememberLineComponent(
-                        color = Color(0xffff5500),
-                        thickness = 16.dp,
-                        shape = CorneredShape.rounded(allPercent = 40)
+//            rememberColumnCartesianLayer(
+//                ColumnCartesianLayer.ColumnProvider.series(
+//                    rememberLineComponent(
+//                        color = Color(0xffff5500),
+//                        thickness = 16.dp,
+//                        shape = CorneredShape.rounded(allPercent = 40)
+//                    )
+//                ),
+//                rangeProvider = remember {
+//                    CartesianLayerRangeProvider.fixed(
+//                        maxY = 1400.0,
+//                        minY = 1200.0)
+//                },
+//                columnCollectionSpacing = 5.dp,
+//
+//            ),
+            rememberLineCartesianLayer(
+                LineCartesianLayer.LineProvider.series(
+                    LineCartesianLayer.rememberLine(
+                        fill = remember { LineCartesianLayer.LineFill.single(fill(Color(0xfffdc8c4))) },
+                        pointConnector = remember { LineCartesianLayer.PointConnector.cubic(curvature = 0f) },
                     )
                 ),
                 rangeProvider = remember {
                     CartesianLayerRangeProvider.fixed(
                         maxY = 1400.0,
-                        minY = 1200.0)
-                }
+                        minY = 1370.0)
+                },
+                pointSpacing = 1.dp,
+                drawingModelInterpolator = remember { CartesianLayerDrawingModelInterpolator.default() }
             ),
             startAxis = VerticalAxis.rememberStart(
                 line = rememberLineComponent(
@@ -80,28 +105,16 @@ fun ExchangeRateChart(
                 }
 
             ),
-            bottomAxis = HorizontalAxis.rememberBottom(
-                line = rememberLineComponent(
-                    color = Color.Black,
-                    thickness = 1.dp
-                ),
-                label = rememberTextComponent(Color.Black),
-                valueFormatter = when(chartPeriod) {
-                    ChartPeriod.MINUTE -> minuteAxisFormatter
-                    ChartPeriod.DAY -> dayAxisFormatter
-                    ChartPeriod.MONTH -> monthAxisFormatter
-                },
-                itemPlacer = remember {
-                    HorizontalAxis.ItemPlacer.aligned(
-                        spacing = 3,
-                        addExtremeLabelPadding = true
-                    )
-                }
-            ),
-            marker = rememberMarker()
+            marker = rememberMarker(),
+//            decorations = listOf(rememberComposeHorizontalLine()),
         ),
         modelProducer = modelProducer,
-        modifier = modifier
+        modifier = modifier,
+        scrollState = rememberVicoScrollState(
+            initialScroll = Scroll.Absolute.End
+        ),
+//        zoomState = rememberVicoZoomState(),
+
     )
 }
 
@@ -114,25 +127,38 @@ private fun rememberTextComponent(color: Color) = remember {
 }
 
 
-// 축 포맷터들
-private val minuteAxisFormatter = CartesianValueFormatter { _, x, _ ->
-    SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date(x.toLong()))
+
+
+
+@Composable
+private fun rememberComposeHorizontalLine(): HorizontalLine {
+    val color = Color.Black
+    val line = rememberLineComponent(color, HORIZONTAL_LINE_THICKNESS_DP.dp)
+    val labelComponent =
+        com.patrykandpatrick.vico.compose.common.component.rememberTextComponent(
+            margins = dimensions(HORIZONTAL_LINE_LABEL_MARGIN_DP.dp),
+            padding =
+            dimensions(
+                HORIZONTAL_LINE_LABEL_HORIZONTAL_PADDING_DP.dp,
+                HORIZONTAL_LINE_LABEL_VERTICAL_PADDING_DP.dp,
+            ),
+            background = shapeComponent(Color.White, CorneredShape.Pill),
+        )
+    val horizontalLabelPosition = HorizontalPosition.End
+    return remember { HorizontalLine(
+        y = { HORIZONTAL_LINE_Y },
+        line,
+        labelComponent,
+        horizontalLabelPosition =  horizontalLabelPosition
+        )
+
+
+    }
 }
 
-private val dayAxisFormatter = CartesianValueFormatter { _, x, _ ->
-    SimpleDateFormat("MM/dd", Locale.getDefault()).format(Date(x.toLong()))
-}
-
-private val monthAxisFormatter = CartesianValueFormatter { _, x, _ ->
-    val date = Calendar.getInstance().apply { timeInMillis = x.toLong() }
-    "${date.get(Calendar.YEAR)}/${date.get(Calendar.MONTH) + 1}"
-}
-
-
-
-
-enum class ChartPeriod(val displayName: String) {
-    MINUTE("분"),
-    DAY("일"),
-    MONTH("월")
-}
+private const val HORIZONTAL_LINE_Y = 1347.39
+private val HORIZONTAL_LINE_COLOR = Color.Black.toArgb()
+private const val HORIZONTAL_LINE_THICKNESS_DP = 2f
+private const val HORIZONTAL_LINE_LABEL_HORIZONTAL_PADDING_DP = 8f
+private const val HORIZONTAL_LINE_LABEL_VERTICAL_PADDING_DP = 2f
+private const val HORIZONTAL_LINE_LABEL_MARGIN_DP = 4f

@@ -26,10 +26,14 @@ import com.bobodroid.myapplication.components.Dialogs.LoadingDialog
 import com.bobodroid.myapplication.models.viewmodels.AllViewModel
 import com.bobodroid.myapplication.models.viewmodels.AnalysisViewModel
 import androidx.hilt.navigation.compose.hiltViewModel
-import com.bobodroid.myapplication.components.chart.ChartPeriod
 import com.bobodroid.myapplication.components.chart.ExchangeRateChart
+import com.bobodroid.myapplication.models.datamodels.roomDb.ExchangeRate
 import com.patrykandpatrick.vico.core.cartesian.data.CartesianChartModelProducer
+import com.patrykandpatrick.vico.core.cartesian.data.CartesianValueFormatter
 import com.patrykandpatrick.vico.core.cartesian.data.columnSeries
+import com.patrykandpatrick.vico.core.cartesian.data.lineSeries
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
 import kotlin.random.Random
 
 @Composable
@@ -50,47 +54,57 @@ fun AnalysisScreen() {
 // 사용 예시
 @Composable
 fun ExchangeRateScreen() {
-    var selectedPeriod by remember { mutableStateOf(ChartPeriod.DAY) }
 
     val modelProducer = remember { CartesianChartModelProducer() }
     // 더미 데이터
-    val dummyMinuteData = remember {
-        List(30) { index ->
-            ExchangeRate(
-                value = 1300f + Random.nextFloat() * 50,
-                timestamp = System.currentTimeMillis() + (index * 60 * 1000)
-            )
-        }
+
+    val testDummyData = remember {
+        listOf(
+            // 20초 단위
+            ExchangeRate(createAt = "2024-11-21 09:00:00", usd = "1380.50"),
+            ExchangeRate(createAt = "2024-11-21 09:00:20", usd = "1385.75"),
+            ExchangeRate(createAt = "2024-11-21 09:00:40", usd = "1379.25"),
+            ExchangeRate(createAt = "2024-11-21 09:01:00", usd = "1382.00"),
+            ExchangeRate(createAt = "2024-11-21 09:01:20", usd = "1388.50"),
+            ExchangeRate(createAt = "2024-11-21 09:01:40", usd = "1384.25"),
+
+            // 3분 단위로 전환
+            ExchangeRate(createAt = "2024-11-21 09:03:00", usd = "1379.75"),
+            ExchangeRate(createAt = "2024-11-21 09:06:00", usd = "1386.00"),
+            ExchangeRate(createAt = "2024-11-21 09:09:00", usd = "1390.25"),
+            ExchangeRate(createAt = "2024-11-21 09:12:00", usd = "1383.50"),
+            ExchangeRate(createAt = "2024-11-21 09:15:00", usd = "1387.75"),
+
+            // 다시 20초 단위
+            ExchangeRate(createAt = "2024-11-21 09:15:20", usd = "1381.25"),
+            ExchangeRate(createAt = "2024-11-21 09:15:40", usd = "1385.00"),
+            ExchangeRate(createAt = "2024-11-21 09:16:00", usd = "1389.50"),
+            ExchangeRate(createAt = "2024-11-21 09:16:20", usd = "1384.75"),
+            ExchangeRate(createAt = "2024-11-21 09:16:40", usd = "1380.25"),
+
+            // 다시 3분 단위
+            ExchangeRate(createAt = "2024-11-21 09:18:00", usd = "1386.50"),
+            ExchangeRate(createAt = "2024-11-21 09:21:00", usd = "1391.75"),
+            ExchangeRate(createAt = "2024-11-21 09:24:00", usd = "1385.25"),
+            ExchangeRate(createAt = "2024-11-21 09:27:00", usd = "1388.00"),
+            ExchangeRate(createAt = "2024-11-21 09:30:00", usd = "1382.50")
+        )
     }
 
-    val dummyDayData = remember {
-        List(30) { index ->
-            ExchangeRate(
-                value = 1300f + Random.nextFloat() * 50,
-                timestamp = System.currentTimeMillis() + (index * 24 * 60 * 60 * 1000)
-            )
-        }
-    }
-
-    val dummyMonthData = remember {
-        List(12) { index ->
-            ExchangeRate(
-                value = 1300f + Random.nextFloat() * 50,
-                timestamp = System.currentTimeMillis() + (index * 30L * 24 * 60 * 60 * 1000)
-            )
-        }
+    val dateList = remember(testDummyData) {
+        testDummyData.map { it.createAt }
     }
 
     // 데이터 프로듀서 생성
-    LaunchedEffect(selectedPeriod) {
+    LaunchedEffect(testDummyData) {
         modelProducer.runTransaction {
-            columnSeries {
+//            columnSeries {
+//                series(  )
+//            }
+
+            lineSeries {
                 series(
-                    when(selectedPeriod) {
-                        ChartPeriod.MINUTE -> dummyMinuteData
-                        ChartPeriod.DAY -> dummyDayData
-                        ChartPeriod.MONTH -> dummyMonthData
-                    }.map { it.value }
+                    testDummyData.map { it.usd?.toFloat()?.toInt() ?: 0 }
                 )
             }
         }
@@ -98,21 +112,11 @@ fun ExchangeRateScreen() {
 
     Column {
         // 기간 선택 탭
-        TabRow(selectedTabIndex = selectedPeriod.ordinal) {
-            ChartPeriod.values().forEach { period ->
-                Tab(
-                    selected = selectedPeriod == period,
-                    onClick = { selectedPeriod = period }
-                ) {
-                    Text(period.displayName)
-                }
-            }
-        }
+
 
         // 차트
         ExchangeRateChart(
             modelProducer = modelProducer,
-            chartPeriod = selectedPeriod,
             modifier = Modifier
                 .fillMaxWidth()
                 .height(300.dp)
@@ -120,9 +124,3 @@ fun ExchangeRateScreen() {
         )
     }
 }
-
-// 더미 데이터를 위한 데이터 클래스
-data class ExchangeRate(
-    val value: Float,
-    val timestamp: Long
-)

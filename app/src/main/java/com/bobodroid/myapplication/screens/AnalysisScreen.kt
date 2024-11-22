@@ -28,8 +28,10 @@ import com.bobodroid.myapplication.models.viewmodels.AnalysisViewModel
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.bobodroid.myapplication.components.chart.ExchangeRateChart
 import com.bobodroid.myapplication.models.datamodels.roomDb.ExchangeRate
+import com.patrykandpatrick.vico.core.cartesian.data.CartesianChartModel
 import com.patrykandpatrick.vico.core.cartesian.data.CartesianChartModelProducer
 import com.patrykandpatrick.vico.core.cartesian.data.CartesianValueFormatter
+import com.patrykandpatrick.vico.core.cartesian.data.LineCartesianLayerModel
 import com.patrykandpatrick.vico.core.cartesian.data.columnSeries
 import com.patrykandpatrick.vico.core.cartesian.data.lineSeries
 import java.time.LocalDateTime
@@ -91,8 +93,11 @@ fun ExchangeRateScreen() {
         )
     }
 
+//    val dateList = remember(testDummyData) {
+//        testDummyData.map { it.createAt = 1 }
+//    }
     val dateList = remember(testDummyData) {
-        testDummyData.map { it.createAt }
+        List(testDummyData.size) { it }  // 0부터 시작하는 인덱스 리스트 생성
     }
 
     // 데이터 프로듀서 생성
@@ -104,7 +109,8 @@ fun ExchangeRateScreen() {
 
             lineSeries {
                 series(
-                    testDummyData.map { it.usd?.toFloat()?.toInt() ?: 0 }
+                    y = testDummyData.map { it.usd?.toFloat()?.toInt() ?: 0 },
+                    x = dateList
                 )
             }
         }

@@ -6,6 +6,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.unit.dp
 import androidx.core.graphics.ColorUtils
+import com.bobodroid.myapplication.models.datamodels.roomDb.ExchangeRate
 import com.patrykandpatrick.vico.compose.cartesian.axis.rememberAxisGuidelineComponent
 import com.patrykandpatrick.vico.compose.common.component.fixed
 import com.patrykandpatrick.vico.compose.common.component.rememberLayeredComponent
@@ -15,24 +16,29 @@ import com.patrykandpatrick.vico.compose.common.component.shadow
 import com.patrykandpatrick.vico.compose.common.dimensions
 import com.patrykandpatrick.vico.compose.common.fill
 import com.patrykandpatrick.vico.compose.common.shape.markerCorneredShape
+import com.patrykandpatrick.vico.core.cartesian.CartesianDrawingContext
 import com.patrykandpatrick.vico.core.cartesian.CartesianMeasuringContext
 import com.patrykandpatrick.vico.core.cartesian.HorizontalDimensions
 import com.patrykandpatrick.vico.core.cartesian.data.CartesianChartModel
 import com.patrykandpatrick.vico.core.cartesian.marker.CartesianMarker
+import com.patrykandpatrick.vico.core.cartesian.marker.CartesianMarkerValueFormatter
 import com.patrykandpatrick.vico.core.cartesian.marker.DefaultCartesianMarker
+import com.patrykandpatrick.vico.core.cartesian.marker.DefaultCartesianMarkerValueFormatter
 import com.patrykandpatrick.vico.core.common.Fill
 import com.patrykandpatrick.vico.core.common.Insets
 import com.patrykandpatrick.vico.core.common.LayeredComponent
+import com.patrykandpatrick.vico.core.common.component.Component
 import com.patrykandpatrick.vico.core.common.component.Shadow
 import com.patrykandpatrick.vico.core.common.component.ShapeComponent
 import com.patrykandpatrick.vico.core.common.component.TextComponent
 import com.patrykandpatrick.vico.core.common.shape.Corner
 import com.patrykandpatrick.vico.core.common.shape.CorneredShape
+import java.text.DecimalFormat
 
 @Composable
 internal fun rememberMarker(
     labelPosition: DefaultCartesianMarker.LabelPosition = DefaultCartesianMarker.LabelPosition.Top,
-    showIndicator: Boolean = true,
+    showIndicator: Boolean = true
 ): CartesianMarker {
     val labelBackgroundShape = markerCorneredShape(Corner.FullyRounded)
     val labelBackground =
@@ -96,6 +102,10 @@ internal fun rememberMarker(
                 },
                 indicatorSizeDp = 36f,
                 guideline = guideline,
+                valueFormatter = DefaultCartesianMarkerValueFormatter(
+                    decimalFormat = DecimalFormat( "환율:"+"#.##;−#.##"),
+                    colorCode = true
+                )
             ) {
             override fun updateInsets(
                 context: CartesianMeasuringContext,
@@ -124,3 +134,4 @@ internal fun rememberMarker(
 private const val LABEL_BACKGROUND_SHADOW_RADIUS_DP = 4f
 private const val LABEL_BACKGROUND_SHADOW_DY_DP = 2f
 private const val CLIPPING_FREE_SHADOW_RADIUS_MULTIPLIER = 1.4f
+

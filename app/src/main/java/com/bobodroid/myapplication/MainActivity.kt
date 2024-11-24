@@ -1,7 +1,5 @@
 package com.bobodroid.myapplication
 
-import android.animation.ObjectAnimator
-import android.animation.PropertyValuesHolder
 import android.annotation.SuppressLint
 import android.app.Activity
 import android.content.Intent
@@ -11,7 +9,6 @@ import android.os.Bundle
 import android.util.Log
 import android.view.View
 import android.view.ViewTreeObserver
-import android.view.animation.LinearInterpolator
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
@@ -22,11 +19,9 @@ import androidx.compose.material.DrawerValue
 import androidx.compose.material.rememberDrawerState
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
-import androidx.core.animation.doOnEnd
 import androidx.core.content.ContextCompat
 import androidx.core.splashscreen.SplashScreen
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
-import androidx.lifecycle.lifecycleScope
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -42,6 +37,7 @@ import com.bobodroid.myapplication.components.admobs.loadRewardedAdvertisement
 import com.bobodroid.myapplication.components.admobs.loadTargetRewardedAdvertisement
 import com.bobodroid.myapplication.components.admobs.showTargetRewardedAdvertisement
 import com.bobodroid.myapplication.models.viewmodels.AllViewModel
+import com.bobodroid.myapplication.models.viewmodels.AnalysisViewModel
 import com.bobodroid.myapplication.models.viewmodels.DollarViewModel
 import com.bobodroid.myapplication.models.viewmodels.WonViewModel
 import com.bobodroid.myapplication.models.viewmodels.YenViewModel
@@ -70,6 +66,8 @@ class MainActivity : ComponentActivity() {
     private val wonViewModel: WonViewModel by viewModels()
 
     private val allViewModel: AllViewModel by viewModels()
+
+    private val analysisViewModel: AnalysisViewModel by viewModels()
 
     private lateinit var splashScreen: SplashScreen
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -122,6 +120,7 @@ class MainActivity : ComponentActivity() {
                     yenViewModel,
                     wonViewModel,
                     allViewModel,
+                    analysisViewModel,
                     activity = this
                 )
             }
@@ -215,6 +214,7 @@ fun AppScreen(
     yenViewModel: YenViewModel,
     wonViewModel: WonViewModel,
     allViewModel: AllViewModel,
+    analysisViewModel: AnalysisViewModel,
     activity: Activity
 ) {
 
@@ -239,6 +239,7 @@ fun AppScreen(
                 yenViewModel,
                 wonViewModel,
                 allViewModel,
+                analysisViewModel,
                 drawerState = drawerState,
                 activity
             )
@@ -260,6 +261,7 @@ fun InvestAppScreen(
     yenViewModel: YenViewModel,
     wonViewModel: WonViewModel,
     allViewModel: AllViewModel,
+    analysisViewModel: AnalysisViewModel,
     drawerState: DrawerState,
     activity: Activity
 ) {
@@ -295,7 +297,8 @@ fun InvestAppScreen(
                 routeAction = investRouteAction,
                 allViewModel = allViewModel,
                 drawerState = drawerState,
-                activity = activity)
+                activity = activity,
+                analysisViewModel = analysisViewModel)
         }
 
 
@@ -336,6 +339,7 @@ fun InvestNavHost(
     dollarViewModel: DollarViewModel,
     yenViewModel: YenViewModel,
     wonViewModel: WonViewModel,
+    analysisViewModel: AnalysisViewModel,
     routeAction: MainRouteAction,
     allViewModel: AllViewModel,
     drawerState: DrawerState,
@@ -380,8 +384,10 @@ fun InvestNavHost(
         }
 
         composable(MainRoute.AnalysisScreen.routeName!!) {
-            AnalysisScreen()
+            AnalysisScreen(analysisViewModel)
         }
+
+
     }
 
     if(rewardShowDialog.value) {

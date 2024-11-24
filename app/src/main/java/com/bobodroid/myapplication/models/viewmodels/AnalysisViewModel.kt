@@ -42,7 +42,8 @@ class AnalysisViewModel @Inject constructor(): ViewModel() {
 
             withContext(Dispatchers.Main) {
                 _selectedRates.value = _dailyRates.value
-                Log.d("AnalysisViewModel", "Initial daily data set: ${_dailyRates.value}")
+                Log.d(TAG("AnalysisViewModel","") , "Initial daily data set: ${_dailyRates.value}")
+                Log.d(TAG("AnalysisViewModel","") , "Initial selectedRates data set: ${_selectedRates.value}")
             }
         }
 
@@ -50,6 +51,7 @@ class AnalysisViewModel @Inject constructor(): ViewModel() {
 
         viewModelScope.launch {
             _selectedTabIndex.collect { tabIndex ->
+                Log.d(TAG("AnalysisViewModel",""), "Selected tab index: ${_selectedRates.value}")
                 _selectedRates.value = when(tabIndex) {
                     0 -> _dailyRates.value
                     1 -> _weeklyRates.value
@@ -60,9 +62,6 @@ class AnalysisViewModel @Inject constructor(): ViewModel() {
             }
 
         }
-
-
-
     }
 
     private suspend fun loadAllRangeData() {
@@ -120,6 +119,8 @@ class AnalysisViewModel @Inject constructor(): ViewModel() {
             Log.e(TAG("AnalysisViewModel", "loadYearlyRates"), "$error")
         }
     }
+
+
     private fun filterAndMapRates(rates: List<ExchangeRateResponse>): List<RateRange> {
         val filteredRates = rates.fold(mutableListOf<ExchangeRateResponse>()) { acc, current ->
             if (acc.isEmpty() ||
@@ -133,7 +134,7 @@ class AnalysisViewModel @Inject constructor(): ViewModel() {
             acc
         }
 
-        return filteredRates.map {
+        return rates.map {
             RateRange(
                 jpy = it.exchangeRates.jpy,
                 usd = it.exchangeRates.usd,
@@ -163,9 +164,9 @@ private fun rangeDateFromTab(tabIndex: Int): Pair<String, String> {
     val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
 
     // 오늘 날짜
-//    val todayDate = today.format(formatter)
+    val todayDate = today.format(formatter)
 
-    val todayDate = "2024-11-23"
+//    val todayDate = "2024-11-23"
 
     // 일주일 범위 (오늘부터 7일 전)
     val weekAgo = today.minusWeeks(1)
@@ -179,21 +180,21 @@ private fun rangeDateFromTab(tabIndex: Int): Pair<String, String> {
     val yearAgo = today.minusYears(1)
     val rangeYear = yearAgo.format(formatter)
 
-    var endDate = ""
-    var startDate = todayDate
+    var endDate = todayDate
+    var startDate = ""
 
     when(tabIndex) {
         0 -> {
-            endDate = todayDate
+            startDate = todayDate
         }
         1 -> {
-            endDate = rangeWeek
+            startDate = rangeWeek
         }
         2 -> {
-            endDate = rangeThreeMonths
+            startDate = rangeThreeMonths
         }
         3 -> {
-            endDate = rangeYear
+            startDate = rangeYear
         }
     }
 

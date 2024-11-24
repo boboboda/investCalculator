@@ -172,10 +172,6 @@ fun ChartScreen(
         }
     }
 
-    val xAxisScale = when (selectedTabIndex) {
-        0 -> 1f  // 1일
-        else -> 1f  // 나머지 기간
-    }
 
     Log.d(TAG("ChartScreen", "rangeRateMapCurrencyType"), rangeRateMapCurrencyType.toString())
 
@@ -256,7 +252,6 @@ fun ChartScreen(
 
             ExchangeRateChart(
                 data = rangeRateMapCurrencyType,
-                xAxisScale = xAxisScale
             )
 
 

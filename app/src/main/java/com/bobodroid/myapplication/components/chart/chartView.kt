@@ -3,6 +3,7 @@ package com.bobodroid.myapplication.components.chart
 import android.util.Log
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
@@ -28,16 +29,22 @@ import kotlin.math.roundToInt
 @Composable
 fun ExchangeRateChart(
     data: List<RateRangeCurrency>,
-    xAxisScale: Float
 ) {
     var selectedPoint by remember { mutableStateOf<RateRangeCurrency?>(null) }
     var chartSize by remember { mutableStateOf(Size.Zero) }
     val screenWidth = LocalConfiguration.current.screenWidthDp.dp
     val scrollState = rememberScrollState()
 
-    LaunchedEffect(xAxisScale) {
+    val xAxisScale = 0.8f
+
+
+
+    LaunchedEffect(data, xAxisScale) {
         // 스크롤을 최대값으로 설정
+        selectedPoint = null
         scrollState.animateScrollTo(scrollState.maxValue)
+
+        Log.d(TAG("ExchangeRateChart",""), "data: $data")
     }
 
     val leftMargin = 10f
@@ -45,39 +52,11 @@ fun ExchangeRateChart(
     val topMargin = 10f
     val bottomMargin = 10f
 
-//    Box(modifier = modifier) {
-//        // 고정된 축을 위한 Canvas
-//        Canvas(
-//            modifier = Modifier
-//                .fillMaxSize()
-//        ) {
-//            val chartWidth = size.width - (leftMargin + rightMargin)
-//            val chartHeight = size.height - (topMargin + bottomMargin)
-//
-//            // x축과 y축만 그리기
-//            drawLine(
-//                color = Color.Black,
-//                start = Offset(leftMargin, topMargin + chartHeight),
-//                end = Offset(size.width - rightMargin, topMargin + chartHeight),
-//                strokeWidth = 3f
-//            )
-//
-//            drawLine(
-//                color = Color.Black,
-//                start = Offset(leftMargin, topMargin),
-//                end = Offset(leftMargin, topMargin + chartHeight),
-//                strokeWidth = 3f
-//            )
-//        }
-
-        // 스크롤 가능한 내부 컨텐츠를 위한 클리핑 영역
-
-//    }
-
     if (data.isEmpty()) {
-        Log.d( TAG("ExchangeRateChart",""), "data is empty")
+        Log.d(TAG("ExchangeRateChart",""), "data is empty or only has one point")
         return
     }
+
 
     Box(
         modifier = Modifier
@@ -94,7 +73,7 @@ fun ExchangeRateChart(
             modifier = Modifier
                 .fillMaxSize()
                 .horizontalScroll(scrollState)
-                .padding(end = 100.dp)
+                .padding(end = 30.dp)
         ) {
             Canvas(
                 modifier = Modifier
@@ -103,11 +82,26 @@ fun ExchangeRateChart(
                     .onSizeChanged { size ->
                         chartSize = Size(size.width.toFloat(), size.height.toFloat())
                     }
-                    .pointerInput(Unit) {
+                    .pointerInput(data, xAxisScale) {
+                        detectDragGestures(
+                            onDragStart = { offset ->
+                                // 드래그 시작할 때
+                                if (chartSize != Size.Zero) {
+                                    selectedPoint = findClosestPoint(offset, data, chartSize, xAxisScale)
+                                }
+                            },
+                            onDrag = { change, _ ->
+                                // 드래그 중
+                                if (chartSize != Size.Zero) {
+                                    selectedPoint = findClosestPoint(change.position, data, chartSize, xAxisScale)
+                                }
+                            }
+                        )
+                    }
+                    .pointerInput(data, xAxisScale) {  // Unit 대신 data와 xAxisScale 추가
                         detectTapGestures { offset ->
                             if (chartSize != Size.Zero) {
-                                selectedPoint =
-                                    findClosestPoint(offset, data, chartSize, xAxisScale)
+                                selectedPoint = findClosestPoint(offset, data, chartSize, xAxisScale)
                             }
                         }
                     }
@@ -117,10 +111,19 @@ fun ExchangeRateChart(
                 val maxRate = data.maxOf { it.rate }
                 val minRate = data.minOf { it.rate }
                 val rateRange = maxRate - minRate
-                val padding = rateRange * 1f
+                val padding = if (rateRange == 0f) {
+                    // 모든 값이 같을 때 적절한 패딩 설정
+                    maxRate * 0.1f  // 최대값의 10%를 패딩으로 사용
+                } else {
+                    rateRange * 1f
+                }
 
                 fun calculatePointPosition(index: Int, rate: Float): Offset {
-                    val normalizedRate = (rate - minRate + padding) / (rateRange + 2 * padding)
+                    val normalizedRate = if (rateRange == 0f) {
+                        0.5f  // 모든 값이 같을 때 중앙에 위치
+                    } else {
+                        (rate - minRate + padding) / (rateRange + 2 * padding)
+                    }
                     val xOffset = 100f
                     return Offset(
                         x = xOffset + (index.toFloat() / (data.size - 1)) * ((size.width * xAxisScale) - xOffset),

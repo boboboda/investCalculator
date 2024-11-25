@@ -67,8 +67,8 @@ android {
     productFlavors {
         emulator {
             dimension "environment"
-            buildConfigField "String", "WEBSOCKET_URL", "\"http://10.0.2.2:4200\""
-            buildConfigField "String", "BASE_URL", "\"http://10.0.2.2:3000\""
+            buildConfigField "String", "BASE_URL", "\"http://buyoungsil.ddns.net:3000\""
+            buildConfigField "String", "WEBSOCKET_URL", "\"http://buyoungsil.ddns.net:4200\""
         }
         device {
             dimension "environment"

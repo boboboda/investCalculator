@@ -19,53 +19,52 @@ import java.math.BigDecimal
 import java.math.MathContext
 import java.math.RoundingMode
 
-@Composable
-fun GetMoneyView(
-    getMoney: String,
-    onClicked: () -> Unit,
-    allViewModel: AllViewModel
-) {
-
-    val mathContext = MathContext(0, RoundingMode.HALF_UP)
-
-    val startDate = allViewModel.startDateFlow.collectAsState()
-
-    val stringGetMoney = if (getMoney == "") "" else {
-        getMoney
-    }
-
-    var endDate = allViewModel.endDateFlow.collectAsState()
-
-    val date = if (startDate.value == "" && endDate.value == "")
-        "조회기간: 달력에서 조회 해주세요" else "조회기간: ${startDate.value}~${endDate.value}"
-
-    val profitColor = if (getMoney == "") {
-        Color.Black
-    } else {
-        if (BigDecimal(getMoney.replace(",", ""), mathContext).signum() == -1) {
-            Color.Blue
-        } else {
-            Color.Red
-        }
-    }
-
-    Column(
-        modifier = Modifier
-            .wrapContentWidth()
-            .padding(start = 15.dp, end = 5.dp),
-        horizontalAlignment = Alignment.Start,
-        verticalArrangement = Arrangement.spacedBy(5.dp)
-    ) {
-
-        Row {
-            Text(text = "매도 총 수익: ", fontSize = 15.sp)
-
-            Text(text = "${stringGetMoney}", fontSize = 15.sp, color = profitColor)
-        }
-
-
-        Text(text = date, fontSize = 15.sp)
-    }
-
-
-}
+//@Composable
+//fun GetMoneyView(
+//    getMoney: String,
+//    allViewModel: AllViewModel
+//) {
+//
+//    val mathContext = MathContext(0, RoundingMode.HALF_UP)
+//
+//    val startDate = allViewModel.startDateFlow.collectAsState()
+//
+//    val stringGetMoney = if (getMoney == "") "" else {
+//        getMoney
+//    }
+//
+//    var endDate = allViewModel.endDateFlow.collectAsState()
+//
+//    val date = if (startDate.value == "" && endDate.value == "")
+//        "조회기간: 달력에서 조회 해주세요" else "조회기간: ${startDate.value}~${endDate.value}"
+//
+//    val profitColor = if (getMoney == "") {
+//        Color.Black
+//    } else {
+//        if (BigDecimal(getMoney.replace(",", ""), mathContext).signum() == -1) {
+//            Color.Blue
+//        } else {
+//            Color.Red
+//        }
+//    }
+//
+//    Column(
+//        modifier = Modifier
+//            .wrapContentWidth()
+//            .padding(start = 15.dp, end = 5.dp),
+//        horizontalAlignment = Alignment.Start,
+//        verticalArrangement = Arrangement.spacedBy(5.dp)
+//    ) {
+//
+//        Row {
+//            Text(text = "매도 총 수익: ", fontSize = 15.sp)
+//
+//            Text(text = "${stringGetMoney}", fontSize = 15.sp, color = profitColor)
+//        }
+//
+//
+//        Text(text = date, fontSize = 15.sp)
+//    }
+//
+//
+//}

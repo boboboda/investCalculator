@@ -39,7 +39,6 @@ import com.bobodroid.myapplication.components.admobs.showTargetRewardedAdvertise
 import com.bobodroid.myapplication.models.viewmodels.AllViewModel
 import com.bobodroid.myapplication.models.viewmodels.AnalysisViewModel
 import com.bobodroid.myapplication.models.viewmodels.DollarViewModel
-import com.bobodroid.myapplication.models.viewmodels.WonViewModel
 import com.bobodroid.myapplication.models.viewmodels.YenViewModel
 import com.bobodroid.myapplication.routes.*
 import com.bobodroid.myapplication.screens.*
@@ -62,8 +61,6 @@ class MainActivity : ComponentActivity() {
     private val dollarViewModel: DollarViewModel by viewModels()
 
     private val yenViewModel: YenViewModel by viewModels()
-
-    private val wonViewModel: WonViewModel by viewModels()
 
     private val allViewModel: AllViewModel by viewModels()
 
@@ -118,7 +115,6 @@ class MainActivity : ComponentActivity() {
                 AppScreen(
                     dollarViewModel,
                     yenViewModel,
-                    wonViewModel,
                     allViewModel,
                     analysisViewModel,
                     activity = this
@@ -212,7 +208,6 @@ class MainActivity : ComponentActivity() {
 fun AppScreen(
     dollarViewModel: DollarViewModel,
     yenViewModel: YenViewModel,
-    wonViewModel: WonViewModel,
     allViewModel: AllViewModel,
     analysisViewModel: AnalysisViewModel,
     activity: Activity
@@ -237,7 +232,6 @@ fun AppScreen(
             InvestAppScreen(
                 dollarViewModel,
                 yenViewModel,
-                wonViewModel,
                 allViewModel,
                 analysisViewModel,
                 drawerState = drawerState,
@@ -259,7 +253,6 @@ fun AppScreen(
 fun InvestAppScreen(
     dollarViewModel: DollarViewModel,
     yenViewModel: YenViewModel,
-    wonViewModel: WonViewModel,
     allViewModel: AllViewModel,
     analysisViewModel: AnalysisViewModel,
     drawerState: DrawerState,
@@ -268,8 +261,8 @@ fun InvestAppScreen(
 
 
     val investNavController = rememberNavController()
-    val investRouteAction = remember(investNavController) {
-        MainRouteAction(investNavController)
+    val mainRouteAction = remember {
+        RouteAction<MainRoute>(investNavController, MainRoute.Main.routeName)
     }
 
     val mainBackStack = investNavController.currentBackStackEntryAsState()
@@ -293,8 +286,7 @@ fun InvestAppScreen(
                 investNavController = investNavController,
                 dollarViewModel = dollarViewModel,
                 yenViewModel = yenViewModel,
-                wonViewModel = wonViewModel,
-                routeAction = investRouteAction,
+                routeAction = mainRouteAction,
                 allViewModel = allViewModel,
                 drawerState = drawerState,
                 activity = activity,
@@ -307,7 +299,7 @@ fun InvestAppScreen(
             modifier = Modifier.wrapContentSize()
         ) {
             MainBottomBar(
-                mainRouteAction = investRouteAction,
+                mainRouteAction = mainRouteAction,
                 mainRouteBackStack = mainBackStack.value,
                 allViewModel = allViewModel)
         }
@@ -338,9 +330,8 @@ fun InvestNavHost(
     startRouter: MainRoute = MainRoute.Main,
     dollarViewModel: DollarViewModel,
     yenViewModel: YenViewModel,
-    wonViewModel: WonViewModel,
     analysisViewModel: AnalysisViewModel,
-    routeAction: MainRouteAction,
+    routeAction: RouteAction<MainRoute>,
     allViewModel: AllViewModel,
     drawerState: DrawerState,
     activity: Activity
@@ -355,32 +346,16 @@ fun InvestNavHost(
             MainScreen(
                 dollarViewModel = dollarViewModel,
                 yenViewModel = yenViewModel,
-                wonViewModel = wonViewModel,
-                routeAction = routeAction,
                 allViewModel = allViewModel,
-                drawerState = drawerState,
-                activity = activity
             )
         }
 
         composable(MainRoute.Alert.routeName!!) {
-            AlarmScreen(allViewModel = allViewModel)
+            FcmAlarmScreen(allViewModel = allViewModel)
         }
 
         composable(MainRoute.MyPage.routeName!!) {
-            MyPageScreen(routeAction = routeAction, allViewModel = allViewModel)
-        }
-
-        composable(MainRoute.CreateUser.routeName!!) {
-            CreateUSerScreen(routeAction = routeAction, allViewModel = allViewModel)
-        }
-
-        composable(MainRoute.CustomerServiceCenter.routeName!!) {
-            CustomerScreen(activity = activity, routeAction = routeAction)
-        }
-
-        composable(MainRoute.CloudService.routeName!!) {
-            CloudScreen(routeAction, allViewModel, dollarViewModel, yenViewModel, wonViewModel)
+            MyPageScreen(allViewModel = allViewModel)
         }
 
         composable(MainRoute.AnalysisScreen.routeName!!) {

@@ -16,7 +16,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
-import com.bobodroid.myapplication.models.viewmodels.WonViewModel
 import com.bobodroid.myapplication.models.viewmodels.YenViewModel
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter

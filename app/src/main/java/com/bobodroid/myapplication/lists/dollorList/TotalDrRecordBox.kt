@@ -45,7 +45,6 @@ import java.util.UUID
 @Composable
 fun TotalDrRecordBox(
     dollarViewModel: DollarViewModel,
-    allViewModel: AllViewModel,
     snackBarHostState: SnackbarHostState,
     hideSellRecordState: Boolean
 ) {

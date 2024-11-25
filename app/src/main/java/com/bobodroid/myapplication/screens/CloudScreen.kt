@@ -37,21 +37,18 @@ import androidx.compose.ui.unit.sp
 import com.bobodroid.myapplication.components.Buttons
 import com.bobodroid.myapplication.components.admobs.showRewardedAdvertisement
 import com.bobodroid.myapplication.components.shadowCustom
+import com.bobodroid.myapplication.models.datamodels.roomDb.LocalUserData
 import com.bobodroid.myapplication.models.viewmodels.AllViewModel
 import com.bobodroid.myapplication.models.viewmodels.DollarViewModel
-import com.bobodroid.myapplication.models.viewmodels.WonViewModel
 import com.bobodroid.myapplication.models.viewmodels.YenViewModel
-import com.bobodroid.myapplication.routes.MainRouteAction
+import com.bobodroid.myapplication.routes.MainRoute
+import com.bobodroid.myapplication.routes.MyPageRoute
+import com.bobodroid.myapplication.routes.RouteAction
 import kotlinx.coroutines.launch
 
 @Composable
-fun CloudScreen(routeAction: MainRouteAction,
-                allViewModel: AllViewModel,
-                dollarViewModel: DollarViewModel,
-                yenViewModel: YenViewModel,
-                wonViewModel: WonViewModel) {
-
-    val localUser = allViewModel.localUserFlow.collectAsState()
+fun CloudScreen(routeAction: RouteAction<MyPageRoute>,
+                localUser: LocalUserData) {
 
     val context = LocalContext.current
 
@@ -88,20 +85,20 @@ fun CloudScreen(routeAction: MainRouteAction,
                             }
                         } else {
                             showRewardedAdvertisement(context, onAdDismissed = {
-                                allViewModel.cloudSave(
-                                    drBuyRecord = dollarViewModel.buyRecordFlow.value,
-                                    drSellRecord = dollarViewModel.sellRecordFlow.value,
-                                    yenBuyRecord = yenViewModel.buyRecordFlow.value,
-                                    yenSellRecord = yenViewModel.sellRecordFlow.value,
-                                    wonBuyRecord = wonViewModel.buyRecordFlow.value,
-                                    wonSellRecord = wonViewModel.sellRecordFlow.value
-                                )
-                                coroutineScope.launch {
-                                    cloudScreenSnackBarHostState.showSnackbar(
-                                        "클라우드에 저장되었습니다.",
-                                        actionLabel = "닫기", SnackbarDuration.Short
-                                    )
-                                }
+//                                allViewModel.cloudSave(
+//                                    drBuyRecord = dollarViewModel.buyRecordFlow.value,
+//                                    drSellRecord = dollarViewModel.sellRecordFlow.value,
+//                                    yenBuyRecord = yenViewModel.buyRecordFlow.value,
+//                                    yenSellRecord = yenViewModel.sellRecordFlow.value,
+//                                    wonBuyRecord = wonViewModel.buyRecordFlow.value,
+//                                    wonSellRecord = wonViewModel.sellRecordFlow.value
+//                                )
+//                                coroutineScope.launch {
+//                                    cloudScreenSnackBarHostState.showSnackbar(
+//                                        "클라우드에 저장되었습니다.",
+//                                        actionLabel = "닫기", SnackbarDuration.Short
+//                                    )
+//                                }
                             })
                         }
 
@@ -149,32 +146,32 @@ fun CloudScreen(routeAction: MainRouteAction,
                             }
                         } else {
 
-                            allViewModel.cloudLoad(localUser.value.customId!!) { cloudData, resultMessage ->
-
-                                dollarViewModel.drCloudLoad(
-                                    cloudData.drBuyRecord ?: emptyList(),
-                                    cloudData.drSellRecord ?: emptyList()
-                                )
-
-                                yenViewModel.yenCloudLoad(
-                                    cloudData.yenBuyRecord ?: emptyList(),
-                                    cloudData.yenSellRecord ?: emptyList()
-                                )
-
-                                wonViewModel.wonCloudLoad(
-                                    cloudData.wonBuyRecord ?: emptyList(),
-                                    cloudData.wonSellRecord ?: emptyList()
-                                )
-
-
-                                coroutineScope.launch {
-                                    cloudScreenSnackBarHostState.showSnackbar(
-                                        resultMessage,
-                                        actionLabel = "닫기", SnackbarDuration.Short
-                                    )
-                                }
-
-                        }
+//                            allViewModel.cloudLoad(localUser.value.customId!!) { cloudData, resultMessage ->
+//
+//                                dollarViewModel.drCloudLoad(
+//                                    cloudData.drBuyRecord ?: emptyList(),
+//                                    cloudData.drSellRecord ?: emptyList()
+//                                )
+//
+//                                yenViewModel.yenCloudLoad(
+//                                    cloudData.yenBuyRecord ?: emptyList(),
+//                                    cloudData.yenSellRecord ?: emptyList()
+//                                )
+//
+//                                wonViewModel.wonCloudLoad(
+//                                    cloudData.wonBuyRecord ?: emptyList(),
+//                                    cloudData.wonSellRecord ?: emptyList()
+//                                )
+//
+//
+//                                coroutineScope.launch {
+//                                    cloudScreenSnackBarHostState.showSnackbar(
+//                                        resultMessage,
+//                                        actionLabel = "닫기", SnackbarDuration.Short
+//                                    )
+//                                }
+//
+//                        }
                         }
                                 },
                     color = Color.White,

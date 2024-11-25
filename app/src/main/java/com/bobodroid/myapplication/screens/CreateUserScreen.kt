@@ -33,7 +33,6 @@ import com.bobodroid.myapplication.R
 import com.bobodroid.myapplication.components.Buttons
 import com.bobodroid.myapplication.components.shadowCustom
 import com.bobodroid.myapplication.routes.MainRoute
-import com.bobodroid.myapplication.routes.MainRouteAction
 import androidx.compose.material3.Text
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -43,10 +42,12 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import com.bobodroid.myapplication.components.Dialogs.CustomIdDialog
 import com.bobodroid.myapplication.models.viewmodels.AllViewModel
+import com.bobodroid.myapplication.routes.MyPageRoute
+import com.bobodroid.myapplication.routes.RouteAction
 import kotlinx.coroutines.launch
 
 @Composable
-fun CreateUSerScreen(routeAction: MainRouteAction, allViewModel: AllViewModel) {
+fun CreateUserScreen(routeAction: RouteAction<MyPageRoute>, allViewModel: AllViewModel) {
 
 
     var customDialog by remember { mutableStateOf(false) }
@@ -57,7 +58,7 @@ fun CreateUSerScreen(routeAction: MainRouteAction, allViewModel: AllViewModel) {
 
     var logInDialog by remember { mutableStateOf(false) }
 
-    var localUser = allViewModel.localUserFlow.collectAsState()
+    val localUser = allViewModel.localUserFlow.collectAsState()
 
 
     Column(

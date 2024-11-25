@@ -16,12 +16,12 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Popup
 import com.bobodroid.myapplication.extensions.toYen
-import com.bobodroid.myapplication.models.viewmodels.WonViewModel
 import java.text.NumberFormat
 import java.util.*
 import androidx.compose.material.SnackbarHostState
 import com.bobodroid.myapplication.extensions.toLongUs
 import com.bobodroid.myapplication.extensions.toLongWon
+import com.bobodroid.myapplication.models.datamodels.roomDb.CurrencyType
 import com.bobodroid.myapplication.ui.theme.BottomSheetSelectedColor
 import com.bobodroid.myapplication.ui.theme.BuyColor
 import com.bobodroid.myapplication.ui.theme.SelectedColor
@@ -213,28 +213,13 @@ fun WonNumberField(
 fun BottomSheetNumberField(
     title: String,
     selectedState: Boolean,
-    selectedMoneyType: Int,
-    buyMoneyType: Int,
     onClicked: () -> Unit
 ) {
 
    val formatTile = if(title == "") {
        "매수금(원)을 입력해주세요"
    } else {
-        when(selectedMoneyType) {
-            1,2 -> { title.toLong().toLongWon() }
-            3-> { when(buyMoneyType) {
-                1-> { title.toLong().toLongUs()}
-                2-> { title.toFloat().toYen()}
-                else ->{
-                    return
-                }
-            }
-            }
-            else -> {
-                return
-            }
-        }
+       title.toLong().toLongWon()
     }
 
     val cardColor = if(selectedState) CardDefaults.cardColors(BottomSheetSelectedColor) else CardDefaults.cardColors(Color.White)

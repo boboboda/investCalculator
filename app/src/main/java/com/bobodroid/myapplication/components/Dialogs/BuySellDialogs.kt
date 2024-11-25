@@ -20,7 +20,6 @@ import androidx.compose.ui.window.DialogProperties
 import com.bobodroid.myapplication.components.Caldenders.WonSellDatePickerDialog
 import com.bobodroid.myapplication.components.Caldenders.YenSellDatePickerDialog
 import com.bobodroid.myapplication.models.viewmodels.DollarViewModel
-import com.bobodroid.myapplication.models.viewmodels.WonViewModel
 import com.bobodroid.myapplication.models.viewmodels.YenViewModel
 import com.bobodroid.myapplication.ui.theme.SellButtonColor
 import java.time.LocalDate

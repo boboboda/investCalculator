@@ -42,88 +42,21 @@ import androidx.navigation.NavBackStackEntry
 import com.bobodroid.myapplication.MainActivity.Companion.TAG
 import com.bobodroid.myapplication.models.viewmodels.AllViewModel
 import com.bobodroid.myapplication.routes.MainRoute
-import com.bobodroid.myapplication.routes.MainRouteAction
+import com.bobodroid.myapplication.routes.RouteAction
 import com.bobodroid.myapplication.ui.theme.TopButtonColor
 import com.bobodroid.myapplication.ui.theme.TopButtonInColor
 import kotlinx.coroutines.launch
 
 
 
-@OptIn(ExperimentalMaterialApi::class, ExperimentalMaterial3Api::class)
-@Composable
-fun TopButton(mainText: String,
-              selectAction: () -> Unit) {
-
-
-    Card(
-        colors = CardDefaults.cardColors(TopButtonColor),
-        elevation = CardDefaults.cardElevation(8.dp),
-        modifier = Modifier
-            .height(70.dp)
-            .padding(7.dp)
-            .width(100.dp),
-        onClick = {
-            selectAction.invoke() }
-    ) {
-        Box(
-            modifier = Modifier.fillMaxSize(),
-            contentAlignment = Alignment.Center
-        ) {
-            AutoSizeText(
-                value = "$mainText",
-                modifier = Modifier,
-                fontSize = 18.sp,
-                maxLines = 2,
-                minFontSize = 10.sp,
-                color = Color.Black)
-        }
-    }
-}
-
-
-@Composable
-fun TopButtonView(allViewModel: AllViewModel) {
-
-    val changeMoney = allViewModel.changeMoney.collectAsState()
-
-    val mainTitle = when(changeMoney.value) {
-        1-> {"달러"}
-        2-> {"엔화"}
-        3-> {"원화"}
-        else -> {"달러"}
-    }
-    TopButton(
-        "${mainTitle}",
-        selectAction = {
-            when(changeMoney.value) {
-                1 -> {
-                    allViewModel.changeMoney.value = 2
-                }
-                2 -> {
-                    allViewModel.changeMoney.value = 3
-                }
-                3 -> {
-                    allViewModel.changeMoney.value = 1
-                }
-            }
-        })
-}
-
-
 @Composable
 fun MainBottomBar(
-    mainRouteAction: MainRouteAction,
+    mainRouteAction: RouteAction<MainRoute>,
     mainRouteBackStack: NavBackStackEntry?,
     allViewModel: AllViewModel
 ) {
 
-    val snackBarHostState = remember { SnackbarHostState() }
-
-    val coroutineScope = rememberCoroutineScope()
-
-    val localUser = allViewModel.localUserFlow.collectAsState()
-
-
+    val mainBottomSelectedValue = remember { mutableStateOf(1) }
 
     BottomNavigation(
         modifier = Modifier.fillMaxWidth()
@@ -142,7 +75,7 @@ fun MainBottomBar(
                 selected = (mainRouteBackStack?.destination?.route) == it.routeName,
                 onClick = {
                     mainRouteAction.navTo(it)
-                    allViewModel.nowBottomCardValue.value = it.selectValue!!
+                    mainBottomSelectedValue.value = it.selectValue!!
                 },
             )
         }
@@ -160,7 +93,7 @@ fun MainBottomBar(
                 selected = (mainRouteBackStack?.destination?.route) == it.routeName,
                 onClick = {
                     mainRouteAction.navTo(it)
-                    allViewModel.nowBottomCardValue.value = it.selectValue!!
+                    mainBottomSelectedValue.value = it.selectValue!!
                 }
 
             )
@@ -181,7 +114,7 @@ fun MainBottomBar(
                         mainRouteBackStack?.destination?.route in parentRoute.subRoutes),
                 onClick = {
                     mainRouteAction.navTo(parentRoute)
-                    allViewModel.nowBottomCardValue.value = parentRoute.selectValue!!
+                    mainBottomSelectedValue.value = parentRoute.selectValue!!
 
 //                    returnContent()
 
@@ -205,13 +138,10 @@ fun MainBottomBar(
                         mainRouteBackStack?.destination?.route in parentRoute.subRoutes),
                 onClick = {
                     mainRouteAction.navTo(parentRoute)
-                    allViewModel.nowBottomCardValue.value = parentRoute.selectValue!!
+                    mainBottomSelectedValue.value = parentRoute.selectValue!!
                 }
             )
         }
-
-//        SnackbarHost(hostState = snackBarHostState, modifier = Modifier)
-
 
     }
 }

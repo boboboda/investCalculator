@@ -9,6 +9,7 @@ import com.bobodroid.myapplication.models.datamodels.roomDb.DrBuyRecord
 import com.bobodroid.myapplication.models.datamodels.roomDb.DrSellRecord
 import com.bobodroid.myapplication.models.datamodels.roomDb.ExchangeRate
 import com.bobodroid.myapplication.models.datamodels.repository.ExchangeRateRepository
+import com.bobodroid.myapplication.models.datamodels.repository.LatestRateRepository
 import com.bobodroid.myapplication.models.datamodels.repository.UserRepository
 import com.bobodroid.myapplication.models.datamodels.roomDb.LocalUserData
 import com.bobodroid.myapplication.models.datamodels.roomDb.RateType
@@ -49,17 +50,14 @@ import javax.inject.Inject
 class AllViewModel @Inject constructor(
     private val userUseCases: UserUseCases,
     private val userRepository: UserRepository,
-    private val webSocketClient: WebSocketClient
+    private val latestRateRepository: LatestRateRepository
 ) : ViewModel() {
 
+    private val _allUiState = MutableStateFlow(MainViewUiState())
+    val allUiState = _allUiState.asStateFlow()
 
-    var changeMoney = MutableStateFlow(1)
 
-    val nowBottomCardValue = MutableStateFlow(1)
-
-    val db = Firebase.firestore
-
-    val _localUser = MutableStateFlow(LocalUserData())
+    private val _localUser = MutableStateFlow(LocalUserData())
 
     val localUserFlow = _localUser.asStateFlow()
 
@@ -67,7 +65,7 @@ class AllViewModel @Inject constructor(
 
     val rewardShowDialog = MutableStateFlow(false)
 
-    val todayDateFlow = MutableStateFlow("${LocalDate.now()}")
+    private val todayDateFlow = MutableStateFlow("${LocalDate.now()}")
 
     val openAppNoticeDateState = MutableStateFlow(true)
 
@@ -82,14 +80,6 @@ class AllViewModel @Inject constructor(
     val deleteBannerStateFlow = MutableStateFlow(false)
 
     val rewardIsReadyStateFlow = MutableStateFlow(false)
-
-    // 환율 관련
-    // 항상 최신 값 가지고 있음
-    val _recentExchangeRateFlow = MutableStateFlow(ExchangeRate())
-
-    val recentExchangeRateFlow = _recentExchangeRateFlow.asStateFlow()
-
-    val totalExchangeRate = MutableStateFlow<List<ExchangeRate>>(emptyList())
 
     // 현재 날짜와 시각
     val nowDateTimeFlow = MutableStateFlow(LocalDateTime.now().toString())
@@ -108,7 +98,10 @@ class AllViewModel @Inject constructor(
 
             onReadyRewardAd.collect { isReady ->
                 if (isReady) {
-                    rewardIsReadyStateFlow.value = true
+                    val uiState = _allUiState.value.copy(rewardIsReadyState = true)
+
+                    _allUiState.emit(uiState)
+
                     rewardAdState()
                     bannerAdState()
                 }
@@ -119,11 +112,11 @@ class AllViewModel @Inject constructor(
     // 리워드 다이로그 상태 관리
     private fun rewardAdState() {
 
-        Log.d(TAG("AllViewModel", "rewardAdState"), "연기날짜: ${_localUser.value.rewardAdShowingDate} 오늘날짜: ${todayDateFlow.value}")
+        Log.d(TAG("AllViewModel", "rewardAdState"), "연기날짜: ${_allUiState.value.localUser.rewardAdShowingDate} 오늘날짜: ${todayDateFlow.value}")
 
         // 닫기 후 호출 방지
-        if (!_localUser.value.rewardAdShowingDate.isNullOrEmpty()) {
-            if (todayDateFlow.value > _localUser.value.rewardAdShowingDate!!) {
+        if (!_allUiState.value.localUser.rewardAdShowingDate.isNullOrEmpty()) {
+            if (todayDateFlow.value > _allUiState.value.localUser.rewardAdShowingDate!!) {
                 Log.d(TAG("AllViewModel", "rewardAdState"), "오늘 날짜가 더 큽니다.")
                 rewardShowDialog.value = true
 
@@ -143,7 +136,7 @@ class AllViewModel @Inject constructor(
 
             Log.d(TAG("AllViewModel", "rewardDelayDate"), "날짜 연기 신청")
 
-            val updateUserData = localUserFlow.value.copy(
+            val updateUserData = _allUiState.value.localUser.copy(
                 rewardAdShowingDate = delayDate(inputDate = todayDateFlow.value, delayDay = 1)
             )
 
@@ -153,16 +146,15 @@ class AllViewModel @Inject constructor(
         }
     }
 
-
     //배너 삭제
     private fun bannerAdState() {
 
-        Log.d(TAG("AllViewModel", "bannerAdState"), "배너 광고 제거 연기날짜: ${_localUser.value.userResetDate} 오늘날짜: ${todayDateFlow.value}")
+        Log.d(TAG("AllViewModel", "bannerAdState"), "배너 광고 제거 연기날짜: ${_allUiState.value.localUser.userResetDate} 오늘날짜: ${todayDateFlow.value}")
 
         // 닫기 후 호출 방지
 
-        _localUser.value.userResetDate?.let {
-            if (todayDateFlow.value > _localUser.value.userResetDate!!) {
+        _allUiState.value.localUser.userResetDate?.let {
+            if (todayDateFlow.value > _allUiState.value.localUser.userResetDate!!) {
                 Log.d(TAG("AllViewModel", "bannerAdState"), "오늘 날짜가 더 큽니다.")
             } else {
                 Log.d(TAG("AllViewModel", "bannerAdState"), "연기된 날짜가 더 큽니다.")
@@ -173,14 +165,13 @@ class AllViewModel @Inject constructor(
         }
     }
 
-
     // 배너 광고 제거 딜레이
     fun deleteBannerDelayDate() {
         viewModelScope.launch {
 
             Log.d(TAG("AllViewModel", "deleteBannerDelayDate"), "날짜 연기 신청")
 
-            val updateUserData = localUserFlow.value.copy(
+            val updateUserData = _allUiState.value.localUser.copy(
                 userResetDate = delayDate(inputDate = todayDateFlow.value, delayDay = 1)
             )
 
@@ -192,9 +183,6 @@ class AllViewModel @Inject constructor(
 
         }
     }
-
-
-
 
     // 공지사항 로드
     private fun noticeApi(noticeDate: (String) -> Unit) {
@@ -216,7 +204,6 @@ class AllViewModel @Inject constructor(
             }
         }
     }
-
 
     // 공지사항 상태 관리
     private fun noticeDialogState(localUserDate: LocalUserData, noticeDate: String) {
@@ -247,7 +234,6 @@ class AllViewModel @Inject constructor(
         }
     }
 
-
     // 공지사항 연기 설정
     fun selectDelayDate(localUser: LocalUserData) {
         viewModelScope.launch {
@@ -265,15 +251,15 @@ class AllViewModel @Inject constructor(
     }
 
 
-    private fun dateWeek(week: Int): String? {
-        val c = GregorianCalendar()
-        c.add(Calendar.DAY_OF_WEEK, +week)
-        val sdfr = SimpleDateFormat("yyyy-MM-dd")
-        return sdfr.format(c.time).toString()
-    }
-
-
-    val delayDay = dateWeek(7)
+//    private fun dateWeek(week: Int): String? {
+//        val c = GregorianCalendar()
+//        c.add(Calendar.DAY_OF_WEEK, +week)
+//        val sdfr = SimpleDateFormat("yyyy-MM-dd")
+//        return sdfr.format(c.time).toString()
+//    }
+//
+//
+//    val delayDay = dateWeek(7)
 
     private fun delayDate(inputDate: String, delayDay: Int): String? {
         val dateFormat = SimpleDateFormat("yyyy-MM-dd")
@@ -297,10 +283,9 @@ class AllViewModel @Inject constructor(
         Log.d(TAG("AllViewModel", "recentRateHotListener"), "최신환율 실행")
 
         viewModelScope.launch {
-            setupNotice(localUserFlow.value)
-
+            setupNotice(_allUiState.value.localUser)
             // 실시간 데이터 구독 시작
-            subscribeToExchangeRateUpdates()
+            receivedLatestRate()
         }
     }
 
@@ -312,89 +297,53 @@ class AllViewModel @Inject constructor(
     }
 
 
-    // 웹소켓 실시간 데이터 구독
-    private fun subscribeToExchangeRateUpdates() {
-        viewModelScope.launch {
-            webSocketClient.recentRateWebReceiveData(
-                onInsert = { rateString ->
-                    Log.d(TAG("AllViewModel", "subscribeToExchangeRateUpdates"), "웹소켓 환율 최신 데이터: $rateString")
-                    onRateUpdate(rateString)
-                },
-                onInitialData = { initialData ->
-                    Log.d(TAG("AllViewModel", "subscribeToExchangeRateUpdates"), "웹소켓 환율 초기화 데이터: $initialData")
-                    onInitialDataReceived(initialData)
-                }
+    // 웹소켓 실시간 데이터 구독 -> 완료
+    private suspend fun receivedLatestRate() {
+        latestRateRepository.latestRateFlow.collect { latestRate ->
+            val uiState = _allUiState.value.copy(
+                recentRate = latestRate
             )
-        }
-
-    }
-
-    private fun onRateUpdate(rateString: String) {
-        try {
-            // rateString을 JSON으로 변환하고 ExchangeRate 객체 생성
-            val exchangeRate = ExchangeRate.fromCustomJson(rateString) ?: return
-
-            // 필요한 로직 처리 (예: 로컬 DB에 저장하거나 UI에 업데이트)
-            viewModelScope.launch {
-                _recentExchangeRateFlow.emit(exchangeRate)
-            }
-
-            Log.d(TAG("AllViewModel", "onRateUpdate"), "환율 업데이트 파싱 완료: $exchangeRate")
-
-            // 데이터가 잘 파싱되었는지 확인하는 로그
-            Log.d(TAG("AllViewModel", "onRateUpdate"), "USD 환율: ${exchangeRate.usd}, JPY 환율: ${exchangeRate.jpy}")
-
-        } catch (e: Exception) {
-            Log.e(TAG("AllViewModel", "onRateUpdate"), "환율 업데이트 파싱 실패: $rateString", e)
+            _allUiState.emit(uiState)
         }
     }
 
-    // 초기 데이터 처리
-    private fun onInitialDataReceived(initialData: String) {
-        try {
-            // initialData를 JSON으로 변환하고 ExchangeRate 객체 생성
-            val exchangeRate = ExchangeRate.fromCustomJson(initialData) ?: return
-
-
-            viewModelScope.launch {
-                _recentExchangeRateFlow.emit(exchangeRate)
-            }
-
-            Log.d(TAG("AllViewModel", "onInitialDataReceived"), "초기 데이터 파싱 완료: $exchangeRate")
-
-            // 데이터가 잘 파싱되었는지 확인하는 로그
-            Log.d(TAG("AllViewModel", "onInitialDataReceived"), "초기 USD 환율: ${exchangeRate.usd}, 초기 JPY 환율: ${exchangeRate.jpy}")
-
-        } catch (e: Exception) {
-            Log.e(TAG("AllViewModel", "onInitialDataReceived"), "초기 데이터 파싱 실패: $initialData", e)
-        }
-    }
-
-
-    val startDateFlow = MutableStateFlow("")
-
-    val endDateFlow = MutableStateFlow("")
 
     val dateStringFlow = MutableStateFlow("모두")
 
     val refreshDateFlow = MutableStateFlow("")
 
+    // -> 완료
+    fun inputStartDate(startDate: String){
+       val uiState = _allUiState.value.copy(startDate = startDate)
 
+        _allUiState.value = uiState
+    }
+
+    // -> 완료
+    fun inputEndDate(endDate: String){
+        val uiState = _allUiState.value.copy(endDate = endDate)
+
+        _allUiState.value = uiState
+    }
+
+    // -> 완료
     fun reFreshProfit(reFreshClicked: (ExchangeRate) -> Unit) {
-        val resentRate = recentExchangeRateFlow.value
+        val resentRate = _allUiState.value.recentRate
 
         reFreshClicked.invoke(resentRate)
     }
 
-
+    // -> 완료
     fun createUser(customId: String, pin: String, resultMessage: (String) -> Unit) {
         viewModelScope.launch {
             userUseCases.customIdCreateUser(
-                localUserData = _localUser.value,
+                localUserData = _allUiState.value.localUser,
                 customId = customId,
                 pin = pin)
                 .onSuccess { updateData, _ ->
-                    _localUser.emit(updateData)
+                    val uiState = _allUiState.value.copy(localUser = updateData)
+
+                    _allUiState.emit(uiState)
                     resultMessage("성공적으로 아이디가 생성되었습니다.")
                 }
                 .onError { _ ->
@@ -403,31 +352,45 @@ class AllViewModel @Inject constructor(
         }
     }
 
+    // -> 완료
     fun logIn(id: String, pin: String, successFind: (message: String) -> Unit) {
         viewModelScope.launch {
-            userUseCases.logIn(_localUser.value, id, pin)
+            userUseCases.logIn(_allUiState.value.localUser, id, pin)
                 .onSuccess { localData, msg ->
-                    _localUser.emit(localData)
+                    val uiState = _allUiState.value.copy(localUser = localData)
+
+                    _allUiState.emit(uiState)
+
                     successFind(msg ?: "")
                 }
         }
     }
 
+    // -> 완료
     fun logout(result: (message: String) -> Unit) {
 
         viewModelScope.launch {
-            userUseCases.logout(_localUser.value)
-                .onSuccess { localUserData, msg ->
-                    _localUser.emit(localUserData)
+            userUseCases.logout(_allUiState.value.localUser)
+                .onSuccess { localData, msg ->
+
+                    val uiState = _allUiState.value.copy(localUser = localData)
+
+                    _allUiState.emit(uiState)
+
                     result(msg ?: "")
                 }
         }
     }
 
+    // -> 완료
     fun localUserExistCheck() {
         viewModelScope.launch {
           val initUserdata = userRepository.waitForUserData()
-            _localUser.emit(initUserdata.localUserData)
+
+            val uiState = _allUiState.value.copy(localUser = initUserdata.localUserData)
+
+            _allUiState.emit(uiState)
+
         }
 
     }
@@ -437,52 +400,60 @@ class AllViewModel @Inject constructor(
 
     }
 
-
-
     private val formatTodayFlow = MutableStateFlow(
         LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))
     )
 
 
-    fun cloudSave(
-        drBuyRecord: List<DrBuyRecord>,
-        drSellRecord: List<DrSellRecord>,
-        yenBuyRecord: List<YenBuyRecord>,
-        yenSellRecord: List<YenSellRecord>,
-        wonBuyRecord: List<WonBuyRecord>,
-        wonSellRecord: List<WonSellRecord>
-    ) {
-        val localUser = _localUser.value
-
-        val uploadCloudData = CloudUserData(
-            id = localUser.id.toString(),
-            customId = localUser.customId,
-            createAt = formatTodayFlow.value,
-            drBuyRecord = drBuyRecord,
-            drSellRecord = drSellRecord,
-            yenBuyRecord = yenBuyRecord,
-            yenSellRecord = yenSellRecord,
-            wonBuyRecord = wonBuyRecord,
-            wonSellRecord = wonSellRecord
-
-        )
-
-        db.collection("userCloud").document(localUser.customId!!)
-            .set(uploadCloudData.asHasMap())
-    }
-
-
-    fun cloudLoad(cloudId: String, cloudData: (CloudUserData, resultMessage: String) -> Unit) {
-
-        db.collection("userCloud")
-            .whereEqualTo("customId", cloudId)
-            .get()
-            .addOnSuccessListener { querySnapShot ->
-                val data = CloudUserData(querySnapShot)
-
-                cloudData.invoke(data, "클라우드 불러오기가 성공하였습니다.")
-            }
-    }
+//    fun cloudSave(
+//        drBuyRecord: List<DrBuyRecord>,
+//        drSellRecord: List<DrSellRecord>,
+//        yenBuyRecord: List<YenBuyRecord>,
+//        yenSellRecord: List<YenSellRecord>,
+//        wonBuyRecord: List<WonBuyRecord>,
+//        wonSellRecord: List<WonSellRecord>
+//    ) {
+//        val localUser = _localUser.value
+//
+//        val uploadCloudData = CloudUserData(
+//            id = localUser.id.toString(),
+//            customId = localUser.customId,
+//            createAt = formatTodayFlow.value,
+//            drBuyRecord = drBuyRecord,
+//            drSellRecord = drSellRecord,
+//            yenBuyRecord = yenBuyRecord,
+//            yenSellRecord = yenSellRecord,
+//            wonBuyRecord = wonBuyRecord,
+//            wonSellRecord = wonSellRecord
+//
+//        )
+//
+//        db.collection("userCloud").document(localUser.customId!!)
+//            .set(uploadCloudData.asHasMap())
+//    }
+//
+//
+//    fun cloudLoad(cloudId: String, cloudData: (CloudUserData, resultMessage: String) -> Unit) {
+//
+//        db.collection("userCloud")
+//            .whereEqualTo("customId", cloudId)
+//            .get()
+//            .addOnSuccessListener { querySnapShot ->
+//                val data = CloudUserData(querySnapShot)
+//
+//                cloudData.invoke(data, "클라우드 불러오기가 성공하였습니다.")
+//            }
+//    }
 
 
 }
+
+data class MainViewUiState(
+    val startDate: String = "",
+    val endDate: String = "",
+    val showNoticeDialog: Boolean = false,
+    val rewardIsReadyState: Boolean = false,
+    val noticeContent: String = "",
+    val localUser: LocalUserData = LocalUserData(),
+    val recentRate: ExchangeRate = ExchangeRate()
+)

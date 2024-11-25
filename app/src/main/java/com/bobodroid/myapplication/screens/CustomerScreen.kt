@@ -22,13 +22,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.core.content.ContextCompat
 import com.bobodroid.myapplication.WebActivity
-import com.bobodroid.myapplication.routes.InvestRouteAction
-import com.bobodroid.myapplication.routes.MainRouteAction
+import com.bobodroid.myapplication.routes.MyPageRoute
+import com.bobodroid.myapplication.routes.RouteAction
 
 @Composable
 fun CustomerScreen(
-    activity: Activity,
-    routeAction: MainRouteAction
+    routeAction: RouteAction<MyPageRoute>
 ) {
 
     val context = LocalContext.current

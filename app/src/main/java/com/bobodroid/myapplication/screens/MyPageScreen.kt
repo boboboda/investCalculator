@@ -29,30 +29,78 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.currentBackStackEntryAsState
+import androidx.navigation.compose.rememberNavController
 import com.bobodroid.myapplication.R
 import com.bobodroid.myapplication.components.Buttons
 import com.bobodroid.myapplication.components.CardIconButton
 import com.bobodroid.myapplication.components.Dialogs.GuideDialog
 import com.bobodroid.myapplication.components.shadowCustom
+import com.bobodroid.myapplication.models.datamodels.roomDb.LocalUserData
 import com.bobodroid.myapplication.models.viewmodels.AllViewModel
 import com.bobodroid.myapplication.routes.MainRoute
-import com.bobodroid.myapplication.routes.MainRouteAction
+import com.bobodroid.myapplication.routes.MyPageRoute
+import com.bobodroid.myapplication.routes.RouteAction
 import com.bobodroid.myapplication.ui.theme.MyPageButtonColor
 
 @Composable
-fun MyPageScreen(routeAction: MainRouteAction, allViewModel: AllViewModel) {
+fun MyPageScreen(allViewModel: AllViewModel) {
+
+    val uiState by allViewModel.allUiState.collectAsState()
+
+    val navController = rememberNavController()
+
+    val myPageRouteAction = remember {
+        RouteAction<MyPageRoute>(navController, MyPageRoute.SelectView.routeName)
+    }
 
     val rewardAdIsReadyState = allViewModel.rewardIsReadyStateFlow.collectAsState()
+
+    NavHost(
+        navController = navController,
+        startDestination = MyPageRoute.SelectView.routeName ?: "",
+    ) {
+
+        composable(MyPageRoute.SelectView.routeName!!) {
+            MyPageSelectView(myPageRouteAction, uiState.localUser)
+        }
+
+
+        composable(MyPageRoute.CreateUser.routeName!!) {
+            CreateUserScreen(routeAction = myPageRouteAction, allViewModel = allViewModel)
+        }
+
+        composable(MyPageRoute.CustomerServiceCenter.routeName!!) {
+            CustomerScreen(routeAction = myPageRouteAction)
+        }
+
+        composable(MyPageRoute.CloudService.routeName!!) {
+            CloudScreen(myPageRouteAction, localUser =  uiState.localUser)
+        }
+
+    }
+}
+
+@Composable
+fun MyPageSelectView(
+    routeAction: RouteAction<MyPageRoute>,
+    localUser: LocalUserData
+) {
+
+
+
+    var showGuidDialog by remember { mutableStateOf(false) }
+
+    val id = if (localUser.customId != null && localUser.customId != "") { localUser.customId } else { "아이디를 만들어주세요" }
+
 
     var showRewardGuideDialog by remember {
         mutableStateOf(false)
     }
 
-    val localUser = allViewModel.localUserFlow.collectAsState()
 
-    var id = if (localUser.value.customId != null && localUser.value.customId != "") { localUser.value.customId } else { "아이디를 만들어주세요" }
-
-    var showGuidDialog by remember { mutableStateOf(false) }
 
     Column(
         modifier = Modifier.fillMaxSize()
@@ -76,7 +124,7 @@ fun MyPageScreen(routeAction: MainRouteAction, allViewModel: AllViewModel) {
         ) {
             Buttons(
                 onClicked = {
-                            routeAction.navTo(MainRoute.CreateUser)
+                    routeAction.navTo(MyPageRoute.CreateUser)
                 },
                 color = Color.White,
                 fontColor = Color.Black,
@@ -92,11 +140,11 @@ fun MyPageScreen(routeAction: MainRouteAction, allViewModel: AllViewModel) {
                     ),
             ) {
                 Text(
-            text = "id: $id",
-            fontSize = 15.sp,
-            textAlign = TextAlign.Center,
+                    text = "id: $id",
+                    fontSize = 15.sp,
+                    textAlign = TextAlign.Center,
                     fontWeight = FontWeight.Bold,
-            modifier = Modifier.padding(0.dp))
+                    modifier = Modifier.padding(0.dp))
 
                 Spacer(modifier = Modifier.weight(1f))
 
@@ -112,10 +160,10 @@ fun MyPageScreen(routeAction: MainRouteAction, allViewModel: AllViewModel) {
             horizontalArrangement = Arrangement.spacedBy(10.dp)) {
 
             Buttons(onClicked = {
-                localUser.value.customId?.let { id ->
+                localUser.customId?.let { id ->
 
                     if (id.isNotEmpty()) {
-                        routeAction.navTo(MainRoute.CloudService)
+                        routeAction.navTo(MyPageRoute.CloudService)
                     } else {
                         showGuidDialog = true
                     }
@@ -148,7 +196,7 @@ fun MyPageScreen(routeAction: MainRouteAction, allViewModel: AllViewModel) {
             }
 
             Buttons(onClicked = {
-                routeAction.navTo(MainRoute.CustomerServiceCenter)
+                routeAction.navTo(MyPageRoute.CustomerServiceCenter)
             },  color = MyPageButtonColor,
                 fontColor = Color.Black,
                 modifier = Modifier
@@ -217,17 +265,15 @@ fun MyPageScreen(routeAction: MainRouteAction, allViewModel: AllViewModel) {
 
         if(showRewardGuideDialog) {
             GuideDialog(onDismissRequest = {
-                                           showRewardGuideDialog = it
+                showRewardGuideDialog = it
             }, title = "안내", message = "광고가 준비되어있지 않습니다. 잠시 후 다시 시도해주세요", buttonLabel = "확인")
         }
 
         if(showGuidDialog) {
             GuideDialog(onDismissRequest = {
-                                           showGuidDialog = it
+                showGuidDialog = it
             }, title = "안내", message = "아이디 생성 또는 로그인 후 시도해주세요", buttonLabel = "확인")
         }
 
     }
-
-
 }

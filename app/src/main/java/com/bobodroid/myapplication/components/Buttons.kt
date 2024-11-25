@@ -28,6 +28,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.graphics.drawable.IconCompat.IconType
 import com.bobodroid.myapplication.MainActivity
+import com.bobodroid.myapplication.models.datamodels.roomDb.CurrencyType
 import com.bobodroid.myapplication.ui.theme.TopButtonColor
 import com.bobodroid.myapplication.ui.theme.TopButtonInColor
 
@@ -106,14 +107,13 @@ fun DateButtonView(
 @Composable
 fun MoneyChButtonView(
     mainText: String,
-    id: Int,
-    selectedId: Int,
-    selectAction: (Int) -> Unit
+    currencyType: CurrencyType,
+    selectedCurrencyType: CurrencyType,
+    selectAction: (CurrencyType) -> Unit
 ) {
 
-    var currentCardId: Int = id
 
-    var color = if (selectedId == currentCardId) TopButtonInColor else TopButtonColor
+    var color = if (selectedCurrencyType == currencyType) TopButtonInColor else TopButtonColor
 
     androidx.compose.material.Card(
         backgroundColor = color,
@@ -123,7 +123,7 @@ fun MoneyChButtonView(
             .width(60.dp)
             .height(50.dp),
         onClick = {
-            selectAction(currentCardId)
+            selectAction(selectedCurrencyType)
         }) {
         Box(
             modifier = Modifier.fillMaxSize(),

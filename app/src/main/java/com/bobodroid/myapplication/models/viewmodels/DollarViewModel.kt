@@ -29,15 +29,14 @@ class DollarViewModel @Inject constructor(private val investRepository: InvestRe
     private val _buyRecordFlow = MutableStateFlow<List<DrBuyRecord>>(emptyList())
     val buyRecordFlow = _buyRecordFlow.asStateFlow()
 
-    private val _filterBuyRecordFlow = MutableStateFlow<List<DrBuyRecord>>(emptyList())
-    val filterBuyRecordFlow = _filterBuyRecordFlow.asStateFlow()
+//    private val _filterBuyRecordFlow = MutableStateFlow<List<DrBuyRecord>>(emptyList())
+//    val filterBuyRecordFlow = _filterBuyRecordFlow.asStateFlow()
 
     private val _groupBuyRecordFlow = MutableStateFlow<Map<String, List<DrBuyRecord>>>(emptyMap())
     val groupBuyRecordFlow = _groupBuyRecordFlow.asStateFlow()
 
     private val _sellRecordFlow = MutableStateFlow<List<DrSellRecord>>(emptyList())
     val sellRecordFlow = _sellRecordFlow.asStateFlow()
-
 
     private val _filterSellRecordFlow = MutableStateFlow<List<DrSellRecord>>(emptyList())
     val filterSellRecordFlow = _filterSellRecordFlow.asStateFlow()
@@ -57,14 +56,14 @@ class DollarViewModel @Inject constructor(private val investRepository: InvestRe
                 if (buyRecord.isNullOrEmpty()) {
                     Log.d(TAG("DollarViewModel", "init"), "Dollar Empty Buy list")
                     _buyRecordFlow.value = emptyList()
-                    _filterBuyRecordFlow.value = emptyList()
+//                    _filterBuyRecordFlow.value = emptyList()
                     _groupBuyRecordFlow.value = setGroup(emptyList())
                 } else {
 
                     groupList.emit(buyRecord.map { it.buyDrCategoryName!! }.distinct())
 
                     _buyRecordFlow.value = buyRecord
-                    _filterBuyRecordFlow.value = buyRecord
+//                    _filterBuyRecordFlow.value = buyRecord
                     _groupBuyRecordFlow.value = setGroup(buyRecord)
                 }
 
@@ -108,7 +107,7 @@ class DollarViewModel @Inject constructor(private val investRepository: InvestRe
                         .firstOrNull() ?: "값없음"
 
                 _buyRecordFlow.value = buyRecord
-                _filterBuyRecordFlow.value = buyRecord
+//                _filterBuyRecordFlow.value = buyRecord
                 _groupBuyRecordFlow.value = setGroup(buyRecord)
 
             }
@@ -179,7 +178,7 @@ class DollarViewModel @Inject constructor(private val investRepository: InvestRe
         viewModelScope.launch {
             if (startDate == "" && endDate == "") {
 
-                _filterBuyRecordFlow.emit(_buyRecordFlow.value)
+//                _filterBuyRecordFlow.emit(_buyRecordFlow.value)
                 _filterSellRecordFlow.emit(_sellRecordFlow.value)
                 _groupBuyRecordFlow.emit(_buyRecordFlow.value.groupBy { it.buyDrCategoryName!! })
 
@@ -207,7 +206,7 @@ class DollarViewModel @Inject constructor(private val investRepository: InvestRe
                 _filterSellRecordFlow.emit(endFilterSellRecord)
 
                 _groupBuyRecordFlow.emit(setGroup(endFilterBuyRecord))
-                _filterBuyRecordFlow.emit(endFilterBuyRecord)
+//                _filterBuyRecordFlow.emit(endFilterBuyRecord)
 
                 val totalProfit = sumProfit(
                     action = DrAction.Sell,

@@ -133,12 +133,13 @@ import kotlin.math.roundToInt
 
 
 @Composable
-fun AlarmScreen(allViewModel: AllViewModel) {
+fun FcmAlarmScreen(allViewModel: AllViewModel) {
 
     val coroutineScope = rememberCoroutineScope()
     val fcmAlarmViewModel: FcmAlarmViewModel = hiltViewModel()
-    val recentRate = allViewModel.recentExchangeRateFlow.collectAsState()
     val targetRateData = fcmAlarmViewModel.targetRateFlow.collectAsState()
+
+    val fcmUiState = allViewModel.mainUiState.collectAsState()
 
     var selectedTabIndex by remember { mutableStateOf(0) }
     var currencyExpanded by remember { mutableStateOf(false) }
@@ -236,7 +237,6 @@ fun AlarmScreen(allViewModel: AllViewModel) {
             }
 
             // 현재 환율 표시
-
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.Center
@@ -245,15 +245,15 @@ fun AlarmScreen(allViewModel: AllViewModel) {
                     CurrencyType.USD -> {
                         RateView(
                             title = "USD",
-                            recentRate = "${recentRate.value.usd}",
-                            createAt = "${recentRate.value.createAt}"
+                            recentRate = "${fcmUiState.value.recentRate.usd}",
+                            createAt = fcmUiState.value.recentRate.createAt
                         )
                     }
                     CurrencyType.JPY -> {
                         RateView(
                             title = "JPY",
-                            recentRate = "${BigDecimal(recentRate.value.jpy).times(BigDecimal("100"))}",
-                            createAt = "${recentRate.value.createAt}"
+                            recentRate = "${BigDecimal(fcmUiState.value.recentRate.jpy).times(BigDecimal("100"))}",
+                            createAt = fcmUiState.value.recentRate.createAt
                         )
                     }
                 }

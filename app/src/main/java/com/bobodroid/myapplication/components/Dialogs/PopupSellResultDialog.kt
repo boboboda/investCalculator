@@ -24,7 +24,6 @@ import com.bobodroid.myapplication.models.datamodels.roomDb.DrBuyRecord
 import com.bobodroid.myapplication.models.datamodels.roomDb.WonBuyRecord
 import com.bobodroid.myapplication.models.datamodels.roomDb.YenBuyRecord
 import com.bobodroid.myapplication.models.viewmodels.DollarViewModel
-import com.bobodroid.myapplication.models.viewmodels.WonViewModel
 import com.bobodroid.myapplication.models.viewmodels.YenViewModel
 import com.bobodroid.myapplication.ui.theme.SellButtonColor
 import com.bobodroid.myapplication.ui.theme.SellPopColor

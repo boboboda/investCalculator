@@ -1,6 +1,7 @@
 package com.bobodroid.myapplication.models.datamodels.websocket
 
 import android.util.Log
+import androidx.lifecycle.viewModelScope
 import com.bobodroid.myapplication.BuildConfig
 import com.bobodroid.myapplication.MainActivity.Companion.TAG
 import com.bobodroid.myapplication.models.datamodels.repository.UserRepository
@@ -57,24 +58,32 @@ class WebSocketClient @Inject constructor(
     }
 
     suspend fun recentRateWebReceiveData(
-        onInsert: (String) -> Unit,
-        onInitialData: (String) -> Unit
+        onInsert: suspend (String) -> Unit,
+        onInitialData: suspend (String) -> Unit
     ) {
         initializationComplete.await()
         socket?.let { socket ->
+
+
             socket.on("latestRate") { args ->
-                val exchangeRatesObject = args[0] as JSONObject
-                Log.d(TAG("WebSocketClient",""), "환율 오브젝트 $exchangeRatesObject")
-                onInsert(exchangeRatesObject.toString())
+                scope.launch {
+                    val exchangeRatesObject = args[0] as JSONObject
+                    Log.d(TAG("WebSocketClient",""), "환율 오브젝트 $exchangeRatesObject")
+                    onInsert(exchangeRatesObject.toString())
+                }
+
             }
 
             socket.on("initialData") { args ->
-                val initialDataObject = args[0] as JSONObject
-                Log.d(TAG("WebSocketClient",""), "초기 데이터 $initialDataObject")
-                onInitialData(initialDataObject.toString())
+                scope.launch {
+                    val initialDataObject = args[0] as JSONObject
+                    Log.d(TAG("WebSocketClient",""), "초기 데이터 $initialDataObject")
+                    onInitialData(initialDataObject.toString())
+                }
             }
         }
     }
+
 
     suspend fun targetRateUpdateReceiveData(
         onUpdate: (String) -> Unit

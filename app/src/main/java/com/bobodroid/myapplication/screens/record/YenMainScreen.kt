@@ -1,12 +1,9 @@
-package com.bobodroid.myapplication.screens
+package com.bobodroid.myapplication.screens.record
 
-import android.util.Log
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.material.Card
@@ -18,67 +15,52 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.bobodroid.myapplication.models.viewmodels.DollarViewModel
+import com.bobodroid.myapplication.components.*
 import com.bobodroid.myapplication.ui.theme.*
 import androidx.compose.material.SnackbarHostState
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.KeyboardArrowDown
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.DpOffset
 import com.bobodroid.myapplication.R
-import com.bobodroid.myapplication.components.GetMoneyView
-import com.bobodroid.myapplication.components.addFocusCleaner
-import com.bobodroid.myapplication.components.admobs.BannerAd
-import com.bobodroid.myapplication.lists.dollorList.SellRecordBox
-import com.bobodroid.myapplication.lists.dollorList.TotalDrRecordBox
 import com.bobodroid.myapplication.models.viewmodels.AllViewModel
+import com.bobodroid.myapplication.models.viewmodels.YenViewModel
+import androidx.compose.material.SnackbarHost
+import com.bobodroid.myapplication.components.admobs.BannerAd
+import com.bobodroid.myapplication.lists.yenList.TotalYenRecordBox
 
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterialApi::class)
 @Composable
-fun DollarMainScreen(
-    dollarViewModel: DollarViewModel,
-    allViewModel: AllViewModel,
-) {
+fun YenMainScreen
+            (yenViewModel: YenViewModel,
+             allViewModel: AllViewModel) {
 
 
-    var selectedBoxId = dollarViewModel.selectedBoxId.collectAsState()
-
-    val recentExchangeRate = allViewModel.recentExchangeRateFlow.collectAsState()
-
-
-
-    val reFreshDate = allViewModel.refreshDateFlow.collectAsState()
-
-    val snackBarHostState = remember { SnackbarHostState() }
-
-    val scope = rememberCoroutineScope()
-
-
-
-    var dropdownExpanded by remember { mutableStateOf(false) }
-
-    val focusManager = LocalFocusManager.current
+    var selectedBoxId = yenViewModel.selectedBoxId.collectAsState()
 
     var hideSellRecordState by remember { mutableStateOf(false) }
 
     val visibleIcon = if (hideSellRecordState)  R.drawable.ic_visible  else  R.drawable.ic_invisible
 
-    val totalDrSellProfit = dollarViewModel.totalSellProfit.collectAsState()
+
+    var dropdownExpanded by remember { mutableStateOf(false) }
+
+    val reFreshDate = allViewModel.refreshDateFlow.collectAsState()
+
+    val snackbarHostState = remember { SnackbarHostState() }
+
+    val focusManager = LocalFocusManager.current
+
+    val totalYenSellProfit = yenViewModel.totalSellProfit.collectAsState()
 
     val bannerState = allViewModel.deleteBannerStateFlow.collectAsState()
-
-
 
     Column(
         modifier = Modifier
             .fillMaxSize()
             .addFocusCleaner(focusManager),
         horizontalAlignment = Alignment.CenterHorizontally
-    )
-    {
+    ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -88,15 +70,17 @@ fun DollarMainScreen(
             horizontalArrangement = Arrangement.Start,
             verticalAlignment = Alignment.CenterVertically,
         ) {
+
             Column(modifier = Modifier
                 .wrapContentWidth()
                 .padding(end = 20.dp)) {
-                GetMoneyView(
-                    getMoney = "${totalDrSellProfit.value}",
-                    onClicked = {  },
-                    allViewModel
-                )
+//                GetMoneyView(
+//                    getMoney = "${totalYenSellProfit.value}",
+//                    onClicked = {  },
+//                    allViewModel
+//                )
             }
+            
             Spacer(modifier = Modifier.weight(1f))
 
             Card(
@@ -151,42 +135,32 @@ fun DollarMainScreen(
             Text(
                 modifier = Modifier.padding(start = 10.dp),
                 text = "예상수익 새로고침 시간: ${reFreshDate.value}",
-                textAlign = TextAlign.Center
-            )
+                textAlign = TextAlign.Center)
         }
 
-        Box(
-            modifier = Modifier
-                .fillMaxSize(),
-            contentAlignment = Alignment.BottomCenter
-        ) {
+        Box(modifier = Modifier
+            .fillMaxSize(),
+            contentAlignment = Alignment.BottomCenter) {
+
             // Record item
             Column(
                 modifier = Modifier
                     .fillMaxSize()
             ) {
-                TotalDrRecordBox(
-                    dollarViewModel,
-                    allViewModel,
-                    snackBarHostState,
-                    hideSellRecordState,
-
-                    )
+                TotalYenRecordBox(
+                    yenViewModel,
+                    snackbarHostState,
+                    hideSellRecordState
+                )
             }
-
             //snackBar
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .wrapContentHeight()
+            Row(modifier = Modifier
+                .fillMaxWidth()
+                .wrapContentHeight()
             ) {
-
-
-                androidx.compose.material.SnackbarHost(
-                    hostState = snackBarHostState, modifier = Modifier,
+                SnackbarHost(
+                    hostState = snackbarHostState, modifier = Modifier,
                     snackbar = { snackBarData ->
-
-
                         Card(
                             shape = RoundedCornerShape(8.dp),
                             border = BorderStroke(1.5.dp, Color.Black),
@@ -216,7 +190,7 @@ fun DollarMainScreen(
                                     modifier = Modifier
                                         .padding(8.dp)
                                         .clickable {
-                                            snackBarHostState.currentSnackbarData?.dismiss()
+                                            snackbarHostState.currentSnackbarData?.dismiss()
                                         },
                                     text = "닫기",
                                     fontWeight = FontWeight.Medium
@@ -225,16 +199,10 @@ fun DollarMainScreen(
                         }
                     })
             }
-
         }
 
     }
-}
-
-
-
-
-
+            }
 
 
 

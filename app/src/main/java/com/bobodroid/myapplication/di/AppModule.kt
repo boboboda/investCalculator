@@ -3,6 +3,7 @@ package com.bobodroid.myapplication.di
 import com.bobodroid.myapplication.models.datamodels.repository.DollarRepository
 import com.bobodroid.myapplication.models.datamodels.repository.ExchangeRateRepository
 import com.bobodroid.myapplication.models.datamodels.repository.InvestRepository
+import com.bobodroid.myapplication.models.datamodels.repository.LatestRateRepository
 import com.bobodroid.myapplication.models.datamodels.repository.UserRepository
 import com.bobodroid.myapplication.models.datamodels.repository.WonRepository
 import com.bobodroid.myapplication.models.datamodels.repository.YenRepository
@@ -14,6 +15,7 @@ import com.bobodroid.myapplication.models.datamodels.roomDb.WonBuyDatabaseDao
 import com.bobodroid.myapplication.models.datamodels.roomDb.WonSellDatabaseDao
 import com.bobodroid.myapplication.models.datamodels.roomDb.YenBuyDatabaseDao
 import com.bobodroid.myapplication.models.datamodels.roomDb.YenSellDatabaseDao
+import com.bobodroid.myapplication.models.datamodels.websocket.WebSocketClient
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -45,6 +47,22 @@ object AppModule {
     @Provides
     fun provideExchangeRateRepository(exchangeRateDataBaseDao: ExchangeRateDataBaseDao): ExchangeRateRepository {
         return ExchangeRateRepository(exchangeRateDataBaseDao)
+    }
+
+    @Singleton
+    @Provides
+    fun provideLatestRateRepository(webSocketClient: WebSocketClient): LatestRateRepository {
+        return LatestRateRepository(webSocketClient)
+    }
+
+    @Provides
+    @Singleton
+    fun provideWebSocketClient(
+        userRepository: UserRepository
+    ): WebSocketClient {
+        return WebSocketClient(
+            userRepository
+        )
     }
 
 }

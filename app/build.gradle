@@ -226,20 +226,7 @@ dependencies {
     // 웹소켓
     implementation 'io.socket:socket.io-client:2.0.0'
 
-    def chart_version = "2.0.0-beta.2"
-    // 차트 라이브러리
-    // For Jetpack Compose.
-    implementation("com.patrykandpatrick.vico:compose:$chart_version")
+    //차트
+    implementation 'com.github.PhilJay:MPAndroidChart:v3.1.0'
 
-    // For `compose`. Creates a `ChartStyle` based on an M2 Material Theme.
-    implementation("com.patrykandpatrick.vico:compose-m2:$chart_version")
-
-    // For `compose`. Creates a `ChartStyle` based on an M3 Material Theme.
-    implementation("com.patrykandpatrick.vico:compose-m3:$chart_version")
-
-    // Houses the core logic for charts and other elements. Included in all other modules.
-    implementation("com.patrykandpatrick.vico:core:$chart_version")
-
-    // For the view system.
-    implementation("com.patrykandpatrick.vico:views:$chart_version")
 }

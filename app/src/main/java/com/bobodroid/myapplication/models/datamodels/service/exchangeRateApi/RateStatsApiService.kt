@@ -14,30 +14,45 @@ private val moshi = Moshi.Builder()
     .add(KotlinJsonAdapterFactory())
     .build()
 
-private val RateStatsRetrofit = Retrofit.Builder()
-    .baseUrl("${BuildConfig.BASE_URL}/exchange-rate/")
+private val RateRetrofit = Retrofit.Builder()
+    .baseUrl("${BuildConfig.BASE_URL}")
     .addConverterFactory(MoshiConverterFactory.create(moshi))
     .build()
 
 
-object RateStatsApi {
-    val rateStatsService : RateStatsApiService by lazy { RateStatsRetrofit.create(RateStatsApiService::class.java) }
+object RateApi {
+    val rateService : RateApiService by lazy { RateRetrofit.create(RateApiService::class.java) }
 }
 
-interface RateStatsApiService {
-    @GET("minute")
-    suspend fun getMinuteRates(
-        @Query("startDate") startDate: String
+interface RateApiService {
+//    @GET("exchange-rate/daily")
+//    suspend fun getDailyRange(
+//        @Query("date") date: String
+//    ): List<ExchangeRateResponse>
+//
+//    @GET("exchange-rate/weekly")
+//    suspend fun getWeeklyRange(
+//        @Query("startDate") startDate: String,
+//        @Query("endDate") endDate: String
+//    ): List<ExchangeRateResponse>
+//
+//    @GET("exchange-rate/monthly")
+//    suspend fun getMonthlyRange(
+//        @Query("startDate") startDate: String,
+//        @Query("endDate") endDate: String
+//    ): List<ExchangeRateResponse>
+//
+//    @GET("exchange-rate/yearly")
+//    suspend fun getYearlyRange(
+//        @Query("startDate") startDate: String,
+//        @Query("endDate") endDate: String
+//    ): List<ExchangeRateResponse>
+
+    // 또는 통합 엔드포인트 사용
+    @GET("exchange-rate/range")
+    suspend fun getRatesByPeriod(
+        @Query("period") period: String,
+        @Query("startDate") startDate: String,
+        @Query("endDate") endDate: String? = null
     ): List<ExchangeRateResponse>
-
-    @GET("day")
-    suspend fun getDailyStats(
-        @Query("date") date: String
-    ): DailyStatsResponse
-
-    @GET("month")
-    suspend fun getMonthlyStats(
-        @Query("year") year: String,
-        @Query("month") month: String
-    ): MonthlyStatsResponse
 }

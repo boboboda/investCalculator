@@ -48,6 +48,7 @@ sealed class MainRoute(
     object CreateUser: MainRoute("CreateUser", "유저생성")
     object CustomerServiceCenter: MainRoute("CustomerServiceCenter", "고객센터")
     object CloudService: MainRoute("CloudService", "클라우드")
+    object Chart: MainRoute("Chart", "차트")
 
 
 

@@ -1,164 +1,294 @@
 package com.bobodroid.myapplication.components.chart
 
-import android.text.Layout
-import android.text.TextUtils
-import androidx.compose.material.MaterialTheme
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
+import android.util.Log
+import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.material.Text
+import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.*
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.unit.dp
-import com.bobodroid.myapplication.models.datamodels.service.exchangeRateApi.ExchangeRates
-import com.patrykandpatrick.vico.compose.cartesian.CartesianChartHost
-import com.patrykandpatrick.vico.compose.cartesian.VicoScrollState
-import com.patrykandpatrick.vico.compose.cartesian.axis.rememberBottom
-import com.patrykandpatrick.vico.compose.cartesian.axis.rememberStart
-import com.patrykandpatrick.vico.compose.cartesian.layer.rememberColumnCartesianLayer
-import com.patrykandpatrick.vico.compose.cartesian.layer.rememberLine
-import com.patrykandpatrick.vico.compose.cartesian.layer.rememberLineCartesianLayer
-import com.patrykandpatrick.vico.compose.cartesian.rememberCartesianChart
-import com.patrykandpatrick.vico.compose.cartesian.rememberVicoScrollState
-import com.patrykandpatrick.vico.compose.cartesian.rememberVicoZoomState
-import com.patrykandpatrick.vico.compose.common.component.rememberLineComponent
-import com.patrykandpatrick.vico.compose.common.component.shapeComponent
-import com.patrykandpatrick.vico.compose.common.dimensions
-import com.patrykandpatrick.vico.compose.common.fill
-import com.patrykandpatrick.vico.core.cartesian.Scroll
-import com.patrykandpatrick.vico.core.cartesian.axis.BaseAxis
-import com.patrykandpatrick.vico.core.cartesian.axis.HorizontalAxis
-import com.patrykandpatrick.vico.core.cartesian.axis.VerticalAxis
-import com.patrykandpatrick.vico.core.cartesian.data.CartesianChartModelProducer
-import com.patrykandpatrick.vico.core.cartesian.data.CartesianLayerRangeProvider
-import com.patrykandpatrick.vico.core.cartesian.data.CartesianValueFormatter
-import com.patrykandpatrick.vico.core.cartesian.decoration.HorizontalLine
-import com.patrykandpatrick.vico.core.cartesian.layer.ColumnCartesianLayer
-import com.patrykandpatrick.vico.core.cartesian.layer.LineCartesianLayer
-import com.patrykandpatrick.vico.core.common.Dimensions
-import com.patrykandpatrick.vico.core.common.HorizontalPosition
-import com.patrykandpatrick.vico.core.common.component.LineComponent
-import com.patrykandpatrick.vico.core.common.component.ShapeComponent
-import com.patrykandpatrick.vico.core.common.component.TextComponent
-import com.patrykandpatrick.vico.core.common.data.CartesianLayerDrawingModelInterpolator
-import com.patrykandpatrick.vico.core.common.shape.CorneredShape
-import java.text.DecimalFormat
-import java.text.SimpleDateFormat
-import java.util.Calendar
-import java.util.Date
-import java.util.Locale
-
+import com.bobodroid.myapplication.MainActivity.Companion.TAG
+import com.bobodroid.myapplication.models.viewmodels.RateRange
+import com.bobodroid.myapplication.models.viewmodels.RateRangeCurrency
+import kotlin.math.roundToInt
 
 @Composable
 fun ExchangeRateChart(
-    modelProducer: CartesianChartModelProducer,
-    modifier: Modifier
+    data: List<RateRangeCurrency>,
 ) {
+    var selectedPoint by remember { mutableStateOf<RateRangeCurrency?>(null) }
+    var chartSize by remember { mutableStateOf(Size.Zero) }
+    val screenWidth = LocalConfiguration.current.screenWidthDp.dp
+    val scrollState = rememberScrollState()
 
-    CartesianChartHost(
-        chart = rememberCartesianChart(
-//            rememberColumnCartesianLayer(
-//                ColumnCartesianLayer.ColumnProvider.series(
-//                    rememberLineComponent(
-//                        color = Color(0xffff5500),
-//                        thickness = 16.dp,
-//                        shape = CorneredShape.rounded(allPercent = 40)
-//                    )
-//                ),
-//                rangeProvider = remember {
-//                    CartesianLayerRangeProvider.fixed(
-//                        maxY = 1400.0,
-//                        minY = 1200.0)
-//                },
-//                columnCollectionSpacing = 5.dp,
-//
-//            ),
-            rememberLineCartesianLayer(
-                LineCartesianLayer.LineProvider.series(
-                    LineCartesianLayer.rememberLine(
-                        fill = remember { LineCartesianLayer.LineFill.single(fill(Color(0xfffdc8c4))) },
-                        pointConnector = remember { LineCartesianLayer.PointConnector.cubic(curvature = 0f) },
-                    )
-                ),
-                rangeProvider = remember {
-                    CartesianLayerRangeProvider.fixed(
-                        maxY = 1400.0,
-                        minY = 1370.0)
-                },
-                pointSpacing = 1.dp,
-                drawingModelInterpolator = remember { CartesianLayerDrawingModelInterpolator.default() }
-            ),
-            startAxis = VerticalAxis.rememberStart(
-                line = rememberLineComponent(
-                    color = Color.Black,
-                    thickness = 1.dp
-                ),
-                label = rememberTextComponent(Color.Black),
-                itemPlacer = remember {
-                    VerticalAxis. ItemPlacer. step(
-                        step = { 5.0 },
-                        shiftTopLines = true
-                    )
-                },
-                tickLength = 10.dp,
-                valueFormatter = remember {
-                    CartesianValueFormatter.decimal()
+    val xAxisScale = 0.8f
+
+
+
+    LaunchedEffect(data, xAxisScale) {
+        // 스크롤을 최대값으로 설정
+        selectedPoint = null
+        scrollState.animateScrollTo(scrollState.maxValue)
+
+        Log.d(TAG("ExchangeRateChart",""), "data: $data")
+    }
+
+    val leftMargin = 10f
+    val rightMargin = 10f
+    val topMargin = 10f
+    val bottomMargin = 10f
+
+    if (data.isEmpty()) {
+        Log.d(TAG("ExchangeRateChart",""), "data is empty or only has one point")
+        return
+    }
+
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(
+                start = leftMargin.dp,
+                end = rightMargin.dp,
+                top = topMargin.dp,
+                bottom = bottomMargin.dp
+            )
+            .clipToBounds()  // 부모 영역을 벗어나는 내용을 클리핑
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .horizontalScroll(scrollState)
+                .padding(end = 30.dp)
+        ) {
+            Canvas(
+                modifier = Modifier
+                    .width(screenWidth * xAxisScale)
+                    .fillMaxHeight(1f)
+                    .onSizeChanged { size ->
+                        chartSize = Size(size.width.toFloat(), size.height.toFloat())
+                    }
+                    .pointerInput(data, xAxisScale) {
+                        detectDragGestures(
+                            onDragStart = { offset ->
+                                // 드래그 시작할 때
+                                if (chartSize != Size.Zero) {
+                                    selectedPoint = findClosestPoint(offset, data, chartSize, xAxisScale)
+                                }
+                            },
+                            onDrag = { change, _ ->
+                                // 드래그 중
+                                if (chartSize != Size.Zero) {
+                                    selectedPoint = findClosestPoint(change.position, data, chartSize, xAxisScale)
+                                }
+                            }
+                        )
+                    }
+                    .pointerInput(data, xAxisScale) {  // Unit 대신 data와 xAxisScale 추가
+                        detectTapGestures { offset ->
+                            if (chartSize != Size.Zero) {
+                                selectedPoint = findClosestPoint(offset, data, chartSize, xAxisScale)
+                            }
+                        }
+                    }
+            ) {
+                val chartHeight = size.height
+
+                val maxRate = data.maxOf { it.rate }
+                val minRate = data.minOf { it.rate }
+                val rateRange = maxRate - minRate
+                val padding = if (rateRange == 0f) {
+                    // 모든 값이 같을 때 적절한 패딩 설정
+                    maxRate * 0.1f  // 최대값의 10%를 패딩으로 사용
+                } else {
+                    rateRange * 1f
                 }
 
-            ),
-            marker = rememberMarker(),
-//            decorations = listOf(rememberComposeHorizontalLine()),
-        ),
-        modelProducer = modelProducer,
-        modifier = modifier,
-        scrollState = rememberVicoScrollState(
-            initialScroll = Scroll.Absolute.End
-        ),
-//        zoomState = rememberVicoZoomState(),
+                fun calculatePointPosition(index: Int, rate: Float): Offset {
+                    val normalizedRate = if (rateRange == 0f) {
+                        0.5f  // 모든 값이 같을 때 중앙에 위치
+                    } else {
+                        (rate - minRate + padding) / (rateRange + 2 * padding)
+                    }
+                    val xOffset = 100f
+                    return Offset(
+                        x = xOffset + (index.toFloat() / (data.size - 1)) * ((size.width * xAxisScale) - xOffset),
+                        y = chartHeight * (1f - normalizedRate)
+                    )
+                }
 
-    )
-}
+                // 데이터 라인과 포인트 그리기
+                val path = Path()
+                val points = data.mapIndexed { index, item ->
+                    calculatePointPosition(index, item.rate)
+                }
 
-// 텍스트 컴포넌트 헬퍼 함수
-@Composable
-private fun rememberTextComponent(color: Color) = remember {
-    TextComponent(
-        color = color.toArgb()
-    )
-}
+                points.forEachIndexed { index, point ->
+                    if (index == 0) path.moveTo(point.x, point.y)
+                    else path.lineTo(point.x, point.y)
+                }
+
+                drawPath(
+                    path = path,
+                    color = Color.Red,
+                    style = Stroke(width = 2f)
+                )
+
+                drawCircle(
+                    color = Color.Red,
+                    radius = 10f,
+                    center = points.last()
+                )
+
+                val maxPoint = data.withIndex().maxByOrNull { it.value.rate }!!
+                val minPoint = data.withIndex().minByOrNull { it.value.rate }!!
+
+                // 최대/최소값 포인트의 위치 계산
+                val maxPointPosition = calculatePointPosition(maxPoint.index, maxPoint.value.rate)
+                val minPointPosition = calculatePointPosition(minPoint.index, minPoint.value.rate)
+
+                // 최대값 텍스트 그리기
+                val maxMarkerPaint = android.graphics.Paint().apply {
+                    color = android.graphics.Color.RED
+                    textSize = 32f
+                    textAlign = android.graphics.Paint.Align.CENTER
+                }
+
+                drawContext.canvas.nativeCanvas.apply {
+                    // 최대값
+                    drawText(
+                        "최고 ${maxPoint.value.rate}" ,
+                        maxPointPosition.x,
+                        maxPointPosition.y - 30f,  // 포인트 위에 표시
+                        maxMarkerPaint
+                    )
+
+                    // 최소값
+                    drawText(
+                        "최소 ${minPoint.value.rate}",
+                        minPointPosition.x,
+                        minPointPosition.y + 50f,  // 포인트 위에 표시
+                        maxMarkerPaint
+                    )
+                }
 
 
+                // Draw selected point marker
+                selectedPoint?.let { selected ->
+                    val index = data.indexOf(selected)
+                    if (index != -1 && index < points.size) {
+                        val point = calculatePointPosition(index, selected.rate)
 
+                        drawCircle(
+                            color = Color.Red,
+                            radius = 8f,
+                            center = point
+                        )
 
+                        // 마커 박스 그리기 (두 줄 텍스트용 높이 증가)
+                        val dateText = selected.createAt
+                        val rateText = selected.rate.toString()
+                        val markerPaint = android.graphics.Paint().apply {
+                            color = android.graphics.Color.BLACK
+                            textSize = 32f
+                            textAlign = android.graphics.Paint.Align.CENTER
+                        }
 
-@Composable
-private fun rememberComposeHorizontalLine(): HorizontalLine {
-    val color = Color.Black
-    val line = rememberLineComponent(color, HORIZONTAL_LINE_THICKNESS_DP.dp)
-    val labelComponent =
-        com.patrykandpatrick.vico.compose.common.component.rememberTextComponent(
-            margins = dimensions(HORIZONTAL_LINE_LABEL_MARGIN_DP.dp),
-            padding =
-            dimensions(
-                HORIZONTAL_LINE_LABEL_HORIZONTAL_PADDING_DP.dp,
-                HORIZONTAL_LINE_LABEL_VERTICAL_PADDING_DP.dp,
-            ),
-            background = shapeComponent(Color.White, CorneredShape.Pill),
-        )
-    val horizontalLabelPosition = HorizontalPosition.End
-    return remember { HorizontalLine(
-        y = { HORIZONTAL_LINE_Y },
-        line,
-        labelComponent,
-        horizontalLabelPosition =  horizontalLabelPosition
-        )
+                        val textY = 40f
+                        val lineHeight = 35f  // 줄 간격
+                        val maxTextWidth = maxOf(
+                            markerPaint.measureText(dateText),
+                            markerPaint.measureText(rateText)
+                        )
+                        val boxMargin = 20f
 
+                        val boxRect = Rect(
+                            point.x - maxTextWidth/2 - boxMargin,
+                            textY - 40f,  // 박스 높이 증가
+                            point.x + maxTextWidth/2 + boxMargin,
+                            textY + lineHeight + 10f  // 박스 높이 증가
+                        )
 
+                        drawRect(
+                            color = Color.White,
+                            topLeft = Offset(boxRect.left, boxRect.top),
+                            size = Size(boxRect.width, boxRect.height)
+                        )
+
+                        drawRect(
+                            color = Color.Gray,
+                            topLeft = Offset(boxRect.left, boxRect.top),
+                            size = Size(boxRect.width, boxRect.height),
+                            style = Stroke(width = 1f)
+                        )
+
+                        drawLine(
+                            color = Color.Gray,
+                            start = Offset(point.x, boxRect.bottom),
+                            end = Offset(point.x, point.y),
+                            strokeWidth = 1f,
+                            pathEffect = PathEffect.dashPathEffect(floatArrayOf(10f, 10f), 0f)
+                        )
+
+                        drawContext.canvas.nativeCanvas.apply {
+                            // 날짜 텍스트
+                            drawText(
+                                dateText,
+                                point.x,
+                                textY,
+                                markerPaint
+                            )
+                            // 환율 텍스트
+                            drawText(
+                                rateText,
+                                point.x,
+                                textY + lineHeight,  // 두 번째 줄
+                                markerPaint
+                            )
+                        }
+                    }
+                }
+            }
+        }
     }
 }
 
-private const val HORIZONTAL_LINE_Y = 1347.39
-private val HORIZONTAL_LINE_COLOR = Color.Black.toArgb()
-private const val HORIZONTAL_LINE_THICKNESS_DP = 2f
-private const val HORIZONTAL_LINE_LABEL_HORIZONTAL_PADDING_DP = 8f
-private const val HORIZONTAL_LINE_LABEL_VERTICAL_PADDING_DP = 2f
-private const val HORIZONTAL_LINE_LABEL_MARGIN_DP = 4f
+private fun findClosestPoint(
+    tapPosition: Offset,
+    data: List<RateRangeCurrency>,
+    size: Size,
+    xAxisScale: Float
+): RateRangeCurrency {
+    var minDistance = Float.MAX_VALUE
+    var closestPoint = data.first()
+    val xOffset = 100f  // 시작 지점 오프셋
+
+    data.forEachIndexed { index, item ->
+        val pointPosition = Offset(
+            x = xOffset + (index.toFloat() / (data.size - 1)) * ((size.width * xAxisScale) - xOffset),  // xAxisScale 적용
+            y = 0f
+        )
+
+        val distance = kotlin.math.abs(tapPosition.x - pointPosition.x)
+        if (distance < minDistance) {
+            minDistance = distance
+            closestPoint = item
+        }
+    }
+
+    return closestPoint
+}

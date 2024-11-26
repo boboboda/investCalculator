@@ -133,13 +133,13 @@ import kotlin.math.roundToInt
 
 
 @Composable
-fun FcmAlarmScreen(allViewModel: AllViewModel) {
+fun FcmAlarmScreen() {
 
     val coroutineScope = rememberCoroutineScope()
     val fcmAlarmViewModel: FcmAlarmViewModel = hiltViewModel()
     val targetRateData = fcmAlarmViewModel.targetRateFlow.collectAsState()
 
-    val fcmUiState = allViewModel.mainUiState.collectAsState()
+    val fcmUiState = fcmAlarmViewModel.alarmUiState.collectAsState()
 
     var selectedTabIndex by remember { mutableStateOf(0) }
     var currencyExpanded by remember { mutableStateOf(false) }

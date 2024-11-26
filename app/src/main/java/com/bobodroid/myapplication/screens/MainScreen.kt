@@ -43,6 +43,7 @@ import com.bobodroid.myapplication.components.Dialogs.FloatPopupNumberView
 import com.bobodroid.myapplication.components.Dialogs.PopupNumberView
 import com.bobodroid.myapplication.components.Dialogs.TextFieldDialog
 import com.bobodroid.myapplication.models.datamodels.roomDb.CurrencyType
+import com.bobodroid.myapplication.models.viewmodels.MainViewModel
 import com.bobodroid.myapplication.screens.record.DollarMainScreen
 import com.bobodroid.myapplication.ui.theme.BottomSheetTitleColor
 import com.bobodroid.myapplication.ui.theme.BuyColor
@@ -55,9 +56,9 @@ import com.bobodroid.myapplication.screens.record.YenMainScreen
 fun MainScreen(
     dollarViewModel: DollarViewModel,
     yenViewModel: YenViewModel,
-    allViewModel: AllViewModel,
+    mainViewModel: MainViewModel
 ) {
-    val mainUiState by allViewModel.allUiState.collectAsState()
+    val mainUiState by mainViewModel.allUiState.collectAsState()
 
     val coroutineScope = rememberCoroutineScope()
 
@@ -72,9 +73,6 @@ fun MainScreen(
     val dollarDateRecord = dollarViewModel.dateFlow.collectAsState()
 
     val yenDateRecord = yenViewModel.dateFlow.collectAsState()
-
-    val noticeShowDialog = allViewModel.noticeShowDialog.collectAsState()
-
 
 
 
@@ -689,14 +687,13 @@ fun MainScreen(
 
             if (mainUiState.showNoticeDialog) {
                 NoticeDialog(
-                    content = mainUiState.noticeContent,
-                    onDismissRequest = { close ->
-                        allViewModel.noticeShowDialog.value = close
-                        allViewModel.openAppNoticeDateState.value = close
+                    content = mainUiState.notice.content ?: "",
+                    onDismissRequest = {
+                        allViewModel.closeNotice()
                     },
                     dateDelaySelected = {
                         coroutineScope.launch {
-                            allViewModel.selectDelayDate(mainUiState.localUser)
+                            allViewModel.selectDelayDate()
                             delay(1000)
                         }
                     })

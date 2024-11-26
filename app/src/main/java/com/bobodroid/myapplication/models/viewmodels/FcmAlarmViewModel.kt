@@ -5,8 +5,10 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.bobodroid.myapplication.MainActivity.Companion.TAG
 import com.bobodroid.myapplication.billing.BillingClientLifecycle.Companion.TAG
+import com.bobodroid.myapplication.models.datamodels.repository.LatestRateRepository
 import com.bobodroid.myapplication.models.datamodels.repository.UserRepository
 import com.bobodroid.myapplication.models.datamodels.roomDb.CurrencyType
+import com.bobodroid.myapplication.models.datamodels.roomDb.ExchangeRate
 import com.bobodroid.myapplication.models.datamodels.roomDb.RateDirection
 import com.bobodroid.myapplication.models.datamodels.roomDb.RateType
 import com.bobodroid.myapplication.models.datamodels.roomDb.TargetRates
@@ -28,7 +30,11 @@ import javax.inject.Inject
 class FcmAlarmViewModel@Inject constructor(
    private val userRepository: UserRepository,
    private val fcmUseCases: TargetRateUseCases,
+    private val latestRateRepository: LatestRateRepository
 ): ViewModel()  {
+
+    private val _alarmUiState = MutableStateFlow(AlarmUiState())
+    val alarmUiState = _alarmUiState.asStateFlow()
 
     val sampleDollarHighRates = listOf(
         Rate(number = 1, rate = 1320),
@@ -72,10 +78,18 @@ class FcmAlarmViewModel@Inject constructor(
 
 
     init {
-        initViewModel()
+        viewModelScope.launch {
+            initViewModel()
+        }
+
     }
 
-    fun initViewModel() {
+    private suspend fun initViewModel() {
+        initAlarmData()
+        receivedLatestRate()
+    }
+
+    fun initAlarmData() {
         viewModelScope.launch {
             // 유저 데이터가 준비될 때까지 대기
             val userData = userRepository.waitForUserData()
@@ -96,6 +110,15 @@ class FcmAlarmViewModel@Inject constructor(
                     }
                 }
             )
+        }
+    }
+
+    private suspend fun receivedLatestRate() {
+        latestRateRepository.latestRateFlow.collect { latestRate ->
+            val uiState = _alarmUiState.value.copy(
+                recentRate = latestRate
+            )
+            _alarmUiState.emit(uiState)
         }
     }
 
@@ -146,3 +169,7 @@ class FcmAlarmViewModel@Inject constructor(
 
 
 }
+
+data class AlarmUiState(
+    val recentRate: ExchangeRate = ExchangeRate()
+)

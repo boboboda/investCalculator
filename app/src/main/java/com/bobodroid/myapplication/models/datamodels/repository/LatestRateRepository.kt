@@ -26,7 +26,7 @@ class LatestRateRepository @Inject constructor(
     val latestRateFlow = _latestRate.asStateFlow()
 
 
-    private suspend fun subscribeToExchangeRateUpdates() {
+    suspend fun subscribeToExchangeRateUpdates() {
         webSocketClient.recentRateWebReceiveData(
             onInsert = { latestRate ->
                 Log.d(TAG("AllViewModel", "subscribeToExchangeRateUpdates"), "웹소켓 환율 최신 데이터: $latestRate")

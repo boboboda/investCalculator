@@ -49,7 +49,7 @@ import com.bobodroid.myapplication.models.viewmodels.AllViewModel
 @Composable
 fun NoticeDialog(
     content: String,
-    onDismissRequest: (Boolean) -> Unit,
+    onDismissRequest: () -> Unit,
     dateDelaySelected: () -> Unit,
 ) {
 
@@ -72,7 +72,7 @@ fun NoticeDialog(
             ) {
                 CardIconButton(
                     imageVector = Icons.Filled.Close,
-                    onClicked = { onDismissRequest.invoke(false) },
+                    onClicked = { onDismissRequest.invoke() },
                     modifier = Modifier,
                     buttonColor = Color.White
                 )
@@ -106,7 +106,7 @@ fun NoticeDialog(
                 horizontalArrangement = Arrangement.End
             ) {
                 BasicCheckBox {
-                    onDismissRequest(false)
+                    onDismissRequest()
                     dateDelaySelected.invoke()
                 }
             }

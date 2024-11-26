@@ -19,9 +19,8 @@ import javax.inject.Inject
 @HiltAndroidApp
 class InvestApplication: Application() {
 
-
-
-    @Inject lateinit var localExistCheckUseCase: LocalExistCheckUseCase
+    @Inject
+    lateinit var appStarter: AppStarter
 
     private val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
@@ -36,21 +35,16 @@ class InvestApplication: Application() {
         private set
     override fun onCreate() {
 
+        MobileAds.initialize(this)
+
         prefs = PreferenceUtil(applicationContext)
         MobileAds.initialize(this)
         super.onCreate()
 
-        initializeApp()
+        appStarter.startApp()
 
         instance = this
         this.billingClientLifecycle = BillingClientLifecycle.getInstance(this)
 
-    }
-
-    private fun initializeApp() {
-        applicationScope.launch {
-            // 로컬 유저 체크 및 데이터 초기화
-            localExistCheckUseCase()
-        }
     }
 }

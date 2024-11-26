@@ -20,7 +20,7 @@ fun Context.findActivity(): Activity? = when (this) {
     else -> null
 }
 
-fun loadInterstitial(context: Context) {
+fun loadInterstitial(context: Context, onReady:((Boolean) -> Unit)? = null) {
     InterstitialAd.load(
         context,
         BuildConfig.FONT_AD_KEY, //Change this with your own AdUnitID!
@@ -32,6 +32,7 @@ fun loadInterstitial(context: Context) {
 
             override fun onAdLoaded(interstitialAd: InterstitialAd) {
                 mInterstitialAd = interstitialAd
+                onReady?.invoke(true)
             }
         }
     )

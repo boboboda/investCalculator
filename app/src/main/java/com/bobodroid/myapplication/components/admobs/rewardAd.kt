@@ -4,7 +4,6 @@ import android.content.Context
 import android.util.Log
 import com.bobodroid.myapplication.BuildConfig
 import com.bobodroid.myapplication.MainActivity.Companion.TAG
-import com.bobodroid.myapplication.models.viewmodels.AllViewModel
 import com.google.android.gms.ads.AdError
 import com.google.android.gms.ads.AdRequest
 import com.google.android.gms.ads.FullScreenContentCallback
@@ -18,7 +17,7 @@ private var rewardedAd: RewardedAd? = null
 
 private var targetRewardedAd: RewardedAd? = null
 
-fun loadRewardedAdvertisement(context: Context, allViewModel: AllViewModel) {
+fun loadRewardedAdvertisement(context: Context, onReadyAd:(Boolean)-> Unit) {
     val adRequest = AdRequest.Builder().build()
 
     RewardedAd.load(
@@ -35,7 +34,8 @@ fun loadRewardedAdvertisement(context: Context, allViewModel: AllViewModel) {
             override fun onAdLoaded(ad: RewardedAd) {
                 Log.d(TAG("loadRewardedAdvertisement",""), "Ad was loaded.")
                 rewardedAd = ad
-                allViewModel.onReadyRewardAd.value = true
+
+                onReadyAd(true)
             }
         })
 }
@@ -61,7 +61,6 @@ fun showRewardedAdvertisement(context: Context, onAdDismissed: () -> Unit) {
 
             override fun onAdDismissedFullScreenContent() {
                 rewardedAd = null
-
                 onAdDismissed()
             }
         }
@@ -81,7 +80,7 @@ fun showRewardedAdvertisement(context: Context, onAdDismissed: () -> Unit) {
 }
 
 
-fun loadTargetRewardedAdvertisement(context: Context) {
+fun loadTargetRewardedAdvertisement(context: Context, onReadyAd: ((Boolean) -> Unit)? = null) {
     val adRequest = AdRequest.Builder().build()
 
     RewardedAd.load(
@@ -98,6 +97,7 @@ fun loadTargetRewardedAdvertisement(context: Context) {
             override fun onAdLoaded(ad: RewardedAd) {
                 Log.d(TAG("loadRewardedAdvertisement",""), "Ad was loaded.")
                 targetRewardedAd = ad
+                onReadyAd?.invoke(true)
             }
         })
 }

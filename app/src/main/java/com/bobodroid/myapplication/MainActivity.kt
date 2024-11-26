@@ -36,9 +36,9 @@ import com.bobodroid.myapplication.components.admobs.loadInterstitial
 import com.bobodroid.myapplication.components.admobs.loadRewardedAdvertisement
 import com.bobodroid.myapplication.components.admobs.loadTargetRewardedAdvertisement
 import com.bobodroid.myapplication.components.admobs.showTargetRewardedAdvertisement
-import com.bobodroid.myapplication.models.viewmodels.AllViewModel
 import com.bobodroid.myapplication.models.viewmodels.AnalysisViewModel
 import com.bobodroid.myapplication.models.viewmodels.DollarViewModel
+import com.bobodroid.myapplication.models.viewmodels.MainViewModel
 import com.bobodroid.myapplication.models.viewmodels.YenViewModel
 import com.bobodroid.myapplication.routes.*
 import com.bobodroid.myapplication.screens.*
@@ -62,7 +62,7 @@ class MainActivity : ComponentActivity() {
 
     private val yenViewModel: YenViewModel by viewModels()
 
-    private val allViewModel: AllViewModel by viewModels()
+    private val mainViewModel: MainViewModel by viewModels()
 
     private val analysisViewModel: AnalysisViewModel by viewModels()
 
@@ -80,17 +80,10 @@ class MainActivity : ComponentActivity() {
             object : ViewTreeObserver.OnPreDrawListener {
                 override fun onPreDraw(): Boolean {
 
-                    MobileAds.initialize(this@MainActivity)
 
-//            allViewModel.deleteLocalUser()
+                    //            allViewModel.deleteLocalUser()
 
 //                    allViewModel.dateReset()
-
-                    loadInterstitial(this@MainActivity)
-
-                    loadRewardedAdvertisement(this@MainActivity, allViewModel)
-
-                    loadTargetRewardedAdvertisement(this@MainActivity)
 
 //                    lifecycleScope.launchWhenStarted {
 //                        allViewModel.recentExchangeRateFlow.collect { recentRate ->
@@ -115,7 +108,7 @@ class MainActivity : ComponentActivity() {
                 AppScreen(
                     dollarViewModel,
                     yenViewModel,
-                    allViewModel,
+                    mainViewModel,
                     analysisViewModel,
                     activity = this
                 )
@@ -175,12 +168,12 @@ class MainActivity : ComponentActivity() {
                 android.Manifest.permission.POST_NOTIFICATIONS
             )
         ) {
-            allViewModel.alarmPermissionState.value = false
+            mainViewModel.alarmPermissionState.value = false
 
             permissionPostNotification.launch(android.Manifest.permission.POST_NOTIFICATIONS)
             return
         }
-        allViewModel.alarmPermissionState.value = true
+        mainViewModel.alarmPermissionState.value = true
         //권한이 있을때
     }
 
@@ -208,7 +201,7 @@ class MainActivity : ComponentActivity() {
 fun AppScreen(
     dollarViewModel: DollarViewModel,
     yenViewModel: YenViewModel,
-    allViewModel: AllViewModel,
+    mainViewModel: MainViewModel,
     analysisViewModel: AnalysisViewModel,
     activity: Activity
 ) {
@@ -232,7 +225,7 @@ fun AppScreen(
             InvestAppScreen(
                 dollarViewModel,
                 yenViewModel,
-                allViewModel,
+                mainViewModel,
                 analysisViewModel,
                 drawerState = drawerState,
                 activity
@@ -253,7 +246,7 @@ fun AppScreen(
 fun InvestAppScreen(
     dollarViewModel: DollarViewModel,
     yenViewModel: YenViewModel,
-    allViewModel: AllViewModel,
+    mainViewModel: MainViewModel,
     analysisViewModel: AnalysisViewModel,
     drawerState: DrawerState,
     activity: Activity
@@ -287,7 +280,7 @@ fun InvestAppScreen(
                 dollarViewModel = dollarViewModel,
                 yenViewModel = yenViewModel,
                 routeAction = mainRouteAction,
-                allViewModel = allViewModel,
+                mainViewModel = mainViewModel,
                 drawerState = drawerState,
                 activity = activity,
                 analysisViewModel = analysisViewModel)
@@ -301,7 +294,7 @@ fun InvestAppScreen(
             MainBottomBar(
                 mainRouteAction = mainRouteAction,
                 mainRouteBackStack = mainBackStack.value,
-                allViewModel = allViewModel)
+                mainViewModel = mainViewModel)
         }
 
         if(guideDialog) {
@@ -332,12 +325,12 @@ fun InvestNavHost(
     yenViewModel: YenViewModel,
     analysisViewModel: AnalysisViewModel,
     routeAction: RouteAction<MainRoute>,
-    allViewModel: AllViewModel,
+    mainViewModel: MainViewModel,
     drawerState: DrawerState,
     activity: Activity
 ) {
 
-    val rewardShowDialog = allViewModel.rewardShowDialog.collectAsState()
+    val rewardShowDialog = mainViewModel.rewardShowDialog.collectAsState()
 
     var thankShowingDialog by remember { mutableStateOf(false) }
 
@@ -346,16 +339,16 @@ fun InvestNavHost(
             MainScreen(
                 dollarViewModel = dollarViewModel,
                 yenViewModel = yenViewModel,
-                allViewModel = allViewModel,
+                mainViewModel = mainViewModel,
             )
         }
 
         composable(MainRoute.Alert.routeName!!) {
-            FcmAlarmScreen(allViewModel = allViewModel)
+            FcmAlarmScreen()
         }
 
         composable(MainRoute.MyPage.routeName!!) {
-            MyPageScreen(allViewModel = allViewModel)
+            MyPageScreen()
         }
 
         composable(MainRoute.AnalysisScreen.routeName!!) {
@@ -368,14 +361,14 @@ fun InvestNavHost(
     if(rewardShowDialog.value) {
         RewardShowAskDialog(
             onDismissRequest = {
-                allViewModel.rewardDelayDate()
-                allViewModel.rewardShowDialog.value = it
+                mainViewModel.rewardDelayDate()
+                mainViewModel.rewardShowDialog.value = it
             },
             onClicked = {
                 showTargetRewardedAdvertisement(activity, onAdDismissed = {
-                    allViewModel.rewardDelayDate()
-                    allViewModel.deleteBannerDelayDate()
-                    allViewModel.rewardShowDialog.value = false
+                    mainViewModel.rewardDelayDate()
+                    mainViewModel.deleteBannerDelayDate()
+                    mainViewModel.rewardShowDialog.value = false
                     thankShowingDialog = true
                 })
             })

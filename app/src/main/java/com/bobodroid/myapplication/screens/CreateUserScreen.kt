@@ -41,13 +41,17 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import com.bobodroid.myapplication.components.Dialogs.CustomIdDialog
+import com.bobodroid.myapplication.models.datamodels.roomDb.LocalUserData
 import com.bobodroid.myapplication.models.viewmodels.AllViewModel
 import com.bobodroid.myapplication.routes.MyPageRoute
 import com.bobodroid.myapplication.routes.RouteAction
 import kotlinx.coroutines.launch
 
 @Composable
-fun CreateUserScreen(routeAction: RouteAction<MyPageRoute>, allViewModel: AllViewModel) {
+fun CreateUserScreen(
+    routeAction: RouteAction<MyPageRoute>,
+    localUser: LocalUserData
+    ) {
 
 
     var customDialog by remember { mutableStateOf(false) }
@@ -58,7 +62,7 @@ fun CreateUserScreen(routeAction: RouteAction<MyPageRoute>, allViewModel: AllVie
 
     var logInDialog by remember { mutableStateOf(false) }
 
-    val localUser = allViewModel.localUserFlow.collectAsState()
+
 
 
     Column(
@@ -129,7 +133,7 @@ fun CreateUserScreen(routeAction: RouteAction<MyPageRoute>, allViewModel: AllVie
                         offsetY = 5.dp,
                         blurRadius = 10.dp
                     ),
-                enabled = localUser.value.customId == null || localUser.value.customId == ""
+                enabled = localUser.customId == null || localUser.customId == ""
             ) {
                 Text(
                     text = "로그인",
@@ -169,7 +173,7 @@ fun CreateUserScreen(routeAction: RouteAction<MyPageRoute>, allViewModel: AllVie
                         offsetY = 5.dp,
                         blurRadius = 10.dp
                     ),
-                enabled = localUser.value.customId != ""
+                enabled = localUser.customId != ""
             ) {
                 Text(
                     text = "로그아웃",

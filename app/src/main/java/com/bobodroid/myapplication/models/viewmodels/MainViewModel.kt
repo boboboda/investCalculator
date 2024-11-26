@@ -4,38 +4,19 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.bobodroid.myapplication.MainActivity.Companion.TAG
-import com.bobodroid.myapplication.models.datamodels.roomDb.CloudUserData
-import com.bobodroid.myapplication.models.datamodels.roomDb.DrBuyRecord
-import com.bobodroid.myapplication.models.datamodels.roomDb.DrSellRecord
 import com.bobodroid.myapplication.models.datamodels.roomDb.ExchangeRate
-import com.bobodroid.myapplication.models.datamodels.repository.ExchangeRateRepository
 import com.bobodroid.myapplication.models.datamodels.repository.LatestRateRepository
+import com.bobodroid.myapplication.models.datamodels.repository.Notice
+import com.bobodroid.myapplication.models.datamodels.repository.NoticeRepository
 import com.bobodroid.myapplication.models.datamodels.repository.UserRepository
 import com.bobodroid.myapplication.models.datamodels.roomDb.LocalUserData
-import com.bobodroid.myapplication.models.datamodels.roomDb.RateType
-import com.bobodroid.myapplication.models.datamodels.roomDb.TargetRates
-import com.bobodroid.myapplication.models.datamodels.roomDb.WonBuyRecord
-import com.bobodroid.myapplication.models.datamodels.roomDb.WonSellRecord
-import com.bobodroid.myapplication.models.datamodels.roomDb.YenBuyRecord
-import com.bobodroid.myapplication.models.datamodels.roomDb.YenSellRecord
-import com.bobodroid.myapplication.models.datamodels.service.UserApi.Rate
-import com.bobodroid.myapplication.models.datamodels.service.noticeApi.NoticeApi
-import com.bobodroid.myapplication.models.datamodels.useCases.TargetRateUseCases
 import com.bobodroid.myapplication.models.datamodels.useCases.UserUseCases
-import com.bobodroid.myapplication.util.InvestApplication
-import com.bobodroid.myapplication.models.datamodels.websocket.WebSocketClient
-import com.bobodroid.myapplication.util.result.UiState
-import com.bobodroid.myapplication.util.result.Result
 import com.bobodroid.myapplication.util.result.onError
 import com.bobodroid.myapplication.util.result.onSuccess
-import com.google.firebase.firestore.ktx.firestore
-import com.google.firebase.ktx.Firebase
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import java.io.IOException
 import java.text.SimpleDateFormat
 import java.time.LocalDate
 import java.time.LocalDateTime
@@ -47,54 +28,32 @@ import java.util.GregorianCalendar
 import javax.inject.Inject
 
 @HiltViewModel
-class AllViewModel @Inject constructor(
+class MainViewModel @Inject constructor(
     private val userUseCases: UserUseCases,
     private val userRepository: UserRepository,
-    private val latestRateRepository: LatestRateRepository
+    private val latestRateRepository: LatestRateRepository,
+    private val noticeRepository: NoticeRepository
 ) : ViewModel() {
 
     private val _allUiState = MutableStateFlow(MainViewUiState())
     val allUiState = _allUiState.asStateFlow()
 
 
-    private val _localUser = MutableStateFlow(LocalUserData())
-
-    val localUserFlow = _localUser.asStateFlow()
-
-    val noticeShowDialog = MutableStateFlow(false)
-
     val rewardShowDialog = MutableStateFlow(false)
 
     private val todayDateFlow = MutableStateFlow("${LocalDate.now()}")
-
-    val openAppNoticeDateState = MutableStateFlow(true)
-
-    private val noticeDateFlow = MutableStateFlow("")
-
-    val noticeContent = MutableStateFlow("")
 
     val alarmPermissionState = MutableStateFlow(false)
 
     val onReadyRewardAd = MutableStateFlow(false)
 
-    val deleteBannerStateFlow = MutableStateFlow(false)
-
-    val rewardIsReadyStateFlow = MutableStateFlow(false)
-
-    // 현재 날짜와 시각
-    val nowDateTimeFlow = MutableStateFlow(LocalDateTime.now().toString())
-
-    // 오늘 자정의 시각
-    val midnightDateTimeFlow = MutableStateFlow(LocalDateTime.now().with(LocalTime.MIDNIGHT).toString())
-
+    private val deleteBannerStateFlow = MutableStateFlow(false)
 
 
     init {
         viewModelScope.launch {
 
-            localUserExistCheck()
-
-            recentRateHotListener()
+            startInitialData()
 
             onReadyRewardAd.collect { isReady ->
                 if (isReady) {
@@ -184,70 +143,28 @@ class AllViewModel @Inject constructor(
         }
     }
 
-    // 공지사항 로드
-    private fun noticeApi(noticeDate: (String) -> Unit) {
-        viewModelScope.launch {
 
-            try {
-                val noticeResponse = NoticeApi.noticeService.noticeRequest()
-                val res = noticeResponse.data.first()
-
-                noticeContent.emit(res.content)
-                noticeDate.invoke(res.createdAt)
-                noticeDateFlow.emit(res.createdAt)
-            } catch (error: IOException) {
-                Log.e(TAG("AllViewModel", "noticeApi"), "$error")
-                return@launch
-            } catch (error: Exception) {
-                Log.e(TAG("AllViewModel", "noticeApi"), "$error")
-                return@launch
-            }
-        }
-    }
-
-    // 공지사항 상태 관리
-    private fun noticeDialogState(localUserDate: LocalUserData, noticeDate: String) {
-
-        // 저장한 날짜와 같으면 실행
-        Log.d(
-            TAG("AllViewModel", "noticeDialogState"),
-            "공지사항 날짜: ${noticeDate},  연기날짜: ${localUserDate.userShowNoticeDate} 오늘날짜 ${
-                LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))
-            }"
-        )
-
-        // 닫기 후 호출 방지
-        if (openAppNoticeDateState.value) {
-            if (!localUserDate.userShowNoticeDate.isNullOrEmpty()) {
-                if (noticeDate > localUserDate.userShowNoticeDate!!) {
-                    Log.d(TAG("AllViewModel", "noticeDialogState"), "공지사항 날짜가 더 큽니다.")
-                    noticeShowDialog.value = true
-                } else {
-                    Log.d(TAG("AllViewModel", "noticeDialogState"), "로컬에 저장된 날짜가 더 큽니다.")
-                }
-            } else {
-                Log.d(TAG("AllViewModel", "noticeDialogState"), "날짜 값이 없습니다.")
-                noticeShowDialog.value = true
-            }
-        } else {
-            return
-        }
-    }
 
     // 공지사항 연기 설정
-    fun selectDelayDate(localUser: LocalUserData) {
+    fun selectDelayDate() {
         viewModelScope.launch {
 
             Log.d(TAG("AllViewModel", "selectDelayDate"), "날짜 연기 신청")
 
-            val updateUserData = localUser.copy(
-                userShowNoticeDate = noticeDateFlow.value
+            val updateUserData = _allUiState.value.localUser.copy(
+                userShowNoticeDate = _allUiState.value.notice.date
             )
 
             userUseCases.localUserUpdate(updateUserData)
 
-            Log.d(TAG("AllViewModel", "selectDelayDate"), "날짜 수정 실행, ${noticeDateFlow.value}")
+            Log.d(TAG("AllViewModel", "selectDelayDate"), "날짜 수정 실행, ${_allUiState.value.notice.date}")
         }
+    }
+
+    fun closeNotice() {
+        val uiState = _allUiState.value.copy(showNoticeDialog = false, noticeState = false)
+
+        _allUiState.value = uiState
     }
 
 
@@ -278,24 +195,16 @@ class AllViewModel @Inject constructor(
     }
 
 
-    private fun recentRateHotListener() {
 
-        Log.d(TAG("AllViewModel", "recentRateHotListener"), "최신환율 실행")
 
+    private fun startInitialData() {
         viewModelScope.launch {
-            setupNotice(_allUiState.value.localUser)
-            // 실시간 데이터 구독 시작
+           localUserExistCheck()
+              noticeExistCheck()
             receivedLatestRate()
+            noticeDialogState()
         }
     }
-
-    // 알림 관련 작업
-    private fun setupNotice(localData: LocalUserData) {
-        noticeApi { noticeDate ->
-            noticeDialogState(localData, noticeDate)
-        }
-    }
-
 
     // 웹소켓 실시간 데이터 구독 -> 완료
     private suspend fun receivedLatestRate() {
@@ -303,6 +212,68 @@ class AllViewModel @Inject constructor(
             val uiState = _allUiState.value.copy(
                 recentRate = latestRate
             )
+            _allUiState.emit(uiState)
+        }
+    }
+
+
+    // 공지사항 상태 초기화 -> 완료
+    private suspend fun noticeDialogState() {
+        // 저장한 날짜와 같으면 실행
+        Log.d(
+            TAG("AllViewModel", "noticeDialogState"),
+            "공지사항 날짜: ${_allUiState.value.notice.date},  연기날짜: ${_allUiState.value.localUser.userShowNoticeDate} 오늘날짜 ${
+                LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))
+            }"
+        )
+        val noticeDate = _allUiState.value.notice.date
+        val noticeContent = _allUiState.value.notice.content
+        val userShowNoticeDate = _allUiState.value.localUser.userShowNoticeDate
+
+        if(noticeContent == null) {
+            Log.d(TAG("AllViewModel", "noticeDialogState"), "공지가 없습니다.")
+            return
+        }
+
+        // 닫기 후 호출 방지
+        if (_allUiState.value.noticeState) {
+            val uiState = _allUiState.value.copy(showNoticeDialog = true)
+            if (userShowNoticeDate.isNullOrEmpty()) {
+                Log.d(TAG("AllViewModel", "noticeDialogState"), "날짜 값이 없습니다.")
+                _allUiState.emit(uiState)
+            } else {
+                // 안전한 널 검사 및 비교
+                if (noticeDate != null && noticeDate > userShowNoticeDate) {
+                    Log.d(TAG("AllViewModel", "noticeDialogState"), "공지사항 날짜가 더 큽니다.")
+                    _allUiState.emit(uiState)
+                } else {
+                    Log.d(TAG("AllViewModel", "noticeDialogState"), "로컬에 저장된 날짜가 더 큽니다.")
+                }
+            }
+        } else {
+            return
+        }
+    }
+
+    // -> 완료
+    private fun localUserExistCheck() {
+        viewModelScope.launch {
+            val initUserdata = userRepository.waitForUserData()
+
+            val uiState = _allUiState.value.copy(localUser = initUserdata.localUserData)
+
+            _allUiState.emit(uiState)
+
+        }
+
+    }
+
+    private fun noticeExistCheck() {
+        viewModelScope.launch {
+            val noticeData = noticeRepository.waitForNoticeData()
+
+            val uiState = _allUiState.value.copy(notice = noticeData)
+
             _allUiState.emit(uiState)
         }
     }
@@ -382,18 +353,7 @@ class AllViewModel @Inject constructor(
         }
     }
 
-    // -> 완료
-    fun localUserExistCheck() {
-        viewModelScope.launch {
-          val initUserdata = userRepository.waitForUserData()
 
-            val uiState = _allUiState.value.copy(localUser = initUserdata.localUserData)
-
-            _allUiState.emit(uiState)
-
-        }
-
-    }
 
     // 로컬 아이디 삭제
     fun deleteLocalUser() {
@@ -453,7 +413,8 @@ data class MainViewUiState(
     val endDate: String = "",
     val showNoticeDialog: Boolean = false,
     val rewardIsReadyState: Boolean = false,
-    val noticeContent: String = "",
+    val notice: Notice = Notice(),
+    val noticeState: Boolean = false,
     val localUser: LocalUserData = LocalUserData(),
     val recentRate: ExchangeRate = ExchangeRate()
 )

@@ -39,14 +39,13 @@ import com.bobodroid.myapplication.components.CardIconButton
 import com.bobodroid.myapplication.components.Dialogs.GuideDialog
 import com.bobodroid.myapplication.components.shadowCustom
 import com.bobodroid.myapplication.models.datamodels.roomDb.LocalUserData
-import com.bobodroid.myapplication.models.viewmodels.AllViewModel
 import com.bobodroid.myapplication.routes.MainRoute
 import com.bobodroid.myapplication.routes.MyPageRoute
 import com.bobodroid.myapplication.routes.RouteAction
 import com.bobodroid.myapplication.ui.theme.MyPageButtonColor
 
 @Composable
-fun MyPageScreen(allViewModel: AllViewModel) {
+fun MyPageScreen() {
 
     val uiState by allViewModel.allUiState.collectAsState()
 
@@ -55,8 +54,6 @@ fun MyPageScreen(allViewModel: AllViewModel) {
     val myPageRouteAction = remember {
         RouteAction<MyPageRoute>(navController, MyPageRoute.SelectView.routeName)
     }
-
-    val rewardAdIsReadyState = allViewModel.rewardIsReadyStateFlow.collectAsState()
 
     NavHost(
         navController = navController,
@@ -69,7 +66,7 @@ fun MyPageScreen(allViewModel: AllViewModel) {
 
 
         composable(MyPageRoute.CreateUser.routeName!!) {
-            CreateUserScreen(routeAction = myPageRouteAction, allViewModel = allViewModel)
+            CreateUserScreen(routeAction = myPageRouteAction)
         }
 
         composable(MyPageRoute.CustomerServiceCenter.routeName!!) {

@@ -40,7 +40,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavBackStackEntry
 import com.bobodroid.myapplication.MainActivity.Companion.TAG
-import com.bobodroid.myapplication.models.viewmodels.AllViewModel
+import com.bobodroid.myapplication.models.viewmodels.MainViewModel
 import com.bobodroid.myapplication.routes.MainRoute
 import com.bobodroid.myapplication.routes.RouteAction
 import com.bobodroid.myapplication.ui.theme.TopButtonColor
@@ -53,7 +53,7 @@ import kotlinx.coroutines.launch
 fun MainBottomBar(
     mainRouteAction: RouteAction<MainRoute>,
     mainRouteBackStack: NavBackStackEntry?,
-    allViewModel: AllViewModel
+    mainViewModel: MainViewModel
 ) {
 
     val mainBottomSelectedValue = remember { mutableStateOf(1) }

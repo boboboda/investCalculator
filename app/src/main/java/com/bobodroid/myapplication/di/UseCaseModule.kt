@@ -14,6 +14,7 @@ import com.bobodroid.myapplication.models.datamodels.useCases.TargetRateUpdateUs
 import com.bobodroid.myapplication.models.datamodels.useCases.TargetRateUseCases
 import com.bobodroid.myapplication.models.datamodels.useCases.UserUseCases
 import com.bobodroid.myapplication.models.datamodels.websocket.WebSocketClient
+import com.bobodroid.myapplication.util.AdMob.AdUseCase
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -41,10 +42,10 @@ object UseCaseModule {
         return LocalIdAddUseCase(userRepository)
     }
 
+    // user di
     @Provides
     fun provideUserUseCases(
         userRepository: UserRepository,
-        localExistCheckUseCase: LocalExistCheckUseCase,
     ): UserUseCases {
         return UserUseCases(
             customIdCreateUser = CustomIdCreateUser(userRepository),
@@ -55,6 +56,7 @@ object UseCaseModule {
         )
     }
 
+    // 환율 di
     @Provides
     fun provideTargetRateUseCases(
         webSocketClient: WebSocketClient
@@ -65,4 +67,5 @@ object UseCaseModule {
             targetRateDeleteUseCase = TargetRateDeleteUseCase()
         )
     }
+
 }

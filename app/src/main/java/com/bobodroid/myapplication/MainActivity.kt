@@ -324,15 +324,9 @@ fun InvestNavHost(
     dollarViewModel: DollarViewModel,
     yenViewModel: YenViewModel,
     analysisViewModel: AnalysisViewModel,
-    routeAction: RouteAction<MainRoute>,
     mainViewModel: MainViewModel,
-    drawerState: DrawerState,
     activity: Activity
 ) {
-
-    val rewardShowDialog = mainViewModel.rewardShowDialog.collectAsState()
-
-    var thankShowingDialog by remember { mutableStateOf(false) }
 
     NavHost(navController = investNavController, startDestination = startRouter.routeName!!) {
         composable(MainRoute.Main.routeName!!) {
@@ -340,6 +334,7 @@ fun InvestNavHost(
                 dollarViewModel = dollarViewModel,
                 yenViewModel = yenViewModel,
                 mainViewModel = mainViewModel,
+                activity = activity
             )
         }
 
@@ -358,26 +353,7 @@ fun InvestNavHost(
 
     }
 
-    if(rewardShowDialog.value) {
-        RewardShowAskDialog(
-            onDismissRequest = {
-                mainViewModel.rewardDelayDate()
-                mainViewModel.rewardShowDialog.value = it
-            },
-            onClicked = {
-                showTargetRewardedAdvertisement(activity, onAdDismissed = {
-                    mainViewModel.rewardDelayDate()
-                    mainViewModel.deleteBannerDelayDate()
-                    mainViewModel.rewardShowDialog.value = false
-                    thankShowingDialog = true
-                })
-            })
-    }
 
-    if(thankShowingDialog)
-        ThanksDialog(onDismissRequest = { value ->
-            thankShowingDialog = value
-        })
 }
 
 

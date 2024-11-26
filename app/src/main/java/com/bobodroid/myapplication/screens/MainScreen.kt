@@ -37,11 +37,15 @@ import androidx.compose.material3.DropdownMenu
 import com.bobodroid.myapplication.ui.theme.WelcomeScreenBackgroundColor
 import androidx.compose.material3.Icon
 import androidx.compose.ui.text.style.TextAlign
+import com.bobodroid.myapplication.MainActivity
 import com.bobodroid.myapplication.components.Dialogs.BottomSheetNumberField
 import com.bobodroid.myapplication.components.Dialogs.BottomSheetRateNumberField
 import com.bobodroid.myapplication.components.Dialogs.FloatPopupNumberView
 import com.bobodroid.myapplication.components.Dialogs.PopupNumberView
+import com.bobodroid.myapplication.components.Dialogs.RewardShowAskDialog
 import com.bobodroid.myapplication.components.Dialogs.TextFieldDialog
+import com.bobodroid.myapplication.components.Dialogs.ThanksDialog
+import com.bobodroid.myapplication.components.admobs.showTargetRewardedAdvertisement
 import com.bobodroid.myapplication.models.datamodels.roomDb.CurrencyType
 import com.bobodroid.myapplication.models.viewmodels.MainViewModel
 import com.bobodroid.myapplication.screens.record.DollarMainScreen
@@ -56,7 +60,8 @@ import com.bobodroid.myapplication.screens.record.YenMainScreen
 fun MainScreen(
     dollarViewModel: DollarViewModel,
     yenViewModel: YenViewModel,
-    mainViewModel: MainViewModel
+    mainViewModel: MainViewModel,
+    activity: MainActivity
 ) {
     val mainUiState by mainViewModel.allUiState.collectAsState()
 
@@ -132,6 +137,11 @@ fun MainScreen(
     var groupAddDialog by remember { mutableStateOf(false) }
 
     var floatingButtonVisible by remember { mutableStateOf(true) }
+
+    val rewardShowDialog = mainViewModel.rewardShowDialog.collectAsState()
+
+    var thankShowingDialog by remember { mutableStateOf(false) }
+
 
     LaunchedEffect(key1 = Unit, block = {
 
@@ -698,6 +708,28 @@ fun MainScreen(
                         }
                     })
             }
+
+
+            if(rewardShowDialog.value) {
+                RewardShowAskDialog(
+                    onDismissRequest = {
+                        mainViewModel.rewardDelayDate()
+                        mainViewModel.rewardShowDialog.value = it
+                    },
+                    onClicked = {
+                        showTargetRewardedAdvertisement(activity, onAdDismissed = {
+                            mainViewModel.rewardDelayDate()
+                            mainViewModel.deleteBannerDelayDate()
+                            mainViewModel.rewardShowDialog.value = false
+                            thankShowingDialog = true
+                        })
+                    })
+            }
+
+            if(thankShowingDialog)
+                ThanksDialog(onDismissRequest = { value ->
+                    thankShowingDialog = value
+                })
         }
 
         // 플로팅 버튼

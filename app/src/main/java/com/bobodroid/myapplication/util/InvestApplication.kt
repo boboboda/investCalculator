@@ -41,7 +41,7 @@ class InvestApplication: Application() {
         MobileAds.initialize(this)
         super.onCreate()
 
-        appStarter.startApp()
+        appStarter.startApp(this)
 
         instance = this
         this.billingClientLifecycle = BillingClientLifecycle.getInstance(this)

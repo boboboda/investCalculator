@@ -11,6 +11,8 @@ import com.bobodroid.myapplication.models.datamodels.repository.NoticeRepository
 import com.bobodroid.myapplication.models.datamodels.repository.UserRepository
 import com.bobodroid.myapplication.models.datamodels.roomDb.LocalUserData
 import com.bobodroid.myapplication.models.datamodels.useCases.UserUseCases
+import com.bobodroid.myapplication.util.AdMob.AdManager
+import com.bobodroid.myapplication.util.AdMob.AdUseCase
 import com.bobodroid.myapplication.util.result.onError
 import com.bobodroid.myapplication.util.result.onSuccess
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -32,16 +34,18 @@ class MainViewModel @Inject constructor(
     private val userUseCases: UserUseCases,
     private val userRepository: UserRepository,
     private val latestRateRepository: LatestRateRepository,
-    private val noticeRepository: NoticeRepository
+    private val noticeRepository: NoticeRepository,
+    private val adManager: AdManager,
+    private val adUseCase: AdUseCase
 ) : ViewModel() {
 
-    private val _allUiState = MutableStateFlow(MainViewUiState())
-    val allUiState = _allUiState.asStateFlow()
+    private val _mainUiState = MutableStateFlow(MainViewUiState())
+    val mainUiState = _mainUiState.asStateFlow()
 
 
     val rewardShowDialog = MutableStateFlow(false)
 
-    private val todayDateFlow = MutableStateFlow("${LocalDate.now()}")
+    private val todayDate = MutableStateFlow("${LocalDate.now()}")
 
     val alarmPermissionState = MutableStateFlow(false)
 
@@ -55,93 +59,28 @@ class MainViewModel @Inject constructor(
 
             startInitialData()
 
-            onReadyRewardAd.collect { isReady ->
-                if (isReady) {
-                    val uiState = _allUiState.value.copy(rewardIsReadyState = true)
-
-                    _allUiState.emit(uiState)
-
-                    rewardAdState()
-                    bannerAdState()
+            adManager.isRewardAdReady.collect { isReady ->
+                if(isReady) {
+                    val shouldShowAd = adUseCase.processRewardAdState(
+                        _mainUiState.value.localUser,
+                        todayDate.value
+                    )
+                    if(shouldShowAd) {
+                     val uiStateUpdate = _mainUiState.value.copy(rewardShowDialog = true)
+                        _mainUiState.emit(uiStateUpdate)
+                    }
                 }
             }
         }
     }
 
-    // 리워드 다이로그 상태 관리
-    private fun rewardAdState() {
-
-        Log.d(TAG("AllViewModel", "rewardAdState"), "연기날짜: ${_allUiState.value.localUser.rewardAdShowingDate} 오늘날짜: ${todayDateFlow.value}")
-
-        // 닫기 후 호출 방지
-        if (!_allUiState.value.localUser.rewardAdShowingDate.isNullOrEmpty()) {
-            if (todayDateFlow.value > _allUiState.value.localUser.rewardAdShowingDate!!) {
-                Log.d(TAG("AllViewModel", "rewardAdState"), "오늘 날짜가 더 큽니다.")
-                rewardShowDialog.value = true
-
-            } else {
-                Log.d(TAG("AllViewModel", "rewardAdState"), "연기된 날짜가 더 큽니다.")
-
-            }
-        } else {
-            Log.d(TAG("AllViewModel", "rewardAdState"), "날짜 값이 없습니다.")
-            rewardShowDialog.value = true
-        }
-    }
-
     // 리워드 다이로그 연기 설정
-    fun rewardDelayDate() {
-        viewModelScope.launch {
-
-            Log.d(TAG("AllViewModel", "rewardDelayDate"), "날짜 연기 신청")
-
-            val updateUserData = _allUiState.value.localUser.copy(
-                rewardAdShowingDate = delayDate(inputDate = todayDateFlow.value, delayDay = 1)
-            )
-
-            userUseCases.localUserUpdate(updateUserData)
-
-            Log.d(TAG("AllViewModel", "rewardDelayDate"), "딜레이리워드날짜: ${updateUserData.rewardAdShowingDate}")
-        }
+   suspend fun rewardDelayDate() {
+        adUseCase.delayRewardAd(_mainUiState.value.localUser, todayDate.value)
     }
 
-    //배너 삭제
-    private fun bannerAdState() {
 
-        Log.d(TAG("AllViewModel", "bannerAdState"), "배너 광고 제거 연기날짜: ${_allUiState.value.localUser.userResetDate} 오늘날짜: ${todayDateFlow.value}")
 
-        // 닫기 후 호출 방지
-
-        _allUiState.value.localUser.userResetDate?.let {
-            if (todayDateFlow.value > _allUiState.value.localUser.userResetDate!!) {
-                Log.d(TAG("AllViewModel", "bannerAdState"), "오늘 날짜가 더 큽니다.")
-            } else {
-                Log.d(TAG("AllViewModel", "bannerAdState"), "연기된 날짜가 더 큽니다.")
-                deleteBannerStateFlow.value = true
-            }
-        } ?: run {
-            Log.d(TAG("AllViewModel", "bannerAdState"), "날짜 값이 없습니다.")
-        }
-    }
-
-    // 배너 광고 제거 딜레이
-    fun deleteBannerDelayDate() {
-        viewModelScope.launch {
-
-            Log.d(TAG("AllViewModel", "deleteBannerDelayDate"), "날짜 연기 신청")
-
-            val updateUserData = _allUiState.value.localUser.copy(
-                userResetDate = delayDate(inputDate = todayDateFlow.value, delayDay = 1)
-            )
-
-            userUseCases.localUserUpdate(updateUserData)
-
-            Log.d(TAG("AllViewModel", "deleteBannerDelayDate"), "배너광고 삭제 딜레이리워드날짜: ${updateUserData.userResetDate}")
-
-            deleteBannerStateFlow.value = true
-
-        }
-    }
 
 
 
@@ -178,21 +117,7 @@ class MainViewModel @Inject constructor(
 //
 //    val delayDay = dateWeek(7)
 
-    private fun delayDate(inputDate: String, delayDay: Int): String? {
-        val dateFormat = SimpleDateFormat("yyyy-MM-dd")
-        val date: Date? = dateFormat.parse(inputDate)
 
-        date?.let {
-            val calendar = GregorianCalendar().apply {
-                time = date
-                add(Calendar.DAY_OF_MONTH, delayDay)
-            }
-
-            return dateFormat.format(calendar.time)
-        }
-
-        return null
-    }
 
 
 
@@ -412,7 +337,9 @@ data class MainViewUiState(
     val startDate: String = "",
     val endDate: String = "",
     val showNoticeDialog: Boolean = false,
-    val rewardIsReadyState: Boolean = false,
+    val rewardShowDialog: Boolean = false,
+    val rewardAdState: Boolean = false,
+    val bannerAdState: Boolean = false,
     val notice: Notice = Notice(),
     val noticeState: Boolean = false,
     val localUser: LocalUserData = LocalUserData(),

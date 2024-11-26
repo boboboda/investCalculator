@@ -10,6 +10,11 @@ import com.bobodroid.myapplication.models.datamodels.roomDb.DrBuyRecord
 import com.bobodroid.myapplication.models.datamodels.roomDb.DrSellRecord
 import com.bobodroid.myapplication.models.datamodels.roomDb.ExchangeRate
 import com.bobodroid.myapplication.models.datamodels.repository.InvestRepository
+import com.bobodroid.myapplication.models.datamodels.repository.Notice
+import com.bobodroid.myapplication.models.datamodels.repository.UserRepository
+import com.bobodroid.myapplication.models.datamodels.roomDb.LocalUserData
+import com.bobodroid.myapplication.util.AdMob.AdManager
+import com.bobodroid.myapplication.util.AdMob.AdUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.*
@@ -21,10 +26,22 @@ import java.time.LocalDate
 import java.util.*
 import javax.inject.Inject
 
+data class RecordViewUiState(
+    val localUser: LocalUserData = LocalUserData(),
+    val bannerAdVisibleState: Boolean = false
+)
 
 @HiltViewModel
-class DollarViewModel @Inject constructor(private val investRepository: InvestRepository) :
+class DollarViewModel @Inject constructor(
+    private val investRepository: InvestRepository,
+    private val adManager: AdManager,
+    private val adUseCase: AdUseCase,
+    private val userRepository: UserRepository) :
     ViewModel() {
+
+
+    private val _recordUiState = MutableStateFlow(RecordViewUiState())
+    val recordUiState = _recordUiState.asStateFlow()
 
     private val _buyRecordFlow = MutableStateFlow<List<DrBuyRecord>>(emptyList())
     val buyRecordFlow = _buyRecordFlow.asStateFlow()
@@ -44,7 +61,27 @@ class DollarViewModel @Inject constructor(private val investRepository: InvestRe
 
     val groupList = MutableStateFlow<List<String>>(emptyList())
 
+    private val todayDate = MutableStateFlow("${LocalDate.now()}")
+
     init {
+        viewModelScope.launch {
+            // 배너 광고 제거 상태 관리
+            adManager.isBannerAdReady.collect { isReady ->
+
+                val shouldShowAd = adUseCase.bannerAdState(
+                    _recordUiState.value.localUser,
+                    todayDate.value
+                )
+
+                if(shouldShowAd) {
+                    val uiStateUpdate = _recordUiState.value.copy(bannerAdVisibleState = true)
+                    _recordUiState.emit(uiStateUpdate)
+                }
+                }
+            }
+        }
+
+
         viewModelScope.launch(Dispatchers.IO) {
 
             val buyRecordFlow = investRepository.getAllDollarBuyRecords().distinctUntilChanged()
@@ -218,6 +255,17 @@ class DollarViewModel @Inject constructor(private val investRepository: InvestRe
         }
 
     }
+
+
+    private fun loadLocalUser() {
+        viewModelScope.launch {
+            val initUserdata = userRepository.waitForUserData()
+
+            val uiState = _allUiState.value.copy(localUser = initUserdata.localUserData)
+
+            _allUiState.emit(uiState)
+
+        }
 
     //특정값만 인출
 
@@ -638,3 +686,6 @@ class DollarViewModel @Inject constructor(private val investRepository: InvestRe
         (sellDollarFlow.value.toFloat() / recordInputMoney.value.toFloat()) * 100f
 
 }
+
+
+

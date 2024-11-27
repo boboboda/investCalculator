@@ -38,7 +38,6 @@ import com.bobodroid.myapplication.components.Buttons
 import com.bobodroid.myapplication.components.admobs.showRewardedAdvertisement
 import com.bobodroid.myapplication.components.shadowCustom
 import com.bobodroid.myapplication.models.datamodels.roomDb.LocalUserData
-import com.bobodroid.myapplication.models.viewmodels.AllViewModel
 import com.bobodroid.myapplication.models.viewmodels.DollarViewModel
 import com.bobodroid.myapplication.models.viewmodels.YenViewModel
 import com.bobodroid.myapplication.routes.MainRoute
@@ -47,7 +46,7 @@ import com.bobodroid.myapplication.routes.RouteAction
 import kotlinx.coroutines.launch
 
 @Composable
-fun CloudScreen(routeAction: RouteAction<MyPageRoute>,
+fun CloudView(routeAction: RouteAction<MyPageRoute>,
                 localUser: LocalUserData) {
 
     val context = LocalContext.current
@@ -75,7 +74,7 @@ fun CloudScreen(routeAction: RouteAction<MyPageRoute>,
                 Buttons(
                     onClicked = {
 
-                        if (localUser.value.customId.isNullOrEmpty()) {
+                        if (localUser.customId.isNullOrEmpty()) {
                             coroutineScope.launch {
 
                                 cloudScreenSnackBarHostState.showSnackbar(
@@ -137,7 +136,7 @@ fun CloudScreen(routeAction: RouteAction<MyPageRoute>,
                 Buttons(
                     onClicked = {
 
-                        if (localUser.value.customId.isNullOrEmpty()) {
+                        if (localUser.customId.isNullOrEmpty()) {
                             coroutineScope.launch {
                                 cloudScreenSnackBarHostState.showSnackbar(
                                     "아이디 찾은 후 진행해 주세요",

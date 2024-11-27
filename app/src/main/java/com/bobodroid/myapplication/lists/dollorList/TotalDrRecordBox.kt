@@ -31,7 +31,6 @@ import androidx.compose.ui.unit.dp
 import com.bobodroid.myapplication.components.RecordHeader
 import com.bobodroid.myapplication.components.RecordTextView
 import com.bobodroid.myapplication.models.datamodels.roomDb.DrBuyRecord
-import com.bobodroid.myapplication.models.viewmodels.AllViewModel
 import com.bobodroid.myapplication.models.viewmodels.DollarViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -114,10 +113,8 @@ fun TotalDrRecordBox(
             state = lazyScrollState
         ) {
 
-            //  Buy -> 라인리코드텍스트에 넣지 말고 바로 데이터 전달 -> 리팩토리
+            //  Buy -> 라인리코드텍스트에 넣지 말고 바로 데이터 전달 -> 리팩토링
             filterRecord.onEachIndexed { groupIndex: Int, (key, items) ->
-
-
                 stickyHeader {
                     RecordHeader(key = key)
                 }
@@ -142,12 +139,6 @@ fun TotalDrRecordBox(
                     TotalLineDrRecord(
                         Buy,
                         sellAction = Buy.recordColor!!,
-                        sellActed = { buyRecord ->
-                            selectedId = buyRecord.id
-
-                            dollarViewModel.updateBuyRecord(buyRecord)
-
-                        },
                         onClicked = { recordbox ->
                             selectedId = recordbox.id
                             dollarViewModel.dateFlow.value = recordbox.date!!

@@ -25,7 +25,6 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.bobodroid.myapplication.components.Buttons
-import com.bobodroid.myapplication.models.viewmodels.AllViewModel
 import com.bobodroid.myapplication.ui.theme.SellButtonColor
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay

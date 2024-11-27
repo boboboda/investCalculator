@@ -20,6 +20,9 @@ class NoticeRepository @Inject constructor() {
 
     val noticeData = _noticeData.asStateFlow()
 
+    private val _isReady = MutableStateFlow(false)
+
+    val isReady = _isReady.asStateFlow()
 
     suspend fun loadNotice() {
         try {
@@ -34,6 +37,8 @@ class NoticeRepository @Inject constructor() {
                 content = noticeResponse.content,
                 date = noticeResponse.createdAt
             )
+
+            _isReady.value = true
 
         } catch (e: Exception) {
             Log.e(TAG("NoticeRepository",""), "공지사항 업데이트 실패", e)

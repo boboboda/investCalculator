@@ -1,5 +1,6 @@
 package com.bobodroid.myapplication.screens
 
+import android.app.Activity
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
@@ -24,7 +25,6 @@ import com.bobodroid.myapplication.models.viewmodels.DollarViewModel
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.*
-import com.bobodroid.myapplication.models.viewmodels.AllViewModel
 import com.bobodroid.myapplication.models.viewmodels.YenViewModel
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
@@ -61,9 +61,9 @@ fun MainScreen(
     dollarViewModel: DollarViewModel,
     yenViewModel: YenViewModel,
     mainViewModel: MainViewModel,
-    activity: MainActivity
+    activity: Activity
 ) {
-    val mainUiState by mainViewModel.allUiState.collectAsState()
+    val mainUiState by mainViewModel.mainUiState.collectAsState()
 
     val coroutineScope = rememberCoroutineScope()
 
@@ -136,10 +136,6 @@ fun MainScreen(
 
     var groupAddDialog by remember { mutableStateOf(false) }
 
-    var floatingButtonVisible by remember { mutableStateOf(true) }
-
-    val rewardShowDialog = mainViewModel.rewardShowDialog.collectAsState()
-
     var thankShowingDialog by remember { mutableStateOf(false) }
 
 
@@ -152,12 +148,6 @@ fun MainScreen(
         }
     })
 
-    LaunchedEffect(Unit) {
-        while (true) {
-            delay(5000) // 2초 대기
-            floatingButtonVisible = false
-        }
-    }
 
     LaunchedEffect(key1 = showBottomSheet) {
         if (!showBottomSheet) {
@@ -174,7 +164,6 @@ fun MainScreen(
         contentAlignment = Alignment.BottomCenter,
     )
     {
-
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -182,14 +171,13 @@ fun MainScreen(
             horizontalAlignment = Alignment.CenterHorizontally
         )
         {
-
+            // 메인 최상단 뷰 -> 최신환율, 외화 선택 버튼
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(start = 20.dp, end = 20.dp, bottom = 5.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-
                 Column(
                     modifier = Modifier.weight(0.7f)
                 ) {
@@ -255,8 +243,6 @@ fun MainScreen(
                     }
 
                 }
-
-//                    TopButtonView(allViewModel = allViewModel)
             }
 
             Column(
@@ -624,14 +610,7 @@ fun MainScreen(
             if (showDateDialog) {
                 MyDatePickerDialog(
                     onDateSelected = { localDate ->
-                        when (exchangeRateMoneyType) {
-                            CurrencyType.USD -> {
-                                dollarViewModel.dateFlow.value = localDate.toString()
-                            }
-                            CurrencyType.JPY -> {
-                                yenViewModel.dateFlow.value = localDate.toString()
-                            }
-                        }
+                        mainViewModel.selectRecordDate(localDate.toString())
                     },
                     onDismissRequest = {
                         showDateDialog = false
@@ -668,30 +647,29 @@ fun MainScreen(
                     callStartDate = mainUiState.startDate,
                     callEndDate = mainUiState.endDate,
                     startDateSelected = {
-                        allViewModel.inputStartDate(it)
+                        mainViewModel.inputStartDate(it)
                     },
                     endDateSelected = {
-                        allViewModel.inputEndDate(it)
+                        mainViewModel.inputEndDate(it)
                     },
                     onClicked = { selectedStartDate, selectedEndDate ->
                         coroutineScope.launch {
                             // 메인화면 조회기간
-                            allViewModel.inputStartDate(selectedStartDate)
-                            allViewModel.inputEndDate(selectedEndDate)
+                            mainViewModel.inputStartDate(selectedStartDate)
+                            mainViewModel.inputEndDate(selectedEndDate)
 
-                            dollarViewModel.dateRangeInvoke(
-                                selectedStartDate,
-                                selectedEndDate
-                            )
-
-                            yenViewModel.dateRangeInvoke(
-                                selectedStartDate,
-                                selectedEndDate
-                            )
+//                            dollarViewModel.dateRangeInvoke(
+//                                selectedStartDate,
+//                                selectedEndDate
+//                            )
+//
+//                            yenViewModel.dateRangeInvoke(
+//                                selectedStartDate,
+//                                selectedEndDate
+//                            )
                         }
 
                     },
-                    allViewModel
                 )
             }
 
@@ -699,28 +677,27 @@ fun MainScreen(
                 NoticeDialog(
                     content = mainUiState.notice.content ?: "",
                     onDismissRequest = {
-                        allViewModel.closeNotice()
+                        mainViewModel.closeNotice()
                     },
                     dateDelaySelected = {
                         coroutineScope.launch {
-                            allViewModel.selectDelayDate()
+                            mainViewModel.selectDelayDate()
                             delay(1000)
                         }
                     })
             }
 
-
-            if(rewardShowDialog.value) {
+            if(mainUiState.rewardShowDialog) {
                 RewardShowAskDialog(
                     onDismissRequest = {
                         mainViewModel.rewardDelayDate()
-                        mainViewModel.rewardShowDialog.value = it
+                        mainViewModel.closeRewardDialog()
                     },
                     onClicked = {
                         showTargetRewardedAdvertisement(activity, onAdDismissed = {
                             mainViewModel.rewardDelayDate()
-                            mainViewModel.deleteBannerDelayDate()
-                            mainViewModel.rewardShowDialog.value = false
+//                            mainViewModel.deleteBannerDelayDate()
+                            mainViewModel.closeRewardDialog()
                             thankShowingDialog = true
                         })
                     })
@@ -741,12 +718,11 @@ fun MainScreen(
                 showOpenDialog.value = true
             },
             refreshClicked = {
-
-                allViewModel.reFreshProfit { recentRate ->
-                    dollarViewModel.calculateProfit(recentRate)
-
-                    yenViewModel.calculateProfit(recentRate)
-                }
+//                allViewModel.reFreshProfit { recentRate ->
+//                    dollarViewModel.calculateProfit(recentRate)
+//
+//                    yenViewModel.calculateProfit(recentRate)
+//                }
             })
 
         //snackBar

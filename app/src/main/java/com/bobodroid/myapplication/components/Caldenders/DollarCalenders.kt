@@ -107,16 +107,10 @@ fun CustomCalendarView(onDateSelected: (LocalDate) -> Unit) {
 //매도 날짜 설정
 @Composable
 fun DrSellDatePickerDialog(
-    onDateSelected: ((LocalDate, Int) -> Unit)?,
-    onDismissRequest: () -> Unit,
-    id: Int,
-    dollarViewModel: DollarViewModel) {
+    onDateSelected: (LocalDate) -> Unit,
+    onDismissRequest: () -> Unit) {
 
     val selectedDate = remember { mutableStateOf(LocalDate.now()) }
-
-    var currentCardId : Int = id
-
-//    var color = if (selectedId == currentCardId) Color.Gray else Color.LightGray
 
     Dialog(onDismissRequest = {
         onDismissRequest()
@@ -153,8 +147,7 @@ fun DrSellDatePickerDialog(
 
                 TextButton(
                     onClick = {
-                        dollarViewModel.sellDateFlow.value = selectedDate.value.toString()
-                        onDateSelected?.invoke(selectedDate.value, currentCardId)
+                        onDateSelected.invoke(selectedDate.value)
                         onDismissRequest()
                     }
                 ) {

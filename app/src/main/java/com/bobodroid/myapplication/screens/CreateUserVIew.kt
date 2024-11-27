@@ -1,7 +1,6 @@
 package com.bobodroid.myapplication.screens
 
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -11,10 +10,8 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.Button
 import androidx.compose.material.SnackbarDuration
 import androidx.compose.material.SnackbarHost
 import androidx.compose.material.SnackbarHostState
@@ -24,17 +21,13 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.bobodroid.myapplication.R
 import com.bobodroid.myapplication.components.Buttons
 import com.bobodroid.myapplication.components.shadowCustom
-import com.bobodroid.myapplication.routes.MainRoute
 import androidx.compose.material3.Text
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -42,23 +35,23 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import com.bobodroid.myapplication.components.Dialogs.CustomIdDialog
 import com.bobodroid.myapplication.models.datamodels.roomDb.LocalUserData
-import com.bobodroid.myapplication.models.viewmodels.AllViewModel
 import com.bobodroid.myapplication.routes.MyPageRoute
 import com.bobodroid.myapplication.routes.RouteAction
 import kotlinx.coroutines.launch
 
 @Composable
-fun CreateUserScreen(
+fun CreateUserView(
     routeAction: RouteAction<MyPageRoute>,
-    localUser: LocalUserData
+    localUser: LocalUserData,
+    logOut:() -> Unit,
+    logIn: (String, String) -> Unit,
+    createUser: (String, String) -> Unit,
     ) {
 
 
     var customDialog by remember { mutableStateOf(false) }
 
     val coroutineScope = rememberCoroutineScope()
-
-    val mainScreenSnackBarHostState = remember { SnackbarHostState() }
 
     var logInDialog by remember { mutableStateOf(false) }
 
@@ -153,13 +146,8 @@ fun CreateUserScreen(
         ) {
             Buttons(
                 onClicked = {
-                    allViewModel.logout(result = {
-                        coroutineScope.launch {
-                            mainScreenSnackBarHostState.showSnackbar(
-                                it,
-                                actionLabel = "닫기", SnackbarDuration.Short
-                            )}
-                    })
+                    logOut()
+                    logInDialog = false
                 },
                 color = Color.White,
                 fontColor = Color.Black,
@@ -228,18 +216,8 @@ fun CreateUserScreen(
                 placeholder = "커스텀 아이디를 입력해주세요",
                 buttonLabel = "확인",
                 onClicked = { customId, pin ->
-                    allViewModel.createUser(customId, pin) { resultMessage ->
-
-                        coroutineScope.launch {
-                            customDialog = false
-                            mainScreenSnackBarHostState.showSnackbar(
-                                resultMessage,
-                                actionLabel = "닫기", SnackbarDuration.Short
-                            )
-                        }
-
-                    }
-
+                    createUser(customId, pin)
+                    customDialog = false
                 },
             )
         }
@@ -252,69 +230,12 @@ fun CreateUserScreen(
                 placeholder = "아이디를 입력해주세요",
                 buttonLabel = "확인",
                 onClicked = { cloudId, pin ->
-                    allViewModel.logIn(cloudId, pin) { resultMessage ->
-                        coroutineScope.launch {
-                            logInDialog = false
-                            mainScreenSnackBarHostState.showSnackbar(
-                                resultMessage,
-                                actionLabel = "닫기", SnackbarDuration.Short
-                            )
-                        }
-
-                    }
+                    logIn(cloudId, pin)
                     logInDialog = false
                 },
             )
         }
 
-        Spacer(modifier = Modifier.weight(1f))
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .wrapContentHeight()
-        ) {
-            SnackbarHost(
-                hostState = mainScreenSnackBarHostState, modifier = Modifier,
-                snackbar = { snackBarData ->
-
-                    Card(
-                        shape = RoundedCornerShape(8.dp),
-                        border = BorderStroke(1.5.dp, Color.Black),
-                        modifier = Modifier
-                            .padding(10.dp)
-                            .fillMaxWidth(),
-                    ) {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(8.dp)
-                                .padding(start = 10.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.Start
-                        ) {
-
-                            Text(
-                                text = snackBarData.message,
-                                fontSize = 15.sp,
-                                lineHeight = 20.sp,
-                                fontWeight = FontWeight.Medium
-                            )
-
-                            Spacer(modifier = Modifier.weight(1f))
-
-                            Text(
-                                modifier = Modifier
-                                    .padding(8.dp)
-                                    .clickable {
-                                        mainScreenSnackBarHostState.currentSnackbarData?.dismiss()
-                                    },
-                                text = "닫기",
-                                fontWeight = FontWeight.Medium
-                            )
-                        }
-                    }
-                })
-        }
 
     }
 

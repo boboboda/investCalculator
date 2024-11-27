@@ -75,8 +75,11 @@ import com.bobodroid.myapplication.components.Dialogs.TextFieldDialog
 import com.bobodroid.myapplication.components.RecordTextView
 import com.bobodroid.myapplication.extensions.toBigDecimalUs
 import com.bobodroid.myapplication.extensions.toBigDecimalWon
+import com.bobodroid.myapplication.models.datamodels.roomDb.CurrencyType
 import com.bobodroid.myapplication.models.datamodels.roomDb.DrBuyRecord
+import com.bobodroid.myapplication.models.viewmodels.CurrencyRecordState
 import com.bobodroid.myapplication.models.viewmodels.DollarViewModel
+import com.bobodroid.myapplication.models.viewmodels.MainViewModel
 import com.bobodroid.myapplication.ui.theme.DeleteColor
 import com.bobodroid.myapplication.ui.theme.SelectedColor
 import com.bobodroid.myapplication.ui.theme.TopButtonColor
@@ -91,12 +94,12 @@ import java.math.RoundingMode
 fun TotalLineDrRecord(
     data: DrBuyRecord,
     sellAction: Boolean = data.recordColor!!,
-    sellActed: (DrBuyRecord) -> Unit,
     onClicked: ((DrBuyRecord) -> Unit)?,
-    dollarViewModel: DollarViewModel,
+    mainViewModel: MainViewModel,
     snackBarHostState: SnackbarHostState,
     insertSelected: (String, String, String) -> Unit,
     recordSelected: () -> Unit,
+    currencyType: CurrencyType
 ) {
 
     val mathContext = MathContext(28, RoundingMode.HALF_UP)
@@ -692,13 +695,17 @@ fun TotalLineDrRecord(
             if (openDialog) {
                 SellDialog(
                     buyRecord = data,
-                    sellAction = {
-                        sellActed(data)
-
+                    selectedRecord = { rate, date, profit ->
+                        val buyRecord = data.copy(
+                            sellDate = date,
+                            sellRate = rate,
+                            sellProfit = profit,
+                        )
+                        mainViewModel.updateBuyRecord(buyRecord)
                     },
                     onDismissRequest = { openDialog = it },
-                    onClicked = { openDialog = it },
-                    dollarViewModel = dollarViewModel
+                    mainViewModel = mainViewModel,
+                    currencyType = currencyType
                 )
             }
 

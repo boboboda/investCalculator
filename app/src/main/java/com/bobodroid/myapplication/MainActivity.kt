@@ -279,9 +279,7 @@ fun InvestAppScreen(
                 investNavController = investNavController,
                 dollarViewModel = dollarViewModel,
                 yenViewModel = yenViewModel,
-                routeAction = mainRouteAction,
                 mainViewModel = mainViewModel,
-                drawerState = drawerState,
                 activity = activity,
                 analysisViewModel = analysisViewModel)
         }

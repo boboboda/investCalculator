@@ -1,10 +1,8 @@
 package com.bobodroid.myapplication.screens
 
-import android.app.Activity
 import android.content.Intent
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -26,7 +24,7 @@ import com.bobodroid.myapplication.routes.MyPageRoute
 import com.bobodroid.myapplication.routes.RouteAction
 
 @Composable
-fun CustomerScreen(
+fun CustomerView(
     routeAction: RouteAction<MyPageRoute>
 ) {
 

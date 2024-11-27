@@ -63,7 +63,6 @@ fun RangeDateDialog(
     startDateSelected: ((String) -> Unit)? = null,
     endDateSelected: ((String) -> Unit)? = null,
     onClicked: ((selectedStartDate: String, selectedEndDate: String) -> Unit)? = null,
-    allViewModel: AllViewModel
 ) {
 
     val datePickerEnableState = remember { mutableStateOf(false) }

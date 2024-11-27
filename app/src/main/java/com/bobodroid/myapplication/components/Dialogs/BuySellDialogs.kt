@@ -24,32 +24,46 @@ import com.bobodroid.myapplication.models.viewmodels.YenViewModel
 import com.bobodroid.myapplication.ui.theme.SellButtonColor
 import java.time.LocalDate
 import androidx.compose.material.SnackbarHostState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import com.bobodroid.myapplication.components.Buttons
 import com.bobodroid.myapplication.components.DrSellDatePickerDialog
+import com.bobodroid.myapplication.models.datamodels.roomDb.CurrencyType
 import com.bobodroid.myapplication.models.datamodels.roomDb.DrBuyRecord
 import com.bobodroid.myapplication.models.datamodels.roomDb.WonBuyRecord
 import com.bobodroid.myapplication.models.datamodels.roomDb.YenBuyRecord
+import com.bobodroid.myapplication.models.viewmodels.MainViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SellDialog(
     buyRecord: DrBuyRecord,
     onDismissRequest: (Boolean) -> Unit,
-    onClicked: ((Boolean) -> Unit)?,
-    sellAction: () -> Unit,
-    dollarViewModel: DollarViewModel) {
+    selectedRecord: (sellRate: String, sellDate: String, sellProfit: String) -> Unit,
+    mainViewModel: MainViewModel,
+    currencyType: CurrencyType) {
+
+    val sellRate by remember {
+        mutableStateOf("")
+    }
+
+    val sellDate by remember {
+        mutableStateOf<String?>(null)
+    }
+
+    var sellProfit by remember {
+        mutableStateOf("")
+    }
+
+    var sellPercent by remember {
+        mutableStateOf("")
+    }
 
     val isDialogOpen = remember { mutableStateOf(false) }
 
-    var sellRate = dollarViewModel.sellRateFlow.collectAsState()
-
     var openDialog = remember { mutableStateOf(false) }
 
-    val isBtnActive = sellRate.value.isNotEmpty()
-
-    val sellDate = dollarViewModel.sellDateFlow.collectAsState()
-
-    var InputDate = if(sellDate.value == null) "날짜를 선택해주세요" else {sellDate.value}
+    val isBtnActive = if(sellRate == "") true else false
 
 
 
@@ -78,7 +92,7 @@ fun SellDialog(
                         onClick = { isDialogOpen.value = !isDialogOpen.value
 
                         }) {
-                        Text(text = InputDate,
+                        Text(text = sellDate ?: "날짜를 선택해주세요",
                             color = Color.Black,
                             fontSize = 18.sp ,
                             modifier = Modifier
@@ -90,11 +104,12 @@ fun SellDialog(
 
                         if(isDialogOpen.value) {
                             DrSellDatePickerDialog(
-                                onDateSelected = null,
+                                onDateSelected = { selectedDate ->
+
+                                },
                                 onDismissRequest = {
                                     isDialogOpen.value = false
-                                }, id = 1,
-                                dollarViewModel
+                                }
                             )
                         }
                     }
@@ -104,8 +119,8 @@ fun SellDialog(
                     RateNumberField(
                         title = "매도환율을 입력해주세요",
                         modifier = Modifier.fillMaxWidth(),
-                        onClicked = {
-                        dollarViewModel.sellRateFlow.value = it
+                        onClicked = { sellRate ->
+
                     })
 
                     Spacer(modifier = Modifier.height(20.dp))
@@ -118,7 +133,15 @@ fun SellDialog(
                         Buttons(
                             onClicked = {
                                 if(openDialog.value == false) openDialog.value = !openDialog.value else null
-                                dollarViewModel.sellCalculation()
+                                mainViewModel.sellCalculate(
+                                    buyRecord.exchangeMoney ?: "",
+                                    sellRate,
+                                    buyRecord.money ?: "",
+                                    currencyType,
+                                    sellResult = { sellProfitValue, sellPercentValue ->
+                                    sellProfit = sellProfitValue
+                                    sellPercent = sellPercentValue
+                                } )
                             },
 
                             color = SellButtonColor,
@@ -148,14 +171,17 @@ fun SellDialog(
 
             if (openDialog.value) {
                 SellResultDialog(
-                    buyRecord,
-                    sellAction = sellAction,
+                    selectedRecord = {
+                        selectedRecord(sellRate, sellDate ?: "", sellProfit)
+                    },
                     onDismissRequest = {
                         openDialog.value = it
-                        onDismissRequest.invoke(it)
-                        dollarViewModel.resetValue() },
-                    onClicked = { onClicked?.invoke(it) }
-                    ,dollarViewModel = dollarViewModel)
+                        onDismissRequest.invoke(it) },
+                    onClicked = {
+
+                    },
+                    percent = sellPercent,
+                    sellProfit = sellProfit)
 
             }
 
@@ -303,137 +329,3 @@ fun YenSellDialog(
     }
 }
 
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun WonSellDialog(
-    onDismissRequest: (Boolean) -> Unit,
-    onClicked: ((Boolean) -> Unit)?,
-    sellAction: () -> Unit,
-    wonViewModel: WonViewModel,
-    snackbarHostState: SnackbarHostState,
-    buyRecord: WonBuyRecord
-) {
-
-    val isDialogOpen = remember { mutableStateOf(false) }
-
-    val sellDate = wonViewModel.sellDateFlow.collectAsState()
-
-    var InputDate = if(sellDate.value == null) "날짜를 선택해주세요" else {sellDate.value}
-
-    val selectedDate = remember { mutableStateOf(LocalDate.now()) }
-
-    var sellRate = wonViewModel.sellRateFlow.collectAsState()
-
-    var openDialog = remember { mutableStateOf(false) }
-
-    val isBtnActive = sellRate.value.isNotEmpty()
-
-    Dialog(
-        onDismissRequest = { onDismissRequest(false) },
-        properties = DialogProperties()) {
-        Column(
-            modifier = Modifier
-                .wrapContentSize()
-                .background(
-                    color = Color.White,
-                    shape = RoundedCornerShape(16.dp)
-                )
-                .padding(top = 20.dp, bottom = 20.dp)
-                .padding(horizontal = 20.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
-
-        ) {
-                    Card(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(45.dp),
-                        border = BorderStroke(1.dp, Color.Black),
-                        colors = CardDefaults.cardColors(contentColor = Color.Black, containerColor = Color.White),
-                        onClick = { isDialogOpen.value = !isDialogOpen.value
-
-                        }) {
-                        Text(text = InputDate,
-                            color = Color.Black,
-                            fontSize = 18.sp ,
-                            modifier = Modifier
-                                .padding(top = 10.dp)
-                                .fillMaxWidth(),
-                            textAlign = TextAlign.Center,
-
-                            )
-
-                        if(isDialogOpen.value) {
-                            WonSellDatePickerDialog(
-                                onDateSelected = null,
-                                onDismissRequest = {
-                                    isDialogOpen.value = false
-                                }, id = 1,
-                                wonViewModel
-                            )
-                        }
-                    }
-
-                    Spacer(modifier = Modifier.height(20.dp))
-
-                    RateNumberField(
-                        title = "매도환율을 입력해주세요",
-                        modifier = Modifier ,
-                        onClicked = {
-                        wonViewModel.sellRateFlow.value = it
-                    })
-
-                    Spacer(modifier = Modifier.height(20.dp))
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth(),
-                        horizontalArrangement = Arrangement.Center
-                    ) {
-                        Buttons(
-                            onClicked = {
-                                if(openDialog.value == false) openDialog.value = !openDialog.value else null
-                                wonViewModel.sellCalculation()
-                            },
-
-                            color = SellButtonColor,
-                            fontColor = Color.White,
-                            modifier = Modifier
-                                .height(40.dp)
-                                .width(80.dp),
-                            enabled = isBtnActive) {
-                            Text("매도", fontSize = 15.sp)
-                        }
-
-
-                        Spacer(modifier = Modifier.width(25.dp))
-
-                        Buttons(
-                            onClicked = {onDismissRequest(false)},
-                            color = SellButtonColor,
-                            fontColor = Color.White,
-                            modifier = Modifier
-                                .height(40.dp)
-                                .width(80.dp)) {
-                            Text("닫기", fontSize = 15.sp)
-                        }
-                    }
-
-
-
-            if (openDialog.value) {
-                WonSellResultDialog(
-                    buyRecord = buyRecord,
-                    onDismissRequest = {
-                        openDialog.value = it
-                        onDismissRequest.invoke(it)
-                        wonViewModel.resetValue() },
-                    sellAction =  sellAction,
-                    onClicked = { onClicked?.invoke(it) }
-                    , wonViewModel = wonViewModel)
-
-            }
-
-
-        }
-    }
-}

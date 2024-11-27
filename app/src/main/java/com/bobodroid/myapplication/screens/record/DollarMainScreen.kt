@@ -25,19 +25,19 @@ import com.bobodroid.myapplication.R
 import com.bobodroid.myapplication.components.addFocusCleaner
 import com.bobodroid.myapplication.components.admobs.BannerAd
 import com.bobodroid.myapplication.lists.dollorList.TotalDrRecordBox
-import com.bobodroid.myapplication.models.viewmodels.AllViewModel
+import com.bobodroid.myapplication.models.viewmodels.MainViewModel
 
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterialApi::class)
 @Composable
 fun DollarMainScreen(
     dollarViewModel: DollarViewModel,
-    allViewModel: AllViewModel,
+    mainViewModel: MainViewModel,
 ) {
 
     val reFreshDate = allViewModel.refreshDateFlow.collectAsState()
 
-    val totalDrSellProfit = dollarViewModel.totalSellProfit.collectAsState()
+//    val totalDrSellProfit = dollarViewModel.totalSellProfit.collectAsState()
 
     val bannerState = allViewModel.deleteBannerStateFlow.collectAsState()
 

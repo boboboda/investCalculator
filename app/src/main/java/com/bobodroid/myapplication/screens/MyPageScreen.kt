@@ -1,7 +1,10 @@
 package com.bobodroid.myapplication.screens
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -11,13 +14,19 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.SnackbarDuration
+import androidx.compose.material.SnackbarHost
+import androidx.compose.material.SnackbarHostState
+import androidx.compose.material3.Card
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -29,6 +38,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
@@ -39,15 +49,22 @@ import com.bobodroid.myapplication.components.CardIconButton
 import com.bobodroid.myapplication.components.Dialogs.GuideDialog
 import com.bobodroid.myapplication.components.shadowCustom
 import com.bobodroid.myapplication.models.datamodels.roomDb.LocalUserData
+import com.bobodroid.myapplication.models.viewmodels.FcmAlarmViewModel
+import com.bobodroid.myapplication.models.viewmodels.MyPageViewModel
 import com.bobodroid.myapplication.routes.MainRoute
 import com.bobodroid.myapplication.routes.MyPageRoute
 import com.bobodroid.myapplication.routes.RouteAction
 import com.bobodroid.myapplication.ui.theme.MyPageButtonColor
+import kotlinx.coroutines.launch
 
 @Composable
 fun MyPageScreen() {
 
-    val uiState by allViewModel.allUiState.collectAsState()
+    val coroutineScope = rememberCoroutineScope()
+    val myPageViewModel: MyPageViewModel = hiltViewModel()
+    val uiState by myPageViewModel.myPageUiState.collectAsState()
+
+    val mainScreenSnackBarHostState = remember { SnackbarHostState() }
 
     val navController = rememberNavController()
 
@@ -55,29 +72,116 @@ fun MyPageScreen() {
         RouteAction<MyPageRoute>(navController, MyPageRoute.SelectView.routeName)
     }
 
-    NavHost(
-        navController = navController,
-        startDestination = MyPageRoute.SelectView.routeName ?: "",
+    Box(
+        modifier = Modifier.fillMaxSize(),
+        contentAlignment = Alignment.BottomCenter
     ) {
+        NavHost(
+            navController = navController,
+            startDestination = MyPageRoute.SelectView.routeName ?: "",
+        ) {
 
-        composable(MyPageRoute.SelectView.routeName!!) {
-            MyPageSelectView(myPageRouteAction, uiState.localUser)
+            composable(MyPageRoute.SelectView.routeName!!) {
+                MyPageSelectView(myPageRouteAction, uiState.localUser)
+            }
+
+
+            composable(MyPageRoute.CreateUser.routeName!!) {
+                CreateUserView(
+                    routeAction = myPageRouteAction,
+                    uiState.localUser,
+                    logIn = { cloudId, pin ->
+                        myPageViewModel.logIn(cloudId, pin) { resultMessage ->
+                            coroutineScope.launch {
+                                mainScreenSnackBarHostState.showSnackbar(
+                                    resultMessage,
+                                    actionLabel = "닫기", SnackbarDuration.Short
+                                )
+                            }
+
+                        }
+                    },
+                    logOut = {
+                        myPageViewModel.logout(result = {
+                            coroutineScope.launch {
+                                mainScreenSnackBarHostState.showSnackbar(
+                                    it,
+                                    actionLabel = "닫기", SnackbarDuration.Short
+                                )}
+                        })
+                    },
+                    createUser = { id, pw ->
+                        myPageViewModel.createUser(id, pw, resultMessage = {
+                            coroutineScope.launch {
+                                mainScreenSnackBarHostState.showSnackbar(
+                                    it,
+                                    actionLabel = "닫기", SnackbarDuration.Short
+                                )}
+                        })
+                    }
+                )
+            }
+
+            composable(MyPageRoute.CustomerServiceCenter.routeName!!) {
+                CustomerView(routeAction = myPageRouteAction)
+            }
+
+            composable(MyPageRoute.CloudService.routeName!!) {
+                CloudView(myPageRouteAction, localUser =  uiState.localUser)
+            }
+
         }
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .wrapContentHeight()
+        ) {
+            SnackbarHost(
+                hostState = mainScreenSnackBarHostState, modifier = Modifier,
+                snackbar = { snackBarData ->
 
+                    Card(
+                        shape = RoundedCornerShape(8.dp),
+                        border = BorderStroke(1.5.dp, Color.Black),
+                        modifier = Modifier
+                            .padding(10.dp)
+                            .fillMaxWidth(),
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(8.dp)
+                                .padding(start = 10.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.Start
+                        ) {
 
-        composable(MyPageRoute.CreateUser.routeName!!) {
-            CreateUserScreen(routeAction = myPageRouteAction)
+                            Text(
+                                text = snackBarData.message,
+                                fontSize = 15.sp,
+                                lineHeight = 20.sp,
+                                fontWeight = FontWeight.Medium
+                            )
+
+                            Spacer(modifier = Modifier.weight(1f))
+
+                            Text(
+                                modifier = Modifier
+                                    .padding(8.dp)
+                                    .clickable {
+                                        mainScreenSnackBarHostState.currentSnackbarData?.dismiss()
+                                    },
+                                text = "닫기",
+                                fontWeight = FontWeight.Medium
+                            )
+                        }
+                    }
+                })
         }
-
-        composable(MyPageRoute.CustomerServiceCenter.routeName!!) {
-            CustomerScreen(routeAction = myPageRouteAction)
-        }
-
-        composable(MyPageRoute.CloudService.routeName!!) {
-            CloudScreen(myPageRouteAction, localUser =  uiState.localUser)
-        }
-
     }
+
+
+
 }
 
 @Composable
@@ -227,11 +331,11 @@ fun MyPageSelectView(
             Buttons(
                 onClicked = {
 
-                    if(rewardAdIsReadyState.value) {
-                        allViewModel.rewardShowDialog.value = true
-                    } else {
-                        showRewardGuideDialog = true
-                    }
+//                    if(rewardAdIsReadyState.value) {
+//                        allViewModel.rewardShowDialog.value = true
+//                    } else {
+//                        showRewardGuideDialog = true
+//                    }
 
 
                 },

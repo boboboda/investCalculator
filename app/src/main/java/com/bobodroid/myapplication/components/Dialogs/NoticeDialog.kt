@@ -44,7 +44,6 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.bobodroid.myapplication.R
 import com.bobodroid.myapplication.components.CardIconButton
-import com.bobodroid.myapplication.models.viewmodels.AllViewModel
 
 @Composable
 fun NoticeDialog(

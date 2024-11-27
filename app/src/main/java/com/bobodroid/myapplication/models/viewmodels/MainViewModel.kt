@@ -37,6 +37,7 @@ import java.time.format.DateTimeFormatter
 import java.util.Calendar
 import java.util.Date
 import java.util.GregorianCalendar
+import java.util.UUID
 import javax.inject.Inject
 
 @HiltViewModel
@@ -300,14 +301,13 @@ class MainViewModel @Inject constructor(
             CurrencyType.JPY -> recordState.foreignCurrencyRecord.yenState }
     }
 
-    suspend fun addRecord(
+    fun addRecord(
         money: String,
         inputRate: String,
-        groupName: String,
-        type: CurrencyType
+        groupName: String
     ) {
 
-        val latestRate = when(type) {
+        val latestRate = when(mainUiState.value.selectedCurrencyType) {
             CurrencyType.USD -> _mainUiState.value.recentRate.usd
             CurrencyType.JPY -> _mainUiState.value.recentRate.jpy
         }
@@ -320,10 +320,11 @@ class MainViewModel @Inject constructor(
             inputRate = inputRate,
             groupName = groupName,
             date = _mainUiState.value.selectedDate,
-            type = type,
+            type = mainUiState.value.selectedCurrencyType,
         )
-
-        recordUseCase.addCurrencyRecord(addRequest)
+        viewModelScope.launch {
+            recordUseCase.addCurrencyRecord(addRequest)
+        }
     }
 
 
@@ -388,17 +389,45 @@ class MainViewModel @Inject constructor(
 
 
 
+    fun groupAdd(newGroupName: String) {
+        val currentState = _recordListUiState.value
 
-    // 날짜 범위 관련
+        val updatedState = when(mainUiState.value.selectedCurrencyType) {
+            CurrencyType.USD -> {
+                currentState.copy(
+                    foreignCurrencyRecord = currentState.foreignCurrencyRecord.copy(
+                        dollarState = currentState.foreignCurrencyRecord.dollarState.copy(
+                            groups = currentState.foreignCurrencyRecord.dollarState.groups + newGroupName
+                        )
+                    )
+                )
+            }
+            CurrencyType.JPY -> {
+                currentState.copy(
+                    foreignCurrencyRecord = currentState.foreignCurrencyRecord.copy(
+                        yenState = currentState.foreignCurrencyRecord.yenState.copy(
+                            groups = currentState.foreignCurrencyRecord.yenState.groups + newGroupName
+                        )
+                    )
+                )
+            }
+        }
 
-    fun showDateRangeDialog(state: Boolean) {
-        val updateUiSate = _dateRangeUiState.value.copy(dateRangeDialog = state)
+        viewModelScope.launch {
+            _recordListUiState.emit(updatedState)
+        }
+    }
+
+
+    suspend fun cancelSellRecord(id: UUID): Boolean {
+       return recordUseCase.cancelSellRecord(id, mainUiState.value.selectedCurrencyType)
     }
 
 
 }
 
-// 메인 화면의 핵심 상태
+
+    // 메인 화면의 핵심 상태
 data class MainUiState(
     val selectedCurrencyType: CurrencyType = CurrencyType.USD,
     val selectedDate: String = "",
@@ -444,3 +473,4 @@ data class ForeignCurrencyRecordList(
     val dollarState: CurrencyRecordState<ForeignCurrencyRecord> = CurrencyRecordState(),
     val yenState: CurrencyRecordState<ForeignCurrencyRecord> = CurrencyRecordState()
 )
+

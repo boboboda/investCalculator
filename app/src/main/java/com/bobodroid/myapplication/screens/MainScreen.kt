@@ -51,6 +51,7 @@ import com.bobodroid.myapplication.components.Dialogs.TextFieldDialog
 import com.bobodroid.myapplication.components.Dialogs.ThanksDialog
 import com.bobodroid.myapplication.components.admobs.BannerAd
 import com.bobodroid.myapplication.components.admobs.showTargetRewardedAdvertisement
+import com.bobodroid.myapplication.components.mainComponents.BottomSheetEvent
 import com.bobodroid.myapplication.components.mainComponents.MainBottomSheet
 import com.bobodroid.myapplication.components.mainComponents.MainHeader
 import com.bobodroid.myapplication.lists.dollorList.RecordListView
@@ -109,7 +110,7 @@ fun MainScreen(
 
 //    val reFreshDate = allViewModel.refreshDateFlow.collectAsState()
 
-    val totalDrSellProfit = dollarViewModel.totalSellProfit.collectAsState()
+//    val totalDrSellProfit = dollarViewModel.totalSellProfit.collectAsState()
 
 //    val bannerState = allViewModel.deleteBannerStateFlow.collectAsState()
 
@@ -163,10 +164,28 @@ fun MainScreen(
             // bottomsheet
             if (showBottomSheet) {
                 MainBottomSheet(
-                    onDismiss = {
-                        showBottomSheet = it
-                    },
-                    sheetState
+                    sheetState,
+                    recordListUiState,
+                    mainUiState,
+                    onEvent = { bottomSheetEvent ->
+                        when (bottomSheetEvent) {
+                            is BottomSheetEvent.DismissSheet -> {
+                                showBottomSheet = false
+                            }
+                            is BottomSheetEvent.OnRecordAdd -> {
+                                mainViewModel.addRecord(bottomSheetEvent.money, bottomSheetEvent.rate, bottomSheetEvent.group)
+                            }
+                            is BottomSheetEvent.OnGroupSelect -> {
+                                groupAddDialog = true
+                            }
+                            is BottomSheetEvent.OnDateSelect -> {
+                                showDateDialog = true
+                            }
+                            is BottomSheetEvent.OnCurrencyTypeChange -> {
+                                mainViewModel.updateCurrentForeignCurrency(bottomSheetEvent.currencyType)
+                            }
+                        }
+                    }
                 )
             }
 
@@ -189,15 +208,7 @@ fun MainScreen(
                     onClickedLabel = "추가",
                     closeButtonLabel = "닫기",
                     onClicked = { name ->
-                        when(mainUiState.selectedCurrencyType) {
-                            CurrencyType.USD-> {
-                                dollarViewModel.groupAdd(name)
-                            }
-                            CurrencyType.JPY-> {
-                                yenViewModel.groupAdd(name)
-                            }
-                        }
-
+                        mainViewModel.groupAdd(name)
                         groupAddDialog = false
                     })
             }
@@ -205,7 +216,7 @@ fun MainScreen(
             if (dateRangeUiState.dateRangeDialog) {
                 RangeDateDialog(
                     onDismissRequest = {
-                        mainViewModel.showDateRangeDialog(it)
+                       showDateDialog = it
                     },
                     callStartDate = dateRangeUiState.startDate,
                     callEndDate = dateRangeUiState.endDate,

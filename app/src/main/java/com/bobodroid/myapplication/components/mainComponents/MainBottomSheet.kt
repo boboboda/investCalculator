@@ -67,8 +67,7 @@ import java.util.Calendar
 fun MainBottomSheet(
     sheetState: SheetState,
     recordListUiState: RecordListUiState,
-    selectedCurrencyType: CurrencyType,
-    selectedDate: String,
+    mainUiState: MainUiState,
     onEvent: (BottomSheetEvent) -> Unit
 ) {
 
@@ -91,12 +90,12 @@ fun MainBottomSheet(
 
     var groupDropdownExpanded by remember { mutableStateOf(false) }
 
-    val groupList = when(selectedCurrencyType) {
+    val groupList = when(mainUiState.selectedCurrencyType) {
         CurrencyType.USD-> { recordListUiState.foreignCurrencyRecord.dollarState.groups }
         CurrencyType.JPY-> { recordListUiState.foreignCurrencyRecord.yenState.groups }
     }
 
-    val date = if (selectedDate == "") today else selectedDate
+    val date = if (mainUiState.selectedDate == "") today else mainUiState.selectedDate
 
     var numberPadPopViewIsVible by remember { mutableStateOf(false) }
 
@@ -125,7 +124,7 @@ fun MainBottomSheet(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 CustomCard(
-                    label = selectedCurrencyType.koreanName,
+                    label = mainUiState.selectedCurrencyType.koreanName,
                     fontSize = 15,
                     modifier = Modifier
                         .width(60.dp)
@@ -256,7 +255,8 @@ fun MainBottomSheet(
                                     )
                                 }
                             }, onClick = {
-                                groupAddDialog = true
+                                onEvent(BottomSheetEvent.OnGroupSelect)
+                                groupDropdownExpanded = false
                             })
 
                         Divider(
@@ -266,7 +266,7 @@ fun MainBottomSheet(
                             thickness = 2.dp
                         )
 
-                        groupList.forEach { groupName ->
+                        groupList.forEach { groupValue ->
                             DropdownMenuItem(
                                 modifier = Modifier
                                     .fillMaxWidth(),
@@ -277,12 +277,12 @@ fun MainBottomSheet(
                                         contentAlignment = Alignment.TopStart
                                     ) {
                                         Text(
-                                            text = groupName,
+                                            text = groupValue,
                                             fontSize = 13.sp
                                         )
                                     }
                                 }, onClick = {
-                                    group = groupName
+                                    group = groupValue
                                     groupDropdownExpanded = false
                                 })
                         }
@@ -304,7 +304,7 @@ fun MainBottomSheet(
                         containerColor = Color.White
                     ),
                     onClick = {
-                        showDateDialog = true
+                        onEvent(BottomSheetEvent.OnDateSelect)
                     }) {
 
                     Row(
@@ -339,7 +339,7 @@ fun MainBottomSheet(
                 MoneyChButtonView(
                     mainText = "달러",
                     currencyType = CurrencyType.USD,
-                    selectedCurrencyType = selectedCurrencyType,
+                    selectedCurrencyType = mainUiState.selectedCurrencyType,
                     selectAction = {
                         onEvent(BottomSheetEvent.OnCurrencyTypeChange(it))
                     })
@@ -349,7 +349,7 @@ fun MainBottomSheet(
                 MoneyChButtonView(
                     mainText = "엔화",
                     currencyType = CurrencyType.JPY,
-                    selectedCurrencyType = selectedCurrencyType,
+                    selectedCurrencyType = mainUiState.selectedCurrencyType,
                     selectAction = {
                         onEvent(BottomSheetEvent.OnCurrencyTypeChange(it))
                     })
@@ -439,7 +439,8 @@ fun MainBottomSheet(
 sealed class BottomSheetEvent {
     data class OnRecordAdd(val money: String, val rate: String, val group: String) : BottomSheetEvent()
     data class OnCurrencyTypeChange(val currencyType: CurrencyType) : BottomSheetEvent()
-    data class OnGroupSelect(val groupName: String) : BottomSheetEvent()
+    data object OnGroupSelect : BottomSheetEvent()
+    data object OnDateSelect : BottomSheetEvent()
     data object DismissSheet : BottomSheetEvent()
 }
 

@@ -74,6 +74,7 @@ import com.bobodroid.myapplication.components.Dialogs.TextFieldDialog
 import com.bobodroid.myapplication.components.RecordTextView
 import com.bobodroid.myapplication.extensions.toBigDecimalUs
 import com.bobodroid.myapplication.extensions.toBigDecimalWon
+import com.bobodroid.myapplication.models.datamodels.roomDb.CurrencyType
 import com.bobodroid.myapplication.models.datamodels.roomDb.DrBuyRecord
 import com.bobodroid.myapplication.models.datamodels.roomDb.ForeignCurrencyRecord
 import com.bobodroid.myapplication.models.datamodels.roomDb.YenBuyRecord
@@ -86,17 +87,16 @@ import kotlinx.coroutines.launch
 import java.math.BigDecimal
 import java.math.MathContext
 import java.math.RoundingMode
+import java.util.UUID
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterialApi::class)
 @Composable
 fun RecordListRowView(
     data: ForeignCurrencyRecord,
     sellAction: Boolean = data.recordColor!!,
-    snackBarHostState: SnackbarHostState,
-    insertSelected: (String, String, String) -> Unit,
-    sellSelected: (ForeignCurrencyRecord) -> Unit,
     groupList: List<String>,
-    selectedItem: () -> Unit
+    snackBarHostState: SnackbarHostState,
+    onEvent: (RecordListEvent) -> Unit,
 ) {
 
     val mathContext = MathContext(28, RoundingMode.HALF_UP)
@@ -432,31 +432,28 @@ fun RecordListRowView(
                                                         }
                                                     }
                                                 } else {
-                                                    val result = dollarViewModel.cancelSellRecord(data.id)
-                                                    if (result.first) {
-                                                        if (snackBarHostState.currentSnackbarData == null) {
-                                                            coroutineScope.launch {
-                                                                snackBarHostState.showSnackbar(
-                                                                    "매도가 취소되었습니다.",
-                                                                    actionLabel = "닫기",
-                                                                    SnackbarDuration.Short
-                                                                )
-                                                                dollarViewModel.removeSellRecord(
-                                                                    result.second
-                                                                )
-                                                            }
-                                                        }
-                                                    } else {
-                                                        if (snackBarHostState.currentSnackbarData == null) {
-                                                            coroutineScope.launch {
-                                                                snackBarHostState.showSnackbar(
-                                                                    "일치하는 매수기록이 없습니다.",
-                                                                    actionLabel = "닫기",
-                                                                    SnackbarDuration.Short
-                                                                )
-                                                            }
-                                                        }
-                                                    }
+                                                    onEvent(RecordListEvent.CancelSellRecord(data.id))
+//                                                    if (result.first) {
+//                                                        if (snackBarHostState.currentSnackbarData == null) {
+//                                                            coroutineScope.launch {
+//                                                                snackBarHostState.showSnackbar(
+//                                                                    "매도가 취소되었습니다.",
+//                                                                    actionLabel = "닫기",
+//                                                                    SnackbarDuration.Short
+//                                                                )
+//                                                            }
+//                                                        }
+//                                                    } else {
+//                                                        if (snackBarHostState.currentSnackbarData == null) {
+//                                                            coroutineScope.launch {
+//                                                                snackBarHostState.showSnackbar(
+//                                                                    "일치하는 매수기록이 없습니다.",
+//                                                                    actionLabel = "닫기",
+//                                                                    SnackbarDuration.Short
+//                                                                )
+//                                                            }
+//                                                        }
+//                                                    }
                                                 }
 
 
@@ -745,4 +742,12 @@ fun RecordListRowView(
         }
     )
 
+}
+
+// 바텀시트 관련 이벤트 정의
+sealed class RecordListEvent {
+    data class EditRecord(val date: String, val money: String, val rate: String) : RecordListEvent()
+    data class SellSelected (val sellRecord: ForeignCurrencyRecord): RecordListEvent()
+    data class CancelSellRecord(val id: UUID): RecordListEvent()
+    data object DismissSheet : RecordListEvent()
 }

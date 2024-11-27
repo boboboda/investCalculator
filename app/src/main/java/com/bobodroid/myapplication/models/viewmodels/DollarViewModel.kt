@@ -187,17 +187,7 @@ class DollarViewModel @Inject constructor(
 
     val sellRecordActionFlow = MutableStateFlow(false)
 
-    fun groupAdd(newGroupName: String) {
 
-        val updateGroupList = groupList.value.toMutableList().apply {
-            add(newGroupName)
-        }.toList()
-
-        viewModelScope.launch {
-            groupList.emit(updateGroupList)
-        }
-
-    }
 
     fun buyDollarAdd(groupName: String) {
         viewModelScope.launch {
@@ -370,26 +360,7 @@ class DollarViewModel @Inject constructor(
         }
     }
 
-    suspend fun cancelSellRecord(id: UUID): Pair<Boolean, DrSellRecord> {
 
-        val searchBuyRecord = investRepository.getDollarBuyRecordById(id)
-
-        val searchSellRecord = investRepository.getDollarSellRecordById(id)
-
-        Log.d(TAG("DollarViewModel", "cancelSellRecord"), "cancelBuyRecord: ${searchBuyRecord}, sellId: ${id}")
-
-        Log.d(TAG("DollarViewModel", "cancelSellRecord"), "cancelSellRecord: ${searchSellRecord}, sellId: ${id}")
-
-        if (searchBuyRecord == null && searchSellRecord == null) {
-            return Pair(false, DrSellRecord())
-        } else {
-            val updateData = searchBuyRecord.copy(recordColor = false)
-
-            investRepository.updateDollarBuyRecord(updateData)
-
-            return Pair(true, searchSellRecord)
-        }
-    }
 
     fun drCloudLoad(buyRecord: List<DrBuyRecord>, sellRecord: List<DrSellRecord>) {
 

@@ -56,9 +56,7 @@ fun RecordListView(
         buyRecordHistory
     }
 
-    var selectedId by remember { mutableStateOf(UUID.randomUUID()) }
-
-    var lazyScrollState = rememberLazyListState()
+    val lazyScrollState = rememberLazyListState()
 
     val coroutineScope = rememberCoroutineScope()
 

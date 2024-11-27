@@ -18,6 +18,7 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
 import java.math.BigDecimal
 import java.math.RoundingMode
+import java.util.UUID
 import javax.inject.Inject
 
 class RecordUseCase @Inject constructor(
@@ -86,6 +87,32 @@ class RecordUseCase @Inject constructor(
             }
         }
 
+    }
+
+    suspend fun cancelSellRecord(id: UUID, currencyType: CurrencyType): Boolean {
+        val searchBuyRecord = when(currencyType) {
+            CurrencyType.USD -> investRepository.getDollarBuyRecordById(id)
+            CurrencyType.JPY -> investRepository.getYenBuyRecordById(id)
+        }
+
+        val updateData = when(searchBuyRecord) {
+            is DrBuyRecord -> searchBuyRecord.copy(recordColor = false)
+            is YenBuyRecord -> searchBuyRecord.copy(recordColor = false)
+            else -> return false
+        }
+
+        when(currencyType) {
+            CurrencyType.USD -> {
+                val dollarRecord = updateData as DrBuyRecord
+                investRepository.updateDollarBuyRecord(dollarRecord)
+            }
+            CurrencyType.JPY -> {
+                val yenRecord = updateData as YenBuyRecord
+                investRepository.updateYenBuyRecord(yenRecord)
+            }
+        }
+
+        return true
     }
 
    private fun calculateExpectedProfit(exchangeMoney: String, inputMoney: String, latestRate: String): String {

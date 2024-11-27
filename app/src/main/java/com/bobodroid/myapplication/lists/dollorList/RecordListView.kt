@@ -17,8 +17,6 @@ import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.SnackbarHostState
 import androidx.compose.material3.Divider
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.State
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -30,8 +28,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.bobodroid.myapplication.components.RecordHeader
 import com.bobodroid.myapplication.components.RecordTextView
-import com.bobodroid.myapplication.models.datamodels.roomDb.DrBuyRecord
-import com.bobodroid.myapplication.models.viewmodels.DollarViewModel
+import com.bobodroid.myapplication.models.datamodels.roomDb.ForeignCurrencyRecord
+import com.bobodroid.myapplication.models.viewmodels.CurrencyRecordState
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.util.UUID
@@ -42,19 +40,20 @@ import java.util.UUID
 )
 @SuppressLint("StateFlowValueCalledInComposition")
 @Composable
-fun TotalDrRecordBox(
-    dollarViewModel: DollarViewModel,
+fun RecordListView(
     snackBarHostState: SnackbarHostState,
+    currencyRecordState: CurrencyRecordState<ForeignCurrencyRecord>,
     hideSellRecordState: Boolean
 ) {
 
-    val buyRecordHistory: State<Map<String, List<DrBuyRecord>>> =
-        dollarViewModel.groupBuyRecordFlow.collectAsState()
+    val buyRecordHistory = currencyRecordState.groupedRecords
+
+    val groupList = currencyRecordState.groups
 
     val filterRecord = if (hideSellRecordState) {
-        buyRecordHistory.value.mapValues { it.value.filter { it.recordColor == false } }
+        buyRecordHistory.mapValues { it.value.filter { it.recordColor == false } }
     } else {
-        buyRecordHistory.value
+        buyRecordHistory
     }
 
     var selectedId by remember { mutableStateOf(UUID.randomUUID()) }
@@ -136,19 +135,16 @@ fun TotalDrRecordBox(
 
                     val finalIndex = foundIndex + accmulatedCount + groupIndex
 
-                    TotalLineDrRecord(
+                    RecordListRowView(
                         Buy,
                         sellAction = Buy.recordColor!!,
-                        onClicked = { recordbox ->
-                            selectedId = recordbox.id
-                            dollarViewModel.dateFlow.value = recordbox.date!!
-                            dollarViewModel.haveMoneyDollar.value = recordbox.exchangeMoney!!
-                            dollarViewModel.recordInputMoney.value = recordbox.money!!
+                        sellSelected = {
+
                         },
-                        dollarViewModel = dollarViewModel,
                         insertSelected = { date, money, rate->
-                            dollarViewModel.insertBuyRecord(Buy, date, money, rate)
+//                            dollarViewModel.insertBuyRecord(Buy, date, money, rate)
                         },
+                        groupList = groupList,
                         snackBarHostState = snackBarHostState
                     ) {
                         coroutineScope.launch {

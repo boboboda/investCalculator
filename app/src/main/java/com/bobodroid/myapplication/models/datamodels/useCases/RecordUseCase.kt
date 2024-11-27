@@ -6,9 +6,10 @@ import com.bobodroid.myapplication.MainActivity.Companion.TAG
 import com.bobodroid.myapplication.models.datamodels.repository.InvestRepository
 import com.bobodroid.myapplication.models.datamodels.roomDb.CurrencyType
 import com.bobodroid.myapplication.models.datamodels.roomDb.DrBuyRecord
+import com.bobodroid.myapplication.models.datamodels.roomDb.ForeignCurrencyRecord
 import com.bobodroid.myapplication.models.datamodels.roomDb.YenBuyRecord
 import com.bobodroid.myapplication.models.viewmodels.CurrencyRecordState
-import com.bobodroid.myapplication.models.viewmodels.ForeignCurrencyRecord
+import com.bobodroid.myapplication.models.viewmodels.ForeignCurrencyRecordList
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
@@ -22,20 +23,20 @@ import javax.inject.Inject
 class RecordUseCase @Inject constructor(
     private val investRepository: InvestRepository
 ) {
-    fun getRecord(): Flow<ForeignCurrencyRecord> = combine(
+    fun getRecord(): Flow<ForeignCurrencyRecordList> = combine(
         investRepository.getAllDollarBuyRecords(),
         investRepository.getAllYenBuyRecords()
     ) { dollarRecords, yenRecords ->
-        ForeignCurrencyRecord(
+        ForeignCurrencyRecordList(
             dollarState = CurrencyRecordState(
                 records = dollarRecords,
-                groupedRecords = setGroup(dollarRecords) { it.buyDrCategoryName },
-                groups = dollarRecords.map { it.buyDrCategoryName ?: "미지정" }.distinct()
+                groupedRecords = setGroup(dollarRecords) { it.categoryName},
+                groups = dollarRecords.map { it.categoryName ?: "미지정" }.distinct()
             ),
             yenState = CurrencyRecordState(
                 records = yenRecords,
-                groupedRecords = setGroup(yenRecords) { it.buyYenCategoryName },
-                groups = yenRecords.map { it.buyYenCategoryName ?: "미지정" }.distinct()
+                groupedRecords = setGroup(yenRecords) { it.categoryName },
+                groups = yenRecords.map { it.categoryName ?: "미지정" }.distinct()
             )
         )
     }
@@ -55,8 +56,8 @@ class RecordUseCase @Inject constructor(
                         exchangeMoney = exchangeMoney,
                         profit = expectedProfit,
                         expectProfit = expectedProfit,
-                        buyDrCategoryName = request.groupName,
-                        buyDrMemo = "",
+                        categoryName = request.groupName,
+                        memo = "",
                         // 기본값 설정
                         sellRate = "",
                         sellProfit = "",
@@ -74,8 +75,8 @@ class RecordUseCase @Inject constructor(
                         exchangeMoney = exchangeMoney,
                         profit = expectedProfit,
                         expectProfit = expectedProfit,
-                        buyYenCategoryName = request.groupName,
-                        buyYenMemo = "",
+                        categoryName = request.groupName,
+                        memo = "",
                         // 기본값 설정
                         sellRate = "",
                         sellProfit = "",
@@ -118,8 +119,7 @@ class RecordUseCase @Inject constructor(
         }
     }
 
-    suspend fun addRecord() {
-    }
+
 
 }
 

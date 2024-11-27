@@ -32,31 +32,6 @@ interface DollarBuyDatabaseDao {
 }
 
 
-@Dao
-interface DollarSellDatabaseDao {
-
-    @Query("SELECT * from sellDollar_table")
-    fun getRecords(): Flow<List<DrSellRecord>>
-
-    @Query("SELECT * from sellDollar_table where id=:id")
-    suspend fun getRecordById(id: UUID): DrSellRecord
-
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insert(drSellRecord: DrSellRecord)
-
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertAll(drSellRecord: List<DrSellRecord>)
-
-    @Update(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun update(drSellRecord: DrSellRecord): Int
-
-    @Query("DELETE from sellDollar_table")
-    suspend fun deleteAll()
-
-    @Delete
-    suspend fun deleteNote(drSellRecord: DrSellRecord)
-
-}
 
 
 @Dao
@@ -84,86 +59,6 @@ interface YenBuyDatabaseDao {
     suspend fun deleteNote(yenBuyRecord: YenBuyRecord)
 
 }
-
-@Dao
-interface YenSellDatabaseDao {
-
-    @Query("SELECT * from sellYen_table")
-    fun getRecords(): Flow<List<YenSellRecord>>
-
-    @Query("SELECT * from sellYen_table where id=:id")
-    suspend fun getRecordById(id: UUID): YenSellRecord
-
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insert(yenSellRecord: YenSellRecord)
-
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertAll(yenSellRecord: List<YenSellRecord>)
-
-    @Update(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun update(yenSellRecord: YenSellRecord): Int
-
-    @Query("DELETE from sellYen_table")
-    suspend fun deleteAll()
-
-    @Delete
-    suspend fun deleteNote(yenSellRecord: YenSellRecord)
-
-}
-
-
-@Dao
-interface WonBuyDatabaseDao {
-
-    @Query("SELECT * from buyWon_table")
-    fun getRecords(): Flow<List<WonBuyRecord>>
-
-    @Query("SELECT * from buyWon_table where id=:id")
-    suspend fun getRecordById(id: UUID): WonBuyRecord
-
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insert(wonBuyRecord: WonBuyRecord)
-
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertAll(wonBuyRecord: List<WonBuyRecord>)
-
-    @Update(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun update(wonBuyRecord: WonBuyRecord): Int
-
-    @Query("DELETE from buyWon_table")
-    suspend fun deleteAll()
-
-    @Delete
-    suspend fun deleteNote(wonBuyRecord: WonBuyRecord)
-
-}
-
-@Dao
-interface WonSellDatabaseDao {
-
-    @Query("SELECT * from sellWon_table")
-    fun getRecords(): Flow<List<WonSellRecord>>
-
-    @Query("SELECT * from sellWon_table where id=:id")
-    suspend fun getRecordById(id: UUID): WonSellRecord
-
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insert(wonSellRecord: WonSellRecord)
-
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertAll(wonSellRecord: List<WonSellRecord>)
-
-    @Update(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun update(wonSellRecord: WonSellRecord): Int
-
-    @Query("DELETE from sellWon_table")
-    suspend fun deleteAll()
-
-    @Delete
-    suspend fun deleteNote(wonSellRecord: WonSellRecord)
-
-}
-
 
 @Dao
 interface LocalUserDatabaseDao {

@@ -80,476 +80,125 @@ data class LocalUserData(
     }
 }
 
+interface ForeignCurrencyRecord {
+    var id: UUID
+    var date: String?
+    var sellDate: String?
+    var money: String?
+    var rate: String?
+    var buyRate: String?
+    var sellRate: String?
+    var profit: String?
+    var sellProfit: String?
+    var expectProfit: String?
+    var exchangeMoney: String?
+    var recordColor: Boolean?
+    var categoryName: String?
+    var memo: String?
+}
+
 @Entity(tableName = "buyDollar_table")
 data class DrBuyRecord(
-
     @PrimaryKey
     @ColumnInfo(name = "id")
-    var id: UUID = UUID.randomUUID(),
+    override var id: UUID = UUID.randomUUID(),
 
     @ColumnInfo(name = "date", defaultValue = "")
-    var date: String? = null,
+    override var date: String? = null,
 
     @ColumnInfo(name = "sell_Date", defaultValue = "")
-    var sellDate: String? = null,
+    override var sellDate: String? = null,
 
     @ColumnInfo(name = "money", defaultValue = "")
-    var money: String? = null,
+    override var money: String? = null,
 
     @ColumnInfo(name = "rate", defaultValue = "")
-    var rate: String? = null,
+    override var rate: String? = null,
 
     @ColumnInfo(name = "buy_rate", defaultValue = "")
-    var buyRate: String? = null,
+    override var buyRate: String? = null,
 
     @ColumnInfo(name = "sell_rate", defaultValue = "")
-    var sellRate: String? = null,
+    override var sellRate: String? = null,
 
     @ColumnInfo(name = "profit", defaultValue = "")
-    var profit: String? = null,
+    override var profit: String? = null,
 
     @ColumnInfo(name = "sell_profit", defaultValue = "")
-    var sellProfit: String? = null,
+    override var sellProfit: String? = null,
 
     @ColumnInfo(name = "expect_profit", defaultValue = "")
-    var expectProfit: String? = null,
+    override var expectProfit: String? = null,
 
     @ColumnInfo(name = "exchangeMoney", defaultValue = "")
-    var exchangeMoney: String? = null,
+    override var exchangeMoney: String? = null,
 
     @ColumnInfo(name = "usingRecord", defaultValue = "")
-    var recordColor: Boolean? = null,
+    override var recordColor: Boolean? = null,
 
     @ColumnInfo(name = "buyDrMemo", defaultValue = "")
-    var buyDrMemo: String? = null,
+    override var memo: String? = null,
 
     @ColumnInfo(name = "buyDrCategoryName", defaultValue = "")
-    var buyDrCategoryName: String? = null,
-
-    ) {
-    constructor(data: Map<String, Any>) : this(
-        id = UUID.fromString(data["id"] as String?) ?: UUID.randomUUID(),
-        date = data["date"] as String?,
-        sellDate = data["sellDate"] as String?,
-        money = data["money"] as String?,
-        rate = data["rate"] as String?,
-        buyRate = data["buyRate"] as String?,
-        sellRate = data["sellRate"] as String?,
-        profit = data["profit"] as String?,
-        sellProfit = data["sellProfit"] as String?,
-        expectProfit = data["expectProfit"] as String?,
-        exchangeMoney = data["exchangeMoney"] as String,
-        recordColor = data["recordColor"] as Boolean,
-        buyDrMemo = data["buyDrMemo"] as String,
-        buyDrCategoryName = data["buyDrCategoryName"] as String
-    )
-
-
-    fun asHasMap(): HashMap<String, Any?> {
-        return hashMapOf(
-            "id" to this.id.toString(),
-            "date" to this.date,
-            "sellDate" to this.sellDate,
-            "money" to this.money,
-            "rate" to this.rate,
-            "profit" to this.profit,
-            "buyRate" to this.buyRate,
-            "sellRate" to this.sellRate,
-            "sellProfit" to this.sellProfit,
-            "expectProfit" to this.expectProfit,
-            "exchangeMoney" to this.exchangeMoney,
-            "recordColor" to this.recordColor,
-            "buyDrMemo" to this.buyDrMemo,
-            "buyDrCategoryName" to this.buyDrCategoryName
-        )
-    }
-
-}
-
-
-@Entity(tableName = "sellDollar_table")
-data class DrSellRecord(
-
-    @PrimaryKey
-    @ColumnInfo(name = "id")
-    var id: UUID = UUID.randomUUID(),
-
-    @ColumnInfo(name = "date", defaultValue = "")
-    var date: String? = null,
-
-    @ColumnInfo(name = "money", defaultValue = "")
-    var money: String? = null,
-
-    @ColumnInfo(name = "rate", defaultValue = "")
-    var rate: String? = null,
-
-    @ColumnInfo(name = "exchangeMoney", defaultValue = "")
-    var exchangeMoney: String? = null,
-
-    @ColumnInfo(name = "sellDrMemo", defaultValue = "")
-    var sellDrMemo: String? = null,
-
-    @ColumnInfo(name = "sellDrCategoryName", defaultValue = "")
-    var sellDrCategoryName: String? = null,
-) {
-    constructor(data: Map<String, Any>) : this(
-        id = UUID.fromString(data["id"] as String?) ?: UUID.randomUUID(),
-        date = data["date"] as String?,
-        money = data["money"] as String?,
-        rate = data["rate"] as String?,
-        exchangeMoney = data["exchangeMoney"] as String,
-        sellDrMemo = data["sellDrMemo"] as String,
-        sellDrCategoryName = data["sellDrCategoryName"] as String
-    )
-
-    fun asHasMap(): HashMap<String, Any?> {
-        return hashMapOf(
-            "id" to this.id.toString(),
-            "date" to this.date,
-            "money" to this.money,
-            "rate" to this.rate,
-            "exchangeMoney" to this.exchangeMoney,
-            "sellDrMemo" to this.sellDrMemo,
-            "sellDrCategoryName" to this.sellDrCategoryName
-        )
-    }
-}
-
+    override var categoryName: String? = null,
+) : ForeignCurrencyRecord
 @Entity(tableName = "buyYen_table")
-data class YenBuyRecord(
 
+
+data class YenBuyRecord(
     @PrimaryKey
     @ColumnInfo(name = "id")
-    var id: UUID = UUID.randomUUID(),
+    override var id: UUID = UUID.randomUUID(),
 
     @ColumnInfo(name = "date", defaultValue = "")
-    var date: String? = null,
+    override var date: String? = null,
 
     @ColumnInfo(name = "sell_Date", defaultValue = "")
-    var sellDate: String? = null,
+    override var sellDate: String? = null,
 
     @ColumnInfo(name = "money", defaultValue = "")
-    var money: String? = null,
+    override var money: String? = null,
 
     @ColumnInfo(name = "rate", defaultValue = "")
-    var rate: String? = null,
+    override var rate: String? = null,
 
     @ColumnInfo(name = "buy_rate", defaultValue = "")
-    var buyRate: String? = null,
+    override var buyRate: String? = null,
 
     @ColumnInfo(name = "sell_rate", defaultValue = "")
-    var sellRate: String? = null,
+    override var sellRate: String? = null,
 
     @ColumnInfo(name = "profit", defaultValue = "")
-    var profit: String? = null,
+    override var profit: String? = null,
 
     @ColumnInfo(name = "sell_profit", defaultValue = "")
-    var sellProfit: String? = null,
+    override var sellProfit: String? = null,
 
     @ColumnInfo(name = "expect_profit", defaultValue = "")
-    var expectProfit: String? = null,
+    override var expectProfit: String? = null,
 
     @ColumnInfo(name = "exchangeMoney", defaultValue = "")
-    var exchangeMoney: String? = null,
+    override var exchangeMoney: String? = null,
 
     @ColumnInfo(name = "usingRecord", defaultValue = "")
-    var recordColor: Boolean? = null,
+    override var recordColor: Boolean? = null,
 
     @ColumnInfo(name = "buyYenMemo", defaultValue = "")
-    var buyYenMemo: String? = null,
+    override var memo: String? = null,
 
     @ColumnInfo(name = "buyYenCategoryName", defaultValue = "")
-    var buyYenCategoryName: String? = null,
-) {
-    constructor(data: Map<String, Any>) : this(
-        id = UUID.fromString(data["id"] as String?) ?: UUID.randomUUID(),
-        date = data["date"] as String?,
-        sellDate = data["sellDate"] as String?,
-        money = data["money"] as String?,
-        rate = data["rate"] as String?,
-        buyRate = data["buyRate"] as String?,
-        sellRate = data["sellRate"] as String?,
-        profit = data["profit"] as String?,
-        sellProfit = data["sellProfit"] as String?,
-        expectProfit = data["expectProfit"] as String?,
-        exchangeMoney = data["exchangeMoney"] as String,
-        recordColor = data["recordColor"] as Boolean,
-        buyYenMemo = data["buyYenMemo"] as String,
-        buyYenCategoryName = data["buyYenCategoryName"] as String
-    )
+    override var categoryName: String? = null,
+) : ForeignCurrencyRecord
 
 
-    fun asHasMap(): HashMap<String, Any?> {
-        return hashMapOf(
-            "id" to this.id.toString(),
-            "date" to this.date,
-            "sellDate" to this.sellDate,
-            "money" to this.money,
-            "rate" to this.rate,
-            "buyRate" to this.buyRate,
-            "sellRate" to this.sellRate,
-            "profit" to this.profit,
-            "sellProfit" to this.sellProfit,
-            "expectProfit" to this.expectProfit,
-            "exchangeMoney" to this.exchangeMoney,
-            "recordColor" to this.recordColor,
-            "buyYenMemo" to this.buyYenMemo,
-            "buyYenCategoryName" to this.buyYenCategoryName
-        )
-    }
-}
 
-@Entity(tableName = "sellYen_table")
-data class YenSellRecord(
-
-    @PrimaryKey
-    @ColumnInfo(name = "id")
-    var id: UUID = UUID.randomUUID(),
-
-    @ColumnInfo(name = "date", defaultValue = "")
-    var date: String? = null,
-
-    @ColumnInfo(name = "money", defaultValue = "")
-    var money: String? = null,
-
-    @ColumnInfo(name = "rate", defaultValue = "")
-    var rate: String? = null,
-
-    @ColumnInfo(name = "exchangeMoney", defaultValue = "")
-    var exchangeMoney: String? = null,
-
-    @ColumnInfo(name = "sellYenMemo", defaultValue = "")
-    var sellYenMemo: String? = null,
-
-    @ColumnInfo(name = "sellYenCategoryName", defaultValue = "")
-    var sellYenCategoryName: String? = null,
-) {
-    constructor(data: Map<String, Any>) : this(
-        id = UUID.fromString(data["id"] as String?) ?: UUID.randomUUID(),
-        date = data["date"] as String?,
-        money = data["money"] as String?,
-        rate = data["rate"] as String?,
-        exchangeMoney = data["exchangeMoney"] as String,
-        sellYenMemo = data["sellYenMemo"] as String,
-        sellYenCategoryName = data["sellYenCategoryName"] as String
-    )
-    fun asHasMap(): HashMap<String, Any?> {
-        return hashMapOf(
-            "id" to this.id.toString(),
-            "date" to this.date,
-            "money" to this.money,
-            "rate" to this.rate,
-            "exchangeMoney" to this.exchangeMoney,
-            "sellYenMemo" to this.sellYenMemo,
-            "sellYenCategoryName" to this.sellYenCategoryName
-        )
-    }
-}
-
-
-@Entity(tableName = "buyWon_table")
-data class WonBuyRecord(
-
-    @PrimaryKey
-    @ColumnInfo(name = "id")
-    var id: UUID = UUID.randomUUID(),
-
-    @ColumnInfo(name = "date", defaultValue = "")
-    var date: String? = null,
-
-    @ColumnInfo(name = "sell_Date", defaultValue = "")
-    var sellDate: String? = null,
-
-    @ColumnInfo(name = "money", defaultValue = "")
-    var money: String? = null,
-
-    @ColumnInfo(name = "rate", defaultValue = "")
-    var rate: String? = null,
-
-    @ColumnInfo(name = "buy_rate", defaultValue = "")
-    var buyRate: String? = null,
-
-    @ColumnInfo(name = "sell_rate", defaultValue = "")
-    var sellRate: String? = null,
-
-    @ColumnInfo(name = "profit", defaultValue = "")
-    var profit: String? = null,
-
-    @ColumnInfo(name = "sell_profit", defaultValue = "")
-    var sellProfit: String? = null,
-
-    @ColumnInfo(name = "expect_profit", defaultValue = "")
-    var expectProfit: String? = null,
-
-    @ColumnInfo(name = "exchangeMoney", defaultValue = "")
-    var exchangeMoney: String? = null,
-
-    @ColumnInfo(name = "usingRecord", defaultValue = "")
-    var recordColor: Boolean? = null,
-
-    @ColumnInfo(name = "moneyType", defaultValue = "")
-    var moneyType: Int? = null,
-
-    @ColumnInfo(name = "buyWonMemo", defaultValue = "")
-    var buyWonMemo: String? = null,
-
-    @ColumnInfo(name = "buyWonCategoryName", defaultValue = "")
-    var buyWonCategoryName: String? = null,
-
-    ) {
-
-    constructor(data: Map<String, Any>) : this(
-        id = UUID.fromString(data["id"] as String?) ?: UUID.randomUUID(),
-        date = data["date"] as String?,
-        sellDate = data["sellDate"] as String?,
-        money = data["money"] as String?,
-        moneyType = data["moneyType"].let { it.toString().toInt() } as Int?,
-        rate = data["rate"] as String?,
-        buyRate = data["buyRate"] as String?,
-        sellRate = data["sellRate"] as String?,
-        profit = data["profit"] as String?,
-        sellProfit = data["sellProfit"] as String?,
-        expectProfit = data["expectProfit"] as String?,
-        exchangeMoney = data["exchangeMoney"] as String,
-        recordColor = data["recordColor"] as Boolean,
-        buyWonMemo = data["buyWonMemo"] as String,
-        buyWonCategoryName = data["buyWonCategoryName"] as String
-    )
-
-
-    fun asHasMap(): HashMap<String, Any?> {
-        return hashMapOf(
-            "id" to this.id.toString(),
-            "date" to this.date,
-            "sellDate" to this.sellDate,
-            "money" to this.money,
-            "moneyType" to this.moneyType,
-            "rate" to this.rate,
-            "buyRate" to this.buyRate,
-            "sellRate" to this.sellRate,
-            "profit" to this.profit,
-            "sellProfit" to this.sellProfit,
-            "expectProfit" to this.expectProfit,
-            "exchangeMoney" to this.exchangeMoney,
-            "recordColor" to this.recordColor,
-            "buyWonMemo" to this.buyWonMemo,
-            "buyWonCategoryName" to this.buyWonCategoryName
-        )
-    }
-
-}
-
-@Entity(tableName = "sellWon_table")
-data class WonSellRecord(
-
-    @PrimaryKey
-    @ColumnInfo(name = "id")
-    var id: UUID = UUID.randomUUID(),
-
-    @ColumnInfo(name = "date", defaultValue = "")
-    var date: String? = null,
-
-    @ColumnInfo(name = "money", defaultValue = "")
-    var money: String? = null,
-
-    @ColumnInfo(name = "rate", defaultValue = "")
-    var rate: String? = null,
-
-    @ColumnInfo(name = "exchangeMoney", defaultValue = "")
-    var exchangeMoney: String? = null,
-
-    @ColumnInfo(name = "moneyType", defaultValue = "")
-    var moneyType: Int? = null,
-
-    @ColumnInfo(name = "sellWonMemo", defaultValue = "")
-    var sellWonMemo: String? = null,
-
-    @ColumnInfo(name = "sellWonCategoryName", defaultValue = "")
-    var sellWonCategoryName: String? = null,
-) {
-    constructor(data: Map<String, Any>) : this(
-        id = UUID.fromString(data["id"] as String?) ?: UUID.randomUUID(),
-        date = data["date"] as String?,
-        money = data["money"] as String?,
-        rate = data["rate"] as String?,
-        exchangeMoney = data["exchangeMoney"] as String,
-        sellWonMemo = data["sellWonMemo"] as String,
-        sellWonCategoryName = data["sellWonCategoryName"] as String
-    )
-    fun asHasMap(): HashMap<String, Any?> {
-        return hashMapOf(
-            "id" to this.id.toString(),
-            "date" to this.date,
-            "money" to this.money,
-            "rate" to this.rate,
-            "exchangeMoney" to this.exchangeMoney,
-            "sellWonMemo" to this.sellWonMemo,
-            "sellWonCategoryName" to this.sellWonCategoryName
-        )
-    }
-}
 data class CloudUserData(
     var id: String? = null,
     var customId: String? = null,
     var drBuyRecord: List<DrBuyRecord>? = emptyList(),
-    var drSellRecord: List<DrSellRecord>? = emptyList(),
     var yenBuyRecord: List<YenBuyRecord>? = emptyList(),
-    var yenSellRecord: List<YenSellRecord>? = emptyList(),
-    var wonBuyRecord: List<WonBuyRecord>? = emptyList(),
-    var wonSellRecord: List<WonSellRecord>? = emptyList(),
     var createAt: String? = null,
 ) {
-    // list 일때
-    constructor(data: QuerySnapshot) : this() {
-        for (document in data.documents) {
-            this.id = document["id"] as String? ?: ""
-            this.customId = document["customId"] as String? ?: ""
-            this.drBuyRecord = createDrBuyRecordList(document["drBuyRecord"]!!) as List<DrBuyRecord>? ?: emptyList()
-            this.drSellRecord = createDrSellRecordList(document["drSellRecord"]!!) as List<DrSellRecord>? ?: emptyList()
-            this.yenBuyRecord = createYenBuyRecordList(document["yenBuyRecord"]!!) as List<YenBuyRecord>? ?: emptyList()
-            this.yenSellRecord = createYenSellRecordList(document["yenSellRecord"]!!) as List<YenSellRecord>? ?: emptyList()
-            this.wonBuyRecord = createWonBuyRecordList(document["wonBuyRecord"]!!) as List<WonBuyRecord>? ?: emptyList()
-            this.wonSellRecord = createWonSellRecordList(document["wonSellRecord"]!!) as List<WonSellRecord>? ?: emptyList()
-            this.createAt = document["createAt"] as String? ?: ""
-        }
-    }
-
-    private fun createDrBuyRecordList(data: Any): List<DrBuyRecord> {
-       return (data as? List<Map<String, Any>>)?.map { DrBuyRecord(it) }!!
-    }
-    private fun createDrSellRecordList(data: Any): List<DrSellRecord> {
-        return (data as? List<Map<String, Any>>)?.map { DrSellRecord(it) }!!
-    }
-
-    private fun createYenBuyRecordList(data: Any): List<YenBuyRecord> {
-        return (data as? List<Map<String, Any>>)?.map { YenBuyRecord(it) }!!
-    }
-    private fun createYenSellRecordList(data: Any): List<YenSellRecord> {
-        return (data as? List<Map<String, Any>>)?.map { YenSellRecord(it) }!!
-    }
-
-    private fun createWonBuyRecordList(data: Any): List<WonBuyRecord> {
-        return (data as? List<Map<String, Any>>)?.map { WonBuyRecord(it) }!!
-    }
-    private fun createWonSellRecordList(data: Any): List<WonSellRecord> {
-        return (data as? List<Map<String, Any>>)?.map { WonSellRecord(it) }!!
-    }
-
-
-
-
-    fun asHasMap(): HashMap<String, Any?> {
-        return hashMapOf(
-            "drBuyRecord" to this.drBuyRecord?.map { it.asHasMap() },
-            "drSellRecord" to this.drSellRecord?.map { it.asHasMap() },
-            "yenBuyRecord" to this.yenBuyRecord?.map { it.asHasMap() },
-            "yenSellRecord" to this.yenSellRecord?.map { it.asHasMap() },
-            "wonBuyRecord" to this.wonBuyRecord?.map { it.asHasMap() },
-            "wonSellRecord" to this.wonSellRecord?.map { it.asHasMap() }
-        )
-    }
-
-
 }
 
 

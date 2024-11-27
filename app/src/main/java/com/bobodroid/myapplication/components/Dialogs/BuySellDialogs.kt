@@ -30,14 +30,14 @@ import com.bobodroid.myapplication.components.Buttons
 import com.bobodroid.myapplication.components.DrSellDatePickerDialog
 import com.bobodroid.myapplication.models.datamodels.roomDb.CurrencyType
 import com.bobodroid.myapplication.models.datamodels.roomDb.DrBuyRecord
-import com.bobodroid.myapplication.models.datamodels.roomDb.WonBuyRecord
+import com.bobodroid.myapplication.models.datamodels.roomDb.ForeignCurrencyRecord
 import com.bobodroid.myapplication.models.datamodels.roomDb.YenBuyRecord
 import com.bobodroid.myapplication.models.viewmodels.MainViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SellDialog(
-    buyRecord: DrBuyRecord,
+    buyRecord: ForeignCurrencyRecord,
     onDismissRequest: (Boolean) -> Unit,
     selectedRecord: (sellRate: String, sellDate: String, sellProfit: String) -> Unit,
     mainViewModel: MainViewModel,

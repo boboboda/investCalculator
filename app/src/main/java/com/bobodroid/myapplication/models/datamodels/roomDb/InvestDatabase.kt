@@ -3,6 +3,7 @@ package com.bobodroid.myapplication.models.datamodels.roomDb
 import androidx.room.AutoMigration
 import androidx.room.Database
 import androidx.room.DeleteColumn
+import androidx.room.DeleteTable
 import androidx.room.RenameColumn
 import androidx.room.RoomDatabase
 import androidx.room.migration.AutoMigrationSpec
@@ -10,11 +11,7 @@ import androidx.room.migration.AutoMigrationSpec
 
 @Database(entities = [
     DrBuyRecord::class,
-    DrSellRecord::class,
     YenBuyRecord::class,
-    YenSellRecord::class,
-    WonBuyRecord::class,
-    WonSellRecord::class,
     LocalUserData::class,
     ExchangeRate::class],
     autoMigrations = [
@@ -44,15 +41,13 @@ import androidx.room.migration.AutoMigrationSpec
             from = 16,
             to = 17,
             spec = InvestDatabase.MyAutoMigration::class),
-        AutoMigration(from = 17, to = 18)],
-    version = 18, exportSchema = true)
+        AutoMigration(from = 17, to = 18),
+        AutoMigration(from = 18, to = 19, spec = InvestDatabase.MyAutoMigration::class)
+                     ],
+    version = 19, exportSchema = true)
 abstract class InvestDatabase: RoomDatabase() {
     abstract fun DrBuyDao() : DollarBuyDatabaseDao
-    abstract fun DrSellDao() : DollarSellDatabaseDao
     abstract fun YenBuyDao() : YenBuyDatabaseDao
-    abstract fun YenSellDao() : YenSellDatabaseDao
-    abstract fun WonBuyDao() : WonBuyDatabaseDao
-    abstract fun WonSellDao() : WonSellDatabaseDao
     abstract fun LocalUserDao() : LocalUserDatabaseDao
     abstract fun exchangeRateDao() : ExchangeRateDataBaseDao
 
@@ -126,7 +121,21 @@ abstract class InvestDatabase: RoomDatabase() {
         columnName = "user_Reset_State"
     )
 
+    @DeleteTable(
+        tableName = "sellWon_table"
+    )
 
+    @DeleteTable(
+        tableName = "buyWon_table"
+    )
+
+    @DeleteTable(
+        tableName = "sellYen_table"
+    )
+
+    @DeleteTable(
+        tableName = "sellDollar_table"
+    )
 
     class MyAutoMigration : AutoMigrationSpec
 }

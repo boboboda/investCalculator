@@ -66,7 +66,6 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.bobodroid.myapplication.MainActivity
 import com.bobodroid.myapplication.MainActivity.Companion.TAG
 import com.bobodroid.myapplication.components.Dialogs.AskTriggerDialog
 import com.bobodroid.myapplication.components.Dialogs.InsertDialog
@@ -75,10 +74,9 @@ import com.bobodroid.myapplication.components.Dialogs.TextFieldDialog
 import com.bobodroid.myapplication.components.RecordTextView
 import com.bobodroid.myapplication.extensions.toBigDecimalUs
 import com.bobodroid.myapplication.extensions.toBigDecimalWon
-import com.bobodroid.myapplication.models.datamodels.roomDb.CurrencyType
 import com.bobodroid.myapplication.models.datamodels.roomDb.DrBuyRecord
-import com.bobodroid.myapplication.models.viewmodels.CurrencyRecordState
-import com.bobodroid.myapplication.models.viewmodels.DollarViewModel
+import com.bobodroid.myapplication.models.datamodels.roomDb.ForeignCurrencyRecord
+import com.bobodroid.myapplication.models.datamodels.roomDb.YenBuyRecord
 import com.bobodroid.myapplication.models.viewmodels.MainViewModel
 import com.bobodroid.myapplication.ui.theme.DeleteColor
 import com.bobodroid.myapplication.ui.theme.SelectedColor
@@ -91,15 +89,14 @@ import java.math.RoundingMode
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterialApi::class)
 @Composable
-fun TotalLineDrRecord(
-    data: DrBuyRecord,
+fun RecordListRowView(
+    data: ForeignCurrencyRecord,
     sellAction: Boolean = data.recordColor!!,
-    onClicked: ((DrBuyRecord) -> Unit)?,
-    mainViewModel: MainViewModel,
     snackBarHostState: SnackbarHostState,
     insertSelected: (String, String, String) -> Unit,
-    recordSelected: () -> Unit,
-    currencyType: CurrencyType
+    sellSelected: (ForeignCurrencyRecord) -> Unit,
+    groupList: List<String>,
+    selectedItem: () -> Unit
 ) {
 
     val mathContext = MathContext(28, RoundingMode.HALF_UP)
@@ -121,8 +118,6 @@ fun TotalLineDrRecord(
     var memoTextInput by remember { mutableStateOf("") }
 
     val coroutineScope = rememberCoroutineScope()
-
-    val groupList = dollarViewModel.groupList.collectAsState()
 
     var groupAddDialog by remember { mutableStateOf(false) }
 
@@ -168,8 +163,8 @@ fun TotalLineDrRecord(
         data.rate
     }
 
-    LaunchedEffect(key1 = data.buyDrMemo, block = {
-        memoTextInput = data.buyDrMemo ?: ""
+    LaunchedEffect(key1 = data.memo, block = {
+        memoTextInput = data.memo ?: ""
     })
 
     if (dismissState.isDismissed(DismissDirection.StartToEnd))
@@ -235,9 +230,6 @@ fun TotalLineDrRecord(
                             if (itemRowVisible == false) {
                                 coroutineScope.launch {
                                     itemRowVisible = true
-                                    recordSelected.invoke()
-
-
                                 }
 
                             } else {
@@ -363,9 +355,7 @@ fun TotalLineDrRecord(
                                         }, onClick = {
                                             dropdownExpanded = false
                                             if (!data.recordColor!!) {
-                                                onClicked?.invoke(data)
-                                                if (!openDialog) openDialog = true else openDialog =
-                                                    false
+                                                if (!openDialog) openDialog = true else openDialog = false
                                             } else {
                                                 if (snackBarHostState.currentSnackbarData == null) {
                                                     coroutineScope.launch {
@@ -394,7 +384,8 @@ fun TotalLineDrRecord(
                                                     fontSize = 13.sp
                                                 )
                                             }
-                                        }, onClick = {
+                                        },
+                                        onClick = {
                                             dropdownExpanded = false
                                             if (!data.recordColor!!) {
                                                 insertDialog = true
@@ -426,7 +417,8 @@ fun TotalLineDrRecord(
                                                     fontSize = 13.sp
                                                 )
                                             }
-                                        }, onClick = {
+                                        },
+                                        onClick = {
                                             coroutineScope.launch {
                                                 dropdownExpanded = false
                                                 if (data.recordColor == false) {
@@ -440,8 +432,7 @@ fun TotalLineDrRecord(
                                                         }
                                                     }
                                                 } else {
-                                                    val result =
-                                                        dollarViewModel.cancelSellRecord(data.id)
+                                                    val result = dollarViewModel.cancelSellRecord(data.id)
                                                     if (result.first) {
                                                         if (snackBarHostState.currentSnackbarData == null) {
                                                             coroutineScope.launch {
@@ -530,7 +521,7 @@ fun TotalLineDrRecord(
                                         thickness = 2.dp
                                     )
 
-                                    groupList.value.forEach { groupName ->
+                                    groupList.forEach { groupName ->
                                         DropdownMenuItem(
                                             modifier = Modifier
                                                 .fillMaxWidth(),
@@ -617,6 +608,7 @@ fun TotalLineDrRecord(
                                 elevation = CardDefaults.cardElevation(8.dp),
                                 shape = RoundedCornerShape(2.dp),
                                 onClick = {
+
                                     val updateData = data.copy(buyDrMemo = memoTextInput)
                                     focusManager.clearFocus()
                                     dollarViewModel.buyDrMemoUpdate(updateData) { result ->
@@ -659,7 +651,7 @@ fun TotalLineDrRecord(
                                     itemRowVisible = false
                                     coroutineScope.launch {
                                         delay(500)
-                                        memoTextInput = data.buyDrMemo!!
+                                        memoTextInput = data.memo!!
                                     }
 
                                 }) {
@@ -696,12 +688,25 @@ fun TotalLineDrRecord(
                 SellDialog(
                     buyRecord = data,
                     selectedRecord = { rate, date, profit ->
-                        val buyRecord = data.copy(
-                            sellDate = date,
-                            sellRate = rate,
-                            sellProfit = profit,
-                        )
-                        mainViewModel.updateBuyRecord(buyRecord)
+
+                        when (data) {
+                            is DrBuyRecord -> {
+                                val updatedRecord = data.copy(
+                                    sellDate = date,
+                                    sellRate = rate,
+                                    sellProfit = profit
+                                )
+                                mainViewModel.updateBuyRecord(updatedRecord)
+                            }
+                            is YenBuyRecord -> {
+                                val updatedRecord = data.copy(
+                                    sellDate = date,
+                                    sellRate = rate,
+                                    sellProfit = profit
+                                )
+                                mainViewModel.updateBuyRecord(updatedRecord)
+                            }
+                        }
                     },
                     onDismissRequest = { openDialog = it },
                     mainViewModel = mainViewModel,

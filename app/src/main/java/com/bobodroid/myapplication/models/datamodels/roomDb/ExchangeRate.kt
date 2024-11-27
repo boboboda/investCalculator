@@ -102,6 +102,4 @@ data class ExchangeRate(
             "jpy" to jpy
         )
     }
-
-
 }

@@ -282,23 +282,7 @@ class YenViewModel @Inject constructor(private val investRepository: InvestRepos
     fun buyAddRecord(groupName: String) {
         viewModelScope.launch {
             exchangeMoney.emit("${lastValue(moneyInputFlow.value, rateInputFlow.value)}")
-            investRepository
-                .addYenBuyRecord(
-                    YenBuyRecord(
-                        date = dateFlow.value,
-                        money = moneyInputFlow.value,
-                        rate = rateInputFlow.value,
-                        buyRate = rateInputFlow.value,
-                        sellRate = "",
-                        sellProfit = "",
-                        exchangeMoney = "${exchangeMoney.value}",
-                        recordColor = sellRecordActionFlow.value,
-                        profit = expectSellValue(),
-                        expectProfit = expectSellValue(),
-                        buyYenMemo = "",
-                        buyYenCategoryName = groupName
-                    )
-                )
+
 
             // 데이터 값 초기화
             buyRecordFlow.collectLatest {

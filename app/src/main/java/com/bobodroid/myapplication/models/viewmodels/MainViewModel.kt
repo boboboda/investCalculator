@@ -4,6 +4,7 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.bobodroid.myapplication.MainActivity.Companion.TAG
+import com.bobodroid.myapplication.models.datamodels.repository.InvestRepository
 import com.bobodroid.myapplication.models.datamodels.roomDb.ExchangeRate
 import com.bobodroid.myapplication.models.datamodels.repository.LatestRateRepository
 import com.bobodroid.myapplication.models.datamodels.repository.Notice
@@ -11,10 +12,10 @@ import com.bobodroid.myapplication.models.datamodels.repository.NoticeRepository
 import com.bobodroid.myapplication.models.datamodels.repository.UserRepository
 import com.bobodroid.myapplication.models.datamodels.roomDb.CurrencyType
 import com.bobodroid.myapplication.models.datamodels.roomDb.DrBuyRecord
-import com.bobodroid.myapplication.models.datamodels.roomDb.DrSellRecord
+import com.bobodroid.myapplication.models.datamodels.roomDb.ForeignCurrencyRecord
 import com.bobodroid.myapplication.models.datamodels.roomDb.LocalUserData
 import com.bobodroid.myapplication.models.datamodels.roomDb.YenBuyRecord
-import com.bobodroid.myapplication.models.datamodels.roomDb.YenSellRecord
+import com.bobodroid.myapplication.models.datamodels.useCases.CurrencyRecordRequest
 import com.bobodroid.myapplication.models.datamodels.useCases.RecordUseCase
 import com.bobodroid.myapplication.models.datamodels.useCases.UserUseCases
 import com.bobodroid.myapplication.util.AdMob.AdManager
@@ -46,11 +47,23 @@ class MainViewModel @Inject constructor(
     private val noticeRepository: NoticeRepository,
     private val adManager: AdManager,
     private val adUseCase: AdUseCase,
-    private val recordUseCase: RecordUseCase
+    private val recordUseCase: RecordUseCase,
 ) : ViewModel() {
 
-    private val _mainUiState = MutableStateFlow(MainViewUiState())
+    private val _mainUiState = MutableStateFlow(MainUiState())
     val mainUiState = _mainUiState.asStateFlow()
+
+    private val _dateRangeUiState = MutableStateFlow(DateRangeUiState())
+    val dateRangeUiState = _dateRangeUiState.asStateFlow()
+
+    private val _noticeUiState = MutableStateFlow(NoticeUiState())
+    val noticeUiState = _noticeUiState.asStateFlow()
+
+    private val _adUiState = MutableStateFlow(AdUiState())
+    val adUiState = _adUiState.asStateFlow()
+
+    private val _recordListUiState = MutableStateFlow(RecordListUiState())
+    val recordListUiState = _recordListUiState.asStateFlow()
 
     private val todayDate = MutableStateFlow("${LocalDate.now()}")
 
@@ -71,8 +84,8 @@ class MainViewModel @Inject constructor(
     }
 
     fun closeRewardDialog() {
-        val uiState = _mainUiState.value.copy(rewardShowDialog = false)
-        _mainUiState.value = uiState
+        val uiState = _adUiState.value.copy(rewardShowDialog = false)
+        _adUiState.value = uiState
     }
 
 
@@ -83,20 +96,20 @@ class MainViewModel @Inject constructor(
             Log.d(TAG("AllViewModel", "selectDelayDate"), "날짜 연기 신청")
 
             val updateUserData = _mainUiState.value.localUser.copy(
-                userShowNoticeDate = _mainUiState.value.notice.date
+                userShowNoticeDate = _noticeUiState.value.notice.date
             )
 
             userUseCases.localUserUpdate(updateUserData)
 
-            Log.d(TAG("AllViewModel", "selectDelayDate"), "날짜 수정 실행, ${_mainUiState.value.notice.date}")
+            Log.d(TAG("AllViewModel", "selectDelayDate"), "날짜 수정 실행, ${_noticeUiState.value.notice.date}")
         }
     }
 
     // 공지사항 닫기
     fun closeNotice() {
-        val uiState = _mainUiState.value.copy(showNoticeDialog = false, noticeState = false)
+        val uiState = _noticeUiState.value.copy(showNoticeDialog = false, noticeState = false)
 
-        _mainUiState.value = uiState
+        _noticeUiState.value = uiState
     }
 
     // 초기화 매소드
@@ -128,12 +141,12 @@ class MainViewModel @Inject constructor(
         // 저장한 날짜와 같으면 실행
         Log.d(
             TAG("AllViewModel", "noticeDialogState"),
-            "공지사항 날짜: ${_mainUiState.value.notice.date},  연기날짜: ${_mainUiState.value.localUser.userShowNoticeDate} 오늘날짜 ${
+            "공지사항 날짜: ${_noticeUiState.value.notice.date},  연기날짜: ${_mainUiState.value.localUser.userShowNoticeDate} 오늘날짜 ${
                 LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))
             }"
         )
-        val noticeDate = _mainUiState.value.notice.date
-        val noticeContent = _mainUiState.value.notice.content
+        val noticeDate = _noticeUiState.value.notice.date
+        val noticeContent = _noticeUiState.value.notice.content
         val userShowNoticeDate = _mainUiState.value.localUser.userShowNoticeDate
 
         if(noticeContent == null) {
@@ -142,16 +155,16 @@ class MainViewModel @Inject constructor(
         }
 
         // 닫기 후 호출 방지
-        if (_mainUiState.value.noticeState) {
-            val uiState = _mainUiState.value.copy(showNoticeDialog = true)
+        if (_noticeUiState.value.noticeState) {
+            val uiState = _noticeUiState.value.copy(showNoticeDialog = true)
             if (userShowNoticeDate.isNullOrEmpty()) {
                 Log.d(TAG("AllViewModel", "noticeDialogState"), "날짜 값이 없습니다.")
-                _mainUiState.emit(uiState)
+                _noticeUiState.emit(uiState)
             } else {
                 // 안전한 널 검사 및 비교
                 if (noticeDate != null && noticeDate > userShowNoticeDate) {
                     Log.d(TAG("AllViewModel", "noticeDialogState"), "공지사항 날짜가 더 큽니다.")
-                    _mainUiState.emit(uiState)
+                    _noticeUiState.emit(uiState)
                 } else {
                     Log.d(TAG("AllViewModel", "noticeDialogState"), "로컬에 저장된 날짜가 더 큽니다.")
                 }
@@ -183,8 +196,8 @@ class MainViewModel @Inject constructor(
                     todayDate.value
                 )
                 if(shouldShowAd) {
-                    val uiStateUpdate = _mainUiState.value.copy(rewardShowDialog = true)
-                    _mainUiState.emit(uiStateUpdate)
+                    val uiStateUpdate = _adUiState.value.copy(rewardShowDialog = true)
+                    _adUiState.emit(uiStateUpdate)
                 }
             }
         }
@@ -193,24 +206,24 @@ class MainViewModel @Inject constructor(
     private suspend fun noticeExistCheck() {
         val noticeData = noticeRepository.waitForNoticeData()
 
-        val uiState = _mainUiState.value.copy(notice = noticeData)
+        val uiState = _noticeUiState.value.copy(notice = noticeData)
 
-        _mainUiState.emit(uiState)
+        _noticeUiState.emit(uiState)
     }
 
 
     // 총수익 조회 범위 시작 날짜 선택 -> 완료
     fun inputStartDate(startDate: String){
-       val uiState = _mainUiState.value.copy(startDate = startDate)
+       val uiState = _dateRangeUiState.value.copy(startDate = startDate)
 
-        _mainUiState.value = uiState
+        _dateRangeUiState.value = uiState
     }
 
     // 총수익 조회 범위 마지막 날짜 선택 -> 완료
     fun inputEndDate(endDate: String){
-        val uiState = _mainUiState.value.copy(endDate = endDate)
+        val uiState = _dateRangeUiState.value.copy(endDate = endDate)
 
-        _mainUiState.value = uiState
+        _dateRangeUiState.value = uiState
     }
 
     // -> 완료
@@ -269,20 +282,62 @@ class MainViewModel @Inject constructor(
 
     // 기록 부분
 
-    // 매도기록 선택된 날짜
-    private val _selectedDate = MutableStateFlow("${LocalDate.now()}")
-
     private fun getRecords() {
         viewModelScope.launch {
             recordUseCase.getRecord().collect { record ->
-                val uiState = _mainUiState.value.copy(foreignCurrencyRecord = record)
-                _mainUiState.emit(uiState)
+                val uiState = _recordListUiState.value.copy(foreignCurrencyRecord = record)
+                _recordListUiState.emit(uiState)
             }
         }
     }
 
+
+    fun getCurrentRecords(): CurrencyRecordState<ForeignCurrencyRecord> {
+        val currentState = _mainUiState.value
+        val recordState = _recordListUiState.value
+        return when(currentState.selectedCurrencyType) {
+            CurrencyType.USD -> recordState.foreignCurrencyRecord.dollarState
+            CurrencyType.JPY -> recordState.foreignCurrencyRecord.yenState }
+    }
+
+    suspend fun addRecord(
+        money: String,
+        inputRate: String,
+        groupName: String,
+        type: CurrencyType
+    ) {
+
+        val latestRate = when(type) {
+            CurrencyType.USD -> _mainUiState.value.recentRate.usd
+            CurrencyType.JPY -> _mainUiState.value.recentRate.jpy
+        }
+
+        if(latestRate == null) return
+
+        val addRequest = CurrencyRecordRequest(
+            latestRate = latestRate,
+            money = money,
+            inputRate = inputRate,
+            groupName = groupName,
+            date = _mainUiState.value.selectedDate,
+            type = type,
+        )
+
+        recordUseCase.addCurrencyRecord(addRequest)
+    }
+
+
+    fun updateCurrentForeignCurrency(currencyType: CurrencyType) {
+        val updateUiState = _mainUiState.value.copy(selectedCurrencyType = currencyType)
+
+        _mainUiState.value = updateUiState
+    }
+
     fun selectRecordDate(date: String) {
-        _selectedDate.value = date
+
+        val uiState = _mainUiState.value.copy(selectedDate = date)
+
+        _mainUiState.value = uiState
     }
 
     fun sellCalculate(
@@ -334,32 +389,58 @@ class MainViewModel @Inject constructor(
 
 
 
+    // 날짜 범위 관련
 
+    fun showDateRangeDialog(state: Boolean) {
+        val updateUiSate = _dateRangeUiState.value.copy(dateRangeDialog = state)
+    }
 
 
 }
 
-data class MainViewUiState(
-    val startDate: String = "",
-    val endDate: String = "",
-    val showNoticeDialog: Boolean = false,
-    val rewardShowDialog: Boolean = false,
-    val rewardAdState: Boolean = false,
-    val bannerAdState: Boolean = false,
-    val notice: Notice = Notice(),
-    val noticeState: Boolean = false,
-    val localUser: LocalUserData = LocalUserData(),
+// 메인 화면의 핵심 상태
+data class MainUiState(
+    val selectedCurrencyType: CurrencyType = CurrencyType.USD,
+    val selectedDate: String = "",
     val recentRate: ExchangeRate = ExchangeRate(),
-    val foreignCurrencyRecord: ForeignCurrencyRecord = ForeignCurrencyRecord()
+    val localUser: LocalUserData = LocalUserData()
 )
 
-data class CurrencyRecordState<T>(
+// 날짜 검색 관련 상태
+data class DateRangeUiState(
+    val dateRangeDialog: Boolean = false,
+    val startDate: String = "",
+    val endDate: String = ""
+)
+
+// 알림 관련 상태
+data class NoticeUiState(
+    val showNoticeDialog: Boolean = false,
+    val notice: Notice = Notice(),
+    val noticeState: Boolean = false
+)
+
+// 광고 관련 상태
+data class AdUiState(
+    val rewardShowDialog: Boolean = false,
+    val rewardAdState: Boolean = false,
+    val bannerAdState: Boolean = false
+)
+
+// 거래 기록 관련 상태
+data class RecordListUiState(
+    val foreignCurrencyRecord: ForeignCurrencyRecordList = ForeignCurrencyRecordList()
+)
+
+
+
+data class CurrencyRecordState<T: ForeignCurrencyRecord>(  // BuyRecord 인터페이스로 제한
     val records: List<T> = emptyList(),
     val groupedRecords: Map<String, List<T>> = emptyMap(),
     val groups: List<String> = emptyList()
 )
 
-data class ForeignCurrencyRecord(
-    val dollarState: CurrencyRecordState<DrBuyRecord> = CurrencyRecordState(),
-    val yenState: CurrencyRecordState<YenBuyRecord> = CurrencyRecordState()
+data class ForeignCurrencyRecordList(
+    val dollarState: CurrencyRecordState<ForeignCurrencyRecord> = CurrencyRecordState(),
+    val yenState: CurrencyRecordState<ForeignCurrencyRecord> = CurrencyRecordState()
 )

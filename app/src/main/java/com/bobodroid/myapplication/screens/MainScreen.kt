@@ -139,6 +139,7 @@ fun MainScreen(
         {
             MainHeader(
                 mainUiState = mainUiState,
+                adUiState = adUiState,
                 updateCurrentForeignCurrency = {
                     mainViewModel.updateCurrentForeignCurrency(it)
                 },
@@ -157,7 +158,12 @@ fun MainScreen(
                 RecordListView(
                     mainScreenSnackBarHostState,
                     records,
-                    hideSellRecordState)
+                    sellPercent = recordListUiState.sellPercent,
+                    sellProfit = recordListUiState.sellProfit,
+                    hideSellRecordState = hideSellRecordState,
+                    onEvent = {event ->
+                        mainViewModel.handleRecordEvent(event)
+                    })
 
             }
 
@@ -189,6 +195,7 @@ fun MainScreen(
                 )
             }
 
+            // 단일 날짜 선택
             if (showDateDialog) {
                 MyDatePickerDialog(
                     onDateSelected = { localDate ->
@@ -200,6 +207,7 @@ fun MainScreen(
                 )
             }
 
+            // 그룹 추가 다이로그
             if (groupAddDialog) {
                 TextFieldDialog(
                     onDismissRequest = {
@@ -213,6 +221,7 @@ fun MainScreen(
                     })
             }
 
+            // 날짜범위 선택
             if (dateRangeUiState.dateRangeDialog) {
                 RangeDateDialog(
                     onDismissRequest = {
@@ -247,6 +256,7 @@ fun MainScreen(
                 )
             }
 
+            // 공지 다이로그
             if (noticeUiState.showNoticeDialog) {
                 NoticeDialog(
                     content = noticeUiState.notice.content ?: "",
@@ -261,6 +271,7 @@ fun MainScreen(
                     })
             }
 
+            // 광고 시청 다이로그
             if(adUiState.rewardShowDialog) {
                 RewardShowAskDialog(
                     onDismissRequest = {

@@ -220,26 +220,7 @@ class DollarViewModel @Inject constructor(
         }
     }
 
-    fun insertBuyRecord(existingDrBurRecord: DrBuyRecord,
-                        insertDate: String,
-                        insertMoney: String,
-                        insertRate: String) {
 
-        viewModelScope.launch {
-
-            val insertDate = existingDrBurRecord.copy(
-                date = insertDate,
-                money = insertMoney,
-                rate = insertRate,
-                buyRate = insertRate,
-                profit = "0",
-                expectProfit = "0",
-                exchangeMoney = lastValue(insertMoney, insertRate).toString())
-
-            investRepository.updateDollarBuyRecord(insertDate)
-        }
-
-    }
 
     fun removeBuyRecord(drBuyrecord: DrBuyRecord) {
         viewModelScope.launch {

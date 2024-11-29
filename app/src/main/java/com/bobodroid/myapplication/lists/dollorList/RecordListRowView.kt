@@ -70,6 +70,7 @@ import com.bobodroid.myapplication.MainActivity.Companion.TAG
 import com.bobodroid.myapplication.components.Dialogs.AskTriggerDialog
 import com.bobodroid.myapplication.components.Dialogs.InsertDialog
 import com.bobodroid.myapplication.components.Dialogs.SellDialog
+import com.bobodroid.myapplication.components.Dialogs.SellDialogEvent
 import com.bobodroid.myapplication.components.Dialogs.TextFieldDialog
 import com.bobodroid.myapplication.components.RecordTextView
 import com.bobodroid.myapplication.extensions.toBigDecimalUs
@@ -93,11 +94,15 @@ import java.util.UUID
 @Composable
 fun RecordListRowView(
     data: ForeignCurrencyRecord,
-    sellAction: Boolean = data.recordColor!!,
+    sellState: Boolean = data.recordColor!!,
     groupList: List<String>,
     snackBarHostState: SnackbarHostState,
+    sellProfit: String,
+    sellPercent: String ,
     onEvent: (RecordListEvent) -> Unit,
+    scrollEvent: () -> Unit
 ) {
+
 
     val mathContext = MathContext(28, RoundingMode.HALF_UP)
 
@@ -217,7 +222,7 @@ fun RecordListRowView(
                     .wrapContentHeight(),
                 shape = RoundedCornerShape(0.dp),
                 colors = CardDefaults.cardColors(
-                    containerColor = if (sellAction) SelectedColor else Color.White,
+                    containerColor = if (sellState) SelectedColor else Color.White,
                     contentColor = Color.Black
                 ),
             ) {
@@ -230,8 +235,8 @@ fun RecordListRowView(
                             if (itemRowVisible == false) {
                                 coroutineScope.launch {
                                     itemRowVisible = true
+                                    scrollEvent()
                                 }
-
                             } else {
                                 focusManager.clearFocus()
                             }
@@ -534,7 +539,7 @@ fun RecordListRowView(
                                                     )
                                                 }
                                             }, onClick = {
-                                                dollarViewModel.updateRecordGroup(data, groupName)
+                                                onEvent(RecordListEvent.UpdateRecordCategory(data, groupName))
                                                 dropdownExpanded = false
                                                 groupDropdownExpanded = false
                                             })
@@ -606,30 +611,31 @@ fun RecordListRowView(
                                 shape = RoundedCornerShape(2.dp),
                                 onClick = {
 
-                                    val updateData = data.copy(buyDrMemo = memoTextInput)
+                                    val updateData = data.copyWithMemo(memoTextInput)
+                                    onEvent(RecordListEvent.MemoUpdate(updateData))
                                     focusManager.clearFocus()
-                                    dollarViewModel.buyDrMemoUpdate(updateData) { result ->
-                                        if (result) {
-                                            if (snackBarHostState.currentSnackbarData == null) {
-                                                coroutineScope.launch {
-                                                    snackBarHostState.showSnackbar(
-                                                        "성공적으로 저장되었습니다.",
-                                                        actionLabel = "닫기", SnackbarDuration.Short
-                                                    )
-                                                }
-                                            }
-
-                                        } else {
-                                            if (snackBarHostState.currentSnackbarData == null) {
-                                                coroutineScope.launch {
-                                                    snackBarHostState.showSnackbar(
-                                                        "저장에 실패하였습니다.",
-                                                        actionLabel = "닫기", SnackbarDuration.Short
-                                                    )
-                                                }
-                                            }
-                                        }
-                                    }
+//                                    dollarViewModel.buyDrMemoUpdate(updateData) { result ->
+//                                        if (result) {
+//                                            if (snackBarHostState.currentSnackbarData == null) {
+//                                                coroutineScope.launch {
+//                                                    snackBarHostState.showSnackbar(
+//                                                        "성공적으로 저장되었습니다.",
+//                                                        actionLabel = "닫기", SnackbarDuration.Short
+//                                                    )
+//                                                }
+//                                            }
+//
+//                                        } else {
+//                                            if (snackBarHostState.currentSnackbarData == null) {
+//                                                coroutineScope.launch {
+//                                                    snackBarHostState.showSnackbar(
+//                                                        "저장에 실패하였습니다.",
+//                                                        actionLabel = "닫기", SnackbarDuration.Short
+//                                                    )
+//                                                }
+//                                            }
+//                                        }
+//                                    }
                                 }) {
                                 Text(
                                     text = "저장",
@@ -675,7 +681,7 @@ fun RecordListRowView(
                         insertDialog = false
                     },
                     onClicked = { date, money, rate ->
-                        insertSelected.invoke(date, money, rate)
+                        onEvent(RecordListEvent.EditRecord(data, date, money, rate))
                         insertDialog = false
                     }
                 )
@@ -683,31 +689,12 @@ fun RecordListRowView(
 
             if (openDialog) {
                 SellDialog(
-                    buyRecord = data,
-                    selectedRecord = { rate, date, profit ->
-
-                        when (data) {
-                            is DrBuyRecord -> {
-                                val updatedRecord = data.copy(
-                                    sellDate = date,
-                                    sellRate = rate,
-                                    sellProfit = profit
-                                )
-                                mainViewModel.updateBuyRecord(updatedRecord)
-                            }
-                            is YenBuyRecord -> {
-                                val updatedRecord = data.copy(
-                                    sellDate = date,
-                                    sellRate = rate,
-                                    sellProfit = profit
-                                )
-                                mainViewModel.updateBuyRecord(updatedRecord)
-                            }
-                        }
-                    },
                     onDismissRequest = { openDialog = it },
-                    mainViewModel = mainViewModel,
-                    currencyType = currencyType
+                    sellProfit = sellProfit,
+                    sellPercent = sellPercent,
+                    onEvent = { event ->
+                        onEvent(RecordListEvent.OnSellDialog(data, event))
+                    }
                 )
             }
 
@@ -720,7 +707,7 @@ fun RecordListRowView(
                     onClickedLabel = "추가",
                     closeButtonLabel = "닫기",
                     onClicked = { name ->
-                        dollarViewModel.updateRecordGroup(data, name)
+                        onEvent(RecordListEvent.AddGroup(data, name))
                         groupAddDialog = false
                         groupDropdownExpanded = false
                         dropdownExpanded = false
@@ -734,7 +721,7 @@ fun RecordListRowView(
                     onDismissRequest = {
                         deleteAskDialog.value = it
                     }) {
-                    dollarViewModel.removeBuyRecord(data)
+                    onEvent(RecordListEvent.RemoveRecord(data))
                 }
 
             }
@@ -744,10 +731,15 @@ fun RecordListRowView(
 
 }
 
-// 바텀시트 관련 이벤트 정의
 sealed class RecordListEvent {
-    data class EditRecord(val date: String, val money: String, val rate: String) : RecordListEvent()
-    data class SellSelected (val sellRecord: ForeignCurrencyRecord): RecordListEvent()
+    data class EditRecord(val data: ForeignCurrencyRecord, val date: String, val money: String, val rate: String) : RecordListEvent()
+    data class AddGroup(val data:ForeignCurrencyRecord, val groupName: String): RecordListEvent()
     data class CancelSellRecord(val id: UUID): RecordListEvent()
-    data object DismissSheet : RecordListEvent()
+    data class UpdateRecordCategory(val record: ForeignCurrencyRecord, val groupName: String): RecordListEvent()
+    data class MemoUpdate(val updateMemoRecord: ForeignCurrencyRecord): RecordListEvent()
+    data class OnSellDialog(
+        val record: ForeignCurrencyRecord,
+        val event: SellDialogEvent
+    ) : RecordListEvent()
+    data class RemoveRecord(val data: ForeignCurrencyRecord): RecordListEvent()
 }

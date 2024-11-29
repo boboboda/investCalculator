@@ -37,7 +37,8 @@ import com.bobodroid.myapplication.R
 import com.bobodroid.myapplication.components.RateView
 import com.bobodroid.myapplication.components.admobs.BannerAd
 import com.bobodroid.myapplication.models.datamodels.roomDb.CurrencyType
-import com.bobodroid.myapplication.models.viewmodels.MainViewUiState
+import com.bobodroid.myapplication.models.viewmodels.AdUiState
+import com.bobodroid.myapplication.models.viewmodels.MainUiState
 import com.bobodroid.myapplication.ui.theme.WelcomeScreenBackgroundColor
 import com.bobodroid.myapplication.ui.theme.primaryColor
 import java.math.BigDecimal
@@ -45,7 +46,8 @@ import java.math.BigDecimal
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MainHeader(
-    mainUiState: MainViewUiState,
+    mainUiState: MainUiState,
+    adUiState: AdUiState,
     updateCurrentForeignCurrency: (CurrencyType) -> Unit,
     hideSellRecordState: Boolean,
     onHide:(Boolean) -> Unit
@@ -179,7 +181,7 @@ fun MainHeader(
 
         }
 
-        if(!mainUiState.bannerAdState) {
+        if(!adUiState.bannerAdState) {
             Column(
                 modifier = Modifier
                     .fillMaxWidth(),

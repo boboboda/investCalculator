@@ -4,6 +4,8 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.bobodroid.myapplication.MainActivity.Companion.TAG
+import com.bobodroid.myapplication.components.Dialogs.SellDialogEvent
+import com.bobodroid.myapplication.lists.dollorList.RecordListEvent
 import com.bobodroid.myapplication.models.datamodels.repository.InvestRepository
 import com.bobodroid.myapplication.models.datamodels.roomDb.ExchangeRate
 import com.bobodroid.myapplication.models.datamodels.repository.LatestRateRepository
@@ -341,37 +343,26 @@ class MainViewModel @Inject constructor(
         _mainUiState.value = uiState
     }
 
-    fun sellCalculate(
+   suspend fun sellCalculate(
         exchangeMoney: String,
         sellRate: String,
-        krMoney: String,
-        currencyType: CurrencyType,
-        sellResult:(sellProfit: String, sellPercent: String) -> Unit) {
-        viewModelScope.launch {
+        krMoney: String) {
 
-           val currencyExchangeMoney = when(currencyType) {
-                CurrencyType.USD -> {
-                     exchangeMoney
-                }
-                CurrencyType.JPY -> {
-                     exchangeMoney
-                }
-              }
+       val sellProfit = sellProfit(exchangeMoney, sellRate, krMoney).toString()
+       val sellPercent = sellPercent(exchangeMoney, krMoney).toString()
 
-           val sellProfit = sellProfit(currencyExchangeMoney, sellRate, krMoney, currencyType)
-            val sellPercent = sellPercent(currencyExchangeMoney, krMoney)
+       val recordUiUpdateState = _recordListUiState.value.copy(sellProfit = sellProfit, sellPercent = sellPercent)
 
-            sellResult.invoke(sellProfit.toString(), sellPercent.toString())
-        }
+       _recordListUiState.emit(recordUiUpdateState)
+
     }
 
     private fun sellProfit(
         exchangeMoney: String,
         sellRate: String,
         krMoney: String,
-        currencyType: CurrencyType
     ): BigDecimal {
-        return when(currencyType) {
+        return when(_mainUiState.value.selectedCurrencyType) {
             CurrencyType.USD -> {
                 ((BigDecimal(exchangeMoney).times(BigDecimal(sellRate))).setScale(20, RoundingMode.HALF_UP)) - BigDecimal(krMoney)
             }
@@ -423,6 +414,46 @@ class MainViewModel @Inject constructor(
        return recordUseCase.cancelSellRecord(id, mainUiState.value.selectedCurrencyType)
     }
 
+    fun handleRecordEvent(event: RecordListEvent) {
+        val uiState = _recordListUiState.value
+        viewModelScope.launch {
+            when (event) {
+                is RecordListEvent.OnSellDialog -> {
+                    when(event.event) {
+                        is SellDialogEvent.SellRecord -> {
+
+                        }
+                        is SellDialogEvent.SellCalculate -> {
+
+                            val exchangeMoney = event.record.exchangeMoney ?: return@launch
+                            val money = event.record.money ?: return@launch
+
+                            sellCalculate(
+                                exchangeMoney = exchangeMoney,
+                                sellRate = event.event.sellRate,
+                                krMoney = money
+                            )
+                        }
+                    }
+                }
+                is RecordListEvent.EditRecord -> {
+                    recordUseCase.editRecord(
+                        record = event.data,
+                        editDate = event.date,
+                        editMoney = event.money,
+                        editRate = event.rate,
+                        type = _mainUiState.value.selectedCurrencyType
+                    )
+                }
+                is RecordListEvent.MemoUpdate -> {}
+                    is RecordListEvent.RemoveRecord -> {}
+                is RecordListEvent.CancelSellRecord -> {}
+                is RecordListEvent.UpdateRecordCategory -> {}
+                is RecordListEvent.AddGroup -> {}
+            }
+        }
+    }
+
 
 }
 
@@ -458,10 +489,15 @@ data class AdUiState(
 
 // 거래 기록 관련 상태
 data class RecordListUiState(
-    val foreignCurrencyRecord: ForeignCurrencyRecordList = ForeignCurrencyRecordList()
+    val foreignCurrencyRecord: ForeignCurrencyRecordList = ForeignCurrencyRecordList(),
+    val sellProfit: String = "",
+    val sellPercent: String = ""
 )
 
-
+data class ForeignCurrencyRecordList(
+    val dollarState: CurrencyRecordState<ForeignCurrencyRecord> = CurrencyRecordState(),
+    val yenState: CurrencyRecordState<ForeignCurrencyRecord> = CurrencyRecordState()
+)
 
 data class CurrencyRecordState<T: ForeignCurrencyRecord>(  // BuyRecord 인터페이스로 제한
     val records: List<T> = emptyList(),
@@ -469,8 +505,4 @@ data class CurrencyRecordState<T: ForeignCurrencyRecord>(  // BuyRecord 인터�
     val groups: List<String> = emptyList()
 )
 
-data class ForeignCurrencyRecordList(
-    val dollarState: CurrencyRecordState<ForeignCurrencyRecord> = CurrencyRecordState(),
-    val yenState: CurrencyRecordState<ForeignCurrencyRecord> = CurrencyRecordState()
-)
 

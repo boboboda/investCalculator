@@ -89,6 +89,51 @@ class RecordUseCase @Inject constructor(
 
     }
 
+    suspend fun editRecord(record: ForeignCurrencyRecord,
+                           editDate: String,
+                           editMoney: String,
+                           editRate: String,
+                           type: CurrencyType) {
+
+        when(type) {
+            CurrencyType.USD -> {
+
+                val drBuyRecord = record as DrBuyRecord
+
+                val exchangeMoney = calculateExchangeMoney(editMoney, editRate)
+                val editData = drBuyRecord.copy(
+                    date = editDate,
+                    money = editMoney,
+                    rate = editRate,
+                    buyRate = editRate,
+                    profit = "0",
+                    expectProfit = "0",
+                    exchangeMoney = exchangeMoney)
+
+                investRepository.updateDollarBuyRecord(editData)
+            }
+            CurrencyType.JPY -> {
+                val drBuyRecord = record as YenBuyRecord
+
+                val exchangeMoney = calculateExchangeMoney(editMoney, editRate)
+                val editData = drBuyRecord.copy(
+                    date = editDate,
+                    money = editMoney,
+                    rate = editRate,
+                    buyRate = editRate,
+                    profit = "0",
+                    expectProfit = "0",
+                    exchangeMoney = exchangeMoney)
+
+                investRepository.updateYenBuyRecord(editData)
+            }
+        }
+
+
+
+
+    }
+
     suspend fun cancelSellRecord(id: UUID, currencyType: CurrencyType): Boolean {
         val searchBuyRecord = when(currencyType) {
             CurrencyType.USD -> investRepository.getDollarBuyRecordById(id)

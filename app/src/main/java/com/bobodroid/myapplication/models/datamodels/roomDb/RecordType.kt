@@ -95,6 +95,10 @@ interface ForeignCurrencyRecord {
     var recordColor: Boolean?
     var categoryName: String?
     var memo: String?
+
+    fun copyWithMemo(memo: String): ForeignCurrencyRecord
+
+    fun copyWithSell(sellDate:String, sellRate:String, sellProfit:String): ForeignCurrencyRecord
 }
 
 @Entity(tableName = "buyDollar_table")
@@ -141,10 +145,18 @@ data class DrBuyRecord(
 
     @ColumnInfo(name = "buyDrCategoryName", defaultValue = "")
     override var categoryName: String? = null,
-) : ForeignCurrencyRecord
+) : ForeignCurrencyRecord {
+    override fun copyWithMemo(memo: String) = copy(memo = memo)
+
+    override fun copyWithSell(
+        sellDate: String,
+        sellRate: String,
+        sellProfit: String
+    ): ForeignCurrencyRecord = copy(sellDate = sellDate, sellRate =  sellRate, sellProfit = sellProfit)
+}
+
+
 @Entity(tableName = "buyYen_table")
-
-
 data class YenBuyRecord(
     @PrimaryKey
     @ColumnInfo(name = "id")
@@ -188,7 +200,15 @@ data class YenBuyRecord(
 
     @ColumnInfo(name = "buyYenCategoryName", defaultValue = "")
     override var categoryName: String? = null,
-) : ForeignCurrencyRecord
+) : ForeignCurrencyRecord {
+    override fun copyWithMemo(memo: String) = copy(memo = memo)
+
+    override fun copyWithSell(
+        sellDate: String,
+        sellRate: String,
+        sellProfit: String
+    ): ForeignCurrencyRecord = copy(sellDate = sellDate, sellRate =  sellRate, sellProfit = sellProfit)
+}
 
 
 

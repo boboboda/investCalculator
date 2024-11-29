@@ -21,18 +21,18 @@ import com.bobodroid.myapplication.extensions.toPer
 import com.bobodroid.myapplication.extensions.toWon
 import com.bobodroid.myapplication.extensions.toYen
 import com.bobodroid.myapplication.models.datamodels.roomDb.DrBuyRecord
-import com.bobodroid.myapplication.models.datamodels.roomDb.WonBuyRecord
+import com.bobodroid.myapplication.models.datamodels.roomDb.ForeignCurrencyRecord
 import com.bobodroid.myapplication.models.datamodels.roomDb.YenBuyRecord
 import com.bobodroid.myapplication.models.viewmodels.DollarViewModel
 import com.bobodroid.myapplication.models.viewmodels.YenViewModel
 import com.bobodroid.myapplication.ui.theme.SellButtonColor
 import com.bobodroid.myapplication.ui.theme.SellPopColor
+import java.util.UUID
 
 
 @Composable
 fun SellResultDialog(
     onDismissRequest: ((Boolean)->Unit)?,
-    onClicked: ((Boolean) -> Unit)?,
     selectedRecord:()-> Unit,
     percent: String,
     sellProfit: String
@@ -157,7 +157,6 @@ fun SellResultDialog(
                 Buttons(
                     onClicked = {
                         selectedRecord()
-                        onClicked?.invoke(false)
                     },
                     color = SellButtonColor,
                     fontColor = Color.White,
@@ -172,7 +171,6 @@ fun SellResultDialog(
                 Buttons(
                     onClicked = {
                         onDismissRequest?.invoke(false)
-                        onClicked?.invoke(false)
                     },
                     color = SellButtonColor,
                     fontColor = Color.White,

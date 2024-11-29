@@ -18,6 +18,7 @@ import androidx.compose.material.SnackbarHostState
 import androidx.compose.material3.Divider
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.isTraceInProgress
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -43,7 +44,10 @@ import java.util.UUID
 fun RecordListView(
     snackBarHostState: SnackbarHostState,
     currencyRecordState: CurrencyRecordState<ForeignCurrencyRecord>,
-    hideSellRecordState: Boolean
+    sellProfit: String,
+    sellPercent: String,
+    hideSellRecordState: Boolean,
+    onEvent: (RecordListEvent) -> Unit
 ) {
 
     val buyRecordHistory = currencyRecordState.groupedRecords
@@ -110,12 +114,10 @@ fun RecordListView(
             state = lazyScrollState
         ) {
 
-            //  Buy -> 라인리코드텍스트에 넣지 말고 바로 데이터 전달 -> 리팩토링
             filterRecord.onEachIndexed { groupIndex: Int, (key, items) ->
                 stickyHeader {
                     RecordHeader(key = key)
                 }
-
                 items(
                     items = items,
                     key = { it.id!! }
@@ -135,21 +137,21 @@ fun RecordListView(
 
                     RecordListRowView(
                         Buy,
-                        sellAction = Buy.recordColor!!,
-                        sellSelected = {
-
-                        },
-                        insertSelected = { date, money, rate->
-//                            dollarViewModel.insertBuyRecord(Buy, date, money, rate)
-                        },
+                        sellState = Buy.recordColor!!,
                         groupList = groupList,
-                        snackBarHostState = snackBarHostState
-                    ) {
-                        coroutineScope.launch {
-                            delay(300)
-                            lazyScrollState.animateScrollToItem(finalIndex, -55)
+                        snackBarHostState = snackBarHostState,
+                        sellProfit = sellProfit,
+                        sellPercent = sellPercent,
+                        onEvent = { event ->
+                            onEvent(event)
+                        },
+                        scrollEvent = {
+                            coroutineScope.launch {
+                                delay(300)
+                                lazyScrollState.animateScrollToItem(finalIndex, -55)
+                            }
                         }
-                    }
+                    )
 
                     Divider()
                 }

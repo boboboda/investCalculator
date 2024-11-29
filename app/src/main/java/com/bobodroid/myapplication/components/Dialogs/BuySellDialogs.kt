@@ -37,27 +37,29 @@ import com.bobodroid.myapplication.models.viewmodels.MainViewModel
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SellDialog(
-    buyRecord: ForeignCurrencyRecord,
     onDismissRequest: (Boolean) -> Unit,
-    selectedRecord: (sellRate: String, sellDate: String, sellProfit: String) -> Unit,
-    mainViewModel: MainViewModel,
-    currencyType: CurrencyType) {
+//    mainViewModel: MainViewModel,
+//    currencyType: CurrencyType
+    sellPercent: String,
+    sellProfit: String,
+    onEvent: (SellDialogEvent) -> Unit
+) {
 
-    val sellRate by remember {
+    var sellRate by remember {
         mutableStateOf("")
     }
 
-    val sellDate by remember {
+    var sellDate by remember {
         mutableStateOf<String?>(null)
     }
 
-    var sellProfit by remember {
-        mutableStateOf("")
-    }
-
-    var sellPercent by remember {
-        mutableStateOf("")
-    }
+//    var sellProfit by remember {
+//        mutableStateOf("")
+//    }
+//
+//    var sellPercent by remember {
+//        mutableStateOf("")
+//    }
 
     val isDialogOpen = remember { mutableStateOf(false) }
 
@@ -105,7 +107,7 @@ fun SellDialog(
                         if(isDialogOpen.value) {
                             DrSellDatePickerDialog(
                                 onDateSelected = { selectedDate ->
-
+                                    sellDate = selectedDate.toString()
                                 },
                                 onDismissRequest = {
                                     isDialogOpen.value = false
@@ -119,8 +121,8 @@ fun SellDialog(
                     RateNumberField(
                         title = "매도환율을 입력해주세요",
                         modifier = Modifier.fillMaxWidth(),
-                        onClicked = { sellRate ->
-
+                        onClicked = { rate ->
+                            sellRate = rate
                     })
 
                     Spacer(modifier = Modifier.height(20.dp))
@@ -132,16 +134,20 @@ fun SellDialog(
                     ) {
                         Buttons(
                             onClicked = {
+
+                                onEvent(SellDialogEvent.SellCalculate(sellDate = sellDate ?: "", sellRate = sellRate))
+
                                 if(openDialog.value == false) openDialog.value = !openDialog.value else null
-                                mainViewModel.sellCalculate(
-                                    buyRecord.exchangeMoney ?: "",
-                                    sellRate,
-                                    buyRecord.money ?: "",
-                                    currencyType,
-                                    sellResult = { sellProfitValue, sellPercentValue ->
-                                    sellProfit = sellProfitValue
-                                    sellPercent = sellPercentValue
-                                } )
+
+//                                mainViewModel.sellCalculate(
+//                                    buyRecord.exchangeMoney ?: "",
+//                                    sellRate,
+//                                    buyRecord.money ?: "",
+//                                    currencyType,
+//                                    sellResult = { sellProfitValue, sellPercentValue ->
+//                                    sellProfit = sellProfitValue
+//                                    sellPercent = sellPercentValue
+//                                } )
                             },
 
                             color = SellButtonColor,
@@ -172,14 +178,11 @@ fun SellDialog(
             if (openDialog.value) {
                 SellResultDialog(
                     selectedRecord = {
-                        selectedRecord(sellRate, sellDate ?: "", sellProfit)
+                        onEvent(SellDialogEvent.SellRecord)
                     },
                     onDismissRequest = {
                         openDialog.value = it
                         onDismissRequest.invoke(it) },
-                    onClicked = {
-
-                    },
                     percent = sellPercent,
                     sellProfit = sellProfit)
 
@@ -329,3 +332,9 @@ fun YenSellDialog(
     }
 }
 
+
+
+sealed class SellDialogEvent {
+    data class SellCalculate(val sellRate: String, val sellDate: String,) : SellDialogEvent()
+    data object SellRecord: SellDialogEvent()
+}

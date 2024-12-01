@@ -39,7 +39,6 @@ import com.bobodroid.myapplication.components.admobs.showRewardedAdvertisement
 import com.bobodroid.myapplication.components.shadowCustom
 import com.bobodroid.myapplication.models.datamodels.roomDb.LocalUserData
 import com.bobodroid.myapplication.models.viewmodels.DollarViewModel
-import com.bobodroid.myapplication.models.viewmodels.YenViewModel
 import com.bobodroid.myapplication.routes.MainRoute
 import com.bobodroid.myapplication.routes.MyPageRoute
 import com.bobodroid.myapplication.routes.RouteAction

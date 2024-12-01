@@ -9,8 +9,12 @@ import com.bobodroid.myapplication.util.AdMob.AdManager
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import javax.inject.Inject
+import javax.inject.Singleton
 
+
+@Singleton
 class AppStarter @Inject constructor(
     private val localExistCheckUseCase: LocalExistCheckUseCase,
     private val rateRepository: LatestRateRepository,
@@ -22,8 +26,11 @@ class AppStarter @Inject constructor(
             localExistCheckUseCase.invoke()
             rateRepository.subscribeToExchangeRateUpdates()
             noticeRepository.loadNotice()
-            adManager.loadBannerAd(context)
-            adManager.loadRewardedAd(context)
+
+            withContext(Dispatchers.Main) {
+                adManager.loadBannerAd(context)
+                adManager.loadRewardedAd(context)
+            }
         }
     }
 }

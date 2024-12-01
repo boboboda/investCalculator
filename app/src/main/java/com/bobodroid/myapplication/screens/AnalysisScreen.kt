@@ -54,13 +54,11 @@ import com.bobodroid.myapplication.components.chart.ExchangeRateChart
 import com.bobodroid.myapplication.components.shadowCustom
 import com.bobodroid.myapplication.models.datamodels.roomDb.CurrencyType
 import com.bobodroid.myapplication.models.datamodels.service.exchangeRateApi.ExchangeRates
-import com.bobodroid.myapplication.models.viewmodels.AllViewModel
 import com.bobodroid.myapplication.models.viewmodels.AnalysisViewModel
 import com.bobodroid.myapplication.models.viewmodels.FcmAlarmViewModel
 import com.bobodroid.myapplication.models.viewmodels.RateRange
 import com.bobodroid.myapplication.models.viewmodels.RateRangeCurrency
 import com.bobodroid.myapplication.routes.MainRoute
-import com.bobodroid.myapplication.routes.MainRouteAction
 import com.bobodroid.myapplication.ui.theme.primaryColor
 import com.github.mikephil.charting.data.BarEntry
 import java.text.SimpleDateFormat

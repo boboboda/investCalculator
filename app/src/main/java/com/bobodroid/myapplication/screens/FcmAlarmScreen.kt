@@ -112,7 +112,6 @@ import com.bobodroid.myapplication.models.datamodels.roomDb.CurrencyType
 import com.bobodroid.myapplication.models.datamodels.roomDb.RateDirection
 import com.bobodroid.myapplication.models.datamodels.roomDb.RateType
 import com.bobodroid.myapplication.models.datamodels.service.UserApi.Rate
-import com.bobodroid.myapplication.models.viewmodels.AllViewModel
 import com.bobodroid.myapplication.models.viewmodels.AnalysisViewModel
 import com.bobodroid.myapplication.models.viewmodels.FcmAlarmViewModel
 import com.bobodroid.myapplication.ui.theme.DialogBackgroundColor

@@ -11,7 +11,11 @@ import androidx.room.migration.AutoMigrationSpec
 
 @Database(entities = [
     DrBuyRecord::class,
+    DrSellRecord::class,
     YenBuyRecord::class,
+    YenSellRecord::class,
+    WonBuyRecord::class,
+    WonSellRecord::class,
     LocalUserData::class,
     ExchangeRate::class],
     autoMigrations = [
@@ -45,6 +49,14 @@ import androidx.room.migration.AutoMigrationSpec
         AutoMigration(from = 18, to = 19, spec = InvestDatabase.MyAutoMigration::class)
                      ],
     version = 19, exportSchema = true)
+
+@DeleteTable.Entries(
+    DeleteTable(tableName = "sellWon_table"),
+    DeleteTable(tableName = "buyWon_table"),
+    DeleteTable(tableName = "sellYen_table"),
+    DeleteTable(tableName = "sellDollar_table")
+)
+
 abstract class InvestDatabase: RoomDatabase() {
     abstract fun DrBuyDao() : DollarBuyDatabaseDao
     abstract fun YenBuyDao() : YenBuyDatabaseDao
@@ -121,21 +133,7 @@ abstract class InvestDatabase: RoomDatabase() {
         columnName = "user_Reset_State"
     )
 
-    @DeleteTable(
-        tableName = "sellWon_table"
-    )
 
-    @DeleteTable(
-        tableName = "buyWon_table"
-    )
-
-    @DeleteTable(
-        tableName = "sellYen_table"
-    )
-
-    @DeleteTable(
-        tableName = "sellDollar_table"
-    )
 
     class MyAutoMigration : AutoMigrationSpec
 }

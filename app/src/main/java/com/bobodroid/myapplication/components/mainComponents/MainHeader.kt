@@ -78,12 +78,8 @@ fun MainHeader(
                     CurrencyType.JPY -> {
                         RateView(
                             title = "JPY",
-                            recentRate = "${
-                                BigDecimal(mainUiState.recentRate.jpy).times(
-                                    BigDecimal("100").setScale(-2),
-                                )
-                            }",
-                            createAt = "${mainUiState.recentRate.createAt}"
+                            recentRate = "${BigDecimal(mainUiState.recentRate.jpy).times(BigDecimal("100"))}",
+                            createAt = mainUiState.recentRate.createAt
                         )
                     }
                 }

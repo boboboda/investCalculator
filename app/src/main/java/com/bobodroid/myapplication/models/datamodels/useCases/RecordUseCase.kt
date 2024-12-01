@@ -10,6 +10,7 @@ import com.bobodroid.myapplication.models.datamodels.roomDb.ForeignCurrencyRecor
 import com.bobodroid.myapplication.models.datamodels.roomDb.YenBuyRecord
 import com.bobodroid.myapplication.models.viewmodels.CurrencyRecordState
 import com.bobodroid.myapplication.models.viewmodels.ForeignCurrencyRecordList
+import com.bobodroid.myapplication.models.viewmodels.RecordListUiState
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
@@ -134,6 +135,80 @@ class RecordUseCase @Inject constructor(
 
     }
 
+    suspend fun onSellRecord(record: ForeignCurrencyRecord,
+                           sellDate: String,
+                           sellRate: String,
+                           type: CurrencyType) {
+
+        when(type) {
+            CurrencyType.USD -> {
+
+                val drBuyRecord = record as DrBuyRecord
+
+                val exchangeMoney = drBuyRecord.exchangeMoney ?: return
+
+                val money = drBuyRecord.money ?: return
+
+                val sellProfit = sellProfit(exchangeMoney, sellRate, money, type)
+
+                val editData = drBuyRecord.copy(
+                    sellProfit = sellProfit.toString(),
+                    sellDate = sellDate,
+                    sellRate = sellRate,
+                    expectProfit = sellProfit.toString())
+
+                investRepository.updateDollarBuyRecord(editData)
+            }
+            CurrencyType.JPY -> {
+                val yenBuyRecord = record as YenBuyRecord
+
+                val exchangeMoney = yenBuyRecord.exchangeMoney ?: return
+
+                val money = yenBuyRecord.money ?: return
+
+                val sellProfit = sellProfit(exchangeMoney, sellRate, money, type)
+
+                val editData = yenBuyRecord.copy(
+                    sellProfit = sellProfit.toString(),
+                    sellDate = sellDate,
+                    sellRate = sellRate,
+                    expectProfit = sellProfit.toString())
+
+                investRepository.updateYenBuyRecord(editData)
+            }
+        }
+
+    }
+
+    suspend fun updateRecordMemo(record: ForeignCurrencyRecord, memo: String, type: CurrencyType) {
+        when(type) {
+            CurrencyType.USD -> {
+                val drBuyRecord = record as DrBuyRecord
+                val editData = drBuyRecord.copy(memo = memo)
+                investRepository.updateDollarBuyRecord(editData)
+            }
+            CurrencyType.JPY -> {
+                val yenBuyRecord = record as YenBuyRecord
+                val editData = yenBuyRecord.copy(memo = memo)
+                investRepository.updateYenBuyRecord(editData)
+            }
+        }
+    }
+
+    suspend fun removeRecord(record: ForeignCurrencyRecord, type: CurrencyType) {
+        when(type) {
+            CurrencyType.USD -> {
+                val drBuyRecord = record as DrBuyRecord
+                investRepository.deleteDollarBuyRecord(drBuyRecord)
+            }
+            CurrencyType.JPY -> {
+                val yenBuyRecord = record as YenBuyRecord
+                investRepository.deleteYenBuyRecord(yenBuyRecord)
+            }
+        }
+    }
+
+
     suspend fun cancelSellRecord(id: UUID, currencyType: CurrencyType): Boolean {
         val searchBuyRecord = when(currencyType) {
             CurrencyType.USD -> investRepository.getDollarBuyRecordById(id)
@@ -159,6 +234,49 @@ class RecordUseCase @Inject constructor(
 
         return true
     }
+
+
+    suspend fun updateRecordCategory(record: ForeignCurrencyRecord, groupName: String, type: CurrencyType) {
+        when(type) {
+            CurrencyType.USD -> {
+                val drBuyRecord = record as DrBuyRecord
+                val updateData = drBuyRecord.copy(categoryName = groupName)
+                investRepository.updateDollarBuyRecord(updateData)
+            }
+            CurrencyType.JPY -> {
+                val yenBuyRecord = record as YenBuyRecord
+                val updateData = yenBuyRecord.copy(categoryName = groupName)
+                investRepository.updateYenBuyRecord(updateData)
+            }
+        }
+    }
+
+    suspend fun groupAdd(uiState:RecordListUiState, groupName: String, type: CurrencyType, result:(RecordListUiState)->Unit){
+        when(type) {
+            CurrencyType.USD -> {
+                val updatedState = uiState.copy(
+                    foreignCurrencyRecord = uiState.foreignCurrencyRecord.copy(
+                        dollarState = uiState.foreignCurrencyRecord.dollarState.copy(
+                            groups = uiState.foreignCurrencyRecord.dollarState.groups + groupName
+                        )
+                    )
+                )
+
+                result(updatedState)
+            }
+            CurrencyType.JPY -> {
+                val updatedState = uiState.copy(
+                    foreignCurrencyRecord = uiState.foreignCurrencyRecord.copy(
+                        yenState = uiState.foreignCurrencyRecord.yenState.copy(
+                            groups = uiState.foreignCurrencyRecord.yenState.groups + groupName
+                        )
+                    )
+                )
+                result(updatedState)
+            }
+        }
+    }
+
 
    private fun calculateExpectedProfit(exchangeMoney: String, inputMoney: String, latestRate: String): String {
 
@@ -190,6 +308,28 @@ class RecordUseCase @Inject constructor(
             categorySelector(it) ?: "미지정"
         }
     }
+
+    fun sellProfit(
+        exchangeMoney: String,
+        sellRate: String,
+        krMoney: String,
+        type:CurrencyType
+    ): BigDecimal {
+        return when(type) {
+            CurrencyType.USD -> {
+                ((BigDecimal(exchangeMoney).times(BigDecimal(sellRate))).setScale(20, RoundingMode.HALF_UP)) - BigDecimal(krMoney)
+            }
+            CurrencyType.JPY -> {
+                ((BigDecimal(exchangeMoney).times(BigDecimal(sellRate))).setScale(20, RoundingMode.HALF_UP))/ BigDecimal("100") - BigDecimal(krMoney)
+            }
+        }
+    }
+
+    fun sellPercent(
+        exchangeMoney: String,
+        krMoney: String
+    ): Float =
+        (exchangeMoney.toFloat() / krMoney.toFloat()) * 100f
 
 
 

@@ -3,14 +3,10 @@ package com.bobodroid.myapplication.di
 import android.content.Context
 import androidx.room.Room
 import com.bobodroid.myapplication.models.datamodels.roomDb.DollarBuyDatabaseDao
-import com.bobodroid.myapplication.models.datamodels.roomDb.DollarSellDatabaseDao
 import com.bobodroid.myapplication.models.datamodels.roomDb.ExchangeRateDataBaseDao
 import com.bobodroid.myapplication.models.datamodels.roomDb.InvestDatabase
 import com.bobodroid.myapplication.models.datamodels.roomDb.LocalUserDatabaseDao
-import com.bobodroid.myapplication.models.datamodels.roomDb.WonBuyDatabaseDao
-import com.bobodroid.myapplication.models.datamodels.roomDb.WonSellDatabaseDao
 import com.bobodroid.myapplication.models.datamodels.roomDb.YenBuyDatabaseDao
-import com.bobodroid.myapplication.models.datamodels.roomDb.YenSellDatabaseDao
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -41,30 +37,30 @@ object DatabaseModule {
         return investDatabase.DrBuyDao()
     }
 
-    @Provides
-    fun provideSellDollarRecordDao(investDatabase: InvestDatabase) : DollarSellDatabaseDao {
-        return investDatabase.DrSellDao()
-    }
+//    @Provides
+//    fun provideSellDollarRecordDao(investDatabase: InvestDatabase) : DollarSellDatabaseDao {
+//        return investDatabase.DrSellDao()
+//    }
 
     @Provides
     fun provideBuyYenRecordDao(investDatabase: InvestDatabase) : YenBuyDatabaseDao {
         return investDatabase.YenBuyDao()
     }
 
-    @Provides
-    fun provideSellYenRecordDao(investDatabase: InvestDatabase) : YenSellDatabaseDao {
-        return investDatabase.YenSellDao()
-    }
+//    @Provides
+//    fun provideSellYenRecordDao(investDatabase: InvestDatabase) : YenSellDatabaseDao {
+//        return investDatabase.YenSellDao()
+//    }
 
-    @Provides
-    fun provideBuyWonRecordDao(investDatabase: InvestDatabase) : WonBuyDatabaseDao {
-        return investDatabase.WonBuyDao()
-    }
+//    @Provides
+//    fun provideBuyWonRecordDao(investDatabase: InvestDatabase) : WonBuyDatabaseDao {
+//        return investDatabase.WonBuyDao()
+//    }
 
-    @Provides
-    fun provideSellWonRecordDao(investDatabase: InvestDatabase) : WonSellDatabaseDao {
-        return investDatabase.WonSellDao()
-    }
+//    @Provides
+//    fun provideSellWonRecordDao(investDatabase: InvestDatabase) : WonSellDatabaseDao {
+//        return investDatabase.WonSellDao()
+//    }
 
     @Provides
     fun provideLocalUserDao(investDatabase: InvestDatabase) : LocalUserDatabaseDao {

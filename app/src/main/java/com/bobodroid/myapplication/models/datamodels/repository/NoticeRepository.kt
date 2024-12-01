@@ -15,38 +15,33 @@ import javax.inject.Singleton
 
 @Singleton
 class NoticeRepository @Inject constructor() {
-
-    private val _noticeData = MutableStateFlow<Notice?>(null)
-
+    private val _noticeData = MutableStateFlow<NoticeResult>(NoticeResult.Loading)
     val noticeData = _noticeData.asStateFlow()
 
-    private val _isReady = MutableStateFlow(false)
-
-    val isReady = _isReady.asStateFlow()
+    sealed class NoticeResult {
+        object Loading : NoticeResult()
+        data class Success(val notice: Notice?) : NoticeResult()
+        data class Error(val error: Exception) : NoticeResult()
+    }
 
     suspend fun loadNotice() {
         try {
-            val noticeResponse = NoticeApi.noticeService.noticeRequest().data.first()
-
-            if(noticeResponse == null) {
-                Log.e(TAG("NoticeRepository",""), "공지사항 데이터 없음")
-                return
-            }
-
-            _noticeData.value = Notice(
-                content = noticeResponse.content,
-                date = noticeResponse.createdAt
+            val noticeResponse = NoticeApi.noticeService.noticeRequest().data.firstOrNull()
+            _noticeData.value = NoticeResult.Success(
+                if(noticeResponse == null) null
+                else Notice(content = noticeResponse.content, date = noticeResponse.createdAt)
             )
-
-            _isReady.value = true
-
         } catch (e: Exception) {
-            Log.e(TAG("NoticeRepository",""), "공지사항 업데이트 실패", e)
+            _noticeData.value = NoticeResult.Error(e)
         }
     }
 
-    suspend fun waitForNoticeData(): Notice {
-        return _noticeData.filterNotNull().first()
+    suspend fun waitForNoticeData(): Notice? {
+        return when(val result = _noticeData.first { it !is NoticeResult.Loading }) {
+            is NoticeResult.Success -> result.notice
+            is NoticeResult.Error -> null
+            NoticeResult.Loading -> null
+        }
     }
 }
 

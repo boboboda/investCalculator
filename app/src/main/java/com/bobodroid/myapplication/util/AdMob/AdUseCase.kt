@@ -40,24 +40,24 @@ class AdUseCase @Inject constructor(
     }
 
     fun bannerAdState(user: LocalUserData, todayDate: String): Boolean {
-        Log.d(TAG("AllViewModel", "bannerAdState"), "배너 광고 제거 연기날짜: ${user.userResetDate} 오늘날짜: ${todayDate}")
+        Log.d(TAG("AdUseCase", "bannerAdState"), "배너 광고 제거 연기날짜: ${user.userResetDate} 오늘날짜: ${todayDate}")
 
         return user.userResetDate?.let { resetDate ->
             val isBeforeResetDate = todayDate <= resetDate
-            Log.d(TAG("AllViewModel", "bannerAdState"),
+            Log.d(TAG("AdUseCase", "bannerAdState"),
                 if (isBeforeResetDate) "연기된 날짜가 더 큽니다."
                 else "오늘 날짜가 더 큽니다."
             )
             isBeforeResetDate
         } ?: run {
-            Log.d(TAG("AllViewModel", "bannerAdState"), "날짜 값이 없습니다.")
+            Log.d(TAG("AdUseCase", "bannerAdState"), "날짜 값이 없습니다.")
             false
         }
     }
 
     // 배너 광고 제거 딜레이
     suspend fun deleteBannerDelayDate(user: LocalUserData, todayDate: String): Boolean {
-        Log.d(TAG("AllViewModel", "deleteBannerDelayDate"), "날짜 연기 신청")
+        Log.d(TAG("AdUseCase", "deleteBannerDelayDate"), "날짜 연기 신청")
 
         val updateUserData = user.copy(
             userResetDate = delayDate(inputDate = todayDate, delayDay = 1)

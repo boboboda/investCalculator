@@ -39,7 +39,6 @@ import com.bobodroid.myapplication.components.admobs.showTargetRewardedAdvertise
 import com.bobodroid.myapplication.models.viewmodels.AnalysisViewModel
 import com.bobodroid.myapplication.models.viewmodels.DollarViewModel
 import com.bobodroid.myapplication.models.viewmodels.MainViewModel
-import com.bobodroid.myapplication.models.viewmodels.YenViewModel
 import com.bobodroid.myapplication.routes.*
 import com.bobodroid.myapplication.screens.*
 import com.bobodroid.myapplication.ui.theme.InverstCalculatorTheme
@@ -59,8 +58,6 @@ class MainActivity : ComponentActivity() {
     }
 
     private val dollarViewModel: DollarViewModel by viewModels()
-
-    private val yenViewModel: YenViewModel by viewModels()
 
     private val mainViewModel: MainViewModel by viewModels()
 
@@ -107,7 +104,6 @@ class MainActivity : ComponentActivity() {
             InverstCalculatorTheme {
                 AppScreen(
                     dollarViewModel,
-                    yenViewModel,
                     mainViewModel,
                     analysisViewModel,
                     activity = this
@@ -200,7 +196,6 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun AppScreen(
     dollarViewModel: DollarViewModel,
-    yenViewModel: YenViewModel,
     mainViewModel: MainViewModel,
     analysisViewModel: AnalysisViewModel,
     activity: Activity
@@ -224,7 +219,6 @@ fun AppScreen(
 
             InvestAppScreen(
                 dollarViewModel,
-                yenViewModel,
                 mainViewModel,
                 analysisViewModel,
                 drawerState = drawerState,
@@ -245,7 +239,6 @@ fun AppScreen(
 @Composable
 fun InvestAppScreen(
     dollarViewModel: DollarViewModel,
-    yenViewModel: YenViewModel,
     mainViewModel: MainViewModel,
     analysisViewModel: AnalysisViewModel,
     drawerState: DrawerState,
@@ -278,7 +271,6 @@ fun InvestAppScreen(
             InvestNavHost(
                 investNavController = investNavController,
                 dollarViewModel = dollarViewModel,
-                yenViewModel = yenViewModel,
                 mainViewModel = mainViewModel,
                 activity = activity,
                 analysisViewModel = analysisViewModel)
@@ -320,7 +312,6 @@ fun InvestNavHost(
     investNavController: NavHostController,
     startRouter: MainRoute = MainRoute.Main,
     dollarViewModel: DollarViewModel,
-    yenViewModel: YenViewModel,
     analysisViewModel: AnalysisViewModel,
     mainViewModel: MainViewModel,
     activity: Activity
@@ -329,8 +320,6 @@ fun InvestNavHost(
     NavHost(navController = investNavController, startDestination = startRouter.routeName!!) {
         composable(MainRoute.Main.routeName!!) {
             MainScreen(
-                dollarViewModel = dollarViewModel,
-                yenViewModel = yenViewModel,
                 mainViewModel = mainViewModel,
                 activity = activity
             )

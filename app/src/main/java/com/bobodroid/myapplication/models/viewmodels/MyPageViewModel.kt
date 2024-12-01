@@ -9,15 +9,15 @@ import com.bobodroid.myapplication.models.datamodels.roomDb.LocalUserData
 import com.bobodroid.myapplication.models.datamodels.useCases.UserUseCases
 import com.bobodroid.myapplication.util.result.onError
 import com.bobodroid.myapplication.util.result.onSuccess
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
+@HiltViewModel
 class MyPageViewModel @Inject constructor(
     private val userUseCases: UserUseCases,
-    private val userRepository: UserRepository,
-    private val latestRateRepository: LatestRateRepository
 ) : ViewModel() {
 
     val _myPageUiState = MutableStateFlow(MyPageUiState())

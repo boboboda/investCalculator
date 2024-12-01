@@ -41,7 +41,6 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import com.bobodroid.myapplication.MainActivity.Companion.TAG
 import com.bobodroid.myapplication.components.CardButton
-import com.bobodroid.myapplication.models.viewmodels.AllViewModel
 import com.bobodroid.myapplication.ui.theme.DialogBackgroundColor
 import com.bobodroid.myapplication.ui.theme.TopButtonColor
 import com.bobodroid.myapplication.ui.theme.WelcomeScreenBackgroundColor
@@ -166,7 +165,7 @@ fun RangeDateDialog(
                         datePickerEnableState.value = false
                         dateCardLabel.value = it
                         scope.launch {
-                            allViewModel.dateStringFlow.emit(it)
+//                            allViewModel.dateStringFlow.emit(it)
                         }
                     },
                     fontSize = 15,
@@ -188,7 +187,7 @@ fun RangeDateDialog(
                         datePickerEnableState.value = false
                         dateCardLabel.value = it
                         scope.launch {
-                            allViewModel.dateStringFlow.emit(it)
+//                            allViewModel.dateStringFlow.emit(it)
                         }
                     },
                     fontSize = 15,
@@ -211,7 +210,7 @@ fun RangeDateDialog(
                         dateCardLabel.value = it
 
                         scope.launch {
-                            allViewModel.dateStringFlow.emit(it)
+//                            allViewModel.dateStringFlow.emit(it)
                         }
                     },
                     fontSize = 15,
@@ -229,7 +228,7 @@ fun RangeDateDialog(
                         datePickerEnableState.value = true
                         dateCardLabel.value = it
                         scope.launch {
-                            allViewModel.dateStringFlow.emit(it)
+//                            allViewModel.dateStringFlow.emit(it)
                         }
                     },
                     fontSize = 15,

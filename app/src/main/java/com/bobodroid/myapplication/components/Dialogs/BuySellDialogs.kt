@@ -17,10 +17,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
-import com.bobodroid.myapplication.components.Caldenders.WonSellDatePickerDialog
-import com.bobodroid.myapplication.components.Caldenders.YenSellDatePickerDialog
 import com.bobodroid.myapplication.models.viewmodels.DollarViewModel
-import com.bobodroid.myapplication.models.viewmodels.YenViewModel
 import com.bobodroid.myapplication.ui.theme.SellButtonColor
 import java.time.LocalDate
 import androidx.compose.material.SnackbarHostState
@@ -135,7 +132,7 @@ fun SellDialog(
                         Buttons(
                             onClicked = {
 
-                                onEvent(SellDialogEvent.SellCalculate(sellDate = sellDate ?: "", sellRate = sellRate))
+                                onEvent(SellDialogEvent.SellCalculate(sellRate = sellRate))
 
                                 if(openDialog.value == false) openDialog.value = !openDialog.value else null
 
@@ -178,7 +175,7 @@ fun SellDialog(
             if (openDialog.value) {
                 SellResultDialog(
                     selectedRecord = {
-                        onEvent(SellDialogEvent.SellRecord)
+                        onEvent(SellDialogEvent.SellRecord(sellRate = sellRate, sellDate = sellDate ?: ""))
                     },
                     onDismissRequest = {
                         openDialog.value = it
@@ -195,146 +192,8 @@ fun SellDialog(
 
 
 
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun YenSellDialog(
-    onDismissRequest: (Boolean) -> Unit,
-    onClicked: ((Boolean) -> Unit)?,
-    sellAction: () -> Unit,
-    yenViewModel: YenViewModel,
-    buyRecord: YenBuyRecord
-) {
-
-    val isDialogOpen = remember { mutableStateOf(false) }
-
-    var sellRate = yenViewModel.sellRateFlow.collectAsState()
-
-    var openDialog = remember { mutableStateOf(false) }
-
-    val isBtnActive = sellRate.value.isNotEmpty()
-
-    val sellDate = yenViewModel.sellDateFlow.collectAsState()
-
-    var InputDate = if(sellDate.value == null) "날짜를 선택해주세요" else {sellDate.value}
-
-
-
-    Dialog(
-        onDismissRequest = { onDismissRequest(false) },
-        properties = DialogProperties()) {
-        Column(
-            modifier = Modifier
-                .wrapContentSize()
-                .background(
-                    color = Color.White,
-                    shape = RoundedCornerShape(16.dp)
-                )
-                .padding(top = 20.dp, bottom = 20.dp)
-                .padding(horizontal = 20.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-
-                    Card(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(45.dp),
-                        border = BorderStroke(1.dp, Color.Black),
-                        colors = CardDefaults.cardColors(contentColor = Color.Black, containerColor = Color.White),
-                        onClick = { isDialogOpen.value = !isDialogOpen.value
-
-                        }) {
-                        Text(text = InputDate,
-                            color = Color.Black,
-                            fontSize = 18.sp ,
-                            modifier = Modifier
-                                .padding(top = 10.dp)
-                                .fillMaxWidth(),
-                            textAlign = TextAlign.Center,
-
-                            )
-
-                        if(isDialogOpen.value) {
-                            YenSellDatePickerDialog(
-                                onDateSelected = null,
-                                onDismissRequest = {
-                                    isDialogOpen.value = false
-                                }, id = 1,
-                                yenViewModel
-                            )
-                        }
-                    }
-
-            Spacer(modifier = Modifier.height(20.dp))
-
-                    RateNumberField(
-                        title = "매도환율을 입력해주세요",
-                        modifier = Modifier ,
-                        onClicked = {
-                        yenViewModel.sellRateFlow.value = it
-                    })
-
-            Spacer(modifier = Modifier.height(20.dp))
-                    Row(
-                        modifier =
-                        Modifier
-                            .fillMaxWidth(),
-                        horizontalArrangement = Arrangement.Center
-                    ) {
-
-                        Buttons(
-                            onClicked = {
-                                if(openDialog.value == false) openDialog.value = !openDialog.value else null
-                                yenViewModel.sellCalculation()
-                            },
-
-                            color = SellButtonColor,
-                            fontColor = Color.White,
-                            modifier = Modifier
-                                .height(40.dp)
-                                .width(80.dp),
-                            enabled = isBtnActive) {
-                            Text("매도", fontSize = 15.sp)
-                        }
-
-
-                        Spacer(modifier = Modifier.width(25.dp))
-
-
-                        Buttons(
-                            onClicked = {onDismissRequest(false)},
-                            color = SellButtonColor,
-                            fontColor = Color.White,
-                            modifier = Modifier
-                                .height(40.dp)
-                                .width(80.dp)) {
-                            Text("닫기", fontSize = 15.sp)
-                        }
-                    }
-
-
-
-            if (openDialog.value) {
-                YenSellResultDialog(
-                    buyRecord = buyRecord,
-                    sellAction = sellAction,
-                    onDismissRequest = {
-                        openDialog.value = it
-                        onDismissRequest.invoke(it)
-                        yenViewModel.resetValue()
-                    },
-                    onClicked = { onClicked?.invoke(it) },
-                    yenViewModel = yenViewModel)
-
-            }
-
-
-        }
-    }
-}
-
-
 
 sealed class SellDialogEvent {
-    data class SellCalculate(val sellRate: String, val sellDate: String,) : SellDialogEvent()
-    data object SellRecord: SellDialogEvent()
+    data class SellCalculate(val sellRate: String) : SellDialogEvent()
+    data class SellRecord(val sellRate: String, val sellDate: String): SellDialogEvent()
 }

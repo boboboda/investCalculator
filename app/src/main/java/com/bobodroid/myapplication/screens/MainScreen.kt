@@ -26,7 +26,6 @@ import com.bobodroid.myapplication.models.viewmodels.DollarViewModel
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.*
-import com.bobodroid.myapplication.models.viewmodels.YenViewModel
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import com.bobodroid.myapplication.components.Dialogs.NoticeDialog
@@ -60,7 +59,6 @@ import com.bobodroid.myapplication.models.viewmodels.MainViewModel
 import com.bobodroid.myapplication.ui.theme.BottomSheetTitleColor
 import com.bobodroid.myapplication.ui.theme.BuyColor
 import com.bobodroid.myapplication.ui.theme.primaryColor
-import com.bobodroid.myapplication.screens.record.YenMainScreen
 
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterialApi::class)
@@ -176,7 +174,10 @@ fun MainScreen(
                     onEvent = { bottomSheetEvent ->
                         when (bottomSheetEvent) {
                             is BottomSheetEvent.DismissSheet -> {
-                                showBottomSheet = false
+                                coroutineScope.launch {
+                                    sheetState.hide()
+                                    showBottomSheet = false
+                                }
                             }
                             is BottomSheetEvent.OnRecordAdd -> {
                                 mainViewModel.addRecord(bottomSheetEvent.money, bottomSheetEvent.rate, bottomSheetEvent.group)
@@ -216,7 +217,7 @@ fun MainScreen(
                     onClickedLabel = "추가",
                     closeButtonLabel = "닫기",
                     onClicked = { name ->
-                        mainViewModel.groupAdd(name)
+//                        mainViewModel.groupAdd(name)
                         groupAddDialog = false
                     })
             }

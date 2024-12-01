@@ -611,8 +611,7 @@ fun RecordListRowView(
                                 shape = RoundedCornerShape(2.dp),
                                 onClick = {
 
-                                    val updateData = data.copyWithMemo(memoTextInput)
-                                    onEvent(RecordListEvent.MemoUpdate(updateData))
+                                    onEvent(RecordListEvent.MemoUpdate(data, memoTextInput))
                                     focusManager.clearFocus()
 //                                    dollarViewModel.buyDrMemoUpdate(updateData) { result ->
 //                                        if (result) {
@@ -736,7 +735,7 @@ sealed class RecordListEvent {
     data class AddGroup(val data:ForeignCurrencyRecord, val groupName: String): RecordListEvent()
     data class CancelSellRecord(val id: UUID): RecordListEvent()
     data class UpdateRecordCategory(val record: ForeignCurrencyRecord, val groupName: String): RecordListEvent()
-    data class MemoUpdate(val updateMemoRecord: ForeignCurrencyRecord): RecordListEvent()
+    data class MemoUpdate(val record: ForeignCurrencyRecord, val updateMemo: String): RecordListEvent()
     data class OnSellDialog(
         val record: ForeignCurrencyRecord,
         val event: SellDialogEvent

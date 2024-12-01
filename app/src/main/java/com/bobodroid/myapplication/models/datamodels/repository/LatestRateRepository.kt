@@ -29,12 +29,12 @@ class LatestRateRepository @Inject constructor(
     suspend fun subscribeToExchangeRateUpdates() {
         webSocketClient.recentRateWebReceiveData(
             onInsert = { latestRate ->
-                Log.d(TAG("AllViewModel", "subscribeToExchangeRateUpdates"), "웹소켓 환율 최신 데이터: $latestRate")
+                Log.d(TAG("LatestRateRepository", "subscribeToExchangeRateUpdates"), "웹소켓 환율 최신 데이터: $latestRate")
                 onRateUpdate(latestRate)
 
             },
             onInitialData = { initialRate ->
-                Log.d(TAG("AllViewModel", "subscribeToExchangeRateUpdates"), "웹소켓 환율 초기화 데이터: $initialRate")
+                Log.d(TAG("LatestRateRepository", "subscribeToExchangeRateUpdates"), "웹소켓 환율 초기화 데이터: $initialRate")
                 onRateUpdate(initialRate)
             }
         )
@@ -48,13 +48,13 @@ class LatestRateRepository @Inject constructor(
             _latestRate.emit(exchangeRate)
 
 
-            Log.d(TAG("AllViewModel", "onRateUpdate"), "환율 업데이트 파싱 완료: $exchangeRate")
+            Log.d(TAG("LatestRateRepository", "onRateUpdate"), "환율 업데이트 파싱 완료: $exchangeRate")
 
             // 데이터가 잘 파싱되었는지 확인하는 로그
-            Log.d(TAG("AllViewModel", "onRateUpdate"), "USD 환율: ${exchangeRate.usd}, JPY 환율: ${exchangeRate.jpy}")
+            Log.d(TAG("LatestRateRepository", "onRateUpdate"), "USD 환율: ${exchangeRate.usd}, JPY 환율: ${exchangeRate.jpy}")
 
         } catch (e: Exception) {
-            Log.e(TAG("AllViewModel", "onRateUpdate"), "환율 업데이트 파싱 실패: $rateString", e)
+            Log.e(TAG("LatestRateRepository", "onRateUpdate"), "환율 업데이트 파싱 실패: $rateString", e)
         }
     }
 

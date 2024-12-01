@@ -7,13 +7,9 @@ import com.bobodroid.myapplication.models.datamodels.repository.LatestRateReposi
 import com.bobodroid.myapplication.models.datamodels.repository.UserRepository
 import com.bobodroid.myapplication.models.datamodels.repository.YenRepository
 import com.bobodroid.myapplication.models.datamodels.roomDb.DollarBuyDatabaseDao
-import com.bobodroid.myapplication.models.datamodels.roomDb.DollarSellDatabaseDao
 import com.bobodroid.myapplication.models.datamodels.roomDb.ExchangeRateDataBaseDao
 import com.bobodroid.myapplication.models.datamodels.roomDb.LocalUserDatabaseDao
-import com.bobodroid.myapplication.models.datamodels.roomDb.WonBuyDatabaseDao
-import com.bobodroid.myapplication.models.datamodels.roomDb.WonSellDatabaseDao
 import com.bobodroid.myapplication.models.datamodels.roomDb.YenBuyDatabaseDao
-import com.bobodroid.myapplication.models.datamodels.roomDb.YenSellDatabaseDao
 import com.bobodroid.myapplication.models.datamodels.websocket.WebSocketClient
 import dagger.Module
 import dagger.Provides
@@ -30,9 +26,8 @@ object AppModule {
     fun provideInvestRepository(
         dollarRepository: DollarRepository,
         yenRepository: YenRepository,
-        wonRepository: WonRepository
     ): InvestRepository {
-        return InvestRepository(dollarRepository, yenRepository, wonRepository)
+        return InvestRepository(dollarRepository, yenRepository)
     }
 
     @Singleton

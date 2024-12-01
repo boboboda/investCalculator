@@ -7,7 +7,6 @@ import androidx.lifecycle.viewModelScope
 import com.bobodroid.myapplication.MainActivity.Companion.TAG
 import com.bobodroid.myapplication.extensions.toBigDecimalWon
 import com.bobodroid.myapplication.models.datamodels.roomDb.DrBuyRecord
-import com.bobodroid.myapplication.models.datamodels.roomDb.DrSellRecord
 import com.bobodroid.myapplication.models.datamodels.roomDb.ExchangeRate
 import com.bobodroid.myapplication.models.datamodels.repository.InvestRepository
 import com.bobodroid.myapplication.models.datamodels.repository.Notice
@@ -189,36 +188,6 @@ class DollarViewModel @Inject constructor(
 
 
 
-    fun buyDollarAdd(groupName: String) {
-        viewModelScope.launch {
-            exchangeMoney.emit("${lastValue(moneyInputFlow.value, rateInputFlow.value)}")
-            Log.d(TAG("DollarViewModel", "buyDollarAdd"), "매수 달러 ${exchangeMoney.value}")
-            investRepository
-                .addDollarBuyRecord(
-                    DrBuyRecord(
-                        date = dateFlow.value,
-                        money = moneyInputFlow.value,
-                        rate = rateInputFlow.value,
-                        buyRate = rateInputFlow.value,
-                        sellRate = "",
-                        sellProfit = "",
-                        exchangeMoney = "${exchangeMoney.value}",
-                        recordColor = sellRecordActionFlow.value,
-                        profit = expectSellValue(),
-                        expectProfit = expectSellValue(),
-                        buyDrCategoryName = groupName,
-                        buyDrMemo = ""
-                    )
-                )
-
-            // 데이터 값 초기화
-            _buyRecordFlow.collectLatest {
-                moneyInputFlow.emit("")
-                rateInputFlow.emit("")
-            }
-
-        }
-    }
 
 
 
@@ -232,46 +201,18 @@ class DollarViewModel @Inject constructor(
 
 
     //매도 시 컬러색 변경 예상 수익 초기화
-    fun updateBuyRecord(drBuyrecord: DrBuyRecord) {
-        viewModelScope.launch {
-            investRepository.updateDollarBuyRecord(
-                DrBuyRecord(
-                    id = drBuyrecord.id,
-                    date = drBuyrecord.date,
-                    sellDate = sellDateFlow.value,
-                    rate = drBuyrecord.rate,
-                    buyRate = drBuyrecord.buyRate,
-                    sellRate = sellRateFlow.value,
-                    money = drBuyrecord.money,
-                    exchangeMoney = drBuyrecord.exchangeMoney,
-                    profit = drBuyrecord.profit,
-                    expectProfit = drBuyrecord.profit,
-                    sellProfit = sellDollarFlow.value,
-                    recordColor = true,
-                    buyDrMemo = drBuyrecord.buyDrMemo,
-                    buyDrCategoryName = drBuyrecord.buyDrCategoryName
-                )
-            )
-        }
-    }
 
 
-    fun updateRecordGroup(drBuyrecord: DrBuyRecord, groupName: String) {
-        viewModelScope.launch {
-
-            val updateData = drBuyrecord.copy(buyDrCategoryName = groupName)
-
-            investRepository.updateDollarBuyRecord(updateData)
-        }
-    }
 
 
-    fun sellCalculation() {
-        viewModelScope.launch {
-            sellDollarFlow.emit(sellValue().toString())
-            getPercentFlow.emit(sellPercent())
-        }
-    }
+
+
+//    fun sellCalculation() {
+//        viewModelScope.launch {
+//            sellDollarFlow.emit(sellValue().toString())
+//            getPercentFlow.emit(sellPercent())
+//        }
+//    }
 
     fun resetValue() {
         viewModelScope.launch {
@@ -328,43 +269,19 @@ class DollarViewModel @Inject constructor(
 
     }
 
-    fun buyDrMemoUpdate(updateData: DrBuyRecord, result: (Boolean) -> Unit) {
-
-        var success: Boolean = false
-        viewModelScope.launch {
-            val successValue = investRepository.updateDollarBuyRecord(updateData)
-
-            Log.d(TAG("DollarViewModel", "buyDrMemoUpdate"), "업데이트 성공 ${successValue}")
-            success = if (successValue > 0) true else false
-            result(success)
-
-        }
-    }
 
 
+//    fun drCloudLoad(buyRecord: List<DrBuyRecord>, sellRecord: List<DrSellRecord>) {
+//
+//        viewModelScope.launch {
+//
+//            investRepository.addDollarBuyRecords(buyRecord)
+//
+//            investRepository.addDollarSellRecords(sellRecord)
+//        }
+//
+//    }
 
-    fun drCloudLoad(buyRecord: List<DrBuyRecord>, sellRecord: List<DrSellRecord>) {
-
-        viewModelScope.launch {
-
-            investRepository.addDollarBuyRecords(buyRecord)
-
-            investRepository.addDollarSellRecords(sellRecord)
-        }
-
-    }
-
-    fun convertFirebaseUuidToKotlinUuid(firebaseUuid: List<Map<String, String>>): UUID {
-        val mostSignificantBits = firebaseUuid[0]["mostSignificantBits"]
-        val leastSignificantBits = firebaseUuid[0]["leastSignificantBits"]
-        return UUID.fromString(
-            String.format(
-                "%016x-%016x",
-                mostSignificantBits,
-                leastSignificantBits
-            )
-        )
-    }
 
 
 

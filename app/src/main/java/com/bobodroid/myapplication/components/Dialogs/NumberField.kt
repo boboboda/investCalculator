@@ -144,7 +144,7 @@ fun BottomSheetNumberField(
     onClicked: () -> Unit
 ) {
 
-   val formatTile = if(title == "") {
+   val formatTitle = if(title == "") {
        "매수금(원)을 입력해주세요"
    } else {
        title.toLong().toLongWon()
@@ -163,7 +163,7 @@ fun BottomSheetNumberField(
         onClick = onClicked
     ) {
         Text(
-            text = formatTile,
+            text = formatTitle,
             fontSize = 18.sp,
             modifier = Modifier
                 .padding(3.dp, top = 10.dp)

@@ -6,6 +6,7 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
+import androidx.compose.foundation.lazy.grid.LazyGridState
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -29,6 +30,7 @@ import com.bobodroid.myapplication.ui.theme.ActionButtonBgColor
 import com.bobodroid.myapplication.ui.theme.DollarColor
 import java.text.NumberFormat
 import androidx.compose.material.SnackbarHostState
+import androidx.compose.ui.unit.Dp
 import com.bobodroid.myapplication.components.AutoSizeText
 import kotlinx.coroutines.launch
 import java.util.*
@@ -39,7 +41,6 @@ fun PopupNumberView(
     onClicked: ((String) -> Unit)?,
     limitNumberLength: Int,
 ) {
-
 
     val buttons: List<String> = listOf(
         "1", "2", "3", "4", "5",
@@ -61,134 +62,138 @@ fun PopupNumberView(
         colors = CardDefaults.cardColors(containerColor = DollarColor)
     ) {
 
-        Row(modifier = Modifier
-            .fillMaxWidth()
-            .wrapContentHeight()) {
-            SnackbarHost(
-                hostState = snackBarHostState, modifier = Modifier,
-                snackbar = { snackbarData ->
+        BoxWithConstraints(
+            modifier = Modifier.fillMaxSize()
+        ) {
+
+            val availableHeight = maxHeight
+            val availableWidth = maxWidth
+
+            val horizontalSize = (availableWidth - (8.dp * 3)) / 4
+            val verticalSize = (availableHeight - (8.dp * 4)) / 5
 
 
-                    androidx.compose.material.Card(
-                        shape = RoundedCornerShape(8.dp),
-                        border = BorderStroke(2.dp, Color.Black),
-                        modifier = Modifier
-                            .padding(10.dp)
-                            .fillMaxWidth()
-                    ) {
-                        Row(
+            val itemSize = minOf(horizontalSize, verticalSize)
+
+            Row(modifier = Modifier
+                .fillMaxWidth()
+                .wrapContentHeight()) {
+                SnackbarHost(
+                    hostState = snackBarHostState, modifier = Modifier,
+                    snackbar = { snackbarData ->
+
+
+                        androidx.compose.material.Card(
+                            shape = RoundedCornerShape(8.dp),
+                            border = BorderStroke(2.dp, Color.Black),
                             modifier = Modifier
+                                .padding(10.dp)
                                 .fillMaxWidth()
-                                .padding(8.dp)
-                                .padding(start = 10.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.Start
                         ) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(8.dp)
+                                    .padding(start = 10.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.Start
+                            ) {
 
-                            Text(
-                                text = snackbarData.message,
-                                fontSize = 15.sp,
-                                lineHeight = 20.sp,
-                                fontWeight = FontWeight.Bold
-                            )
-
-                            Spacer(modifier = Modifier.weight(1f))
-
-                            Card(
-                                modifier = Modifier.wrapContentSize(),
-                                onClick = {
-                                    snackBarHostState.currentSnackbarData?.dismiss()
-                                }) {
-                                androidx.compose.material.Text(
-                                    modifier = Modifier.padding(8.dp),
-                                    text = "닫기"
+                                Text(
+                                    text = snackbarData.message,
+                                    fontSize = 15.sp,
+                                    lineHeight = 20.sp,
+                                    fontWeight = FontWeight.Bold
                                 )
+
+                                Spacer(modifier = Modifier.weight(1f))
+
+                                Card(
+                                    modifier = Modifier.wrapContentSize(),
+                                    onClick = {
+                                        snackBarHostState.currentSnackbarData?.dismiss()
+                                    }) {
+                                    androidx.compose.material.Text(
+                                        modifier = Modifier.padding(8.dp),
+                                        text = "닫기"
+                                    )
+                                }
                             }
                         }
+                    })
+            }
+
+
+
+            LazyVerticalGrid(
+                modifier = Modifier.padding(horizontal = 15.dp),
+                columns = GridCells.Fixed(5),
+                userScrollEnabled = false,
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+                content = {
+
+                    item(span = { GridItemSpan(maxLineSpan) }) {
+                        Row(
+                            verticalAlignment = Alignment.Bottom,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End)) {
+                            Text(
+                                text = "$inputMoney",
+                                fontSize = 40.sp,
+                                fontWeight = FontWeight.Bold,
+                                textAlign = TextAlign.Center,
+                                lineHeight = 45.sp,
+                                maxLines = 1,
+                                color = Color.Black
+                            )
+                        }
                     }
-                })
-        }
 
+                    item(span = {
+                        GridItemSpan(2)
+                    }) {
+                        ActionButton(
+                            itemSize,
+                            action = CalculateAction.AllClear,
+                            onClicked = {
+                                UserInput = ""})
+                    }
 
+                    item(){
+                        ActionButton(
+                            itemSize,
+                            action = CalculateAction.Del,
+                            onClicked = {
+                                UserInput = if(UserInput.length == 1) "0" else UserInput.dropLast(1)
+                            })
+                    }
 
-        LazyVerticalGrid(
-            modifier = Modifier.padding(15.dp),
-            columns = GridCells.Fixed(5),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
-            content = {
-                
-                item(span = { GridItemSpan(maxLineSpan) }) {
-                    Row(
-                        verticalAlignment = Alignment.Bottom,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End)) {
-                        Text(
-                            text = "$inputMoney",
-                            fontSize = 40.sp,
-                            fontWeight = FontWeight.Bold,
-                            textAlign = TextAlign.Center,
-                            lineHeight = 45.sp,
-                            maxLines = 1,
-                            color = Color.Black
+                    item(span = {
+                        GridItemSpan(2)
+                    }) {
+                        ActionButton(
+                            itemSize,
+                            action = CalculateAction.Enter,
+                            onClicked = { if (UserInput.isNotEmpty())
+                            { onClicked?.invoke(UserInput)
+                            } else {return@ActionButton }
+                            }
+
                         )
                     }
 
 
-                }
+                    items(buttons) { aButtons ->
+                        NumberButton(
+                            itemSize,
+                            aButtons,
+                            onClicked = {
+                                scope.launch {
+                                    if(UserInput.length >= limitNumberLength) {
 
-                item(span = {
-                    GridItemSpan(2)
-                }) {
-                    ActionButton(
-                        action = CalculateAction.AllClear,
-                        onClicked = {
-                        UserInput = ""})
-                }
-
-                item(){
-                    ActionButton(
-                        action = CalculateAction.Del,
-                        onClicked = {
-                            UserInput = if(UserInput.length == 1) "0" else UserInput.dropLast(1)
-                        })
-                }
-
-                item(span = {
-                    GridItemSpan(2)
-                }) {
-                    ActionButton(action = CalculateAction.Enter,
-                        onClicked = { if (UserInput.isNotEmpty())
-                        { onClicked?.invoke(UserInput)
-                        } else {return@ActionButton }
-                        }
-
-                    )
-                }
-
-
-                items(buttons) { aButtons ->
-                    NumberButton(aButtons, onClicked = {
-
-
-                        scope.launch {
-                            if(UserInput.length >= limitNumberLength) {
-
-                                if(snackBarHostState.currentSnackbarData == null) {
-                                    snackBarHostState.showSnackbar(
-                                        "너무 큰 수를 입력하셨습니다.\n ${limitNumberLength}자리 이하 숫자까지만 가능합니다.",
-                                        actionLabel = "닫기", SnackbarDuration.Short
-                                    )
-                                    UserInput = ""
-                                } else {
-                                    return@launch
-                                }
-                            } else {
-                                if(UserInput == "")
-                                {
-                                    if(aButtons == "0") {
                                         if(snackBarHostState.currentSnackbarData == null) {
                                             snackBarHostState.showSnackbar(
-                                                "0원은 입력할 수 없습니다.",
+                                                "너무 큰 수를 입력하셨습니다.\n ${limitNumberLength}자리 이하 숫자까지만 가능합니다.",
                                                 actionLabel = "닫기", SnackbarDuration.Short
                                             )
                                             UserInput = ""
@@ -196,134 +201,164 @@ fun PopupNumberView(
                                             return@launch
                                         }
                                     } else {
-                                        UserInput += aButtons
+                                        if(UserInput == "")
+                                        {
+                                            if(aButtons == "0") {
+                                                if(snackBarHostState.currentSnackbarData == null) {
+                                                    snackBarHostState.showSnackbar(
+                                                        "0원은 입력할 수 없습니다.",
+                                                        actionLabel = "닫기", SnackbarDuration.Short
+                                                    )
+                                                    UserInput = ""
+                                                } else {
+                                                    return@launch
+                                                }
+                                            } else {
+                                                UserInput += aButtons
+                                            }
+
+                                        } else UserInput += aButtons
                                     }
-
-                                } else UserInput += aButtons
-                            }
-                        }
-                    }) //숫자 버튼
-                }
-
-                item(span = {
-                    GridItemSpan(1)
-                }) {
-                    NumberButtonBottom(number = "99", onClicked = {
-
-                        scope.launch {
-                            if(UserInput.length >= limitNumberLength) {
-
-                                if(snackBarHostState.currentSnackbarData == null) {
-
-                                    snackBarHostState.showSnackbar(
-                                        "너무 큰 수를 입력하셨습니다.\n ${limitNumberLength}자리 이하 숫자까지만 가능합니다.",
-                                        actionLabel = "닫기", SnackbarDuration.Short
-                                    )
-                                    UserInput = ""
-                                } else {
-                                    return@launch
                                 }
-                            } else {
-                                UserInput += "99"
-                            }
-                        }
-
-
-
-                    }, 20)
-                }
-
-                item(span = {
-                    GridItemSpan(1)
-                }) {
-                    NumberButtonBottom(number = "00", onClicked = {
-
-                        scope.launch {
-                            if(UserInput.length >= limitNumberLength) {
-
-                                if(snackBarHostState.currentSnackbarData == null) {
-                                    snackBarHostState.showSnackbar(
-                                        "너무 큰 수를 입력하셨습니다.\n ${limitNumberLength}자리 이하 숫자까지만 가능합니다.",
-                                        actionLabel = "닫기", SnackbarDuration.Short
-                                    )
-                                    UserInput = ""
-                                } else {
-                                    return@launch
-                                }
-                            } else {
-
-                                    if(UserInput == "") {
-                                        if(snackBarHostState.currentSnackbarData == null) {
-                                            snackBarHostState.showSnackbar(
-                                                "0원은 입력할 수 없습니다.",
-                                                actionLabel = "닫기", SnackbarDuration.Short
-                                            )
-                                            UserInput = ""
-                                        } else {
-                                            return@launch
-                                        }
-                                    } else {
-                                        UserInput += "00"
-                                    }
-                            }
-                        }
-                    }, 20)
-                }
-
-                item(span = {
-                    GridItemSpan(3)
-                }) {
-                    NumberButtonBottom(number = "000", onClicked = {
-
-                        scope.launch {
-                            if(UserInput.length >= limitNumberLength) {
-
-                                if(snackBarHostState.currentSnackbarData == null) {
-                                    snackBarHostState.showSnackbar(
-                                        "너무 큰 수를 입력하셨습니다.\n ${limitNumberLength}자리 이하 숫자까지만 가능합니다.",
-                                        actionLabel = "닫기", SnackbarDuration.Short
-                                    )
-                                    UserInput = ""
-                                } else {
-                                    return@launch
-                                }
-                            } else {
-
-                                if(UserInput == "") {
-                                    if(snackBarHostState.currentSnackbarData == null) {
-                                        snackBarHostState.showSnackbar(
-                                            "0원은 입력할 수 없습니다.",
-                                            actionLabel = "닫기", SnackbarDuration.Short
-                                        )
-                                        UserInput = ""
-                                    } else {
-                                        return@launch
-                                    }
-                                } else {
-                                    UserInput += "000"
-                                }
-                            }
-                        }
-
-
-                    }, 20)
-                }
-
-
-                item(span = {
-                    GridItemSpan(5)
-                }) {
-                    Row(modifier = Modifier.height(5.dp)) {
+                            }) //숫자 버튼
                     }
-                }
+
+                    item(span = {
+                        GridItemSpan(1)
+                    }) {
+                        NumberButtonBottom(
+                            itemSize,
+                            number = "99", onClicked = {
+
+                                scope.launch {
+                                    if(UserInput.length >= limitNumberLength) {
+
+                                        if(snackBarHostState.currentSnackbarData == null) {
+
+                                            snackBarHostState.showSnackbar(
+                                                "너무 큰 수를 입력하셨습니다.\n ${limitNumberLength}자리 이하 숫자까지만 가능합니다.",
+                                                actionLabel = "닫기", SnackbarDuration.Short
+                                            )
+                                            UserInput = ""
+                                        } else {
+                                            return@launch
+                                        }
+                                    } else {
+                                        UserInput += "99"
+                                    }
+                                }
 
 
-            } )}
+
+                            }, 20)
+                    }
+
+                    item(span = {
+                        GridItemSpan(1)
+                    }) {
+                        NumberButtonBottom(
+                            itemSize,
+                            number = "00", onClicked = {
+
+                                scope.launch {
+                                    if(UserInput.length >= limitNumberLength) {
+
+                                        if(snackBarHostState.currentSnackbarData == null) {
+                                            snackBarHostState.showSnackbar(
+                                                "너무 큰 수를 입력하셨습니다.\n ${limitNumberLength}자리 이하 숫자까지만 가능합니다.",
+                                                actionLabel = "닫기", SnackbarDuration.Short
+                                            )
+                                            UserInput = ""
+                                        } else {
+                                            return@launch
+                                        }
+                                    } else {
+
+                                        if(UserInput == "") {
+                                            if(snackBarHostState.currentSnackbarData == null) {
+                                                snackBarHostState.showSnackbar(
+                                                    "0원은 입력할 수 없습니다.",
+                                                    actionLabel = "닫기", SnackbarDuration.Short
+                                                )
+                                                UserInput = ""
+                                            } else {
+                                                return@launch
+                                            }
+                                        } else {
+                                            UserInput += "00"
+                                        }
+                                    }
+                                }
+                            }, 20)
+                    }
+
+                    item(span = {
+                        GridItemSpan(3)
+                    }) {
+                        NumberButtonBottom(
+                            itemSize,
+                            number = "000", onClicked = {
+
+                                scope.launch {
+                                    if(UserInput.length >= limitNumberLength) {
+
+                                        if(snackBarHostState.currentSnackbarData == null) {
+                                            snackBarHostState.showSnackbar(
+                                                "너무 큰 수를 입력하셨습니다.\n ${limitNumberLength}자리 이하 숫자까지만 가능합니다.",
+                                                actionLabel = "닫기", SnackbarDuration.Short
+                                            )
+                                            UserInput = ""
+                                        } else {
+                                            return@launch
+                                        }
+                                    } else {
+
+                                        if(UserInput == "") {
+                                            if(snackBarHostState.currentSnackbarData == null) {
+                                                snackBarHostState.showSnackbar(
+                                                    "0원은 입력할 수 없습니다.",
+                                                    actionLabel = "닫기", SnackbarDuration.Short
+                                                )
+                                                UserInput = ""
+                                            } else {
+                                                return@launch
+                                            }
+                                        } else {
+                                            UserInput += "000"
+                                        }
+                                    }
+                                }
+
+
+                            }, 20)
+                    }
+
+
+                    item(span = {
+                        GridItemSpan(5)
+                    }) {
+                        Row(modifier = Modifier.height(5.dp)) {
+                        }
+                    }
+
+
+                } )
+
+
+        }
+    }
+
+
+
+
+
+
 }
 
 @Composable
-fun ActionButton(action: CalculateAction, onClicked: (() -> Unit)? = null)  {
+fun ActionButton(itemSize: Dp, action: CalculateAction, onClicked: (() -> Unit)? = null)  {
     Card(
+        modifier = Modifier.size(itemSize),
         colors = CardDefaults.cardColors(
             containerColor = ActionButtonBgColor
         ),
@@ -340,7 +375,7 @@ fun ActionButton(action: CalculateAction, onClicked: (() -> Unit)? = null)  {
                 modifier = Modifier
                     .padding(16.dp),
                 maxLines = 1,
-                minFontSize = 15.sp,
+                minFontSize = 12.sp,
                 color = Color.Black)
         }
 
@@ -349,8 +384,12 @@ fun ActionButton(action: CalculateAction, onClicked: (() -> Unit)? = null)  {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun NumberButton(number: String, onClicked: () -> Unit) {
+fun NumberButton(
+    itemSize: Dp,
+    number: String,
+    onClicked: () -> Unit) {
     Card(
+        modifier = Modifier.size(itemSize),
         onClick = onClicked
     ) {
         Box(modifier = Modifier.fillMaxSize(),
@@ -362,15 +401,19 @@ fun NumberButton(number: String, onClicked: () -> Unit) {
             modifier = Modifier
                 .padding(16.dp),
             maxLines = 1,
-            minFontSize = 15.sp,
+            minFontSize = 12.sp,
             color = Color.Black)
         }
     }
 }
 
 @Composable
-fun NumberButtonBottom(number: String, onClicked: () -> Unit, fontSize: Int) {
+fun NumberButtonBottom(
+    itemSize: Dp,
+    number: String, onClicked: () -> Unit, fontSize: Int) {
     Card(
+        modifier = Modifier
+            .size(itemSize),
         onClick = onClicked
     ) {
         Box(
@@ -395,10 +438,6 @@ fun NumberButtonBottom(number: String, onClicked: () -> Unit, fontSize: Int) {
 @Composable
 fun FloatPopupNumberView(onClicked: ((String) -> Unit)?) {
     //환율 입력하는 뷰
-    var won = NumberFormat.getInstance(Locale.KOREA)
-
-    val actions: Array<CalculateAction> = CalculateAction.values()
-
 
     val buttons: List<String> = listOf(
         "1", "2", "3", "4", "5",
@@ -414,213 +453,187 @@ fun FloatPopupNumberView(onClicked: ((String) -> Unit)?) {
     var inputMoney = if(UserInput == "") "" else "${UserInput}"
 
 
-
-
-
-    Card(modifier = Modifier
-        .padding(15.dp),
+    Card(modifier = Modifier.padding(15.dp),
         colors = CardDefaults.cardColors(containerColor = DollarColor)
     ) {
-        Row(modifier = Modifier
-            .fillMaxWidth()
-            .wrapContentHeight()) {
-            SnackbarHost(
-                hostState = snackBarHostState, modifier = Modifier,
-                snackbar = { snackbarData ->
+
+        BoxWithConstraints(
+            modifier = Modifier.fillMaxSize()
+        ) {
+
+            val availableHeight = maxHeight
+            val availableWidth = maxWidth
+
+            val horizontalSize = (availableWidth - (8.dp * 3)) / 4
+            val verticalSize = (availableHeight - (8.dp * 4)) / 5
+
+            // 더 작은 값을 선택하여 정사각형 유지
+            val itemSize = minOf(horizontalSize, verticalSize)
+
+            Row(modifier = Modifier
+                .fillMaxWidth()
+                .wrapContentHeight()) {
+                SnackbarHost(
+                    hostState = snackBarHostState, modifier = Modifier,
+                    snackbar = { snackbarData ->
 
 
-                    androidx.compose.material.Card(
-                        shape = RoundedCornerShape(8.dp),
-                        border = BorderStroke(2.dp, Color.Black),
-                        modifier = Modifier
-                            .padding(10.dp)
-                            .fillMaxWidth()
-                    ) {
-                        Row(
+                        androidx.compose.material.Card(
+                            shape = RoundedCornerShape(8.dp),
+                            border = BorderStroke(2.dp, Color.Black),
                             modifier = Modifier
+                                .padding(10.dp)
                                 .fillMaxWidth()
-                                .padding(8.dp)
-                                .padding(start = 10.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.Start
                         ) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(8.dp)
+                                    .padding(start = 10.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.Start
+                            ) {
 
-                            Text(
-                                text = snackbarData.message,
-                                fontSize = 15.sp,
-                                lineHeight = 20.sp,
-                                fontWeight = FontWeight.Bold
-                            )
-
-                            Spacer(modifier = Modifier.weight(1f))
-
-                            Card(
-                                modifier = Modifier.wrapContentSize(),
-                                onClick = {
-                                    snackBarHostState.currentSnackbarData?.dismiss()
-                                }) {
-                                androidx.compose.material.Text(
-                                    modifier = Modifier.padding(8.dp),
-                                    text = "닫기"
+                                Text(
+                                    text = snackbarData.message,
+                                    fontSize = 15.sp,
+                                    lineHeight = 20.sp,
+                                    fontWeight = FontWeight.Bold
                                 )
+
+                                Spacer(modifier = Modifier.weight(1f))
+
+                                Card(
+                                    modifier = Modifier.wrapContentSize(),
+                                    onClick = {
+                                        snackBarHostState.currentSnackbarData?.dismiss()
+                                    }) {
+                                    androidx.compose.material.Text(
+                                        modifier = Modifier.padding(8.dp),
+                                        text = "닫기"
+                                    )
+                                }
                             }
                         }
+                    })
+            }
+
+            LazyVerticalGrid(
+                modifier = Modifier.padding(horizontal = 15.dp),
+                columns = GridCells.Fixed(4),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+                content = {
+
+                    item(span = { GridItemSpan(maxLineSpan) }) {
+
+
+                        Row(
+                            verticalAlignment = Alignment.Bottom,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End)) {
+
+                            Text(
+                                text = "$inputMoney",
+                                fontSize = 40.sp,
+                                fontWeight = FontWeight.Bold,
+                                textAlign = TextAlign.Center,
+                                lineHeight = 45.sp,
+                                maxLines = 1,
+                                color = Color.Black
+                            )
+                        }
+
+
                     }
-                })
-        }
 
-        LazyVerticalGrid(modifier = Modifier.padding(15.dp),
-            columns = GridCells.Fixed(4),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
-            content = {
+                    item(span = {
+                        GridItemSpan(1)
+                    }) {
+                        FloatActionButton(
+                            itemSize,
+                            action = CalculateAction.AllClear,
+                            onClicked = {
+                                UserInput = ""
+                            })
+                    }
 
-                item(span = { GridItemSpan(maxLineSpan) }) {
+                    item(span = {
+                        GridItemSpan(1)
+                    }){
+                        FloatActionButton(
+                            itemSize,
+                            action = CalculateAction.Del,
+                            onClicked = {
+                                UserInput = if(UserInput.toString().length == 1) "0" else UserInput.dropLast(1)
+                            })
+                    }
 
 
-                    Row(
-                        verticalAlignment = Alignment.Bottom,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End)) {
+                    item(span = {
+                        GridItemSpan(2)
+                    }) {
+                        FloatActionButton(
+                            itemSize,
+                            action = CalculateAction.Enter,
+                            onClicked = { if (UserInput.isNotEmpty())
+                            { onClicked?.invoke(UserInput)
+                            } else {return@FloatActionButton }
+                            }
 
-                        Text(
-                            text = "$inputMoney",
-                            fontSize = 40.sp,
-                            fontWeight = FontWeight.Bold,
-                            textAlign = TextAlign.Center,
-                            lineHeight = 45.sp,
-                            maxLines = 1,
-                            color = Color.Black
                         )
                     }
 
+                    items(buttons) { aButtons ->
+                        FloatNumberButton(
+                            itemSize,
+                            aButtons, onClicked = {
 
-                }
+                            scope.launch {
+                                if(UserInput.length >= 10) {
 
-                item(span = {
-                    GridItemSpan(1)
-                }) {
-                    FloatActionButton(
-                        action = CalculateAction.AllClear,
-                        onClicked = {
-                            UserInput = ""
-                        })
-                }
-
-                item(span = {
-                    GridItemSpan(1)
-                }){
-                    FloatActionButton(
-                        action = CalculateAction.Del,
-                        onClicked = {
-                            UserInput = if(UserInput.toString().length == 1) "0" else UserInput.dropLast(1)
-                        })
-                }
-
-
-                item(span = {
-                    GridItemSpan(2)
-                }) {
-                    FloatActionButton(action = CalculateAction.Enter,
-                        onClicked = { if (UserInput.isNotEmpty())
-                        { onClicked?.invoke(UserInput)
-                        } else {return@FloatActionButton }
-                        }
-
-                    )
-                }
-
-                items(buttons) { aButtons ->
-                    FloatNumberButton(aButtons, onClicked = {
-
-                        scope.launch {
-                            if(UserInput.length >= 10) {
-
-                               if(snackBarHostState.currentSnackbarData == null) {
-                                   snackBarHostState.showSnackbar(
-                                       "너무 큰 수를 입력하셨습니다.\n 열자리 이하 숫자까지만 가능합니다.",
-                                       actionLabel = "닫기", SnackbarDuration.Short
-                                   )
-                                   UserInput = ""
-                               } else {
-                                   return@launch
-                               }
-                            } else {
-                                if(UserInput == "")
-                                {
-                                    if(aButtons == "0") {
-                                        if(snackBarHostState.currentSnackbarData == null) {
-                                            snackBarHostState.showSnackbar(
-                                                "0원은 입력할 수 없습니다.",
-                                                actionLabel = "닫기", SnackbarDuration.Short
-                                            )
-                                            UserInput = ""
-                                        } else {
-                                            return@launch
-                                        }
-                                    } else {
-                                        UserInput += aButtons
-                                    }
-                                } else UserInput += aButtons
-                            }
-                        }
-
-
-
-
-                    }) //숫자 버튼
-                }
-
-                item(span = {
-                    GridItemSpan(1)
-                }) {
-                    NumberButtonBottom(number = "00", onClicked = {
-
-                        scope.launch {
-                            if(UserInput.length >= 10) {
-                                if(snackBarHostState.currentSnackbarData == null) {
-                                    snackBarHostState.showSnackbar(
-                                        "너무 큰 수를 입력하셨습니다.\n 열자리 이하 숫자까지만 가능합니다.",
-                                        actionLabel = "닫기", SnackbarDuration.Short
-                                    )
-                                    UserInput = ""
-                                } else {
-                                    return@launch
-                                }
-                            } else {
-                                if(UserInput == "")
-                                {
                                     if(snackBarHostState.currentSnackbarData == null) {
                                         snackBarHostState.showSnackbar(
-                                            "0원은 입력할 수 없습니다.",
+                                            "너무 큰 수를 입력하셨습니다.\n 열자리 이하 숫자까지만 가능합니다.",
                                             actionLabel = "닫기", SnackbarDuration.Short
                                         )
                                         UserInput = ""
                                     } else {
                                         return@launch
                                     }
-
-                                } else UserInput += "00"
-                            }
-                        }
-                    }, 30)
-                }
-
-                item(span = {
-                    GridItemSpan(1)
-                }) {
-                    FloatActionButton(action = CalculateAction.DOT,
-                        onClicked = {
-
-                            scope.launch {
-
-
-                                if(hasTwoOrMoreDots(UserInput)) {
-                                    snackBarHostState.showSnackbar(
-                                        "소수점은 2개 이상 찍을 수 없습니다.",
-                                        actionLabel = "닫기", SnackbarDuration.Short
-                                    )
-                                    UserInput = ""
                                 } else {
+                                    if(UserInput == "")
+                                    {
+                                        if(aButtons == "0") {
+                                            if(snackBarHostState.currentSnackbarData == null) {
+                                                snackBarHostState.showSnackbar(
+                                                    "0원은 입력할 수 없습니다.",
+                                                    actionLabel = "닫기", SnackbarDuration.Short
+                                                )
+                                                UserInput = ""
+                                            } else {
+                                                return@launch
+                                            }
+                                        } else {
+                                            UserInput += aButtons
+                                        }
+                                    } else UserInput += aButtons
+                                }
+                            }
+
+
+
+
+                        }) //숫자 버튼
+                    }
+
+                    item(span = {
+                        GridItemSpan(1)
+                    }) {
+                        NumberButtonBottom(
+                            itemSize,
+                            number = "00", onClicked = {
+
+                                scope.launch {
                                     if(UserInput.length >= 10) {
                                         if(snackBarHostState.currentSnackbarData == null) {
                                             snackBarHostState.showSnackbar(
@@ -636,7 +649,7 @@ fun FloatPopupNumberView(onClicked: ((String) -> Unit)?) {
                                         {
                                             if(snackBarHostState.currentSnackbarData == null) {
                                                 snackBarHostState.showSnackbar(
-                                                    "소수점을 먼저 입력할 수 없습니다.",
+                                                    "0원은 입력할 수 없습니다.",
                                                     actionLabel = "닫기", SnackbarDuration.Short
                                                 )
                                                 UserInput = ""
@@ -644,32 +657,90 @@ fun FloatPopupNumberView(onClicked: ((String) -> Unit)?) {
                                                 return@launch
                                             }
 
-                                        } else UserInput += "."
+                                        } else UserInput += "00"
                                     }
                                 }
-                            }
+                            }, 30)
+                    }
+
+                    item(span = {
+                        GridItemSpan(1)
+                    }) {
+                        FloatActionButton(
+                            itemSize,
+                            action = CalculateAction.DOT,
+                            onClicked = {
+
+                                scope.launch {
+
+
+                                    if(hasTwoOrMoreDots(UserInput)) {
+                                        snackBarHostState.showSnackbar(
+                                            "소수점은 2개 이상 찍을 수 없습니다.",
+                                            actionLabel = "닫기", SnackbarDuration.Short
+                                        )
+                                        UserInput = ""
+                                    } else {
+                                        if(UserInput.length >= 10) {
+                                            if(snackBarHostState.currentSnackbarData == null) {
+                                                snackBarHostState.showSnackbar(
+                                                    "너무 큰 수를 입력하셨습니다.\n 열자리 이하 숫자까지만 가능합니다.",
+                                                    actionLabel = "닫기", SnackbarDuration.Short
+                                                )
+                                                UserInput = ""
+                                            } else {
+                                                return@launch
+                                            }
+                                        } else {
+                                            if(UserInput == "")
+                                            {
+                                                if(snackBarHostState.currentSnackbarData == null) {
+                                                    snackBarHostState.showSnackbar(
+                                                        "소수점을 먼저 입력할 수 없습니다.",
+                                                        actionLabel = "닫기", SnackbarDuration.Short
+                                                    )
+                                                    UserInput = ""
+                                                } else {
+                                                    return@launch
+                                                }
+
+                                            } else UserInput += "."
+                                        }
+                                    }
+                                }
                             })
 
-                }
-
-
-                item(span = {
-                    GridItemSpan(5)
-                }) {
-                    Row(modifier = Modifier.height(5.dp)) {
                     }
-                }
 
 
-            } )
+                    item(span = {
+                        GridItemSpan(5)
+                    }) {
+                        Row(modifier = Modifier.height(5.dp)) {
+                        }
+                    }
 
+
+                } )
+
+
+        }
 
     }
+
+
+
+
+
+
 }
 
 @Composable
-fun FloatActionButton(action: CalculateAction, onClicked: (() -> Unit)? = null)  {
+fun FloatActionButton(
+    itemSize: Dp,
+    action: CalculateAction, onClicked: (() -> Unit)? = null)  {
     Card(
+        modifier = Modifier.size(itemSize),
         colors = CardDefaults.cardColors(
             containerColor = ActionButtonBgColor
         ),
@@ -696,8 +767,11 @@ fun FloatActionButton(action: CalculateAction, onClicked: (() -> Unit)? = null) 
 }
 
 @Composable
-fun FloatNumberButton(number: String, onClicked: () -> Unit) {
+fun FloatNumberButton(
+    itemSize: Dp,
+    number: String, onClicked: () -> Unit) {
     Card(
+        modifier = Modifier.size(itemSize),
         onClick = onClicked
     ) {
         Box(

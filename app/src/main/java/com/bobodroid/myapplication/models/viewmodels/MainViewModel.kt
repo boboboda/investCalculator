@@ -431,13 +431,19 @@ class MainViewModel @Inject constructor(
 
 }
 
+val time = Calendar.getInstance().time
+
+val formatter = SimpleDateFormat("yyyy-MM-dd")
+
+val today = formatter.format(time)
+
 
     // 메인 화면의 핵심 상태
 data class MainUiState(
-    val selectedCurrencyType: CurrencyType = CurrencyType.USD,
-    val selectedDate: String = "",
-    val recentRate: ExchangeRate = ExchangeRate(),
-    val localUser: LocalUserData = LocalUserData()
+        val selectedCurrencyType: CurrencyType = CurrencyType.USD,
+        val selectedDate: String = today,
+        val recentRate: ExchangeRate = ExchangeRate(),
+        val localUser: LocalUserData = LocalUserData()
 )
 
 // 날짜 검색 관련 상태

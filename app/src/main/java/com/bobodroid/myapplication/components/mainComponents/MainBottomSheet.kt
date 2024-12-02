@@ -79,12 +79,6 @@ fun MainBottomSheet(
 
     val coroutineScope = rememberCoroutineScope()
 
-    val time = Calendar.getInstance().time
-
-    val formatter = SimpleDateFormat("yyyy-MM-dd")
-
-    val today = formatter.format(time)
-
     // 그룹
     var group by remember { mutableStateOf("미지정") }
 
@@ -94,8 +88,6 @@ fun MainBottomSheet(
         CurrencyType.USD-> { recordListUiState.foreignCurrencyRecord.dollarState.groups }
         CurrencyType.JPY-> { recordListUiState.foreignCurrencyRecord.yenState.groups }
     }
-
-    val date = if (mainUiState.selectedDate == "") today else mainUiState.selectedDate
 
     var numberPadPopViewIsVible by remember { mutableStateOf(false) }
 
@@ -314,7 +306,7 @@ fun MainBottomSheet(
                         horizontalArrangement = Arrangement.Center
                     ) {
                         Text(
-                            text = date,
+                            text = mainUiState.selectedDate,
                             color = Color.Black,
                             fontSize = 18.sp,
                             textAlign = TextAlign.Center,
@@ -325,36 +317,36 @@ fun MainBottomSheet(
                 }
             }
 
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(start = 20.dp, bottom = 20.dp, end = 10.dp),
-                horizontalArrangement = Arrangement.spacedBy(
-                    10.dp,
-                    alignment = Alignment.Start
-                ),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-
-                MoneyChButtonView(
-                    mainText = "달러",
-                    currencyType = CurrencyType.USD,
-                    selectedCurrencyType = mainUiState.selectedCurrencyType,
-                    selectAction = {
-                        onEvent(BottomSheetEvent.OnCurrencyTypeChange(it))
-                    })
-
-                Spacer(modifier = Modifier.width(20.dp))
-
-                MoneyChButtonView(
-                    mainText = "엔화",
-                    currencyType = CurrencyType.JPY,
-                    selectedCurrencyType = mainUiState.selectedCurrencyType,
-                    selectAction = {
-                        onEvent(BottomSheetEvent.OnCurrencyTypeChange(it))
-                    })
-
-            }
+//            Row(
+//                modifier = Modifier
+//                    .fillMaxWidth()
+//                    .padding(start = 20.dp, bottom = 20.dp, end = 10.dp),
+//                horizontalArrangement = Arrangement.spacedBy(
+//                    10.dp,
+//                    alignment = Alignment.Start
+//                ),
+//                verticalAlignment = Alignment.CenterVertically
+//            ) {
+//
+//                MoneyChButtonView(
+//                    mainText = "달러",
+//                    currencyType = CurrencyType.USD,
+//                    selectedCurrencyType = mainUiState.selectedCurrencyType,
+//                    selectAction = {
+//                        onEvent(BottomSheetEvent.OnCurrencyTypeChange(it))
+//                    })
+//
+//                Spacer(modifier = Modifier.width(20.dp))
+//
+//                MoneyChButtonView(
+//                    mainText = "엔화",
+//                    currencyType = CurrencyType.JPY,
+//                    selectedCurrencyType = mainUiState.selectedCurrencyType,
+//                    selectAction = {
+//                        onEvent(BottomSheetEvent.OnCurrencyTypeChange(it))
+//                    })
+//
+//            }
 
 
 

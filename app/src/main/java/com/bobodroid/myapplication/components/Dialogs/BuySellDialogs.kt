@@ -62,7 +62,7 @@ fun SellDialog(
 
     var openDialog = remember { mutableStateOf(false) }
 
-    val isBtnActive = if(sellRate == "") true else false
+    val isBtnActive = if(sellRate != "") true else false
 
 
 
@@ -78,10 +78,8 @@ fun SellDialog(
                 )
                 .padding(top = 20.dp, bottom = 20.dp)
                 .padding(horizontal = 20.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
+            horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-
-
                     Card(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -118,8 +116,8 @@ fun SellDialog(
                     RateNumberField(
                         title = "매도환율을 입력해주세요",
                         modifier = Modifier.fillMaxWidth(),
-                        onClicked = { rate ->
-                            sellRate = rate
+                        onClicked = {
+
                     })
 
                     Spacer(modifier = Modifier.height(20.dp))
@@ -136,15 +134,6 @@ fun SellDialog(
 
                                 if(openDialog.value == false) openDialog.value = !openDialog.value else null
 
-//                                mainViewModel.sellCalculate(
-//                                    buyRecord.exchangeMoney ?: "",
-//                                    sellRate,
-//                                    buyRecord.money ?: "",
-//                                    currencyType,
-//                                    sellResult = { sellProfitValue, sellPercentValue ->
-//                                    sellProfit = sellProfitValue
-//                                    sellPercent = sellPercentValue
-//                                } )
                             },
 
                             color = SellButtonColor,

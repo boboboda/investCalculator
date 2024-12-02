@@ -58,7 +58,9 @@ fun PopupNumberView(
 
 
     Card(modifier = Modifier
-        .padding(15.dp),
+        .heightIn(max = 450.dp)
+        .padding(15.dp)
+        .padding(bottom = 25.dp),
         colors = CardDefaults.cardColors(containerColor = DollarColor)
     ) {
 
@@ -453,7 +455,9 @@ fun FloatPopupNumberView(onClicked: ((String) -> Unit)?) {
     var inputMoney = if(UserInput == "") "" else "${UserInput}"
 
 
-    Card(modifier = Modifier.padding(15.dp),
+    Card(modifier = Modifier.heightIn(max = 450.dp)
+        .padding(15.dp)
+        .padding(bottom = 25.dp),
         colors = CardDefaults.cardColors(containerColor = DollarColor)
     ) {
 

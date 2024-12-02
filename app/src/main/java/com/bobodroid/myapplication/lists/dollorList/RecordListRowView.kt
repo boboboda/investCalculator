@@ -106,7 +106,7 @@ fun RecordListRowView(
 
     val mathContext = MathContext(28, RoundingMode.HALF_UP)
 
-    var openDialog by remember { mutableStateOf(false) }
+//    var openDialog by remember { mutableStateOf(false) }
 
     var itemRowVisible by remember { mutableStateOf(false) }
 
@@ -360,7 +360,10 @@ fun RecordListRowView(
                                         }, onClick = {
                                             dropdownExpanded = false
                                             if (!data.recordColor!!) {
-                                                if (!openDialog) openDialog = true else openDialog = false
+//                                                if (!openDialog) openDialog = true else openDialog = false
+
+                                                onEvent(RecordListEvent.RateBottomSheetEvent(data))
+
                                             } else {
                                                 if (snackBarHostState.currentSnackbarData == null) {
                                                     coroutineScope.launch {
@@ -686,16 +689,16 @@ fun RecordListRowView(
                 )
             }
 
-            if (openDialog) {
-                SellDialog(
-                    onDismissRequest = { openDialog = it },
-                    sellProfit = sellProfit,
-                    sellPercent = sellPercent,
-                    onEvent = { event ->
-                        onEvent(RecordListEvent.OnSellDialog(data, event))
-                    }
-                )
-            }
+//            if (openDialog) {
+//                SellDialog(
+//                    onDismissRequest = { openDialog = it },
+//                    sellProfit = sellProfit,
+//                    sellPercent = sellPercent,
+//                    onEvent = { event ->
+//                        onEvent(RecordListEvent.OnSellDialog(data, event))
+//                    }
+//                )
+//            }
 
             if (groupAddDialog) {
                 TextFieldDialog(
@@ -736,9 +739,10 @@ sealed class RecordListEvent {
     data class CancelSellRecord(val id: UUID): RecordListEvent()
     data class UpdateRecordCategory(val record: ForeignCurrencyRecord, val groupName: String): RecordListEvent()
     data class MemoUpdate(val record: ForeignCurrencyRecord, val updateMemo: String): RecordListEvent()
-    data class OnSellDialog(
-        val record: ForeignCurrencyRecord,
-        val event: SellDialogEvent
-    ) : RecordListEvent()
+//    data class OnSellDialog(
+//        val record: ForeignCurrencyRecord,
+//        val event: SellDialogEvent
+//    ) : RecordListEvent()
+    data class RateBottomSheetEvent(val data: ForeignCurrencyRecord): RecordListEvent()
     data class RemoveRecord(val data: ForeignCurrencyRecord): RecordListEvent()
 }

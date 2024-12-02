@@ -25,11 +25,13 @@ import com.bobodroid.myapplication.util.AdMob.AdUseCase
 import com.bobodroid.myapplication.util.result.onError
 import com.bobodroid.myapplication.util.result.onSuccess
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
 import java.math.BigDecimal
 import java.math.RoundingMode
@@ -69,6 +71,9 @@ class MainViewModel @Inject constructor(
 
     private val _recordListUiState = MutableStateFlow(RecordListUiState())
     val recordListUiState = _recordListUiState.asStateFlow()
+
+    private val _mainSnackBarState = Channel<String>()
+    val mainSnackBarState = _mainSnackBarState.receiveAsFlow()
 
     private val todayDate = MutableStateFlow("${LocalDate.now()}")
 
@@ -407,6 +412,7 @@ class MainViewModel @Inject constructor(
                 }
                 is RecordListEvent.MemoUpdate -> {
                     recordUseCase.updateRecordMemo(event.record, event.updateMemo, _mainUiState.value.selectedCurrencyType)
+                    _mainSnackBarState.send("메모가 저장되었습니다.")
                 }
                     is RecordListEvent.RemoveRecord -> {
                         recordUseCase.removeRecord(event.data, _mainUiState.value.selectedCurrencyType)
@@ -426,6 +432,20 @@ class MainViewModel @Inject constructor(
                 }
             }
         }
+    }
+
+    fun groupAdd(newGroupName: String) {
+
+        viewModelScope.launch {
+            recordUseCase.groupAdd(_recordListUiState.value, newGroupName, _mainUiState.value.selectedCurrencyType) { updatedState ->
+                _recordListUiState.value = updatedState
+            }
+        }
+
+
+
+
+
     }
 
 
@@ -470,6 +490,7 @@ data class AdUiState(
 // 거래 기록 관련 상태
 data class RecordListUiState(
     val foreignCurrencyRecord: ForeignCurrencyRecordList = ForeignCurrencyRecordList(),
+    val selectedRecord: ForeignCurrencyRecordList,
     val sellProfit: String = "",
     val sellPercent: String = ""
 )

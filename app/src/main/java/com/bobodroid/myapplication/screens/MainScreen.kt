@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
+import androidx.compose.material.SnackbarDuration
 import androidx.compose.material.SnackbarHostState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDropDown
@@ -53,6 +54,8 @@ import com.bobodroid.myapplication.components.admobs.showTargetRewardedAdvertise
 import com.bobodroid.myapplication.components.mainComponents.BottomSheetEvent
 import com.bobodroid.myapplication.components.mainComponents.MainBottomSheet
 import com.bobodroid.myapplication.components.mainComponents.MainHeader
+import com.bobodroid.myapplication.components.mainComponents.RateBottomSheet
+import com.bobodroid.myapplication.lists.dollorList.RecordListEvent
 import com.bobodroid.myapplication.lists.dollorList.RecordListView
 import com.bobodroid.myapplication.models.datamodels.roomDb.CurrencyType
 import com.bobodroid.myapplication.models.viewmodels.MainViewModel
@@ -90,6 +93,10 @@ fun MainScreen(
 
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
+    val rateSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+
+    var showRateBottomSheet by remember { mutableStateOf(false) }
+
     var showBottomSheet by remember { mutableStateOf(false) }
 
     var showDateDialog by remember { mutableStateOf(false) }
@@ -121,7 +128,17 @@ fun MainScreen(
         }
     })
 
-    Box(
+    LaunchedEffect(key1 = true) {
+        mainViewModel.mainSnackBarState.collect { message ->
+            mainScreenSnackBarHostState.showSnackbar(
+                message = message,
+                actionLabel = "닫기",
+                duration = SnackbarDuration.Short
+            )
+        }
+    }
+
+        Box(
         modifier = Modifier
             .fillMaxSize(),
 
@@ -160,7 +177,19 @@ fun MainScreen(
                     sellProfit = recordListUiState.sellProfit,
                     hideSellRecordState = hideSellRecordState,
                     onEvent = {event ->
-                        mainViewModel.handleRecordEvent(event)
+
+                        when(event) {
+                            is RecordListEvent.RateBottomSheetEvent -> {
+                               val record = event.data
+                                coroutineScope.launch {
+                                    rateSheetState.show()
+                                    showRateBottomSheet = true
+                                }
+                            }
+                            else -> mainViewModel.handleRecordEvent(event)
+                        }
+
+
                     })
 
             }
@@ -196,6 +225,26 @@ fun MainScreen(
                 )
             }
 
+
+            if (showRateBottomSheet) {
+                RateBottomSheet(
+                    sheetState = rateSheetState,
+                    onDismissRequest = {
+                        coroutineScope.launch {
+                            showRateBottomSheet = false
+                            rateSheetState.hide()
+                        }
+                    },
+                    rateInput = {
+                        coroutineScope.launch {
+
+                            sheetState.hide()
+                        }
+                    }
+                )
+            }
+
+
             // 단일 날짜 선택
             if (showDateDialog) {
                 MyDatePickerDialog(
@@ -217,7 +266,7 @@ fun MainScreen(
                     onClickedLabel = "추가",
                     closeButtonLabel = "닫기",
                     onClicked = { name ->
-//                        mainViewModel.groupAdd(name)
+                        mainViewModel.groupAdd(name)
                         groupAddDialog = false
                     })
             }

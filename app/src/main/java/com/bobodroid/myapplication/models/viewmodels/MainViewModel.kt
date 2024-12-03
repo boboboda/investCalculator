@@ -20,6 +20,7 @@ import com.bobodroid.myapplication.models.datamodels.roomDb.YenBuyRecord
 import com.bobodroid.myapplication.models.datamodels.useCases.CurrencyRecordRequest
 import com.bobodroid.myapplication.models.datamodels.useCases.RecordUseCase
 import com.bobodroid.myapplication.models.datamodels.useCases.UserUseCases
+import com.bobodroid.myapplication.screens.MainEvent
 import com.bobodroid.myapplication.util.AdMob.AdManager
 import com.bobodroid.myapplication.util.AdMob.AdUseCase
 import com.bobodroid.myapplication.util.result.onError
@@ -32,6 +33,7 @@ import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.receiveAsFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.math.BigDecimal
 import java.math.RoundingMode
@@ -351,17 +353,13 @@ class MainViewModel @Inject constructor(
         _mainUiState.value = updateUiState
     }
 
-    fun selectRecordDate(date: String) {
-
-        val uiState = _mainUiState.value.copy(selectedDate = date)
-
-        _mainUiState.value = uiState
-    }
 
    private suspend fun sellCalculate(
-        exchangeMoney: String,
-        sellRate: String,
-        krMoney: String) {
+        sellRate: String) {
+
+       val exchangeMoney = _recordListUiState.value.selectedRecord?.exchangeMoney ?: return
+
+       val krMoney = _recordListUiState.value.selectedRecord?.money ?: return
 
        val sellProfit = recordUseCase.sellProfit(exchangeMoney, sellRate, krMoney, _mainUiState.value.selectedCurrencyType).toString()
        val sellPercent = recordUseCase.sellPercent(exchangeMoney, krMoney).toString()
@@ -372,44 +370,119 @@ class MainViewModel @Inject constructor(
 
     }
 
+    fun handleMainEvent(event: MainEvent) {
+        when(event) {
+            is MainEvent.GroupAdd -> {
+                viewModelScope.launch {
 
-    fun handleRecordEvent(event: RecordListEvent) {
-        val uiState = _recordListUiState.value
-        viewModelScope.launch {
-            when (event) {
-                is RecordListEvent.OnSellDialog -> {
-                    when(event.event) {
-                        is SellDialogEvent.SellRecord -> {
-                            recordUseCase.onSellRecord(
-                                record = event.record,
-                                sellDate = event.event.sellDate,
-                                sellRate = event.event.sellRate,
-                                type = _mainUiState.value.selectedCurrencyType
-                            )
-                        }
-
-                        is SellDialogEvent.SellCalculate -> {
-
-                            val exchangeMoney = event.record.exchangeMoney ?: return@launch
-                            val money = event.record.money ?: return@launch
-
-                            sellCalculate(
-                                exchangeMoney = exchangeMoney,
-                                sellRate = event.event.sellRate,
-                                krMoney = money
-                            )
-                        }
+                    recordUseCase.groupAdd(_recordListUiState.value, event.groupName, _mainUiState.value.selectedCurrencyType) { updatedState ->
+                        _recordListUiState.value = updatedState
                     }
                 }
-                is RecordListEvent.EditRecord -> {
+            }
+
+            MainEvent.HideRateBottomSheet -> {
+                _mainUiState.update {
+                    it.copy(
+                        showRateBottomSheet = false
+                    )
+                }
+                _recordListUiState.update {
+                    it.copy(
+                        selectedRecord = null
+                    )
+                }
+            }
+            is MainEvent.ShowRateBottomSheet -> {
+                _mainUiState.update {
+                    it.copy(
+                        showRateBottomSheet = true
+                    )
+                }
+                _recordListUiState.update {
+                    it.copy(
+                        selectedRecord = event.record
+                    )
+                }
+            }
+
+            is MainEvent.SellCalculate -> {
+                _mainUiState.update {
+                    it.copy(
+                        showRateBottomSheet = false
+                    )
+                }
+                viewModelScope.launch {
+                    sellCalculate(sellRate = event.sellRate)
+
+                    _mainUiState.update {
+                        it.copy(
+                            showSellResultDialog = true
+                        )
+                    }
+
+                    _recordListUiState.update {
+                        it.copy(
+                            sellRate = event.sellRate
+                        )
+                    }
+                }
+
+            }
+
+            MainEvent.HideSellResultDialog -> {
+                _mainUiState.update {
+                    it.copy(
+                        showSellResultDialog = false
+                    )
+                }
+            }
+            is MainEvent.SellRecord -> {
+                viewModelScope.launch {
+                    val sellRecord = _recordListUiState.value.selectedRecord ?: return@launch
+                    recordUseCase.onSellRecord(
+                        sellRecord,
+                        _mainUiState.value.selectedDate,
+                        _recordListUiState.value.sellRate,
+                        _mainUiState.value.selectedCurrencyType
+                    )
+                }
+            }
+
+            is MainEvent.SelectedDate -> {
+                _mainUiState.update {
+                    it.copy(
+                        selectedDate = event.date
+                    )
+                }
+            }
+
+            MainEvent.HideEditBottomSheet -> {
+                _mainUiState.update {
+                    it.copy(
+                        showEditBottomSheet = false
+                    )
+                }
+            }
+
+            is MainEvent.EditRecord -> {
+                viewModelScope.launch {
                     recordUseCase.editRecord(
-                        record = event.data,
-                        editDate = event.date,
+                        record = event.record,
+                        _mainUiState.value.selectedDate,
                         editMoney = event.money,
                         editRate = event.rate,
                         type = _mainUiState.value.selectedCurrencyType
                     )
                 }
+            }
+        }
+    }
+
+    fun handleRecordEvent(event: RecordListEvent) {
+        val uiState = _recordListUiState.value
+        viewModelScope.launch {
+            when (event) {
                 is RecordListEvent.MemoUpdate -> {
                     recordUseCase.updateRecordMemo(event.record, event.updateMemo, _mainUiState.value.selectedCurrencyType)
                     _mainSnackBarState.send("메모가 저장되었습니다.")
@@ -430,23 +503,26 @@ class MainViewModel @Inject constructor(
                        }
                    }
                 }
+
+                is RecordListEvent.ShowEditBottomSheet -> {
+                    _mainUiState.update {
+                        it.copy(
+                            showEditBottomSheet = true
+                        )
+                    }
+                    _recordListUiState.update {
+                        it.copy(
+                            selectedRecord = event.data
+                        )
+                    }
+                }
+
+                else -> return@launch
             }
         }
     }
 
-    fun groupAdd(newGroupName: String) {
 
-        viewModelScope.launch {
-            recordUseCase.groupAdd(_recordListUiState.value, newGroupName, _mainUiState.value.selectedCurrencyType) { updatedState ->
-                _recordListUiState.value = updatedState
-            }
-        }
-
-
-
-
-
-    }
 
 
 }
@@ -463,7 +539,10 @@ data class MainUiState(
         val selectedCurrencyType: CurrencyType = CurrencyType.USD,
         val selectedDate: String = today,
         val recentRate: ExchangeRate = ExchangeRate(),
-        val localUser: LocalUserData = LocalUserData()
+        val localUser: LocalUserData = LocalUserData(),
+        val showRateBottomSheet: Boolean = false,
+        val showEditBottomSheet: Boolean = false,
+        val showSellResultDialog: Boolean = false
 )
 
 // 날짜 검색 관련 상태
@@ -490,7 +569,8 @@ data class AdUiState(
 // 거래 기록 관련 상태
 data class RecordListUiState(
     val foreignCurrencyRecord: ForeignCurrencyRecordList = ForeignCurrencyRecordList(),
-    val selectedRecord: ForeignCurrencyRecordList,
+    val selectedRecord: ForeignCurrencyRecord? = null,
+    val sellRate: String = "",
     val sellProfit: String = "",
     val sellPercent: String = ""
 )

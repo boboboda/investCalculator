@@ -297,7 +297,8 @@ fun MainBottomSheet(
                     ),
                     onClick = {
                         onEvent(BottomSheetEvent.OnDateSelect)
-                    }) {
+                    }
+                ) {
 
                     Row(
                         modifier = Modifier

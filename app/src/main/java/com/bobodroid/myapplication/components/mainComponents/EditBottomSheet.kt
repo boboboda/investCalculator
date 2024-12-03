@@ -1,6 +1,5 @@
 package com.bobodroid.myapplication.components.mainComponents
 
-import android.provider.Telephony.Mms.Rate
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
@@ -51,7 +50,9 @@ import com.bobodroid.myapplication.components.Dialogs.BottomSheetNumberField
 import com.bobodroid.myapplication.components.Dialogs.BottomSheetRateNumberField
 import com.bobodroid.myapplication.components.Dialogs.FloatPopupNumberView
 import com.bobodroid.myapplication.components.Dialogs.PopupNumberView
-import com.bobodroid.myapplication.lists.dollorList.RecordListEvent
+import com.bobodroid.myapplication.models.datamodels.roomDb.CurrencyType
+import com.bobodroid.myapplication.models.datamodels.roomDb.ForeignCurrencyRecord
+import com.bobodroid.myapplication.models.viewmodels.MainUiState
 import com.bobodroid.myapplication.ui.theme.BottomSheetTitleColor
 import com.bobodroid.myapplication.ui.theme.BuyColor
 import com.bobodroid.myapplication.ui.theme.WelcomeScreenBackgroundColor
@@ -60,21 +61,29 @@ import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun RateBottomSheet(
+fun EditBottomSheet(
+    editRecord:ForeignCurrencyRecord,
+    mainUiState: MainUiState,
     sheetState: SheetState,
-    sellDate: String,
-    onEvent: (RateBottomSheetEvent) -> Unit
+    onEvent: (EditBottomSheetEvent) -> Unit
 ) {
+    var numberInput by remember { mutableStateOf(editRecord.money ?: "") }
 
-    var ratePadPopViewVisible by remember { mutableStateOf(false) }
+    var rateInput by remember { mutableStateOf(editRecord.rate ?: "") }
 
-    var rateInput by remember { mutableStateOf("") }
+    val isBtnActive = numberInput.isNotEmpty() && rateInput.isNotEmpty()
 
     val coroutineScope = rememberCoroutineScope()
 
+
+
+    var numberPadPopViewIsVible by remember { mutableStateOf(false) }
+
+    var ratePadPopViewIsVible by remember { mutableStateOf(false) }
+
     ModalBottomSheet(
         onDismissRequest = {
-            onEvent(RateBottomSheetEvent.DismissRequest)
+            onEvent(EditBottomSheetEvent.DismissRequest)
         },
         sheetState = sheetState
     ) {
@@ -98,20 +107,20 @@ fun RateBottomSheet(
                 Spacer(Modifier.weight(1f))
 
                 Buttons(
-                    enabled = rateInput.isNotEmpty(),
+                    enabled = isBtnActive,
                     onClicked = {
-                        onEvent(RateBottomSheetEvent.SellClicked(rateInput))
+                        onEvent(EditBottomSheetEvent.EditSelected(editRecord, numberInput, rateInput))
                     },
                     color = BuyColor,
                     fontColor = Color.Black,
                     modifier = Modifier
                 ) {
-                    Text(text = "매도", fontSize = 15.sp)
+                    Text(text = "수정", fontSize = 15.sp)
                 }
 
                 Buttons(
                     onClicked = {
-                        onEvent(RateBottomSheetEvent.DismissRequest)
+                        onEvent(EditBottomSheetEvent.DismissRequest)
                     },
                     color = BuyColor,
                     fontColor = Color.Black,
@@ -122,33 +131,85 @@ fun RateBottomSheet(
                 }
             }
 
-            Card(
+
+            Row {
+                Card(
+                    modifier = Modifier
+                        .width(160.dp)
+                        .padding(end = 10.dp)
+                        .height(40.dp),
+                    border = BorderStroke(1.dp, Color.Black),
+                    colors = CardDefaults.cardColors(
+                        contentColor = Color.Black,
+                        containerColor = Color.White
+                    ),
+                    onClick = {
+                        onEvent(EditBottomSheetEvent.ShowDatePickerDialog)
+                    }
+                ) {
+
+                    Row(
+                        modifier = Modifier
+                            .fillMaxSize(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.Center
+                    ) {
+                        Text(
+                            text = mainUiState.selectedDate,
+                            color = Color.Black,
+                            fontSize = 18.sp,
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier
+                        )
+                    }
+
+                }
+            }
+
+
+
+
+
+
+
+            BottomSheetNumberField(
+                title = numberInput,
+                selectedState = numberPadPopViewIsVible,
+            ) {
+                coroutineScope.launch {
+                    if (ratePadPopViewIsVible) {
+                        ratePadPopViewIsVible = false
+                        delay(500)
+                        numberPadPopViewIsVible = true
+                    } else {
+                        numberPadPopViewIsVible = true
+                    }
+                }
+
+            }
+
+            Spacer(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(45.dp),
-                border = BorderStroke(1.dp, Color.Black),
-                colors = CardDefaults.cardColors(contentColor = Color.Black, containerColor = Color.White),
-                onClick = {
-                    onEvent(RateBottomSheetEvent.ShowDatePickerDialog)
-                }) {
-                Text(text = sellDate ?: "날짜를 선택해주세요",
-                    color = Color.Black,
-                    fontSize = 18.sp ,
-                    modifier = Modifier
-                        .padding(top = 10.dp)
-                        .fillMaxWidth(),
-                    textAlign = TextAlign.Center,
-
-                    )
-            }
+                    .height(10.dp)
+            )
 
             BottomSheetRateNumberField(
                 title = rateInput,
-                selectedState = ratePadPopViewVisible,
+                selectedState = ratePadPopViewIsVible,
                 modifier = Modifier.padding(10.dp)
             ) {
                 coroutineScope.launch {
-                    ratePadPopViewVisible = true
+
+                    if (numberPadPopViewIsVible) {
+                        numberPadPopViewIsVible = false
+                        delay(500)
+                        ratePadPopViewIsVible = true
+                    } else {
+                        ratePadPopViewIsVible = true
+                    }
+
+
                 }
 
             }
@@ -158,10 +219,25 @@ fun RateBottomSheet(
                 Spacer(modifier = Modifier.height(50.dp))
 
                 Column {
-                    AnimatedVisibility(visible = ratePadPopViewVisible) {
+                    AnimatedVisibility(visible = numberPadPopViewIsVible) {
+                        PopupNumberView(
+                            onClicked = {
+                                coroutineScope.launch {
+                                    numberInput = it
+                                    numberPadPopViewIsVible = false
+                                    delay(700)
+                                    ratePadPopViewIsVible = true
+                                }
+
+                            },
+                            limitNumberLength = 10
+                        )
+                    }
+
+                    AnimatedVisibility(visible = ratePadPopViewIsVible) {
                         FloatPopupNumberView(onClicked = {
                             rateInput = it
-                            ratePadPopViewVisible = false
+                            ratePadPopViewIsVible = false
                         })
                     }
                 }
@@ -170,10 +246,14 @@ fun RateBottomSheet(
 
         }
     }
+
 }
 
-sealed class RateBottomSheetEvent {
-    data object DismissRequest : RateBottomSheetEvent()
-    data object ShowDatePickerDialog : RateBottomSheetEvent()
-    data class SellClicked(val sellRate: String) : RateBottomSheetEvent()
+sealed class EditBottomSheetEvent {
+    data class EditSelected(
+        val record: ForeignCurrencyRecord,
+        val editMoney: String,
+        val editRate: String): EditBottomSheetEvent()
+    data object DismissRequest : EditBottomSheetEvent()
+    data object ShowDatePickerDialog: EditBottomSheetEvent()
 }

@@ -68,7 +68,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.bobodroid.myapplication.MainActivity.Companion.TAG
 import com.bobodroid.myapplication.components.Dialogs.AskTriggerDialog
-import com.bobodroid.myapplication.components.Dialogs.InsertDialog
 import com.bobodroid.myapplication.components.Dialogs.SellDialog
 import com.bobodroid.myapplication.components.Dialogs.SellDialogEvent
 import com.bobodroid.myapplication.components.Dialogs.TextFieldDialog
@@ -97,8 +96,6 @@ fun RecordListRowView(
     sellState: Boolean = data.recordColor!!,
     groupList: List<String>,
     snackBarHostState: SnackbarHostState,
-    sellProfit: String,
-    sellPercent: String ,
     onEvent: (RecordListEvent) -> Unit,
     scrollEvent: () -> Unit
 ) {
@@ -362,7 +359,7 @@ fun RecordListRowView(
                                             if (!data.recordColor!!) {
 //                                                if (!openDialog) openDialog = true else openDialog = false
 
-                                                onEvent(RecordListEvent.RateBottomSheetEvent(data))
+                                                onEvent(RecordListEvent.SellRecord(data))
 
                                             } else {
                                                 if (snackBarHostState.currentSnackbarData == null) {
@@ -395,19 +392,7 @@ fun RecordListRowView(
                                         },
                                         onClick = {
                                             dropdownExpanded = false
-                                            if (!data.recordColor!!) {
-                                                insertDialog = true
-                                            } else {
-                                                if (snackBarHostState.currentSnackbarData == null) {
-                                                    coroutineScope.launch {
-                                                        snackBarHostState.showSnackbar(
-                                                            "매도한 기록은 수정이 불가능합니다.",
-                                                            actionLabel = "닫기",
-                                                            SnackbarDuration.Short
-                                                        )
-                                                    }
-                                                }
-                                            }
+                                            onEvent(RecordListEvent.ShowEditBottomSheet(data))
                                         })
 
 
@@ -674,31 +659,7 @@ fun RecordListRowView(
 
             }
 
-            if (insertDialog) {
-                InsertDialog(
-                    data = data,
-                    moneyTitle = "매수금(원)을 입력해주세요",
-                    rateTitle = "매수환율을 입력해주세요",
-                    onDismissRequest = {
-                        insertDialog = false
-                    },
-                    onClicked = { date, money, rate ->
-                        onEvent(RecordListEvent.EditRecord(data, date, money, rate))
-                        insertDialog = false
-                    }
-                )
-            }
 
-//            if (openDialog) {
-//                SellDialog(
-//                    onDismissRequest = { openDialog = it },
-//                    sellProfit = sellProfit,
-//                    sellPercent = sellPercent,
-//                    onEvent = { event ->
-//                        onEvent(RecordListEvent.OnSellDialog(data, event))
-//                    }
-//                )
-//            }
 
             if (groupAddDialog) {
                 TextFieldDialog(
@@ -734,15 +695,11 @@ fun RecordListRowView(
 }
 
 sealed class RecordListEvent {
-    data class EditRecord(val data: ForeignCurrencyRecord, val date: String, val money: String, val rate: String) : RecordListEvent()
+    data class ShowEditBottomSheet(val data: ForeignCurrencyRecord) : RecordListEvent()
     data class AddGroup(val data:ForeignCurrencyRecord, val groupName: String): RecordListEvent()
     data class CancelSellRecord(val id: UUID): RecordListEvent()
     data class UpdateRecordCategory(val record: ForeignCurrencyRecord, val groupName: String): RecordListEvent()
     data class MemoUpdate(val record: ForeignCurrencyRecord, val updateMemo: String): RecordListEvent()
-//    data class OnSellDialog(
-//        val record: ForeignCurrencyRecord,
-//        val event: SellDialogEvent
-//    ) : RecordListEvent()
-    data class RateBottomSheetEvent(val data: ForeignCurrencyRecord): RecordListEvent()
+    data class SellRecord(val data: ForeignCurrencyRecord): RecordListEvent()
     data class RemoveRecord(val data: ForeignCurrencyRecord): RecordListEvent()
 }

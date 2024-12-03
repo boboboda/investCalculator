@@ -44,8 +44,6 @@ import java.util.UUID
 fun RecordListView(
     snackBarHostState: SnackbarHostState,
     currencyRecordState: CurrencyRecordState<ForeignCurrencyRecord>,
-    sellProfit: String,
-    sellPercent: String,
     hideSellRecordState: Boolean,
     onEvent: (RecordListEvent) -> Unit
 ) {
@@ -140,8 +138,6 @@ fun RecordListView(
                         sellState = Buy.recordColor!!,
                         groupList = groupList,
                         snackBarHostState = snackBarHostState,
-                        sellProfit = sellProfit,
-                        sellPercent = sellPercent,
                         onEvent = { event ->
                             onEvent(event)
                         },

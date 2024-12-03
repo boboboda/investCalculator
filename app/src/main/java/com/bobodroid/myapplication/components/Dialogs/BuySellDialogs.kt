@@ -80,36 +80,7 @@ fun SellDialog(
                 .padding(horizontal = 20.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-                    Card(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(45.dp),
-                        border = BorderStroke(1.dp, Color.Black),
-                        colors = CardDefaults.cardColors(contentColor = Color.Black, containerColor = Color.White),
-                        onClick = { isDialogOpen.value = !isDialogOpen.value
 
-                        }) {
-                        Text(text = sellDate ?: "날짜를 선택해주세요",
-                            color = Color.Black,
-                            fontSize = 18.sp ,
-                            modifier = Modifier
-                                .padding(top = 10.dp)
-                                .fillMaxWidth(),
-                            textAlign = TextAlign.Center,
-
-                           )
-
-                        if(isDialogOpen.value) {
-                            DrSellDatePickerDialog(
-                                onDateSelected = { selectedDate ->
-                                    sellDate = selectedDate.toString()
-                                },
-                                onDismissRequest = {
-                                    isDialogOpen.value = false
-                                }
-                            )
-                        }
-                    }
 
                     Spacer(modifier = Modifier.height(20.dp))
 
@@ -159,20 +130,6 @@ fun SellDialog(
                         }
                     }
 
-
-
-            if (openDialog.value) {
-                SellResultDialog(
-                    selectedRecord = {
-                        onEvent(SellDialogEvent.SellRecord(sellRate = sellRate, sellDate = sellDate ?: ""))
-                    },
-                    onDismissRequest = {
-                        openDialog.value = it
-                        onDismissRequest.invoke(it) },
-                    percent = sellPercent,
-                    sellProfit = sellProfit)
-
-            }
 
 
         }

@@ -16,6 +16,7 @@ import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
 import java.math.BigDecimal
 import java.math.RoundingMode
@@ -26,9 +27,11 @@ class RecordUseCase @Inject constructor(
     private val investRepository: InvestRepository
 ) {
     fun getRecord(): Flow<ForeignCurrencyRecordList> = combine(
-        investRepository.getAllDollarBuyRecords(),
-        investRepository.getAllYenBuyRecords()
+        investRepository.getAllDollarBuyRecords().distinctUntilChanged(),
+        investRepository.getAllYenBuyRecords().distinctUntilChanged()
     ) { dollarRecords, yenRecords ->
+        Log.d(TAG("RecordUseCase", "getRecord"), "dollarRecords: $dollarRecords")
+        Log.d(TAG("RecordUseCase", "getRecord"), "yenRecords: $yenRecords")
         ForeignCurrencyRecordList(
             dollarState = CurrencyRecordState(
                 records = dollarRecords,
@@ -43,7 +46,7 @@ class RecordUseCase @Inject constructor(
         )
     }
 
-    suspend fun  addCurrencyRecord(request: CurrencyRecordRequest) {
+    suspend fun addCurrencyRecord(request: CurrencyRecordRequest) {
         val exchangeMoney = calculateExchangeMoney(request.money, request.inputRate)
         val expectedProfit = calculateExpectedProfit(exchangeMoney, request.money, request.latestRate)
 
@@ -155,7 +158,9 @@ class RecordUseCase @Inject constructor(
                     sellProfit = sellProfit.toString(),
                     sellDate = sellDate,
                     sellRate = sellRate,
-                    expectProfit = sellProfit.toString())
+                    expectProfit = sellProfit.toString(),
+                    recordColor = true,
+                )
 
                 investRepository.updateDollarBuyRecord(editData)
             }
@@ -172,7 +177,8 @@ class RecordUseCase @Inject constructor(
                     sellProfit = sellProfit.toString(),
                     sellDate = sellDate,
                     sellRate = sellRate,
-                    expectProfit = sellProfit.toString())
+                    expectProfit = sellProfit.toString(),
+                    recordColor = true)
 
                 investRepository.updateYenBuyRecord(editData)
             }

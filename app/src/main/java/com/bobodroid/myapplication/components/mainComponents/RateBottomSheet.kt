@@ -41,6 +41,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.motionEventSpy
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
@@ -124,26 +125,32 @@ fun RateBottomSheet(
 
             Card(
                 modifier = Modifier
-                    .fillMaxWidth()
+                    .fillMaxWidth().padding(10.dp)
                     .height(45.dp),
                 border = BorderStroke(1.dp, Color.Black),
                 colors = CardDefaults.cardColors(contentColor = Color.Black, containerColor = Color.White),
                 onClick = {
                     onEvent(RateBottomSheetEvent.ShowDatePickerDialog)
                 }) {
-                Text(text = sellDate ?: "날짜를 선택해주세요",
-                    color = Color.Black,
-                    fontSize = 18.sp ,
-                    modifier = Modifier
-                        .padding(top = 10.dp)
-                        .fillMaxWidth(),
-                    textAlign = TextAlign.Center,
+                Column(
+                    modifier = Modifier.fillMaxSize(),
+                    verticalArrangement = Arrangement.Center,
+                ) {
+                    Text(text = sellDate,
+                        color = Color.Black,
+                        fontSize = 18.sp ,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(),
+                        textAlign = TextAlign.Center
+                        )
+                }
 
-                    )
             }
 
             BottomSheetRateNumberField(
                 title = rateInput,
+                placeholder = "매도환율을 입력해주세요",
                 selectedState = ratePadPopViewVisible,
                 modifier = Modifier.padding(10.dp)
             ) {

@@ -354,6 +354,7 @@ fun MainBottomSheet(
             BottomSheetNumberField(
                 title = numberInput,
                 selectedState = numberPadPopViewIsVible,
+                modifier = Modifier
             ) {
                 coroutineScope.launch {
                     if (ratePadPopViewIsVible) {
@@ -375,6 +376,7 @@ fun MainBottomSheet(
 
             BottomSheetRateNumberField(
                 title = rateInput,
+                placeholder = "환율을 입력해주세요",
                 selectedState = ratePadPopViewIsVible,
                 modifier = Modifier.padding(10.dp)
             ) {

@@ -27,11 +27,13 @@ import com.bobodroid.myapplication.util.result.onError
 import com.bobodroid.myapplication.util.result.onSuccess
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -82,10 +84,8 @@ class MainViewModel @Inject constructor(
     val alarmPermissionState = MutableStateFlow(false)
 
     init {
-        viewModelScope.launch {
-            Log.d(TAG("MainViewModel", "init"), "MainViewModel 초기화 시작")
-            startInitialData()
-        }
+        Log.d(TAG("MainViewModel", "init"), "MainViewModel 초기화 시작")
+        startInitialData()
     }
 
     // 리워드 다이로그 연기 설정
@@ -125,18 +125,23 @@ class MainViewModel @Inject constructor(
     }
 
     // 초기화 매소드
-    private suspend fun startInitialData() {
-        localUserExistCheck()
-        Log.d(TAG("MainViewModel", "init"), "로컬유저 확인완료")
-        noticeExistCheck()
-        noticeDialogState()
-        Log.d(TAG("MainViewModel", "init"), "공지사항 확인완료")
-        adDialogState()
-        Log.d(TAG("MainViewModel", "init"), "광고 확인완료")
-        getRecords()
-        Log.d(TAG("MainViewModel", "init"), "기록불러오기 확인완료")
-        receivedLatestRate()
-        Log.d(TAG("MainViewModel", "init"), "최신환율 확인완료")
+    private fun startInitialData() {
+        viewModelScope.launch {
+            localUserExistCheck()
+            Log.d(TAG("MainViewModel", "init"), "로컬유저 확인완료")
+            noticeExistCheck()
+            noticeDialogState()
+            Log.d(TAG("MainViewModel", "init"), "공지사항 확인완료")
+            adDialogState()
+            Log.d(TAG("MainViewModel", "init"), "광고 확인완료")
+            receivedLatestRate()
+            Log.d(TAG("MainViewModel", "init"), "최신환율 확인완료")
+        }
+
+        viewModelScope.launch {
+            getRecords()
+            Log.d(TAG("MainViewModel", "init"), "기록불러오기 확인완료")
+        }
     }
 
     // 웹소켓 실시간 데이터 구독 -> 완료
@@ -305,20 +310,20 @@ class MainViewModel @Inject constructor(
     private fun getRecords() {
         viewModelScope.launch {
             recordUseCase.getRecord().collect { record ->
-                val uiState = _recordListUiState.value.copy(foreignCurrencyRecord = record)
-                _recordListUiState.emit(uiState)
+                Log.d(TAG("MainViewModel", "getRecords"), "기록불러오기: $record")
+                _recordListUiState.update { it.copy(foreignCurrencyRecord = record) }
             }
         }
     }
 
 
-    fun getCurrentRecords(): CurrencyRecordState<ForeignCurrencyRecord> {
-        val currentState = _mainUiState.value
-        val recordState = _recordListUiState.value
-        return when(currentState.selectedCurrencyType) {
-            CurrencyType.USD -> recordState.foreignCurrencyRecord.dollarState
-            CurrencyType.JPY -> recordState.foreignCurrencyRecord.yenState }
-    }
+    fun getCurrentRecordsFlow(): Flow<CurrencyRecordState<ForeignCurrencyRecord>> =
+        recordListUiState.map { recordState ->
+            when(_mainUiState.value.selectedCurrencyType) {
+                CurrencyType.USD -> recordState.foreignCurrencyRecord.dollarState
+                CurrencyType.JPY -> recordState.foreignCurrencyRecord.yenState
+            }
+        }
 
     fun addRecord(
         money: String,
@@ -384,6 +389,7 @@ class MainViewModel @Inject constructor(
             MainEvent.HideRateBottomSheet -> {
                 _mainUiState.update {
                     it.copy(
+                        selectedDate = today,
                         showRateBottomSheet = false
                     )
                 }
@@ -433,6 +439,7 @@ class MainViewModel @Inject constructor(
             MainEvent.HideSellResultDialog -> {
                 _mainUiState.update {
                     it.copy(
+                        selectedDate = today,
                         showSellResultDialog = false
                     )
                 }
@@ -446,6 +453,12 @@ class MainViewModel @Inject constructor(
                         _recordListUiState.value.sellRate,
                         _mainUiState.value.selectedCurrencyType
                     )
+
+                    _mainUiState.update {
+                        it.copy(
+                            showSellResultDialog = false
+                        )
+                    }
                 }
             }
 
@@ -542,7 +555,8 @@ data class MainUiState(
         val localUser: LocalUserData = LocalUserData(),
         val showRateBottomSheet: Boolean = false,
         val showEditBottomSheet: Boolean = false,
-        val showSellResultDialog: Boolean = false
+        val showSellResultDialog: Boolean = false,
+        val showMainBottomSheet: Boolean = false
 )
 
 // 날짜 검색 관련 상태

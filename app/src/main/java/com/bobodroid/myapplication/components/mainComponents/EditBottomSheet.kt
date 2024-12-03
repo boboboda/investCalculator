@@ -32,6 +32,7 @@ import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.SheetState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -40,6 +41,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
@@ -69,17 +71,23 @@ fun EditBottomSheet(
 ) {
     var numberInput by remember { mutableStateOf(editRecord.money ?: "") }
 
+    var recordDate by remember { mutableStateOf(editRecord.date ?: "") }
+
     var rateInput by remember { mutableStateOf(editRecord.rate ?: "") }
 
     val isBtnActive = numberInput.isNotEmpty() && rateInput.isNotEmpty()
 
     val coroutineScope = rememberCoroutineScope()
 
-
-
     var numberPadPopViewIsVible by remember { mutableStateOf(false) }
 
     var ratePadPopViewIsVible by remember { mutableStateOf(false) }
+
+    LaunchedEffect(key1 = mainUiState.selectedDate) {
+        if(mainUiState.selectedDate != "") {
+            recordDate = mainUiState.selectedDate
+        }
+    }
 
     ModalBottomSheet(
         onDismissRequest = {
@@ -132,30 +140,42 @@ fun EditBottomSheet(
             }
 
 
-            Row {
+            Row(modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 10.dp)
+                .padding(start = 5.dp),
+                verticalAlignment = Alignment.CenterVertically) {
+
+                Column(
+                    modifier = Modifier.weight(0.2f)
+                ) {
+                    Text(text = "매수날짜:", fontSize = 18.sp)
+                }
+
                 Card(
                     modifier = Modifier
-                        .width(160.dp)
-                        .padding(end = 10.dp)
-                        .height(40.dp),
+                        .weight(0.8f)
+                        .padding(10.dp),
                     border = BorderStroke(1.dp, Color.Black),
                     colors = CardDefaults.cardColors(
                         contentColor = Color.Black,
                         containerColor = Color.White
                     ),
                     onClick = {
-                        onEvent(EditBottomSheetEvent.ShowDatePickerDialog)
+                        onEvent(EditBottomSheetEvent.ShowDatePickerDialog(recordDate))
                     }
                 ) {
 
+
                     Row(
                         modifier = Modifier
-                            .fillMaxSize(),
+                            .fillMaxWidth()
+                            .height(45.dp),
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.Center
                     ) {
                         Text(
-                            text = mainUiState.selectedDate,
+                            text = recordDate,
                             color = Color.Black,
                             fontSize = 18.sp,
                             textAlign = TextAlign.Center,
@@ -167,26 +187,38 @@ fun EditBottomSheet(
             }
 
 
-
-
-
-
-
-            BottomSheetNumberField(
-                title = numberInput,
-                selectedState = numberPadPopViewIsVible,
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 10.dp)
+                    .padding(start = 5.dp),
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                coroutineScope.launch {
-                    if (ratePadPopViewIsVible) {
-                        ratePadPopViewIsVible = false
-                        delay(500)
-                        numberPadPopViewIsVible = true
-                    } else {
-                        numberPadPopViewIsVible = true
-                    }
+
+                Column(
+                    modifier = Modifier.weight(0.2f)
+                ) {
+                    Text(text = "매 수 금:", fontSize = 18.sp)
                 }
 
+                BottomSheetNumberField(
+                    title = numberInput,
+                    selectedState = numberPadPopViewIsVible,
+                    modifier = Modifier.weight(0.8f)
+                ) {
+                    coroutineScope.launch {
+                        if (ratePadPopViewIsVible) {
+                            ratePadPopViewIsVible = false
+                            delay(500)
+                            numberPadPopViewIsVible = true
+                        } else {
+                            numberPadPopViewIsVible = true
+                        }
+                    }
+
+                }
             }
+
 
             Spacer(
                 modifier = Modifier
@@ -194,25 +226,45 @@ fun EditBottomSheet(
                     .height(10.dp)
             )
 
-            BottomSheetRateNumberField(
-                title = rateInput,
-                selectedState = ratePadPopViewIsVible,
-                modifier = Modifier.padding(10.dp)
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 10.dp)
+                    .padding(start = 5.dp),
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                coroutineScope.launch {
-
-                    if (numberPadPopViewIsVible) {
-                        numberPadPopViewIsVible = false
-                        delay(500)
-                        ratePadPopViewIsVible = true
-                    } else {
-                        ratePadPopViewIsVible = true
-                    }
-
-
+                Column(
+                    modifier = Modifier.weight(0.2f)
+                ) {
+                    Text(text = "환      율:", fontSize = 18.sp)
                 }
 
+                BottomSheetRateNumberField(
+                    title = rateInput,
+                    selectedState = ratePadPopViewIsVible,
+                    placeholder = "환율을 입력해주세요",
+                    modifier = Modifier
+                        .weight(0.8f)
+                        .padding(horizontal = 10.dp)
+                ) {
+                    coroutineScope.launch {
+
+                        if (numberPadPopViewIsVible) {
+                            numberPadPopViewIsVible = false
+                            delay(500)
+                            ratePadPopViewIsVible = true
+                        } else {
+                            ratePadPopViewIsVible = true
+                        }
+
+
+                    }
+
+                }
             }
+
+
+
 
 
             Box() {
@@ -255,5 +307,5 @@ sealed class EditBottomSheetEvent {
         val editMoney: String,
         val editRate: String): EditBottomSheetEvent()
     data object DismissRequest : EditBottomSheetEvent()
-    data object ShowDatePickerDialog: EditBottomSheetEvent()
+    data class ShowDatePickerDialog(val date: String): EditBottomSheetEvent()
 }

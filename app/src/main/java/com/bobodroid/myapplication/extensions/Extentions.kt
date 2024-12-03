@@ -98,3 +98,9 @@ fun String.toDateTime(): String {
     val date = inputFormat.parse(this) // 원본 날짜 파싱
     return outputFormat.format(date) // 변경된 포맷으로 출력
 }
+
+fun String.toLocalDate(): LocalDate {
+    val date = LocalDate.parse(this)
+    return LocalDate.of(date.year, date.month, date.dayOfMonth)
+}
+

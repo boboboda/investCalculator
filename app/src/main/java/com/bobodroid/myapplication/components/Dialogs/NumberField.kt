@@ -20,6 +20,7 @@ import com.bobodroid.myapplication.extensions.toYen
 import java.text.NumberFormat
 import java.util.*
 import androidx.compose.material.SnackbarHostState
+import androidx.compose.material.TextField
 import androidx.compose.material.rememberModalBottomSheetState
 import com.bobodroid.myapplication.components.mainComponents.RateBottomSheet
 import com.bobodroid.myapplication.extensions.toLongUs
@@ -127,6 +128,7 @@ fun RateNumberField(
 fun BottomSheetNumberField(
     title: String,
     selectedState: Boolean,
+    modifier: Modifier,
     onClicked: () -> Unit
 ) {
 
@@ -139,8 +141,7 @@ fun BottomSheetNumberField(
     val cardColor = if(selectedState) CardDefaults.cardColors(BottomSheetSelectedColor) else CardDefaults.cardColors(Color.White)
 
     Card(
-        modifier = Modifier
-            .fillMaxWidth()
+        modifier = modifier
             .padding(10.dp)
             .height(45.dp),
         border = BorderStroke(1.dp, Color.Black),
@@ -166,10 +167,11 @@ fun BottomSheetRateNumberField(
     title: String,
     modifier: Modifier,
     selectedState: Boolean,
+    placeholder: String,
     onClicked: () -> Unit
 ) {
 
-    val formatTile = if (title == "") "매수환율을 입력해주세요" else title
+    val formatTile = if (title == "") placeholder else title
 
     val cardColor = if(selectedState) CardDefaults.cardColors(BottomSheetSelectedColor) else CardDefaults.cardColors(Color.White)
 

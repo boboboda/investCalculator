@@ -60,10 +60,13 @@ import com.bobodroid.myapplication.components.mainComponents.MainBottomSheet
 import com.bobodroid.myapplication.components.mainComponents.MainHeader
 import com.bobodroid.myapplication.components.mainComponents.RateBottomSheet
 import com.bobodroid.myapplication.components.mainComponents.RateBottomSheetEvent
+import com.bobodroid.myapplication.extensions.toDate
+import com.bobodroid.myapplication.extensions.toLocalDate
 import com.bobodroid.myapplication.lists.dollorList.RecordListEvent
 import com.bobodroid.myapplication.lists.dollorList.RecordListView
 import com.bobodroid.myapplication.models.datamodels.roomDb.CurrencyType
 import com.bobodroid.myapplication.models.datamodels.roomDb.ForeignCurrencyRecord
+import com.bobodroid.myapplication.models.viewmodels.CurrencyRecordState
 import com.bobodroid.myapplication.models.viewmodels.MainViewModel
 import com.bobodroid.myapplication.ui.theme.BottomSheetTitleColor
 import com.bobodroid.myapplication.ui.theme.BuyColor
@@ -115,7 +118,7 @@ fun MainScreen(
     // 매도기록 노출 여부
     var hideSellRecordState by remember { mutableStateOf(false) }
 
-    val records = mainViewModel.getCurrentRecords()
+    val records by mainViewModel.getCurrentRecordsFlow().collectAsState(CurrencyRecordState())
 
     val focusManager = LocalFocusManager.current
 
@@ -124,6 +127,10 @@ fun MainScreen(
 //    val totalDrSellProfit = dollarViewModel.totalSellProfit.collectAsState()
 
 //    val bannerState = allViewModel.deleteBannerStateFlow.collectAsState()
+
+    LaunchedEffect(key1 = recordListUiState.foreignCurrencyRecord) {
+
+    }
 
     LaunchedEffect(key1 = Unit, block = {
 
@@ -134,21 +141,6 @@ fun MainScreen(
         }
     })
 
-    LaunchedEffect(mainUiState.showRateBottomSheet) {
-        if (mainUiState.showRateBottomSheet) {
-            rateSheetState.show()
-        } else {
-            rateSheetState.hide()
-        }
-    }
-
-    LaunchedEffect(mainUiState.showEditBottomSheet) {
-        if (mainUiState.showEditBottomSheet) {
-            editSheetState.show()
-        } else {
-            editSheetState.hide()
-        }
-    }
 
     LaunchedEffect(key1 = true) {
         mainViewModel.mainSnackBarState.collect { message ->
@@ -213,7 +205,7 @@ fun MainScreen(
             }
 
             // bottomsheet
-            if (showBottomSheet) {
+            if (mainUiState.showMainBottomSheet) {
                 MainBottomSheet(
                     sheetState,
                     recordListUiState,
@@ -223,7 +215,7 @@ fun MainScreen(
                             is BottomSheetEvent.DismissSheet -> {
                                 coroutineScope.launch {
                                     sheetState.hide()
-                                    showBottomSheet = false
+                                    mainViewModel.handleMainEvent(MainEvent.HideMainBottomSheet)
                                 }
                             }
                             is BottomSheetEvent.OnRecordAdd -> {
@@ -252,7 +244,11 @@ fun MainScreen(
                     onEvent = { event ->
                         when(event) {
                             RateBottomSheetEvent.DismissRequest -> {
-                                mainViewModel.handleMainEvent(MainEvent.HideRateBottomSheet)
+                                coroutineScope.launch {
+                                    rateSheetState.hide()
+                                    mainViewModel.handleMainEvent(MainEvent.HideRateBottomSheet)
+                                }
+
                             }
                             is RateBottomSheetEvent.SellClicked -> {
                                 mainViewModel.handleMainEvent(MainEvent.SellCalculate(event.sellRate))
@@ -278,7 +274,11 @@ fun MainScreen(
                     onEvent = { event ->
                         when(event) {
                             EditBottomSheetEvent.DismissRequest -> {
-                                mainViewModel.handleMainEvent(MainEvent.HideEditBottomSheet)
+                                coroutineScope.launch {
+                                    editSheetState.hide()
+                                    mainViewModel.handleMainEvent(MainEvent.HideEditBottomSheet)
+                                }
+
                             }
                             is EditBottomSheetEvent.EditSelected -> {
                                 mainViewModel.handleMainEvent(MainEvent.EditRecord(
@@ -288,7 +288,8 @@ fun MainScreen(
                                 ))
                             }
 
-                            EditBottomSheetEvent.ShowDatePickerDialog -> {
+                            is EditBottomSheetEvent.ShowDatePickerDialog -> {
+                                mainViewModel.handleMainEvent(MainEvent.SelectedDate(event.date))
                                 showDateDialog = true
                             }
                         }
@@ -301,6 +302,7 @@ fun MainScreen(
             // 단일 날짜 선택
             if (showDateDialog) {
                 MyDatePickerDialog(
+                    selectedDate = mainUiState.selectedDate.toLocalDate(),
                     onDateSelected = { localDate ->
                         mainViewModel.handleMainEvent(MainEvent.SelectedDate(localDate.toString()))
                     },
@@ -397,8 +399,7 @@ fun MainScreen(
                         mainViewModel.handleMainEvent(MainEvent.SellRecord)
                     },
                     onDismissRequest = {
-
-
+                        mainViewModel.handleMainEvent(MainEvent.HideSellResultDialog)
                     },
                     percent = recordListUiState.sellPercent,
                     sellProfit = recordListUiState.sellProfit)
@@ -483,6 +484,7 @@ sealed class MainEvent {
     data class ShowRateBottomSheet(val record: ForeignCurrencyRecord) : MainEvent()
     data object HideRateBottomSheet : MainEvent()
     data object HideEditBottomSheet: MainEvent()
+    data object HideMainBottomSheet : MainEvent()
     data class SellCalculate(val sellRate:String) : MainEvent()
     data class SelectedDate(val date:String): MainEvent()
     data object SellRecord: MainEvent()

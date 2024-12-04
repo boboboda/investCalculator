@@ -54,6 +54,8 @@ import com.bobodroid.myapplication.components.MoneyChButtonView
 import com.bobodroid.myapplication.models.datamodels.roomDb.CurrencyType
 import com.bobodroid.myapplication.models.viewmodels.MainUiState
 import com.bobodroid.myapplication.models.viewmodels.RecordListUiState
+import com.bobodroid.myapplication.screens.MainEvent
+import com.bobodroid.myapplication.screens.PopupEvent
 import com.bobodroid.myapplication.ui.theme.BottomSheetTitleColor
 import com.bobodroid.myapplication.ui.theme.BuyColor
 import com.bobodroid.myapplication.ui.theme.WelcomeScreenBackgroundColor
@@ -68,7 +70,7 @@ fun MainBottomSheet(
     sheetState: SheetState,
     recordListUiState: RecordListUiState,
     mainUiState: MainUiState,
-    onEvent: (BottomSheetEvent) -> Unit
+    onEvent: (MainEvent.BottomSheetEvent) -> Unit
 ) {
 
     var numberInput by remember { mutableStateOf("") }
@@ -95,7 +97,7 @@ fun MainBottomSheet(
 
     ModalBottomSheet(
         onDismissRequest = {
-            onEvent(BottomSheetEvent.DismissSheet)
+            onEvent(MainEvent.BottomSheetEvent.DismissSheet)
         },
         sheetState = sheetState
     ) {
@@ -131,13 +133,13 @@ fun MainBottomSheet(
                 Buttons(
                     enabled = isBtnActive,
                     onClicked = {
-                        onEvent(BottomSheetEvent.OnRecordAdd(
+                        onEvent(MainEvent.BottomSheetEvent.OnRecordAdd(
                             numberInput,
                             rateInput,
                             group
                         ))
                         group = "미지정"
-                        onEvent(BottomSheetEvent.DismissSheet)
+                        onEvent(MainEvent.BottomSheetEvent.DismissSheet)
                     },
                     color = BuyColor,
                     fontColor = Color.Black,
@@ -148,7 +150,7 @@ fun MainBottomSheet(
 
                 Buttons(
                     onClicked = {
-                        onEvent(BottomSheetEvent.DismissSheet)
+                        onEvent(MainEvent.BottomSheetEvent.DismissSheet)
                     },
                     color = BuyColor,
                     fontColor = Color.Black,
@@ -247,7 +249,7 @@ fun MainBottomSheet(
                                     )
                                 }
                             }, onClick = {
-                                onEvent(BottomSheetEvent.OnGroupSelect)
+                                onEvent(MainEvent.BottomSheetEvent.OnGroupSelect)
                                 groupDropdownExpanded = false
                             })
 
@@ -296,7 +298,7 @@ fun MainBottomSheet(
                         containerColor = Color.White
                     ),
                     onClick = {
-                        onEvent(BottomSheetEvent.OnDateSelect)
+                        onEvent(MainEvent.BottomSheetEvent.OnDateSelect)
                     }
                 ) {
 
@@ -402,24 +404,37 @@ fun MainBottomSheet(
                 Column {
                     AnimatedVisibility(visible = numberPadPopViewIsVible) {
                         PopupNumberView(
-                            onClicked = {
-                                coroutineScope.launch {
-                                    numberInput = it
-                                    numberPadPopViewIsVible = false
-                                    delay(700)
-                                    ratePadPopViewIsVible = true
+                            event = { event->
+                                when(event) {
+                                    is PopupEvent.OnClicked -> {
+                                        coroutineScope.launch {
+                                            numberInput = event.moneyOrRate
+                                            numberPadPopViewIsVible = false
+                                            delay(700)
+                                            ratePadPopViewIsVible = true
+                                        }
+                                    }
+                                    is PopupEvent.SnackBarEvent ->
+                                        onEvent(MainEvent.BottomSheetEvent.Popup(PopupEvent.SnackBarEvent(event.message)))
                                 }
-
                             },
                             limitNumberLength = 10
                         )
                     }
 
                     AnimatedVisibility(visible = ratePadPopViewIsVible) {
-                        FloatPopupNumberView(onClicked = {
-                            rateInput = it
-                            ratePadPopViewIsVible = false
-                        })
+                        FloatPopupNumberView(
+                            event = { event ->
+                                when (event) {
+                                    is PopupEvent.OnClicked -> {
+                                        rateInput = event.moneyOrRate
+                                        ratePadPopViewIsVible = false
+                                    }
+                                    is PopupEvent.SnackBarEvent ->
+                                        onEvent(MainEvent.BottomSheetEvent.Popup(PopupEvent.SnackBarEvent(event.message)))
+                                }
+
+                            })
                     }
                 }
             }
@@ -430,12 +445,5 @@ fun MainBottomSheet(
 
 }
 
-// 바텀시트 관련 이벤트 정의
-sealed class BottomSheetEvent {
-    data class OnRecordAdd(val money: String, val rate: String, val group: String) : BottomSheetEvent()
-    data class OnCurrencyTypeChange(val currencyType: CurrencyType) : BottomSheetEvent()
-    data object OnGroupSelect : BottomSheetEvent()
-    data object OnDateSelect : BottomSheetEvent()
-    data object DismissSheet : BottomSheetEvent()
-}
+
 

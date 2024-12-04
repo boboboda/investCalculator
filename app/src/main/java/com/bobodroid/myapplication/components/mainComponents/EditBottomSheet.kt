@@ -55,6 +55,8 @@ import com.bobodroid.myapplication.components.Dialogs.PopupNumberView
 import com.bobodroid.myapplication.models.datamodels.roomDb.CurrencyType
 import com.bobodroid.myapplication.models.datamodels.roomDb.ForeignCurrencyRecord
 import com.bobodroid.myapplication.models.viewmodels.MainUiState
+import com.bobodroid.myapplication.screens.MainEvent
+import com.bobodroid.myapplication.screens.PopupEvent
 import com.bobodroid.myapplication.ui.theme.BottomSheetTitleColor
 import com.bobodroid.myapplication.ui.theme.BuyColor
 import com.bobodroid.myapplication.ui.theme.WelcomeScreenBackgroundColor
@@ -67,7 +69,7 @@ fun EditBottomSheet(
     editRecord:ForeignCurrencyRecord,
     mainUiState: MainUiState,
     sheetState: SheetState,
-    onEvent: (EditBottomSheetEvent) -> Unit
+    onEvent: (MainEvent.EditBottomSheetEvent) -> Unit
 ) {
     var numberInput by remember { mutableStateOf(editRecord.money ?: "") }
 
@@ -91,7 +93,7 @@ fun EditBottomSheet(
 
     ModalBottomSheet(
         onDismissRequest = {
-            onEvent(EditBottomSheetEvent.DismissRequest)
+            onEvent(MainEvent.EditBottomSheetEvent.DismissRequest)
         },
         sheetState = sheetState
     ) {
@@ -117,7 +119,7 @@ fun EditBottomSheet(
                 Buttons(
                     enabled = isBtnActive,
                     onClicked = {
-                        onEvent(EditBottomSheetEvent.EditSelected(editRecord, numberInput, rateInput))
+                        onEvent(MainEvent.EditBottomSheetEvent.EditSelected(editRecord, numberInput, rateInput))
                     },
                     color = BuyColor,
                     fontColor = Color.Black,
@@ -128,7 +130,7 @@ fun EditBottomSheet(
 
                 Buttons(
                     onClicked = {
-                        onEvent(EditBottomSheetEvent.DismissRequest)
+                        onEvent(MainEvent.EditBottomSheetEvent.DismissRequest)
                     },
                     color = BuyColor,
                     fontColor = Color.Black,
@@ -162,7 +164,7 @@ fun EditBottomSheet(
                         containerColor = Color.White
                     ),
                     onClick = {
-                        onEvent(EditBottomSheetEvent.ShowDatePickerDialog(recordDate))
+                        onEvent(MainEvent.EditBottomSheetEvent.ShowDatePickerDialog(recordDate))
                     }
                 ) {
 
@@ -273,24 +275,36 @@ fun EditBottomSheet(
                 Column {
                     AnimatedVisibility(visible = numberPadPopViewIsVible) {
                         PopupNumberView(
-                            onClicked = {
-                                coroutineScope.launch {
-                                    numberInput = it
-                                    numberPadPopViewIsVible = false
-                                    delay(700)
-                                    ratePadPopViewIsVible = true
+                            event = { event ->
+                                when(event) {
+                                    is PopupEvent.OnClicked -> {
+                                        coroutineScope.launch {
+                                            numberInput = event.moneyOrRate
+                                            numberPadPopViewIsVible = false
+                                            delay(700)
+                                            ratePadPopViewIsVible = true
+                                        }
                                 }
+                                    else -> onEvent(MainEvent.EditBottomSheetEvent.Popup(event))
 
-                            },
+                            }},
                             limitNumberLength = 10
                         )
                     }
 
                     AnimatedVisibility(visible = ratePadPopViewIsVible) {
-                        FloatPopupNumberView(onClicked = {
-                            rateInput = it
-                            ratePadPopViewIsVible = false
-                        })
+                        FloatPopupNumberView(
+                            event = { event ->
+                                when (event) {
+                                    is PopupEvent.OnClicked -> {
+                                        rateInput = event.moneyOrRate
+                                        ratePadPopViewIsVible = false
+                                    }
+                                    is PopupEvent.SnackBarEvent ->
+                                        onEvent(MainEvent.EditBottomSheetEvent.Popup(PopupEvent.SnackBarEvent(event.message)))
+                                }
+
+                            })
                     }
                 }
             }
@@ -301,11 +315,3 @@ fun EditBottomSheet(
 
 }
 
-sealed class EditBottomSheetEvent {
-    data class EditSelected(
-        val record: ForeignCurrencyRecord,
-        val editMoney: String,
-        val editRate: String): EditBottomSheetEvent()
-    data object DismissRequest : EditBottomSheetEvent()
-    data class ShowDatePickerDialog(val date: String): EditBottomSheetEvent()
-}

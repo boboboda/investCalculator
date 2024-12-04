@@ -32,15 +32,16 @@ import java.text.NumberFormat
 import androidx.compose.material.SnackbarHostState
 import androidx.compose.ui.unit.Dp
 import com.bobodroid.myapplication.components.AutoSizeText
+import com.bobodroid.myapplication.screens.MainEvent
+import com.bobodroid.myapplication.screens.PopupEvent
 import kotlinx.coroutines.launch
 import java.util.*
 
 
 @Composable
 fun PopupNumberView(
-    onClicked: ((String) -> Unit)?,
     limitNumberLength: Int,
-) {
+    event: (PopupEvent) -> Unit) {
 
     val buttons: List<String> = listOf(
         "1", "2", "3", "4", "5",
@@ -52,8 +53,6 @@ fun PopupNumberView(
 
     var inputMoney = if(UserInput == "") "" else "${UserInput.toLong().toLongWon()}"
 
-
-    val snackBarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
 
 
@@ -76,55 +75,6 @@ fun PopupNumberView(
 
 
             val itemSize = minOf(horizontalSize, verticalSize)
-
-            Row(modifier = Modifier
-                .fillMaxWidth()
-                .wrapContentHeight()) {
-                SnackbarHost(
-                    hostState = snackBarHostState, modifier = Modifier,
-                    snackbar = { snackbarData ->
-
-
-                        androidx.compose.material.Card(
-                            shape = RoundedCornerShape(8.dp),
-                            border = BorderStroke(2.dp, Color.Black),
-                            modifier = Modifier
-                                .padding(10.dp)
-                                .fillMaxWidth()
-                        ) {
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(8.dp)
-                                    .padding(start = 10.dp),
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.Start
-                            ) {
-
-                                Text(
-                                    text = snackbarData.message,
-                                    fontSize = 15.sp,
-                                    lineHeight = 20.sp,
-                                    fontWeight = FontWeight.Bold
-                                )
-
-                                Spacer(modifier = Modifier.weight(1f))
-
-                                Card(
-                                    modifier = Modifier.wrapContentSize(),
-                                    onClick = {
-                                        snackBarHostState.currentSnackbarData?.dismiss()
-                                    }) {
-                                    androidx.compose.material.Text(
-                                        modifier = Modifier.padding(8.dp),
-                                        text = "닫기"
-                                    )
-                                }
-                            }
-                        }
-                    })
-            }
-
 
 
             LazyVerticalGrid(
@@ -177,7 +127,9 @@ fun PopupNumberView(
                             itemSize,
                             action = CalculateAction.Enter,
                             onClicked = { if (UserInput.isNotEmpty())
-                            { onClicked?.invoke(UserInput)
+                            {
+                                event(PopupEvent.OnClicked(UserInput))
+
                             } else {return@ActionButton }
                             }
 
@@ -192,29 +144,15 @@ fun PopupNumberView(
                             onClicked = {
                                 scope.launch {
                                     if(UserInput.length >= limitNumberLength) {
-
-                                        if(snackBarHostState.currentSnackbarData == null) {
-                                            snackBarHostState.showSnackbar(
-                                                "너무 큰 수를 입력하셨습니다.\n ${limitNumberLength}자리 이하 숫자까지만 가능합니다.",
-                                                actionLabel = "닫기", SnackbarDuration.Short
-                                            )
-                                            UserInput = ""
-                                        } else {
-                                            return@launch
-                                        }
+                                        event(PopupEvent.SnackBarEvent("너무 큰 수를 입력하셨습니다.\n ${limitNumberLength}자리 이하 숫자까지만 가능합니다."))
+                                        UserInput = ""
                                     } else {
                                         if(UserInput == "")
                                         {
                                             if(aButtons == "0") {
-                                                if(snackBarHostState.currentSnackbarData == null) {
-                                                    snackBarHostState.showSnackbar(
-                                                        "0원은 입력할 수 없습니다.",
-                                                        actionLabel = "닫기", SnackbarDuration.Short
-                                                    )
-                                                    UserInput = ""
-                                                } else {
-                                                    return@launch
-                                                }
+                                                event(PopupEvent.SnackBarEvent("0원은 입력할 수 없습니다."))
+                                                UserInput = ""
+
                                             } else {
                                                 UserInput += aButtons
                                             }
@@ -235,16 +173,8 @@ fun PopupNumberView(
                                 scope.launch {
                                     if(UserInput.length >= limitNumberLength) {
 
-                                        if(snackBarHostState.currentSnackbarData == null) {
-
-                                            snackBarHostState.showSnackbar(
-                                                "너무 큰 수를 입력하셨습니다.\n ${limitNumberLength}자리 이하 숫자까지만 가능합니다.",
-                                                actionLabel = "닫기", SnackbarDuration.Short
-                                            )
-                                            UserInput = ""
-                                        } else {
-                                            return@launch
-                                        }
+                                        event(PopupEvent.SnackBarEvent("너무 큰 수를 입력하셨습니다.\n ${limitNumberLength}자리 이하 숫자까지만 가능합니다."))
+                                        UserInput = ""
                                     } else {
                                         UserInput += "99"
                                     }
@@ -264,28 +194,13 @@ fun PopupNumberView(
 
                                 scope.launch {
                                     if(UserInput.length >= limitNumberLength) {
-
-                                        if(snackBarHostState.currentSnackbarData == null) {
-                                            snackBarHostState.showSnackbar(
-                                                "너무 큰 수를 입력하셨습니다.\n ${limitNumberLength}자리 이하 숫자까지만 가능합니다.",
-                                                actionLabel = "닫기", SnackbarDuration.Short
-                                            )
-                                            UserInput = ""
-                                        } else {
-                                            return@launch
-                                        }
+                                        event(PopupEvent.SnackBarEvent("너무 큰 수를 입력하셨습니다.\n ${limitNumberLength}자리 이하 숫자까지만 가능합니다."))
+                                        UserInput = ""
                                     } else {
 
                                         if(UserInput == "") {
-                                            if(snackBarHostState.currentSnackbarData == null) {
-                                                snackBarHostState.showSnackbar(
-                                                    "0원은 입력할 수 없습니다.",
-                                                    actionLabel = "닫기", SnackbarDuration.Short
-                                                )
-                                                UserInput = ""
-                                            } else {
-                                                return@launch
-                                            }
+                                            event(PopupEvent.SnackBarEvent("0원은 입력할 수 없습니다."))
+                                            UserInput = ""
                                         } else {
                                             UserInput += "00"
                                         }
@@ -303,28 +218,14 @@ fun PopupNumberView(
 
                                 scope.launch {
                                     if(UserInput.length >= limitNumberLength) {
+                                        event(PopupEvent.SnackBarEvent("너무 큰 수를 입력하셨습니다.\n ${limitNumberLength}자리 이하 숫자까지만 가능합니다."))
+                                        UserInput = ""
 
-                                        if(snackBarHostState.currentSnackbarData == null) {
-                                            snackBarHostState.showSnackbar(
-                                                "너무 큰 수를 입력하셨습니다.\n ${limitNumberLength}자리 이하 숫자까지만 가능합니다.",
-                                                actionLabel = "닫기", SnackbarDuration.Short
-                                            )
-                                            UserInput = ""
-                                        } else {
-                                            return@launch
-                                        }
                                     } else {
 
                                         if(UserInput == "") {
-                                            if(snackBarHostState.currentSnackbarData == null) {
-                                                snackBarHostState.showSnackbar(
-                                                    "0원은 입력할 수 없습니다.",
-                                                    actionLabel = "닫기", SnackbarDuration.Short
-                                                )
-                                                UserInput = ""
-                                            } else {
-                                                return@launch
-                                            }
+                                            event(PopupEvent.SnackBarEvent("0원은 입력할 수 없습니다."))
+                                            UserInput = ""
                                         } else {
                                             UserInput += "000"
                                         }
@@ -438,7 +339,8 @@ fun NumberButtonBottom(
 
 
 @Composable
-fun FloatPopupNumberView(onClicked: ((String) -> Unit)?) {
+fun FloatPopupNumberView(
+    event: (PopupEvent) -> Unit) {
     //환율 입력하는 뷰
 
     val buttons: List<String> = listOf(
@@ -446,7 +348,6 @@ fun FloatPopupNumberView(onClicked: ((String) -> Unit)?) {
         "6", "7", "8", "9", "0"
     )
 
-    val snackBarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
 
     //매수금 입력
@@ -473,54 +374,6 @@ fun FloatPopupNumberView(onClicked: ((String) -> Unit)?) {
 
             // 더 작은 값을 선택하여 정사각형 유지
             val itemSize = minOf(horizontalSize, verticalSize)
-
-            Row(modifier = Modifier
-                .fillMaxWidth()
-                .wrapContentHeight()) {
-                SnackbarHost(
-                    hostState = snackBarHostState, modifier = Modifier,
-                    snackbar = { snackbarData ->
-
-
-                        androidx.compose.material.Card(
-                            shape = RoundedCornerShape(8.dp),
-                            border = BorderStroke(2.dp, Color.Black),
-                            modifier = Modifier
-                                .padding(10.dp)
-                                .fillMaxWidth()
-                        ) {
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(8.dp)
-                                    .padding(start = 10.dp),
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.Start
-                            ) {
-
-                                Text(
-                                    text = snackbarData.message,
-                                    fontSize = 15.sp,
-                                    lineHeight = 20.sp,
-                                    fontWeight = FontWeight.Bold
-                                )
-
-                                Spacer(modifier = Modifier.weight(1f))
-
-                                Card(
-                                    modifier = Modifier.wrapContentSize(),
-                                    onClick = {
-                                        snackBarHostState.currentSnackbarData?.dismiss()
-                                    }) {
-                                    androidx.compose.material.Text(
-                                        modifier = Modifier.padding(8.dp),
-                                        text = "닫기"
-                                    )
-                                }
-                            }
-                        }
-                    })
-            }
 
             LazyVerticalGrid(
                 modifier = Modifier.padding(horizontal = 15.dp),
@@ -580,7 +433,8 @@ fun FloatPopupNumberView(onClicked: ((String) -> Unit)?) {
                             itemSize,
                             action = CalculateAction.Enter,
                             onClicked = { if (UserInput.isNotEmpty())
-                            { onClicked?.invoke(UserInput)
+                            {
+                                event(PopupEvent.OnClicked(UserInput))
                             } else {return@FloatActionButton }
                             }
 
@@ -594,29 +448,14 @@ fun FloatPopupNumberView(onClicked: ((String) -> Unit)?) {
 
                             scope.launch {
                                 if(UserInput.length >= 10) {
-
-                                    if(snackBarHostState.currentSnackbarData == null) {
-                                        snackBarHostState.showSnackbar(
-                                            "너무 큰 수를 입력하셨습니다.\n 열자리 이하 숫자까지만 가능합니다.",
-                                            actionLabel = "닫기", SnackbarDuration.Short
-                                        )
-                                        UserInput = ""
-                                    } else {
-                                        return@launch
-                                    }
+                                    event(PopupEvent.SnackBarEvent("너무 큰 수를 입력하셨습니다.\n 열자리 이하 숫자까지만 가능합니다."))
+                                    UserInput = ""
                                 } else {
                                     if(UserInput == "")
                                     {
                                         if(aButtons == "0") {
-                                            if(snackBarHostState.currentSnackbarData == null) {
-                                                snackBarHostState.showSnackbar(
-                                                    "0원은 입력할 수 없습니다.",
-                                                    actionLabel = "닫기", SnackbarDuration.Short
-                                                )
-                                                UserInput = ""
-                                            } else {
-                                                return@launch
-                                            }
+                                            event(PopupEvent.SnackBarEvent("0원은 입력할 수 없습니다."))
+                                            UserInput = ""
                                         } else {
                                             UserInput += aButtons
                                         }
@@ -639,27 +478,13 @@ fun FloatPopupNumberView(onClicked: ((String) -> Unit)?) {
 
                                 scope.launch {
                                     if(UserInput.length >= 10) {
-                                        if(snackBarHostState.currentSnackbarData == null) {
-                                            snackBarHostState.showSnackbar(
-                                                "너무 큰 수를 입력하셨습니다.\n 열자리 이하 숫자까지만 가능합니다.",
-                                                actionLabel = "닫기", SnackbarDuration.Short
-                                            )
-                                            UserInput = ""
-                                        } else {
-                                            return@launch
-                                        }
+                                        event(PopupEvent.SnackBarEvent( "너무 큰 수를 입력하셨습니다.\n 열자리 이하 숫자까지만 가능합니다."))
+                                        UserInput = ""
                                     } else {
                                         if(UserInput == "")
                                         {
-                                            if(snackBarHostState.currentSnackbarData == null) {
-                                                snackBarHostState.showSnackbar(
-                                                    "0원은 입력할 수 없습니다.",
-                                                    actionLabel = "닫기", SnackbarDuration.Short
-                                                )
-                                                UserInput = ""
-                                            } else {
-                                                return@launch
-                                            }
+                                            event(PopupEvent.SnackBarEvent("0원은 입력할 수 없습니다."))
+                                            UserInput = ""
 
                                         } else UserInput += "00"
                                     }
@@ -676,38 +501,18 @@ fun FloatPopupNumberView(onClicked: ((String) -> Unit)?) {
                             onClicked = {
 
                                 scope.launch {
-
-
                                     if(hasTwoOrMoreDots(UserInput)) {
-                                        snackBarHostState.showSnackbar(
-                                            "소수점은 2개 이상 찍을 수 없습니다.",
-                                            actionLabel = "닫기", SnackbarDuration.Short
-                                        )
+                                        event(PopupEvent.SnackBarEvent("소수점은 2개 이상 찍을 수 없습니다."))
                                         UserInput = ""
                                     } else {
                                         if(UserInput.length >= 10) {
-                                            if(snackBarHostState.currentSnackbarData == null) {
-                                                snackBarHostState.showSnackbar(
-                                                    "너무 큰 수를 입력하셨습니다.\n 열자리 이하 숫자까지만 가능합니다.",
-                                                    actionLabel = "닫기", SnackbarDuration.Short
-                                                )
-                                                UserInput = ""
-                                            } else {
-                                                return@launch
-                                            }
+                                            event(PopupEvent.SnackBarEvent("너무 큰 수를 입력하셨습니다.\n 열자리 이하 숫자까지만 가능합니다."))
+                                            UserInput = ""
                                         } else {
                                             if(UserInput == "")
                                             {
-                                                if(snackBarHostState.currentSnackbarData == null) {
-                                                    snackBarHostState.showSnackbar(
-                                                        "소수점을 먼저 입력할 수 없습니다.",
-                                                        actionLabel = "닫기", SnackbarDuration.Short
-                                                    )
-                                                    UserInput = ""
-                                                } else {
-                                                    return@launch
-                                                }
-
+                                                event(PopupEvent.SnackBarEvent("소수점을 먼저 입력할 수 없습니다."))
+                                                UserInput = ""
                                             } else UserInput += "."
                                         }
                                     }

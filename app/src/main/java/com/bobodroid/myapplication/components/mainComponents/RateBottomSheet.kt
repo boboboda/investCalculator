@@ -53,6 +53,8 @@ import com.bobodroid.myapplication.components.Dialogs.BottomSheetRateNumberField
 import com.bobodroid.myapplication.components.Dialogs.FloatPopupNumberView
 import com.bobodroid.myapplication.components.Dialogs.PopupNumberView
 import com.bobodroid.myapplication.lists.dollorList.RecordListEvent
+import com.bobodroid.myapplication.screens.MainEvent
+import com.bobodroid.myapplication.screens.PopupEvent
 import com.bobodroid.myapplication.ui.theme.BottomSheetTitleColor
 import com.bobodroid.myapplication.ui.theme.BuyColor
 import com.bobodroid.myapplication.ui.theme.WelcomeScreenBackgroundColor
@@ -64,7 +66,7 @@ import kotlinx.coroutines.launch
 fun RateBottomSheet(
     sheetState: SheetState,
     sellDate: String,
-    onEvent: (RateBottomSheetEvent) -> Unit
+    onEvent: (MainEvent.RateBottomSheetEvent) -> Unit
 ) {
 
     var ratePadPopViewVisible by remember { mutableStateOf(false) }
@@ -75,7 +77,7 @@ fun RateBottomSheet(
 
     ModalBottomSheet(
         onDismissRequest = {
-            onEvent(RateBottomSheetEvent.DismissRequest)
+            onEvent(MainEvent.RateBottomSheetEvent.DismissRequest)
         },
         sheetState = sheetState
     ) {
@@ -101,7 +103,7 @@ fun RateBottomSheet(
                 Buttons(
                     enabled = rateInput.isNotEmpty(),
                     onClicked = {
-                        onEvent(RateBottomSheetEvent.SellClicked(rateInput))
+                        onEvent(MainEvent.RateBottomSheetEvent.SellClicked(rateInput))
                     },
                     color = BuyColor,
                     fontColor = Color.Black,
@@ -112,7 +114,7 @@ fun RateBottomSheet(
 
                 Buttons(
                     onClicked = {
-                        onEvent(RateBottomSheetEvent.DismissRequest)
+                        onEvent(MainEvent.RateBottomSheetEvent.DismissRequest)
                     },
                     color = BuyColor,
                     fontColor = Color.Black,
@@ -130,7 +132,7 @@ fun RateBottomSheet(
                 border = BorderStroke(1.dp, Color.Black),
                 colors = CardDefaults.cardColors(contentColor = Color.Black, containerColor = Color.White),
                 onClick = {
-                    onEvent(RateBottomSheetEvent.ShowDatePickerDialog)
+                    onEvent(MainEvent.RateBottomSheetEvent.ShowDatePickerDialog)
                 }) {
                 Column(
                     modifier = Modifier.fillMaxSize(),
@@ -166,10 +168,19 @@ fun RateBottomSheet(
 
                 Column {
                     AnimatedVisibility(visible = ratePadPopViewVisible) {
-                        FloatPopupNumberView(onClicked = {
-                            rateInput = it
-                            ratePadPopViewVisible = false
-                        })
+                        FloatPopupNumberView(
+                            event = { event ->
+
+                                when(event) {
+                                    is PopupEvent.OnClicked -> {
+                                        rateInput = event.moneyOrRate
+                                        ratePadPopViewVisible = false
+                                    }
+                                    is PopupEvent.SnackBarEvent ->
+                                        onEvent(MainEvent.RateBottomSheetEvent.Popup(PopupEvent.SnackBarEvent(event.message)))
+                                }
+
+                            })
                     }
                 }
             }
@@ -179,8 +190,3 @@ fun RateBottomSheet(
     }
 }
 
-sealed class RateBottomSheetEvent {
-    data object DismissRequest : RateBottomSheetEvent()
-    data object ShowDatePickerDialog : RateBottomSheetEvent()
-    data class SellClicked(val sellRate: String) : RateBottomSheetEvent()
-}

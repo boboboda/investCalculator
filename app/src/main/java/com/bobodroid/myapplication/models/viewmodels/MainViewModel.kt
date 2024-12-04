@@ -1,6 +1,9 @@
 package com.bobodroid.myapplication.models.viewmodels
 
 import android.util.Log
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.SheetState
+import androidx.compose.runtime.internal.illegalDecoyCallException
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.bobodroid.myapplication.MainActivity.Companion.TAG
@@ -21,6 +24,7 @@ import com.bobodroid.myapplication.models.datamodels.useCases.CurrencyRecordRequ
 import com.bobodroid.myapplication.models.datamodels.useCases.RecordUseCase
 import com.bobodroid.myapplication.models.datamodels.useCases.UserUseCases
 import com.bobodroid.myapplication.screens.MainEvent
+import com.bobodroid.myapplication.screens.PopupEvent
 import com.bobodroid.myapplication.util.AdMob.AdManager
 import com.bobodroid.myapplication.util.AdMob.AdUseCase
 import com.bobodroid.myapplication.util.result.onError
@@ -325,31 +329,6 @@ class MainViewModel @Inject constructor(
             }
         }
 
-    fun addRecord(
-        money: String,
-        inputRate: String,
-        groupName: String
-    ) {
-
-        val latestRate = when(mainUiState.value.selectedCurrencyType) {
-            CurrencyType.USD -> _mainUiState.value.recentRate.usd
-            CurrencyType.JPY -> _mainUiState.value.recentRate.jpy
-        }
-
-        if(latestRate == null) return
-
-        val addRequest = CurrencyRecordRequest(
-            latestRate = latestRate,
-            money = money,
-            inputRate = inputRate,
-            groupName = groupName,
-            date = _mainUiState.value.selectedDate,
-            type = mainUiState.value.selectedCurrencyType,
-        )
-        viewModelScope.launch {
-            recordUseCase.addCurrencyRecord(addRequest)
-        }
-    }
 
 
     fun updateCurrentForeignCurrency(currencyType: CurrencyType) {
@@ -383,20 +362,8 @@ class MainViewModel @Inject constructor(
                     recordUseCase.groupAdd(_recordListUiState.value, event.groupName, _mainUiState.value.selectedCurrencyType) { updatedState ->
                         _recordListUiState.value = updatedState
                     }
-                }
-            }
 
-            MainEvent.HideRateBottomSheet -> {
-                _mainUiState.update {
-                    it.copy(
-                        selectedDate = today,
-                        showRateBottomSheet = false
-                    )
-                }
-                _recordListUiState.update {
-                    it.copy(
-                        selectedRecord = null
-                    )
+                    MainEvent.HideGroupAddDialog
                 }
             }
             is MainEvent.ShowRateBottomSheet -> {
@@ -411,31 +378,6 @@ class MainViewModel @Inject constructor(
                     )
                 }
             }
-
-            is MainEvent.SellCalculate -> {
-                _mainUiState.update {
-                    it.copy(
-                        showRateBottomSheet = false
-                    )
-                }
-                viewModelScope.launch {
-                    sellCalculate(sellRate = event.sellRate)
-
-                    _mainUiState.update {
-                        it.copy(
-                            showSellResultDialog = true
-                        )
-                    }
-
-                    _recordListUiState.update {
-                        it.copy(
-                            sellRate = event.sellRate
-                        )
-                    }
-                }
-
-            }
-
             MainEvent.HideSellResultDialog -> {
                 _mainUiState.update {
                     it.copy(
@@ -470,28 +412,186 @@ class MainViewModel @Inject constructor(
                 }
             }
 
-            MainEvent.HideEditBottomSheet -> {
+            MainEvent.ShowMainBottomSheet -> {
+                _mainUiState.update {
+                    it.copy(
+                        showMainBottomSheet = true
+                    )
+                }
+            }
+
+            is MainEvent.SnackBarEvent -> {
+                viewModelScope.launch {
+                    _mainSnackBarState.send(event.message)
+                }
+            }
+
+            is MainEvent.BottomSheetEvent.DismissSheet -> {
+                _mainUiState.update {
+                    it.copy(
+                        showMainBottomSheet = false
+                    )
+                }
+            }
+            is MainEvent.BottomSheetEvent.OnRecordAdd -> {
+                val latestRate = when(mainUiState.value.selectedCurrencyType) {
+                    CurrencyType.USD -> _mainUiState.value.recentRate.usd
+                    CurrencyType.JPY -> _mainUiState.value.recentRate.jpy
+                }
+
+                if(latestRate == null) return
+
+                val addRequest = CurrencyRecordRequest(
+                    latestRate = latestRate,
+                    money = event.money,
+                    inputRate = event.rate,
+                    groupName = event.group,
+                    date = _mainUiState.value.selectedDate,
+                    type = mainUiState.value.selectedCurrencyType,
+                )
+                viewModelScope.launch {
+                    recordUseCase.addCurrencyRecord(addRequest)
+                    MainEvent.BottomSheetEvent.DismissSheet
+                }
+            }
+            is MainEvent.BottomSheetEvent.OnGroupSelect -> {
+                _mainUiState.update {
+                    it.copy(
+                        showGroupAddDialog = true
+                    )
+                }
+            }
+            is MainEvent.BottomSheetEvent.OnDateSelect -> {
+                _mainUiState.update {
+                    it.copy(
+                        showDatePickerDialog = true
+                    )
+                }
+            }
+            is MainEvent.BottomSheetEvent.OnCurrencyTypeChange -> {
+                _mainUiState.update {
+                    it.copy(
+                        selectedCurrencyType = event.currencyType
+                    )
+                }
+            }
+
+            MainEvent.RateBottomSheetEvent.DismissRequest -> {
+                _mainUiState.update {
+                    it.copy(
+                        showRateBottomSheet = false
+                    )
+                }
+            }
+            is MainEvent.RateBottomSheetEvent.SellClicked -> {
+                _mainUiState.update {
+                    it.copy(
+                        showRateBottomSheet = false
+                    )
+                }
+                viewModelScope.launch {
+                    sellCalculate(sellRate = event.sellRate)
+
+                    _mainUiState.update {
+                        it.copy(
+                            showSellResultDialog = true
+                        )
+                    }
+
+                    _recordListUiState.update {
+                        it.copy(
+                            sellRate = event.sellRate
+                        )
+                    }
+                }
+            }
+            MainEvent.RateBottomSheetEvent.ShowDatePickerDialog -> {
+                _mainUiState.update {
+                    it.copy(
+                        showDatePickerDialog = true
+                    )
+                }
+            }
+
+            MainEvent.EditBottomSheetEvent.DismissRequest -> {
                 _mainUiState.update {
                     it.copy(
                         showEditBottomSheet = false
                     )
                 }
             }
-
-            is MainEvent.EditRecord -> {
+            is MainEvent.EditBottomSheetEvent.EditSelected -> {
                 viewModelScope.launch {
                     recordUseCase.editRecord(
                         record = event.record,
                         _mainUiState.value.selectedDate,
-                        editMoney = event.money,
-                        editRate = event.rate,
+                        editMoney = event.editMoney,
+                        editRate = event.editRate,
                         type = _mainUiState.value.selectedCurrencyType
                     )
                 }
             }
+            is MainEvent.EditBottomSheetEvent.ShowDatePickerDialog -> {
+                _mainUiState.update {
+                    it.copy(
+                        showDatePickerDialog = true
+                    )
+                }
+            }
 
-            MainEvent.HideMainBottomSheet -> {
-                _mainUiState.update {  }
+            MainEvent.HideDatePickerDialog -> {
+                _mainUiState.update {
+                    it.copy(
+                        showDatePickerDialog = false
+                    )
+                }
+            }
+
+            MainEvent.HideGroupAddDialog -> {
+                _mainUiState.update {
+                    it.copy(
+                        showGroupAddDialog = false
+                    )
+                }
+            }
+            MainEvent.ShowDatePickerDialog -> {
+                _mainUiState.update {
+                    it.copy(
+                        showDatePickerDialog = true
+                    )
+                }
+            }
+
+            is MainEvent.BottomSheetEvent.Popup -> {
+                when(event.event) {
+                    is PopupEvent.SnackBarEvent -> {
+                        viewModelScope.launch {
+                            _mainSnackBarState.send(event.event.message)
+                        }
+                    }
+                    else -> return
+                }
+
+            }
+            is MainEvent.EditBottomSheetEvent.Popup -> {
+                when(event.event) {
+                    is PopupEvent.SnackBarEvent -> {
+                        viewModelScope.launch {
+                            _mainSnackBarState.send(event.event.message)
+                        }
+                    }
+                    else -> return
+                }
+            }
+            is MainEvent.RateBottomSheetEvent.Popup -> {
+                when(event.event) {
+                    is PopupEvent.SnackBarEvent -> {
+                        viewModelScope.launch {
+                            _mainSnackBarState.send(event.event.message)
+                        }
+                    }
+                    else -> return
+                }
             }
         }
     }
@@ -552,7 +652,7 @@ val today = formatter.format(time)
 
 
     // 메인 화면의 핵심 상태
-data class MainUiState(
+data class MainUiState (
         val selectedCurrencyType: CurrencyType = CurrencyType.USD,
         val selectedDate: String = today,
         val recentRate: ExchangeRate = ExchangeRate(),
@@ -560,7 +660,9 @@ data class MainUiState(
         val showRateBottomSheet: Boolean = false,
         val showEditBottomSheet: Boolean = false,
         val showSellResultDialog: Boolean = false,
-        val showMainBottomSheet: Boolean = false
+        val showMainBottomSheet: Boolean = false,
+        val showGroupAddDialog: Boolean = false,
+        val showDatePickerDialog: Boolean = false
 )
 
 // 날짜 검색 관련 상태

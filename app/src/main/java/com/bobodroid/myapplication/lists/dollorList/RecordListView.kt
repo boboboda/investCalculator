@@ -31,8 +31,10 @@ import com.bobodroid.myapplication.components.RecordHeader
 import com.bobodroid.myapplication.components.RecordTextView
 import com.bobodroid.myapplication.models.datamodels.roomDb.ForeignCurrencyRecord
 import com.bobodroid.myapplication.models.viewmodels.CurrencyRecordState
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.util.UUID
 
 @ExperimentalMaterialApi
@@ -123,6 +125,7 @@ fun RecordListView(
 
                     var accmulatedCount = 1
 
+
                     (0..<groupIndex).forEach { foreachIndex ->
                         val currentKey = filterRecord.keys.elementAt(foreachIndex)
                         val elements = filterRecord.getValue(currentKey)
@@ -151,6 +154,10 @@ fun RecordListView(
 
                     Divider()
                 }
+            }
+
+            item {
+                Spacer(modifier = Modifier.height(100.dp))  // 원하는 높이 지정
             }
 
 

@@ -30,63 +30,8 @@ import com.bobodroid.myapplication.ui.theme.BottomSheetSelectedColor
 import com.bobodroid.myapplication.ui.theme.BuyColor
 import com.bobodroid.myapplication.ui.theme.SelectedColor
 import androidx.compose.material3.rememberModalBottomSheetState
+import com.bobodroid.myapplication.screens.PopupEvent
 import kotlinx.coroutines.launch
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun NumberField(
-    title: String,
-    haveValue: String? = "",
-    onClicked: ((String) -> Unit)?
-) {
-
-    var won = NumberFormat.getInstance(Locale.KOREA)
-    val openDialog = remember { mutableStateOf(false) }
-    var userInput by remember { mutableStateOf(haveValue) }
-
-    val inputMoney = if (userInput == "") title else "${userInput?.toLong()?.toLongWon()}"
-
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(10.dp)
-            .height(45.dp),
-        border = BorderStroke(1.dp, Color.Black),
-        colors = CardDefaults.cardColors(Color.White),
-
-        onClick = {
-            if (!openDialog.value) openDialog.value = !openDialog.value else null
-        }
-    ) {
-        Text(
-            text = inputMoney,
-            fontSize = 18.sp,
-            modifier = Modifier
-                .padding(3.dp, top = 10.dp)
-                .fillMaxWidth(),
-            textAlign = TextAlign.Center
-        )
-    }
-    if (openDialog.value) {
-        Popup(
-            alignment = Alignment.BottomCenter,
-            onDismissRequest = { openDialog.value = false },
-            offset = IntOffset(0, -180)
-        ) {
-            Box() {
-                PopupNumberView(
-                    onClicked = {
-                        openDialog.value = false
-                        userInput = it
-                        onClicked?.invoke(it)
-                    },
-                    limitNumberLength = 10
-                )
-            }
-        }
-    }
-}
-
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

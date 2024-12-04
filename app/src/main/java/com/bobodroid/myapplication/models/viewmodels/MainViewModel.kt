@@ -489,6 +489,10 @@ class MainViewModel @Inject constructor(
                     )
                 }
             }
+
+            MainEvent.HideMainBottomSheet -> {
+                _mainUiState.update {  }
+            }
         }
     }
 

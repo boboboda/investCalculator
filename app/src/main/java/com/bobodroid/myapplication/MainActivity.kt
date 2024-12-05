@@ -13,12 +13,26 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.DrawerState
 import androidx.compose.material.DrawerValue
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
 import androidx.compose.material.rememberDrawerState
+import androidx.compose.material3.Card
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Text
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.compose.ui.zIndex
 import androidx.core.content.ContextCompat
 import androidx.core.splashscreen.SplashScreen
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
@@ -218,10 +232,8 @@ fun AppScreen(
         ) {
 
             InvestAppScreen(
-                dollarViewModel,
                 mainViewModel,
                 analysisViewModel,
-                drawerState = drawerState,
                 activity
             )
         }
@@ -238,10 +250,8 @@ fun AppScreen(
 
 @Composable
 fun InvestAppScreen(
-    dollarViewModel: DollarViewModel,
     mainViewModel: MainViewModel,
     analysisViewModel: AnalysisViewModel,
-    drawerState: DrawerState,
     activity: Activity
 ) {
 
@@ -261,49 +271,41 @@ fun InvestAppScreen(
         mutableStateOf(false)
     }
 
-    Column(
-        modifier = Modifier.fillMaxSize()
-    ) {
 
-        Column(
-            modifier = Modifier.weight(1f)
-        ) {
-            InvestNavHost(
-                investNavController = investNavController,
-                dollarViewModel = dollarViewModel,
-                mainViewModel = mainViewModel,
-                activity = activity,
-                analysisViewModel = analysisViewModel)
-        }
-
-
-
-        Column(
-            modifier = Modifier.wrapContentSize()
-        ) {
+    Scaffold(
+        bottomBar = {
             MainBottomBar(
                 mainRouteAction = mainRouteAction,
                 mainRouteBackStack = mainBackStack.value,
                 mainViewModel = mainViewModel)
         }
+    )
+    { paddingValues ->  
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues)
+        ) {
+            InvestNavHost(
+                investNavController = investNavController,
+                mainViewModel = mainViewModel,
+                activity = activity,
+                analysisViewModel = analysisViewModel,
+            )
 
-        if(guideDialog) {
-            GuideDialog(onDismissRequest = {
-                                           guideDialog = it
-            }, title = "안내", message = "아이디 생성 후 다시 시도해주세요", buttonLabel = "확인")
+            if(guideDialog) {
+                GuideDialog(onDismissRequest = {
+                    guideDialog = it
+                }, title = "안내", message = "아이디 생성 후 다시 시도해주세요", buttonLabel = "확인")
+            }
+
+            if(returnGuideDialog) {
+                GuideDialog(onDismissRequest = {
+                    returnGuideDialog = it
+                }, title = "안내", message = "추후 출시될 예정입니다.", buttonLabel = "확인")
+            }
         }
-
-        if(returnGuideDialog) {
-            GuideDialog(onDismissRequest = {
-                returnGuideDialog = it
-            }, title = "안내", message = "추후 출시될 예정입니다.", buttonLabel = "확인")
-        }
-
     }
-
-
-
-
 }
 
 
@@ -311,10 +313,9 @@ fun InvestAppScreen(
 fun InvestNavHost(
     investNavController: NavHostController,
     startRouter: MainRoute = MainRoute.Main,
-    dollarViewModel: DollarViewModel,
     analysisViewModel: AnalysisViewModel,
     mainViewModel: MainViewModel,
-    activity: Activity
+            activity: Activity
 ) {
 
     NavHost(navController = investNavController, startDestination = startRouter.routeName!!) {

@@ -95,7 +95,6 @@ fun RecordListRowView(
     data: ForeignCurrencyRecord,
     sellState: Boolean = data.recordColor!!,
     groupList: List<String>,
-    snackBarHostState: SnackbarHostState,
     onEvent: (RecordListEvent) -> Unit,
     scrollEvent: () -> Unit
 ) {
@@ -362,15 +361,7 @@ fun RecordListRowView(
                                                 onEvent(RecordListEvent.SellRecord(data))
 
                                             } else {
-                                                if (snackBarHostState.currentSnackbarData == null) {
-                                                    coroutineScope.launch {
-                                                        snackBarHostState.showSnackbar(
-                                                            "매도한 기록입니다.",
-                                                            actionLabel = "닫기",
-                                                            SnackbarDuration.Short
-                                                        )
-                                                    }
-                                                }
+                                                onEvent(RecordListEvent.SnackBarEvent("매도한 기록입니다."))
                                             }
                                         })
 
@@ -415,15 +406,7 @@ fun RecordListRowView(
                                             coroutineScope.launch {
                                                 dropdownExpanded = false
                                                 if (data.recordColor == false) {
-                                                    if (snackBarHostState.currentSnackbarData == null) {
-                                                        coroutineScope.launch {
-                                                            snackBarHostState.showSnackbar(
-                                                                "매도한 기록이 없습니다.",
-                                                                actionLabel = "닫기",
-                                                                SnackbarDuration.Short
-                                                            )
-                                                        }
-                                                    }
+                                                    onEvent(RecordListEvent.SnackBarEvent("매도한 기록이 없습니다."))
                                                 } else {
                                                     onEvent(RecordListEvent.CancelSellRecord(data.id))
 //                                                    if (result.first) {
@@ -556,14 +539,7 @@ fun RecordListRowView(
 
                                 if (memoTextInput.length > 100) {
                                     focusManager.clearFocus()
-                                    if (snackBarHostState.currentSnackbarData == null) {
-                                        coroutineScope.launch {
-                                            snackBarHostState.showSnackbar(
-                                                "100자 이하로 작성해주세요",
-                                                actionLabel = "닫기", SnackbarDuration.Short
-                                            )
-                                        }
-                                    }
+                                    onEvent(RecordListEvent.SnackBarEvent("100자 이하로 작성해주세요"))
                                 } else {
                                     memoTextInput = it
                                 }
@@ -696,6 +672,7 @@ fun RecordListRowView(
 
 sealed class RecordListEvent {
     data class ShowEditBottomSheet(val data: ForeignCurrencyRecord) : RecordListEvent()
+    data class SnackBarEvent(val message: String): RecordListEvent()
     data class AddGroup(val data:ForeignCurrencyRecord, val groupName: String): RecordListEvent()
     data class CancelSellRecord(val id: UUID): RecordListEvent()
     data class UpdateRecordCategory(val record: ForeignCurrencyRecord, val groupName: String): RecordListEvent()

@@ -44,7 +44,6 @@ import java.util.UUID
 @SuppressLint("StateFlowValueCalledInComposition")
 @Composable
 fun RecordListView(
-    snackBarHostState: SnackbarHostState,
     currencyRecordState: CurrencyRecordState<ForeignCurrencyRecord>,
     hideSellRecordState: Boolean,
     onEvent: (RecordListEvent) -> Unit
@@ -140,7 +139,6 @@ fun RecordListView(
                         Buy,
                         sellState = Buy.recordColor!!,
                         groupList = groupList,
-                        snackBarHostState = snackBarHostState,
                         onEvent = { event ->
                             onEvent(event)
                         },

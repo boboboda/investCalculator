@@ -50,7 +50,6 @@ import com.bobodroid.myapplication.components.Dialogs.BottomSheetNumberField
 import com.bobodroid.myapplication.components.Dialogs.BottomSheetRateNumberField
 import com.bobodroid.myapplication.components.Dialogs.FloatPopupNumberView
 import com.bobodroid.myapplication.components.Dialogs.PopupNumberView
-import com.bobodroid.myapplication.components.MoneyChButtonView
 import com.bobodroid.myapplication.models.datamodels.roomDb.CurrencyType
 import com.bobodroid.myapplication.models.viewmodels.MainUiState
 import com.bobodroid.myapplication.models.viewmodels.RecordListUiState
@@ -61,12 +60,10 @@ import com.bobodroid.myapplication.ui.theme.BuyColor
 import com.bobodroid.myapplication.ui.theme.WelcomeScreenBackgroundColor
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import java.text.SimpleDateFormat
-import java.util.Calendar
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun MainBottomSheet(
+fun AddBottomSheet(
     sheetState: SheetState,
     recordListUiState: RecordListUiState,
     mainUiState: MainUiState,

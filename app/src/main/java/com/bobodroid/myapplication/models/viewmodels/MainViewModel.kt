@@ -83,6 +83,9 @@ class MainViewModel @Inject constructor(
     private val _mainSnackBarState = Channel<String>()
     val mainSnackBarState = _mainSnackBarState.receiveAsFlow()
 
+    private val _sheetSnackBarState = Channel<String>()
+    val sheetSnackBarState = _sheetSnackBarState.receiveAsFlow()
+
     private val todayDate = MutableStateFlow("${LocalDate.now()}")
 
     val alarmPermissionState = MutableStateFlow(false)
@@ -412,10 +415,10 @@ class MainViewModel @Inject constructor(
                 }
             }
 
-            MainEvent.ShowMainBottomSheet -> {
+            MainEvent.ShowAddBottomSheet -> {
                 _mainUiState.update {
                     it.copy(
-                        showMainBottomSheet = true
+                        showAddBottomSheet = true
                     )
                 }
             }
@@ -429,7 +432,7 @@ class MainViewModel @Inject constructor(
             is MainEvent.BottomSheetEvent.DismissSheet -> {
                 _mainUiState.update {
                     it.copy(
-                        showMainBottomSheet = false
+                        showAddBottomSheet = false
                     )
                 }
             }
@@ -634,6 +637,10 @@ class MainViewModel @Inject constructor(
                     }
                 }
 
+                is RecordListEvent.SnackBarEvent -> {
+                    _mainSnackBarState.send(event.message)
+                }
+
                 else -> return@launch
             }
         }
@@ -660,7 +667,7 @@ data class MainUiState (
         val showRateBottomSheet: Boolean = false,
         val showEditBottomSheet: Boolean = false,
         val showSellResultDialog: Boolean = false,
-        val showMainBottomSheet: Boolean = false,
+        val showAddBottomSheet: Boolean = false,
         val showGroupAddDialog: Boolean = false,
         val showDatePickerDialog: Boolean = false
 )

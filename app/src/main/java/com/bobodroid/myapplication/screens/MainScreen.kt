@@ -9,8 +9,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
-import androidx.compose.material.SnackbarDuration
-import androidx.compose.material.SnackbarHostState
+import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.rounded.KeyboardArrowDown
@@ -54,8 +53,8 @@ import com.bobodroid.myapplication.components.Dialogs.TextFieldDialog
 import com.bobodroid.myapplication.components.Dialogs.ThanksDialog
 import com.bobodroid.myapplication.components.admobs.BannerAd
 import com.bobodroid.myapplication.components.admobs.showTargetRewardedAdvertisement
+import com.bobodroid.myapplication.components.mainComponents.AddBottomSheet
 import com.bobodroid.myapplication.components.mainComponents.EditBottomSheet
-import com.bobodroid.myapplication.components.mainComponents.MainBottomSheet
 import com.bobodroid.myapplication.components.mainComponents.MainHeader
 import com.bobodroid.myapplication.components.mainComponents.RateBottomSheet
 import com.bobodroid.myapplication.extensions.toDate
@@ -70,12 +69,15 @@ import com.bobodroid.myapplication.screens.MainEvent.BottomSheetEvent
 import com.bobodroid.myapplication.ui.theme.BottomSheetTitleColor
 import com.bobodroid.myapplication.ui.theme.BuyColor
 import com.bobodroid.myapplication.ui.theme.primaryColor
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.ui.window.Dialog
 
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterialApi::class)
 @Composable
 fun MainScreen(
     mainViewModel: MainViewModel,
+
     activity: Activity
 ) {
     val mainUiState by mainViewModel.mainUiState.collectAsState()
@@ -88,6 +90,8 @@ fun MainScreen(
 
     val dateRangeUiState by mainViewModel.dateRangeUiState.collectAsState()
 
+    val mainSnackBarHostState = remember { SnackbarHostState() }
+
     val coroutineScope = rememberCoroutineScope()
 
     val bottomRefreshPadding = remember { mutableStateOf(5) }
@@ -95,9 +99,6 @@ fun MainScreen(
     var isVisible by remember { mutableStateOf(true) }
 
     val context = LocalContext.current
-
-
-    val mainScreenSnackBarHostState = remember { SnackbarHostState() }
 
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
@@ -133,7 +134,7 @@ fun MainScreen(
 
     LaunchedEffect(key1 = true) {
         mainViewModel.mainSnackBarState.collect { message ->
-            mainScreenSnackBarHostState.showSnackbar(
+            mainSnackBarHostState.showSnackbar(
                 message = message,
                 actionLabel = "닫기",
                 duration = SnackbarDuration.Short
@@ -173,7 +174,6 @@ fun MainScreen(
                     .addFocusCleaner(focusManager)
             ) {
                 RecordListView(
-                    mainScreenSnackBarHostState,
                     records,
                     hideSellRecordState = hideSellRecordState,
                     onEvent = {event ->
@@ -193,8 +193,8 @@ fun MainScreen(
             }
 
             // bottomsheet
-            if (mainUiState.showMainBottomSheet) {
-                MainBottomSheet(
+            if (mainUiState.showAddBottomSheet) {
+                AddBottomSheet(
                     sheetState,
                     recordListUiState,
                     mainUiState,
@@ -236,7 +236,6 @@ fun MainScreen(
 
 
             // EditBottomSheet
-
             if(mainUiState.showEditBottomSheet) {
                 val record = recordListUiState.selectedRecord ?: return
                 EditBottomSheet(
@@ -383,7 +382,7 @@ fun MainScreen(
         // 플로팅 버튼
         ContentIcon(
             buyButtonClicked = {
-                mainViewModel.handleMainEvent(MainEvent.ShowMainBottomSheet)
+                mainViewModel.handleMainEvent(MainEvent.ShowAddBottomSheet)
             },
             totalMoneyCheckClicked = {
 //                showOpenDialog.value = true
@@ -397,18 +396,10 @@ fun MainScreen(
             })
 
 
-
-        //snackBar
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .wrapContentHeight()
-                .zIndex(Float.MAX_VALUE)
-        ) {
+        Box() {
             SnackbarHost(
-                hostState = mainScreenSnackBarHostState, modifier = Modifier,
+                hostState = mainSnackBarHostState, modifier = Modifier,
                 snackbar = { snackBarData ->
-
                     Card(
                         shape = RoundedCornerShape(8.dp),
                         border = BorderStroke(1.5.dp, Color.Black),
@@ -426,7 +417,7 @@ fun MainScreen(
                         ) {
 
                             Text(
-                                text = snackBarData.message,
+                                text = snackBarData.visuals.message,
                                 fontSize = 15.sp,
                                 lineHeight = 20.sp,
                                 fontWeight = FontWeight.Medium
@@ -438,7 +429,7 @@ fun MainScreen(
                                 modifier = Modifier
                                     .padding(8.dp)
                                     .clickable {
-                                        mainScreenSnackBarHostState.currentSnackbarData?.dismiss()
+                                        mainSnackBarHostState.currentSnackbarData?.dismiss()
                                     },
                                 text = "닫기",
                                 fontWeight = FontWeight.Medium
@@ -447,6 +438,8 @@ fun MainScreen(
                     }
                 })
         }
+
+
     }
 }
 
@@ -459,7 +452,7 @@ sealed class MainEvent {
     data class SnackBarEvent(val message: String) : MainEvent()
     data class GroupAdd(val groupName: String) : MainEvent()
     data class ShowRateBottomSheet(val record: ForeignCurrencyRecord) : MainEvent()
-    data object ShowMainBottomSheet : MainEvent()
+    data object ShowAddBottomSheet : MainEvent()
     data object ShowDatePickerDialog : MainEvent()
     data object HideGroupAddDialog : MainEvent()
     data object HideDatePickerDialog : MainEvent()

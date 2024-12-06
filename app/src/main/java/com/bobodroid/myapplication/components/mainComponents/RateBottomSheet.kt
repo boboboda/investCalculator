@@ -31,6 +31,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.SheetState
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -65,6 +66,7 @@ import kotlinx.coroutines.launch
 @Composable
 fun RateBottomSheet(
     sheetState: SheetState,
+    snackBarHostState: SnackbarHostState,
     sellDate: String,
     onEvent: (MainEvent.RateBottomSheetEvent) -> Unit
 ) {
@@ -75,11 +77,13 @@ fun RateBottomSheet(
 
     val coroutineScope = rememberCoroutineScope()
 
-    ModalBottomSheet(
+
+    BottomSheet(
+        sheetState,
+        snackBarHostState,
         onDismissRequest = {
             onEvent(MainEvent.RateBottomSheetEvent.DismissRequest)
-        },
-        sheetState = sheetState
+        }
     ) {
         // Sheet content
         Column(
@@ -145,7 +149,7 @@ fun RateBottomSheet(
                             .fillMaxWidth()
                             .padding(),
                         textAlign = TextAlign.Center
-                        )
+                    )
                 }
 
             }

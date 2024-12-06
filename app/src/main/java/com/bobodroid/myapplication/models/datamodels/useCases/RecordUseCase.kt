@@ -3,6 +3,7 @@ package com.bobodroid.myapplication.models.datamodels.useCases
 import android.util.Log
 import androidx.lifecycle.viewModelScope
 import com.bobodroid.myapplication.MainActivity.Companion.TAG
+import com.bobodroid.myapplication.extensions.toBigDecimalWon
 import com.bobodroid.myapplication.models.datamodels.repository.InvestRepository
 import com.bobodroid.myapplication.models.datamodels.roomDb.CurrencyType
 import com.bobodroid.myapplication.models.datamodels.roomDb.DrBuyRecord
@@ -336,6 +337,33 @@ class RecordUseCase @Inject constructor(
         krMoney: String
     ): Float =
         (exchangeMoney.toFloat() / krMoney.toFloat()) * 100f
+
+    fun sumProfit(
+        record: ForeignCurrencyRecordList,
+        type: CurrencyType
+    ): String {
+
+        val currencyRecord = when(type) {
+            CurrencyType.USD -> {
+               record.dollarState.records
+            }
+            CurrencyType.JPY -> {
+                record.yenState.records
+            }
+        }
+        val mapProfitDecimal = currencyRecord.filter { it.profit != "" }.map { BigDecimal(it.profit) }
+
+        if(mapProfitDecimal.isNotEmpty()) {
+            return ""
+        } else {
+            if(mapProfitDecimal.size > 1) {
+                return mapProfitDecimal.reduce {first, end ->
+                    first + end }.toBigDecimalWon()
+            } else {
+                return mapProfitDecimal.first().toBigDecimalWon()
+            }
+        }
+    }
 
 
 

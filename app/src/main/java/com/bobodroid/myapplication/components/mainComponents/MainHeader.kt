@@ -48,6 +48,7 @@ import java.math.BigDecimal
 fun MainHeader(
     mainUiState: MainUiState,
     adUiState: AdUiState,
+    totalProfit: String,
     updateCurrentForeignCurrency: (CurrencyType) -> Unit,
     hideSellRecordState: Boolean,
     onHide:(Boolean) -> Unit
@@ -140,11 +141,9 @@ fun MainHeader(
             Column(modifier = Modifier
                 .wrapContentWidth()
                 .padding(end = 20.dp)) {
-//                GetMoneyView(
-//                    getMoney = "${totalDrSellProfit.value}",
-//                    onClicked = {  },
-//                    allViewModel
-//                )
+                GetMoneyView(
+                    getMoney = totalProfit,
+                )
             }
             Spacer(modifier = Modifier.weight(1f))
 
@@ -197,11 +196,11 @@ fun MainHeader(
             horizontalArrangement = Arrangement.Start,
             verticalAlignment = Alignment.CenterVertically,
         ) {
-//            Text(
-//                modifier = Modifier.padding(start = 10.dp),
-//                text = "예상수익 새로고침 시간: ${reFreshDate.value}",
-//                textAlign = TextAlign.Center
-//            )
+            Text(
+                modifier = Modifier.padding(start = 10.dp),
+                text = "예상수익 새로고침 시간: ${reFreshDate.value}",
+                textAlign = TextAlign.Center
+            )
         }
     }
 }

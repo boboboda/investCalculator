@@ -42,12 +42,9 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.zIndex
 import com.bobodroid.myapplication.MainActivity
 import com.bobodroid.myapplication.R
-import com.bobodroid.myapplication.components.Dialogs.BottomSheetNumberField
-import com.bobodroid.myapplication.components.Dialogs.BottomSheetRateNumberField
 import com.bobodroid.myapplication.components.Dialogs.FloatPopupNumberView
 import com.bobodroid.myapplication.components.Dialogs.PopupNumberView
 import com.bobodroid.myapplication.components.Dialogs.RewardShowAskDialog
-import com.bobodroid.myapplication.components.Dialogs.SellDialogEvent
 import com.bobodroid.myapplication.components.Dialogs.SellResultDialog
 import com.bobodroid.myapplication.components.Dialogs.TextFieldDialog
 import com.bobodroid.myapplication.components.Dialogs.ThanksDialog
@@ -88,9 +85,9 @@ fun MainScreen(
 
     val noticeUiState by mainViewModel.noticeUiState.collectAsState()
 
-    val dateRangeUiState by mainViewModel.dateRangeUiState.collectAsState()
-
     val mainSnackBarHostState = remember { SnackbarHostState() }
+
+    val sheetSnackBarHostState = remember { SnackbarHostState() }
 
     val coroutineScope = rememberCoroutineScope()
 
@@ -131,14 +128,27 @@ fun MainScreen(
         }
     })
 
-
     LaunchedEffect(key1 = true) {
         mainViewModel.mainSnackBarState.collect { message ->
-            mainSnackBarHostState.showSnackbar(
-                message = message,
-                actionLabel = "닫기",
-                duration = SnackbarDuration.Short
-            )
+            if (mainSnackBarHostState.currentSnackbarData == null) {
+                mainSnackBarHostState.showSnackbar(
+                    message = message,
+                    actionLabel = "닫기",
+                    duration = SnackbarDuration.Short
+                )
+            }
+        }
+    }
+
+    LaunchedEffect(key1 = true) {
+        mainViewModel.sheetSnackBarState.collect { message ->
+            if (sheetSnackBarHostState.currentSnackbarData == null) {
+                sheetSnackBarHostState.showSnackbar(
+                    message = message,
+                    actionLabel = "닫기",
+                    duration = SnackbarDuration.Short
+                )
+            }
         }
     }
 
@@ -197,6 +207,7 @@ fun MainScreen(
                 AddBottomSheet(
                     sheetState,
                     recordListUiState,
+                    sheetSnackBarHostState,
                     mainUiState,
                     onEvent = { bottomSheetEvent ->
                         when(bottomSheetEvent) {
@@ -219,6 +230,7 @@ fun MainScreen(
                 RateBottomSheet(
                     rateSheetState,
                     sellDate = mainUiState.selectedDate,
+                    snackBarHostState = sheetSnackBarHostState,
                     onEvent = { event ->
                         when(event) {
                             MainEvent.RateBottomSheetEvent.DismissRequest -> {
@@ -229,7 +241,6 @@ fun MainScreen(
                             }
                             else -> mainViewModel.handleMainEvent(event)
                         }
-                        mainViewModel.handleMainEvent(event)
                     }
                 )
             }
@@ -292,24 +303,13 @@ fun MainScreen(
             }
 
             // 날짜범위 선택
-            if (dateRangeUiState.dateRangeDialog) {
+            if (mainUiState.showDateRangeDialog) {
                 RangeDateDialog(
                     onDismissRequest = {
-                        mainViewModel.handleMainEvent(MainEvent.HideDatePickerDialog)
-                    },
-                    callStartDate = dateRangeUiState.startDate,
-                    callEndDate = dateRangeUiState.endDate,
-                    startDateSelected = {
-                        mainViewModel.inputStartDate(it)
-                    },
-                    endDateSelected = {
-                        mainViewModel.inputEndDate(it)
+                        mainViewModel.handleMainEvent(MainEvent.HideDateRangeDialog)
                     },
                     onClicked = { selectedStartDate, selectedEndDate ->
                         coroutineScope.launch {
-                            // 메인화면 조회기간
-                            mainViewModel.inputStartDate(selectedStartDate)
-                            mainViewModel.inputEndDate(selectedEndDate)
 
 //                            dollarViewModel.dateRangeInvoke(
 //                                selectedStartDate,
@@ -459,6 +459,7 @@ sealed class MainEvent {
     data class SelectedDate(val date:String): MainEvent()
     data object SellRecord: MainEvent()
     data object HideSellResultDialog : MainEvent()
+    data object HideDateRangeDialog: MainEvent()
 
     // 바텀시트 관련 이벤트 정의
     sealed class BottomSheetEvent: MainEvent() {

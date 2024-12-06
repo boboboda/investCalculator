@@ -30,6 +30,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.SheetState
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -66,6 +67,7 @@ import kotlinx.coroutines.launch
 fun AddBottomSheet(
     sheetState: SheetState,
     recordListUiState: RecordListUiState,
+    snackBarHostState: SnackbarHostState,
     mainUiState: MainUiState,
     onEvent: (MainEvent.BottomSheetEvent) -> Unit
 ) {
@@ -92,11 +94,13 @@ fun AddBottomSheet(
 
     var ratePadPopViewIsVible by remember { mutableStateOf(false) }
 
-    ModalBottomSheet(
+
+    BottomSheet(
+        sheetState = sheetState,
+        snackBarHostState = snackBarHostState,
         onDismissRequest = {
             onEvent(MainEvent.BottomSheetEvent.DismissSheet)
         },
-        sheetState = sheetState
     ) {
         // Sheet content
         Column(
@@ -439,6 +443,15 @@ fun AddBottomSheet(
 
         }
     }
+
+//    ModalBottomSheet(
+//        onDismissRequest = {
+//            onEvent(MainEvent.BottomSheetEvent.DismissSheet)
+//        },
+//        sheetState = sheetState
+//    ) {
+//
+//    }
 
 }
 

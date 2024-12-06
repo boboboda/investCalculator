@@ -356,10 +356,7 @@ fun RecordListRowView(
                                         }, onClick = {
                                             dropdownExpanded = false
                                             if (!data.recordColor!!) {
-//                                                if (!openDialog) openDialog = true else openDialog = false
-
                                                 onEvent(RecordListEvent.SellRecord(data))
-
                                             } else {
                                                 onEvent(RecordListEvent.SnackBarEvent("매도한 기록입니다."))
                                             }
@@ -409,27 +406,6 @@ fun RecordListRowView(
                                                     onEvent(RecordListEvent.SnackBarEvent("매도한 기록이 없습니다."))
                                                 } else {
                                                     onEvent(RecordListEvent.CancelSellRecord(data.id))
-//                                                    if (result.first) {
-//                                                        if (snackBarHostState.currentSnackbarData == null) {
-//                                                            coroutineScope.launch {
-//                                                                snackBarHostState.showSnackbar(
-//                                                                    "매도가 취소되었습니다.",
-//                                                                    actionLabel = "닫기",
-//                                                                    SnackbarDuration.Short
-//                                                                )
-//                                                            }
-//                                                        }
-//                                                    } else {
-//                                                        if (snackBarHostState.currentSnackbarData == null) {
-//                                                            coroutineScope.launch {
-//                                                                snackBarHostState.showSnackbar(
-//                                                                    "일치하는 매수기록이 없습니다.",
-//                                                                    actionLabel = "닫기",
-//                                                                    SnackbarDuration.Short
-//                                                                )
-//                                                            }
-//                                                        }
-//                                                    }
                                                 }
 
 

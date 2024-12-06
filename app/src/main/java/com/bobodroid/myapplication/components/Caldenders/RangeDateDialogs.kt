@@ -57,10 +57,6 @@ import java.util.GregorianCalendar
 @Composable
 fun RangeDateDialog(
     onDismissRequest: (Boolean) -> Unit,
-    callStartDate: String,
-    callEndDate: String,
-    startDateSelected: ((String) -> Unit)? = null,
-    endDateSelected: ((String) -> Unit)? = null,
     onClicked: ((selectedStartDate: String, selectedEndDate: String) -> Unit)? = null,
 ) {
 
@@ -164,9 +160,7 @@ fun RangeDateDialog(
 
                         datePickerEnableState.value = false
                         dateCardLabel.value = it
-                        scope.launch {
-//                            allViewModel.dateStringFlow.emit(it)
-                        }
+
                     },
                     fontSize = 15,
                     modifier = Modifier.weight(1f),
@@ -186,9 +180,6 @@ fun RangeDateDialog(
 
                         datePickerEnableState.value = false
                         dateCardLabel.value = it
-                        scope.launch {
-//                            allViewModel.dateStringFlow.emit(it)
-                        }
                     },
                     fontSize = 15,
                     modifier = Modifier.weight(1f),
@@ -208,10 +199,6 @@ fun RangeDateDialog(
 
                         datePickerEnableState.value = false
                         dateCardLabel.value = it
-
-                        scope.launch {
-//                            allViewModel.dateStringFlow.emit(it)
-                        }
                     },
                     fontSize = 15,
                     modifier = Modifier.weight(1f),
@@ -227,9 +214,6 @@ fun RangeDateDialog(
                     onClicked = {
                         datePickerEnableState.value = true
                         dateCardLabel.value = it
-                        scope.launch {
-//                            allViewModel.dateStringFlow.emit(it)
-                        }
                     },
                     fontSize = 15,
                     modifier = Modifier.weight(1f),
@@ -263,7 +247,7 @@ fun RangeDateDialog(
                         isStartDateOpen.value = true
                     }) {
                     Text(
-                        text = "${selectedStartDate.value}",
+                        text = selectedStartDate.value,
                         fontSize = 13.sp,
                         textAlign = TextAlign.Center,
                     )
@@ -285,7 +269,7 @@ fun RangeDateDialog(
                         isEndDateOpen.value = true
                     }) {
                     Text(
-                        text = "${selectedEndDate.value}",
+                        text = selectedEndDate.value,
                         fontSize = 13.sp,
                         textAlign = TextAlign.Center,
                     )
@@ -373,18 +357,16 @@ fun RangeDateDialog(
                         ZoneId.systemDefault()
                     ).toLocalDate().toString()
 
-                    startDateSelected?.invoke(selectedStartDate.value)
-
                     isStartDateOpen.value = false
                 },
                 onDismissRequest = {
                     isStartDateOpen.value = false
                 },
-                startDate = if (callStartDate == "") "${LocalDate.now()}" else {
-                    callStartDate
+                startDate = if (selectedStartDate.value == "") "${LocalDate.now()}" else {
+                    selectedStartDate.value
                 },
-                endDate = if (callEndDate == "") "${LocalDate.now()}" else {
-                    callEndDate
+                endDate = if (selectedEndDate.value == "") "${LocalDate.now()}" else {
+                    selectedEndDate.value
                 }
             )
         }
@@ -402,22 +384,16 @@ fun RangeDateDialog(
                         ZoneId.systemDefault()
                     ).toLocalDate().toString()
 
-                    endDateSelected?.invoke(
-                        Instant.ofEpochMilli(endDate).atZone(
-                            ZoneId.systemDefault()
-                        ).toLocalDate().toString()
-                    )
-
                     isEndDateOpen.value = false
                 },
                 onDismissRequest = {
                     isEndDateOpen.value = false
                 },
-                startDate = if (callStartDate == "") "${LocalDate.now()}" else {
-                    callStartDate
+                startDate = if (selectedStartDate.value == "") "${LocalDate.now()}" else {
+                    selectedStartDate.value
                 },
-                endDate = if (callEndDate == "") "${LocalDate.now()}" else {
-                    callEndDate
+                endDate = if (selectedEndDate.value == "") "${LocalDate.now()}" else {
+                    selectedEndDate.value
                 }
             )
         }

@@ -7,7 +7,6 @@ import androidx.compose.runtime.internal.illegalDecoyCallException
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.bobodroid.myapplication.MainActivity.Companion.TAG
-import com.bobodroid.myapplication.components.Dialogs.SellDialogEvent
 import com.bobodroid.myapplication.lists.dollorList.RecordListEvent
 import com.bobodroid.myapplication.models.datamodels.repository.InvestRepository
 import com.bobodroid.myapplication.models.datamodels.roomDb.ExchangeRate
@@ -23,6 +22,7 @@ import com.bobodroid.myapplication.models.datamodels.roomDb.YenBuyRecord
 import com.bobodroid.myapplication.models.datamodels.useCases.CurrencyRecordRequest
 import com.bobodroid.myapplication.models.datamodels.useCases.RecordUseCase
 import com.bobodroid.myapplication.models.datamodels.useCases.UserUseCases
+import com.bobodroid.myapplication.models.viewmodels.YenViewModel.YenAction
 import com.bobodroid.myapplication.screens.MainEvent
 import com.bobodroid.myapplication.screens.PopupEvent
 import com.bobodroid.myapplication.util.AdMob.AdManager
@@ -67,9 +67,6 @@ class MainViewModel @Inject constructor(
 
     private val _mainUiState = MutableStateFlow(MainUiState())
     val mainUiState = _mainUiState.asStateFlow()
-
-    private val _dateRangeUiState = MutableStateFlow(DateRangeUiState())
-    val dateRangeUiState = _dateRangeUiState.asStateFlow()
 
     private val _noticeUiState = MutableStateFlow(NoticeUiState())
     val noticeUiState = _noticeUiState.asStateFlow()
@@ -244,19 +241,61 @@ class MainViewModel @Inject constructor(
     }
 
 
-    // 총수익 조회 범위 시작 날짜 선택 -> 완료
-    fun inputStartDate(startDate: String){
-       val uiState = _dateRangeUiState.value.copy(startDate = startDate)
 
-        _dateRangeUiState.value = uiState
+
+    fun totalSumProfit(
+        startDate: String,
+        endDate: String
+    ) {
+
+
+        val startFilterBuyRecord =
+            buyRecordFlow.value.filter { it.date!! >= startDate }
+
+        var endFilterBuyRecord =
+            startFilterBuyRecord.filter { it.date!! <= endDate }
+
+        val dateRangeFilterRecord = _recordListUiState.value.foreignCurrencyRecord.dollarState.records.filter { it.date!! in startDate..endDate  }
+
+        viewModelScope.launch {
+            when(_mainUiState.value.selectedCurrencyType) {
+                CurrencyType.USD -> {
+                    val totalProfit = recordUseCase.sumProfit(
+                        record = ,
+                        type = _mainUiState.value.selectedCurrencyType
+                    )
+
+                    _recordListUiState.update { currentState ->
+                        currentState.copy(
+                            foreignCurrencyRecord = currentState.foreignCurrencyRecord.copy(
+                                dollarState = currentState.foreignCurrencyRecord.dollarState.copy(
+                                    totalProfit = totalProfit
+                                )
+                            )
+                        )
+                    }
+                }
+                CurrencyType.JPY -> {
+                    val totalProfit = recordUseCase.sumProfit(
+                        record = _recordListUiState.value.foreignCurrencyRecord,
+                        type = _mainUiState.value.selectedCurrencyType
+                    )
+
+                    _recordListUiState.update { currentState ->
+                        currentState.copy(
+                            foreignCurrencyRecord = currentState.foreignCurrencyRecord.copy(
+                                dollarState = currentState.foreignCurrencyRecord.yenState.copy(
+                                    totalProfit = totalProfit
+                                )
+                            )
+                        )
+                    }
+                }
+            }
+        }
+
     }
 
-    // 총수익 조회 범위 마지막 날짜 선택 -> 완료
-    fun inputEndDate(endDate: String){
-        val uiState = _dateRangeUiState.value.copy(endDate = endDate)
-
-        _dateRangeUiState.value = uiState
-    }
 
     // -> 완료
     fun reFreshProfit(reFreshClicked: (ExchangeRate) -> Unit) {
@@ -569,7 +608,7 @@ class MainViewModel @Inject constructor(
                 when(event.event) {
                     is PopupEvent.SnackBarEvent -> {
                         viewModelScope.launch {
-                            _mainSnackBarState.send(event.event.message)
+                            _sheetSnackBarState.send(event.event.message)
                         }
                     }
                     else -> return
@@ -580,7 +619,7 @@ class MainViewModel @Inject constructor(
                 when(event.event) {
                     is PopupEvent.SnackBarEvent -> {
                         viewModelScope.launch {
-                            _mainSnackBarState.send(event.event.message)
+                            _sheetSnackBarState.send(event.event.message)
                         }
                     }
                     else -> return
@@ -590,10 +629,18 @@ class MainViewModel @Inject constructor(
                 when(event.event) {
                     is PopupEvent.SnackBarEvent -> {
                         viewModelScope.launch {
-                            _mainSnackBarState.send(event.event.message)
+                            _sheetSnackBarState.send(event.event.message)
                         }
                     }
                     else -> return
+                }
+            }
+
+            MainEvent.HideDateRangeDialog -> {
+                _mainUiState.update {
+                    it.copy(
+                        showDateRangeDialog = false
+                    )
                 }
             }
         }
@@ -612,6 +659,7 @@ class MainViewModel @Inject constructor(
                     }
                 is RecordListEvent.CancelSellRecord -> {
                     recordUseCase.cancelSellRecord(event.id, _mainUiState.value.selectedCurrencyType)
+                    _mainSnackBarState.send("매도가 취소되었습니다.")
                 }
                 is RecordListEvent.UpdateRecordCategory -> {
                     recordUseCase.updateRecordCategory(event.record, event.groupName, _mainUiState.value.selectedCurrencyType)
@@ -669,15 +717,10 @@ data class MainUiState (
         val showSellResultDialog: Boolean = false,
         val showAddBottomSheet: Boolean = false,
         val showGroupAddDialog: Boolean = false,
-        val showDatePickerDialog: Boolean = false
+        val showDatePickerDialog: Boolean = false,
+        val showDateRangeDialog: Boolean = false
 )
 
-// 날짜 검색 관련 상태
-data class DateRangeUiState(
-    val dateRangeDialog: Boolean = false,
-    val startDate: String = "",
-    val endDate: String = ""
-)
 
 // 알림 관련 상태
 data class NoticeUiState(
@@ -710,7 +753,9 @@ data class ForeignCurrencyRecordList(
 data class CurrencyRecordState<T: ForeignCurrencyRecord>(  // BuyRecord 인터페이스로 제한
     val records: List<T> = emptyList(),
     val groupedRecords: Map<String, List<T>> = emptyMap(),
-    val groups: List<String> = emptyList()
+    val groups: List<String> = emptyList(),
+    val totalProfit: String = "",
+    val refreshDate: String = ""
 )
 
 

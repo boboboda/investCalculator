@@ -49,6 +49,7 @@ import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.time.Instant
 import java.time.LocalDate
+import java.time.LocalTime
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.time.temporal.ChronoField
@@ -349,7 +350,7 @@ fun RangeDateDialog(
 
 
         if (isStartDateOpen.value) {
-            startDatePickerDialog(
+            StartDatePickerDialog(
                 selectedStartDate = isStartDateOpen.value,
                 onDateSelected = { startDate ->
 
@@ -376,7 +377,7 @@ fun RangeDateDialog(
 
 
         if (isEndDateOpen.value) {
-            endDatePickerDialog(
+            EndDatePickerDialog(
                 selectedEndDate = isEndDateOpen.value,
                 onDateSelected = { endDate ->
 
@@ -403,47 +404,37 @@ fun RangeDateDialog(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun startDatePickerDialog(
+fun StartDatePickerDialog(
     selectedStartDate: Boolean,
     onDateSelected: ((Long) -> Unit)?,
     onDismissRequest: () -> Unit,
     endDate: String,
     startDate: String
 ) {
-
-
-    val Cgdate: LocalDate = LocalDate.parse(endDate, DateTimeFormatter.ISO_DATE)
-
-    val year: Int = Cgdate.get(ChronoField.YEAR)
-    val month: Int = Cgdate.get(ChronoField.MONTH_OF_YEAR)
-    val day: Int = Cgdate.get(ChronoField.DAY_OF_MONTH)
-
-    val calendar = Calendar.getInstance()
-
-    val today = LocalDate.now()
-//    val today = calendar.get(Calendar.DATE)
-    calendar.set(today.year, today.monthValue, today.dayOfMonth) // add year, month (Jan), date
+    val limitDate: LocalDate = LocalDate.parse(endDate, DateTimeFormatter.ISO_DATE)
+    val calendar = Calendar.getInstance(TimeZone.getTimeZone("Asia/Seoul"))
+    calendar.set(Calendar.HOUR_OF_DAY, 0)
+    calendar.set(Calendar.MINUTE, 0)
+    calendar.set(Calendar.SECOND, 0)
+    calendar.set(Calendar.MILLISECOND, 0)
 
     val cgDate = startDate.let {
         val data = LocalDate.parse(it)
-        calendar.set(data.year, data.monthValue - 1, data.dayOfMonth)
-        val cgData = calendar
-        cgData
+        val instant = data.atStartOfDay(ZoneId.of("Asia/Seoul"))
+            .plusHours(9)  // 한국 시간 보정
+            .toInstant()
+        val millis = instant.toEpochMilli()
+        millis
     }
 
-    // set the initial date
     val datePickerState = rememberDatePickerState(
-        initialSelectedDateMillis = cgDate.timeInMillis,
+        initialSelectedDateMillis = cgDate,
         selectableDates = object : SelectableDates {
             override fun isSelectableDate(utcTimeMillis: Long): Boolean {
-                calendar.set(year, month - 1, day)
-
-                utcTimeMillis <= calendar.timeInMillis
-
-                val calendar1 = Calendar.getInstance(TimeZone.getTimeZone("UTC"))
-                calendar1.timeInMillis = utcTimeMillis
-
-                return utcTimeMillis <= calendar.timeInMillis
+                val endInstant = limitDate.atTime(LocalTime.MAX)
+                    .atZone(ZoneId.of("Asia/Seoul")).toInstant()
+                val endMillis = endInstant.toEpochMilli()
+                return utcTimeMillis <= endMillis
             }
         }
     )
@@ -453,7 +444,7 @@ fun startDatePickerDialog(
             onDismissRequest = {},
             confirmButton = {
                 TextButton(onClick = {
-                    onDateSelected!!.invoke(datePickerState.selectedDateMillis!!)
+                    onDateSelected?.invoke(datePickerState.selectedDateMillis!!)
                 }) {
                     Text(text = "선택")
                 }
@@ -464,57 +455,42 @@ fun startDatePickerDialog(
                 }
             }
         ) {
-            DatePicker(
-                state = datePickerState
-            )
+            DatePicker(state = datePickerState)
         }
     }
-
-
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun endDatePickerDialog(
+fun EndDatePickerDialog(
     selectedEndDate: Boolean,
     onDateSelected: ((Long) -> Unit)?,
     onDismissRequest: () -> Unit,
     endDate: String,
     startDate: String
 ) {
-    val Cgdate: LocalDate = LocalDate.parse(startDate, DateTimeFormatter.ISO_DATE)
-
-    val year: Int = Cgdate.get(ChronoField.YEAR)
-    val month: Int = Cgdate.get(ChronoField.MONTH_OF_YEAR)
-    val day: Int = Cgdate.get(ChronoField.DAY_OF_MONTH)
-
-    val calendar = Calendar.getInstance()
-
-    val today = LocalDate.now()
-//    val today = calendar.get(Calendar.DATE)
-    calendar.set(today.year, today.monthValue - 1, today.dayOfMonth) // add year, month (Jan), date
-
-//    var selectedDate = remember { mutableStateOf(calendar.timeInMillis) }
+    val limitDate: LocalDate = LocalDate.parse(startDate, DateTimeFormatter.ISO_DATE)
+    val calendar = Calendar.getInstance(TimeZone.getTimeZone("Asia/Seoul"))
+    calendar.set(Calendar.HOUR_OF_DAY, 0)
+    calendar.set(Calendar.MINUTE, 0)
+    calendar.set(Calendar.SECOND, 0)
+    calendar.set(Calendar.MILLISECOND, 0)
 
     val cgDate = endDate.let {
         val data = LocalDate.parse(it)
-        calendar.set(data.year, data.monthValue - 1, data.dayOfMonth)
-        val cgData = calendar
-        cgData
+        val instant = data.atStartOfDay(ZoneId.of("Asia/Seoul"))
+            .plusHours(9)
+            .toInstant()
+        instant.toEpochMilli()
     }
 
-
-    // set the initial date
     val datePickerState = rememberDatePickerState(
-        initialSelectedDateMillis = cgDate.timeInMillis,
+        initialSelectedDateMillis = cgDate,
         selectableDates = object : SelectableDates {
             override fun isSelectableDate(utcTimeMillis: Long): Boolean {
-                calendar.set(year, month - 1, day)
-
-                val calendar1 = Calendar.getInstance(TimeZone.getTimeZone("UTC"))
-                calendar1.timeInMillis = utcTimeMillis
-
-                return utcTimeMillis >= calendar.timeInMillis
+                val startInstant = limitDate.atStartOfDay()
+                    .atZone(ZoneId.of("Asia/Seoul")).toInstant()
+                return utcTimeMillis >= startInstant.toEpochMilli()
             }
         }
     )

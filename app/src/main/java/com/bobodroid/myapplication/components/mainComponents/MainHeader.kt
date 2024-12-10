@@ -38,7 +38,9 @@ import com.bobodroid.myapplication.components.RateView
 import com.bobodroid.myapplication.components.admobs.BannerAd
 import com.bobodroid.myapplication.models.datamodels.roomDb.CurrencyType
 import com.bobodroid.myapplication.models.viewmodels.AdUiState
+import com.bobodroid.myapplication.models.viewmodels.ForeignCurrencyRecordList
 import com.bobodroid.myapplication.models.viewmodels.MainUiState
+import com.bobodroid.myapplication.models.viewmodels.RecordListUiState
 import com.bobodroid.myapplication.ui.theme.WelcomeScreenBackgroundColor
 import com.bobodroid.myapplication.ui.theme.primaryColor
 import java.math.BigDecimal
@@ -48,7 +50,7 @@ import java.math.BigDecimal
 fun MainHeader(
     mainUiState: MainUiState,
     adUiState: AdUiState,
-    totalProfit: String,
+    recordUiState: RecordListUiState,
     updateCurrentForeignCurrency: (CurrencyType) -> Unit,
     hideSellRecordState: Boolean,
     onHide:(Boolean) -> Unit
@@ -56,6 +58,11 @@ fun MainHeader(
     var dropdownExpanded by remember { mutableStateOf(false) }
 
     val visibleIcon = if (hideSellRecordState)  R.drawable.ic_visible  else  R.drawable.ic_invisible
+
+    val totalProfit = when(mainUiState.selectedCurrencyType) {
+        CurrencyType.USD -> recordUiState.foreignCurrencyRecord.dollarState.totalProfit
+        CurrencyType.JPY -> recordUiState.foreignCurrencyRecord.yenState.totalProfit
+    }
 
     Column {
         // 메인 최상단 뷰 -> 최신환율, 외화 선택 버튼
@@ -143,6 +150,7 @@ fun MainHeader(
                 .padding(end = 20.dp)) {
                 GetMoneyView(
                     getMoney = totalProfit,
+                    totalProfitRangeDate = recordUiState.totalProfitRangeDate,
                 )
             }
             Spacer(modifier = Modifier.weight(1f))
@@ -198,7 +206,7 @@ fun MainHeader(
         ) {
             Text(
                 modifier = Modifier.padding(start = 10.dp),
-                text = "예상수익 새로고침 시간: ${reFreshDate.value}",
+                text = "예상수익 새로고침 시간: ${recordUiState.refreshDate}",
                 textAlign = TextAlign.Center
             )
         }

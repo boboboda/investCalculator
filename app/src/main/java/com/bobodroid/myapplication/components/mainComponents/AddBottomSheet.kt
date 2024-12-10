@@ -47,8 +47,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.bobodroid.myapplication.components.Buttons
 import com.bobodroid.myapplication.components.CustomCard
-import com.bobodroid.myapplication.components.Dialogs.BottomSheetNumberField
-import com.bobodroid.myapplication.components.Dialogs.BottomSheetRateNumberField
 import com.bobodroid.myapplication.components.Dialogs.FloatPopupNumberView
 import com.bobodroid.myapplication.components.Dialogs.PopupNumberView
 import com.bobodroid.myapplication.models.datamodels.roomDb.CurrencyType
@@ -411,7 +409,7 @@ fun AddBottomSheet(
                                         coroutineScope.launch {
                                             numberInput = event.moneyOrRate
                                             numberPadPopViewIsVible = false
-                                            delay(700)
+                                            delay(500)
                                             ratePadPopViewIsVible = true
                                         }
                                     }
@@ -443,15 +441,6 @@ fun AddBottomSheet(
 
         }
     }
-
-//    ModalBottomSheet(
-//        onDismissRequest = {
-//            onEvent(MainEvent.BottomSheetEvent.DismissSheet)
-//        },
-//        sheetState = sheetState
-//    ) {
-//
-//    }
 
 }
 

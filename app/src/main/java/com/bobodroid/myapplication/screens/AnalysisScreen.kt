@@ -49,7 +49,6 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.compose.NavHost
 import com.bobodroid.myapplication.R
 import com.bobodroid.myapplication.components.Buttons
-import com.bobodroid.myapplication.components.Dialogs.LoadingDialog
 import com.bobodroid.myapplication.components.chart.ExchangeRateChart
 import com.bobodroid.myapplication.components.shadowCustom
 import com.bobodroid.myapplication.models.datamodels.roomDb.CurrencyType

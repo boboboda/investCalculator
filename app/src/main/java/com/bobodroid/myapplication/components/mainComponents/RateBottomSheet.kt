@@ -49,11 +49,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.bobodroid.myapplication.components.Buttons
 import com.bobodroid.myapplication.components.CustomCard
-import com.bobodroid.myapplication.components.Dialogs.BottomSheetNumberField
-import com.bobodroid.myapplication.components.Dialogs.BottomSheetRateNumberField
 import com.bobodroid.myapplication.components.Dialogs.FloatPopupNumberView
 import com.bobodroid.myapplication.components.Dialogs.PopupNumberView
-import com.bobodroid.myapplication.lists.dollorList.RecordListEvent
 import com.bobodroid.myapplication.screens.MainEvent
 import com.bobodroid.myapplication.screens.PopupEvent
 import com.bobodroid.myapplication.ui.theme.BottomSheetTitleColor

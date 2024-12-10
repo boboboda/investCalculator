@@ -12,6 +12,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.bobodroid.myapplication.models.viewmodels.TotalProfitRangeDate
 import java.math.BigDecimal
 import java.math.MathContext
 import java.math.RoundingMode
@@ -19,20 +20,18 @@ import java.math.RoundingMode
 @Composable
 fun GetMoneyView(
     getMoney: String,
+    totalProfitRangeDate: TotalProfitRangeDate
 ) {
 
     val mathContext = MathContext(0, RoundingMode.HALF_UP)
-
-    val startDate = allViewModel.startDateFlow.collectAsState()
 
     val stringGetMoney = if (getMoney == "") "" else {
         getMoney
     }
 
-    var endDate = allViewModel.endDateFlow.collectAsState()
 
-    val date = if (startDate.value == "" && endDate.value == "")
-        "조회기간: 달력에서 조회 해주세요" else "조회기간: ${startDate.value}~${endDate.value}"
+    val date = if (totalProfitRangeDate.startDate == "" && totalProfitRangeDate.endDate == "")
+        "조회기간: 조회된 값이 없습니다." else "조회기간: ${totalProfitRangeDate.startDate}~${totalProfitRangeDate.endDate}"
 
     val profitColor = if (getMoney == "") {
         Color.Black

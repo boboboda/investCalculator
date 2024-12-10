@@ -339,29 +339,19 @@ class RecordUseCase @Inject constructor(
         (exchangeMoney.toFloat() / krMoney.toFloat()) * 100f
 
     fun sumProfit(
-        record: ForeignCurrencyRecordList,
-        type: CurrencyType
+        record: List<ForeignCurrencyRecord>,
     ): String {
-
-        val currencyRecord = when(type) {
-            CurrencyType.USD -> {
-               record.dollarState.records
-            }
-            CurrencyType.JPY -> {
-                record.yenState.records
-            }
-        }
-        val mapProfitDecimal = currencyRecord.filter { it.profit != "" }.map { BigDecimal(it.profit) }
+        val mapProfitDecimal = record.filter { it.profit != "" }.map { BigDecimal(it.profit) }
 
         if(mapProfitDecimal.isNotEmpty()) {
-            return ""
-        } else {
             if(mapProfitDecimal.size > 1) {
                 return mapProfitDecimal.reduce {first, end ->
                     first + end }.toBigDecimalWon()
             } else {
                 return mapProfitDecimal.first().toBigDecimalWon()
             }
+        } else {
+            return ""
         }
     }
 

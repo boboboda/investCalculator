@@ -68,8 +68,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.bobodroid.myapplication.MainActivity.Companion.TAG
 import com.bobodroid.myapplication.components.Dialogs.AskTriggerDialog
-import com.bobodroid.myapplication.components.Dialogs.SellDialog
-import com.bobodroid.myapplication.components.Dialogs.SellDialogEvent
 import com.bobodroid.myapplication.components.Dialogs.TextFieldDialog
 import com.bobodroid.myapplication.components.RecordTextView
 import com.bobodroid.myapplication.extensions.toBigDecimalUs
@@ -79,6 +77,8 @@ import com.bobodroid.myapplication.models.datamodels.roomDb.DrBuyRecord
 import com.bobodroid.myapplication.models.datamodels.roomDb.ForeignCurrencyRecord
 import com.bobodroid.myapplication.models.datamodels.roomDb.YenBuyRecord
 import com.bobodroid.myapplication.models.viewmodels.MainViewModel
+import com.bobodroid.myapplication.screens.MainEvent
+import com.bobodroid.myapplication.screens.RecordListEvent
 import com.bobodroid.myapplication.ui.theme.DeleteColor
 import com.bobodroid.myapplication.ui.theme.SelectedColor
 import com.bobodroid.myapplication.ui.theme.TopButtonColor
@@ -646,13 +646,3 @@ fun RecordListRowView(
 
 }
 
-sealed class RecordListEvent {
-    data class ShowEditBottomSheet(val data: ForeignCurrencyRecord) : RecordListEvent()
-    data class SnackBarEvent(val message: String): RecordListEvent()
-    data class AddGroup(val data:ForeignCurrencyRecord, val groupName: String): RecordListEvent()
-    data class CancelSellRecord(val id: UUID): RecordListEvent()
-    data class UpdateRecordCategory(val record: ForeignCurrencyRecord, val groupName: String): RecordListEvent()
-    data class MemoUpdate(val record: ForeignCurrencyRecord, val updateMemo: String): RecordListEvent()
-    data class SellRecord(val data: ForeignCurrencyRecord): RecordListEvent()
-    data class RemoveRecord(val data: ForeignCurrencyRecord): RecordListEvent()
-}

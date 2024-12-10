@@ -56,7 +56,6 @@ import com.bobodroid.myapplication.components.mainComponents.MainHeader
 import com.bobodroid.myapplication.components.mainComponents.RateBottomSheet
 import com.bobodroid.myapplication.extensions.toDate
 import com.bobodroid.myapplication.extensions.toLocalDate
-import com.bobodroid.myapplication.lists.dollorList.RecordListEvent
 import com.bobodroid.myapplication.lists.dollorList.RecordListView
 import com.bobodroid.myapplication.models.datamodels.roomDb.CurrencyType
 import com.bobodroid.myapplication.models.datamodels.roomDb.ForeignCurrencyRecord
@@ -171,7 +170,8 @@ fun MainScreen(
                 updateCurrentForeignCurrency = {
                     mainViewModel.updateCurrentForeignCurrency(it)
                 },
-                hideSellRecordState,
+                recordUiState = recordListUiState,
+                hideSellRecordState = hideSellRecordState,
                 onHide = {
                     hideSellRecordState = it
                 }
@@ -310,16 +310,7 @@ fun MainScreen(
                     },
                     onClicked = { selectedStartDate, selectedEndDate ->
                         coroutineScope.launch {
-
-//                            dollarViewModel.dateRangeInvoke(
-//                                selectedStartDate,
-//                                selectedEndDate
-//                            )
-//
-//                            yenViewModel.dateRangeInvoke(
-//                                selectedStartDate,
-//                                selectedEndDate
-//                            )
+                            mainViewModel.handleRecordEvent(RecordListEvent.TotalSumProfit(selectedStartDate, selectedEndDate))
                         }
 
                     },
@@ -385,7 +376,7 @@ fun MainScreen(
                 mainViewModel.handleMainEvent(MainEvent.ShowAddBottomSheet)
             },
             totalMoneyCheckClicked = {
-//                showOpenDialog.value = true
+                mainViewModel.handleMainEvent(MainEvent.ShowDateRangeDialog)
             },
             refreshClicked = {
 //                allViewModel.reFreshProfit { recentRate ->
@@ -460,6 +451,7 @@ sealed class MainEvent {
     data object SellRecord: MainEvent()
     data object HideSellResultDialog : MainEvent()
     data object HideDateRangeDialog: MainEvent()
+    data object ShowDateRangeDialog : MainEvent()
 
     // 바텀시트 관련 이벤트 정의
     sealed class BottomSheetEvent: MainEvent() {
@@ -489,7 +481,17 @@ sealed class MainEvent {
     }
 }
 
-
+sealed class RecordListEvent {
+    data class ShowEditBottomSheet(val data: ForeignCurrencyRecord) : RecordListEvent()
+    data class SnackBarEvent(val message: String): RecordListEvent()
+    data class AddGroup(val data:ForeignCurrencyRecord, val groupName: String): RecordListEvent()
+    data class CancelSellRecord(val id: UUID): RecordListEvent()
+    data class UpdateRecordCategory(val record: ForeignCurrencyRecord, val groupName: String): RecordListEvent()
+    data class MemoUpdate(val record: ForeignCurrencyRecord, val updateMemo: String): RecordListEvent()
+    data class SellRecord(val data: ForeignCurrencyRecord): RecordListEvent()
+    data class RemoveRecord(val data: ForeignCurrencyRecord): RecordListEvent()
+    data class TotalSumProfit(val startDate: String, val endDate: String): RecordListEvent()
+}
 
 
 

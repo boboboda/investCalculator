@@ -49,8 +49,6 @@ import androidx.compose.ui.unit.sp
 import com.bobodroid.myapplication.MainActivity.Companion.TAG
 import com.bobodroid.myapplication.components.Buttons
 import com.bobodroid.myapplication.components.CustomCard
-import com.bobodroid.myapplication.components.Dialogs.BottomSheetNumberField
-import com.bobodroid.myapplication.components.Dialogs.BottomSheetRateNumberField
 import com.bobodroid.myapplication.components.Dialogs.FloatPopupNumberView
 import com.bobodroid.myapplication.components.Dialogs.PopupNumberView
 import com.bobodroid.myapplication.screens.MainEvent

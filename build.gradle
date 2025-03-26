@@ -1,6 +1,6 @@
 buildscript {
     ext {
-        compose_version = '1.5.1'
+        compose_version = '1.5.13'
     }
 
     dependencies {
@@ -12,8 +12,8 @@ buildscript {
 plugins {
     id 'com.android.application' version '8.5.1' apply false
     id 'com.android.library' version '8.5.1' apply false
-    id 'org.jetbrains.kotlin.android' version '1.9.0' apply false
-    id("com.google.gms.google-services") version "4.3.10" apply false
+    id 'org.jetbrains.kotlin.android' version '1.9.23' apply false
+    id("com.google.gms.google-services") version "4.4.1" apply false
 //    alias(libs.plugins.kotlinMultiplatform) apply false
 //    alias(libs.plugins.androidLibrary) apply false
 }

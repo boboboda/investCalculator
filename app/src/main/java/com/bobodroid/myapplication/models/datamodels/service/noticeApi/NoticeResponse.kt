@@ -6,7 +6,7 @@ import com.squareup.moshi.Json
 data class NoticeResponse (
     val message: String,
     @Json(name = "data")
-    val data: List<Notice>
+    val data: Notice
 )
 
 data class Notice (

@@ -5,6 +5,7 @@ import com.bobodroid.myapplication.models.datamodels.service.noticeApi.NoticeRes
 import com.bobodroid.myapplication.models.datamodels.service.noticeApi.NoticeApiService
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
+import retrofit2.Response
 import retrofit2.Retrofit
 import retrofit2.converter.moshi.MoshiConverterFactory
 import retrofit2.http.GET
@@ -15,7 +16,7 @@ private val moshi = Moshi.Builder()
     .build()
 
 private val RateRetrofit = Retrofit.Builder()
-    .baseUrl("${BuildConfig.BASE_URL}")
+    .baseUrl(BuildConfig.BASE_URL)
     .addConverterFactory(MoshiConverterFactory.create(moshi))
     .build()
 
@@ -49,10 +50,17 @@ interface RateApiService {
 //    ): List<ExchangeRateResponse>
 
     // 또는 통합 엔드포인트 사용
-    @GET("exchange-rate/range")
+    @GET("/exchange-rate/range")
     suspend fun getRatesByPeriod(
         @Query("period") period: String,
         @Query("startDate") startDate: String,
         @Query("endDate") endDate: String? = null
     ): List<ExchangeRateResponse>
+
+    @GET("/exchange-rate/daily-change")
+    suspend fun getDailyChange(): ExchangeRateDailyChange
+
+
+    @GET("/exchange-rate/latest")
+    suspend fun getLatestRate(): Response<ExchangeRateResponse>
 }

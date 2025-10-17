@@ -1,3 +1,4 @@
+// app/src/main/java/com/bobodroid/myapplication/ui/theme/Theme.kt
 package com.bobodroid.myapplication.ui.theme
 
 import android.app.Activity
@@ -14,18 +15,19 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
-import androidx.core.view.ViewCompat
+import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.WindowInsetsControllerCompat
 
 private val DarkColorScheme = darkColorScheme(
-    primary = Color(0xFFBB86FC),       // Purple
+    primary = Color(0xFFBB86FC),
     onPrimary = Color.White,
-    secondary = Color(0xFF03DAC5),       // Teal
+    secondary = Color(0xFF03DAC5),
     onSecondary = Color.White,
-    background = Color(0xFF121212),     // Dark background
+    background = Color(0xFF121212),
     onBackground = Color.White,
-    surface = Color(0xFF121212),       // Dark surface
+    surface = Color(0xFF121212),
     onSurface = Color.White
-    // 나머지 색상 속성은 기본값 사용
 )
 
 private val LightColorScheme = lightColorScheme(
@@ -34,14 +36,11 @@ private val LightColorScheme = lightColorScheme(
     tertiary = Pink40,
     background = Color(0xFFFFFBFE),
     surface = Color(0xFFFFFBFE)
-
-
 )
 
 @Composable
 fun InverstCalculatorTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
-    // Dynamic color is available on Android 12+
     dynamicColor: Boolean = true,
     content: @Composable () -> Unit
 ) {
@@ -53,11 +52,25 @@ fun InverstCalculatorTheme(
         darkTheme -> DarkColorScheme
         else -> LightColorScheme
     }
+
     val view = LocalView.current
     if (!view.isInEditMode) {
         SideEffect {
-            (view.context as Activity).window.statusBarColor = TopBarColor.toArgb()
-            ViewCompat.getWindowInsetsController(view)?.isAppearanceLightStatusBars = darkTheme
+            val window = (view.context as Activity).window
+            val windowInsetsController = WindowCompat.getInsetsController(window, view)
+
+            // ✅ 시스템바 보이기
+            windowInsetsController.show(WindowInsetsCompat.Type.systemBars())
+
+            // 🎨 상태바 색상을 흰색으로 설정
+            window.statusBarColor = Color.White.toArgb()
+
+            // ✅ 상태바 아이콘을 검은색으로 (밝은 배경이므로 어두운 아이콘 필요)
+            windowInsetsController.isAppearanceLightStatusBars = true
+
+            // 🎨 네비게이션바는 흰색 유지
+            window.navigationBarColor = Color.White.toArgb()
+            windowInsetsController.isAppearanceLightNavigationBars = true
         }
     }
 

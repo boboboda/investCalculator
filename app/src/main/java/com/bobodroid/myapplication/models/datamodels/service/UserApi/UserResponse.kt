@@ -79,8 +79,6 @@ data class UserData(
             }
         }
     }
-
-
 }
 
 // 업데이트 요청 데이터 클래스

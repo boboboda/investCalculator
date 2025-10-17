@@ -19,7 +19,15 @@
         android:roundIcon="@mipmap/ic_main_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.App.Starting"
-        tools:targetApi="31">
+        tools:targetApi="35">
+
+        <!-- !!! 이 부분을 추가합니다 !!! -->
+        <property
+            android:name="android.adservices.AD_SERVICES_CONFIG"
+            android:resource="@xml/gma_ad_services_config"
+            tools:replace="android:resource" />
+        <!-- !!! 여기까지 추가합니다 !!! -->
+
         <activity
             android:name=".WebActivity"
             android:theme="@style/WebViewTheme"
@@ -37,7 +45,6 @@
             android:windowSoftInputMode="adjustPan">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
-
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>

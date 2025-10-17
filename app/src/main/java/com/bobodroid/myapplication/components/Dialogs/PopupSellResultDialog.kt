@@ -19,11 +19,6 @@ import com.bobodroid.myapplication.components.Buttons
 import com.bobodroid.myapplication.extensions.toDecUs
 import com.bobodroid.myapplication.extensions.toPer
 import com.bobodroid.myapplication.extensions.toWon
-import com.bobodroid.myapplication.extensions.toYen
-import com.bobodroid.myapplication.models.datamodels.roomDb.DrBuyRecord
-import com.bobodroid.myapplication.models.datamodels.roomDb.ForeignCurrencyRecord
-import com.bobodroid.myapplication.models.datamodels.roomDb.YenBuyRecord
-import com.bobodroid.myapplication.models.viewmodels.DollarViewModel
 import com.bobodroid.myapplication.ui.theme.SellButtonColor
 import com.bobodroid.myapplication.ui.theme.SellPopColor
 import java.util.UUID

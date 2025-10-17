@@ -11,6 +11,7 @@ import android.view.View
 import android.view.ViewTreeObserver
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.compose.foundation.BorderStroke
@@ -51,7 +52,6 @@ import com.bobodroid.myapplication.components.admobs.loadRewardedAdvertisement
 import com.bobodroid.myapplication.components.admobs.loadTargetRewardedAdvertisement
 import com.bobodroid.myapplication.components.admobs.showTargetRewardedAdvertisement
 import com.bobodroid.myapplication.models.viewmodels.AnalysisViewModel
-import com.bobodroid.myapplication.models.viewmodels.DollarViewModel
 import com.bobodroid.myapplication.models.viewmodels.MainViewModel
 import com.bobodroid.myapplication.routes.*
 import com.bobodroid.myapplication.screens.*
@@ -71,15 +71,16 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    private val dollarViewModel: DollarViewModel by viewModels()
-
     private val mainViewModel: MainViewModel by viewModels()
 
     private val analysisViewModel: AnalysisViewModel by viewModels()
 
     private lateinit var splashScreen: SplashScreen
     override fun onCreate(savedInstanceState: Bundle?) {
+        enableEdgeToEdge()
         super.onCreate(savedInstanceState)
+
+
         Log.w(TAG("메인",""), "onCreate 실행")
 
         splashScreen = installSplashScreen()
@@ -117,7 +118,6 @@ class MainActivity : ComponentActivity() {
         setContent {
             InverstCalculatorTheme {
                 AppScreen(
-                    dollarViewModel,
                     mainViewModel,
                     analysisViewModel,
                     activity = this
@@ -209,23 +209,16 @@ class MainActivity : ComponentActivity() {
 @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
 @Composable
 fun AppScreen(
-    dollarViewModel: DollarViewModel,
     mainViewModel: MainViewModel,
     analysisViewModel: AnalysisViewModel,
     activity: Activity
 ) {
 
-
-    val scope = rememberCoroutineScope()
-
-    val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
-
     Column(
         modifier = Modifier
             .fillMaxSize()
+            .padding(WindowInsets.systemBars.asPaddingValues())
     ) {
-        MainTopBar()
-
         Column(
             modifier = Modifier.weight(1f),
             verticalArrangement = Arrangement.Bottom
@@ -256,6 +249,7 @@ fun InvestAppScreen(
 ) {
 
 
+
     val investNavController = rememberNavController()
     val mainRouteAction = remember {
         RouteAction<MainRoute>(investNavController, MainRoute.Main.routeName)
@@ -278,6 +272,9 @@ fun InvestAppScreen(
                 mainRouteAction = mainRouteAction,
                 mainRouteBackStack = mainBackStack.value,
                 mainViewModel = mainViewModel)
+        },
+        topBar = {
+            MainTopBar()
         }
     )
     { paddingValues ->  

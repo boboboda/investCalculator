@@ -126,9 +126,9 @@ fun MyPageScreen() {
                 CustomerView(routeAction = myPageRouteAction)
             }
 
-            composable(MyPageRoute.CloudService.routeName!!) {
-                CloudView(myPageRouteAction, localUser =  uiState.localUser)
-            }
+//            composable(MyPageRoute.CloudService.routeName!!) {
+//                CloudView(myPageRouteAction, localUser =  uiState.localUser)
+//            }
 
         }
         Row(
@@ -258,43 +258,44 @@ fun MyPageSelectView(
         Row(modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 15.dp),
-            horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            horizontalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
 
-            Buttons(onClicked = {
-                localUser.customId?.let { id ->
-
-                    if (id.isNotEmpty()) {
-                        routeAction.navTo(MyPageRoute.CloudService)
-                    } else {
-                        showGuidDialog = true
-                    }
-                } ?: run {
-                    showGuidDialog = true
-                }
-
-
-            },  color = MyPageButtonColor,
-                fontColor = Color.Black,
-                modifier = Modifier
-                    .height(120.dp)
-                    .weight(0.5f)
-                    .padding(top = 10.dp)
-                    .shadowCustom(
-                        color = Color.LightGray,
-                        offsetX = 10.dp,
-                        offsetY = 10.dp,
-                        blurRadius = 10.dp
-                    )) {
-
-                Column(modifier = Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
-
-                    Image(painter = painterResource(id = R.drawable.baseline_cloud_queue_24), contentDescription = "", modifier = Modifier.size(30.dp))
-
-                    Text("클라우드", fontWeight = FontWeight.Bold, fontSize = 20.sp)
-                }
-
-
-            }
+//            Buttons(onClicked = {
+//                localUser.customId?.let { id ->
+//
+//                    if (id.isNotEmpty()) {
+//                        routeAction.navTo(MyPageRoute.CloudService)
+//                    } else {
+//                        showGuidDialog = true
+//                    }
+//                } ?: run {
+//                    showGuidDialog = true
+//                }
+//
+//
+//            },  color = MyPageButtonColor,
+//                fontColor = Color.Black,
+//                modifier = Modifier
+//                    .height(120.dp)
+//                    .weight(0.5f)
+//                    .padding(top = 10.dp)
+//                    .shadowCustom(
+//                        color = Color.LightGray,
+//                        offsetX = 10.dp,
+//                        offsetY = 10.dp,
+//                        blurRadius = 10.dp
+//                    )) {
+//
+//                Column(modifier = Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
+//
+//                    Image(painter = painterResource(id = R.drawable.baseline_cloud_queue_24), contentDescription = "", modifier = Modifier.size(30.dp))
+//
+//                    Text("클라우드", fontWeight = FontWeight.Bold, fontSize = 20.sp)
+//                }
+//
+//
+//            }
 
             Buttons(onClicked = {
                 routeAction.navTo(MyPageRoute.CustomerServiceCenter)
@@ -323,45 +324,45 @@ fun MyPageSelectView(
         }
 
 
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 15.dp)
-        ) {
-            Buttons(
-                onClicked = {
-
-//                    if(rewardAdIsReadyState.value) {
-//                        allViewModel.rewardShowDialog.value = true
-//                    } else {
-//                        showRewardGuideDialog = true
-//                    }
-
-
-                },
-                color = Color.White,
-                fontColor = Color.Black,
-                modifier = Modifier
-                    .height(70.dp)
-                    .fillMaxWidth()
-                    .padding(top = 10.dp)
-                    .shadowCustom(
-                        color = Color.LightGray,
-                        offsetX = 5.dp,
-                        offsetY = 5.dp,
-                        blurRadius = 10.dp
-                    ),
-            ) {
-                Text(
-                    text = "광고 배너 제거",
-                    fontSize = 15.sp,
-                    textAlign = TextAlign.Center,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.padding(0.dp))
-            }
-
-
-        }
+//        Row(
+//            modifier = Modifier
+//                .fillMaxWidth()
+//                .padding(horizontal = 15.dp)
+//        ) {
+//            Buttons(
+//                onClicked = {
+//
+////                    if(rewardAdIsReadyState.value) {
+////                        allViewModel.rewardShowDialog.value = true
+////                    } else {
+////                        showRewardGuideDialog = true
+////                    }
+//
+//
+//                },
+//                color = Color.White,
+//                fontColor = Color.Black,
+//                modifier = Modifier
+//                    .height(70.dp)
+//                    .fillMaxWidth()
+//                    .padding(top = 10.dp)
+//                    .shadowCustom(
+//                        color = Color.LightGray,
+//                        offsetX = 5.dp,
+//                        offsetY = 5.dp,
+//                        blurRadius = 10.dp
+//                    ),
+//            ) {
+//                Text(
+//                    text = "광고 배너 제거",
+//                    fontSize = 15.sp,
+//                    textAlign = TextAlign.Center,
+//                    fontWeight = FontWeight.Bold,
+//                    modifier = Modifier.padding(0.dp))
+//            }
+//
+//
+//        }
 
 
         if(showRewardGuideDialog) {

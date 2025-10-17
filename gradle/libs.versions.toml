@@ -1,94 +1,107 @@
+# gradle/libs.versions.toml
+
 [versions]
-# Plugins
-androidGradlePlugin = "8.9.0"
-kotlin = "1.9.23"
-googleServices = "4.4.1"
-hiltAndroid = "2.46.1"
+# --- Plugins ---
+androidGradlePlugin = "8.6.0" # AGP 8.9.0은 너무 최신일 수 있습니다. AGP 8.6.0 또는 8.5.0으로 낮추는 것을 권장합니다.
+kotlin = "2.0.0" # 명시적으로 2.1.0
+googleServices = "4.4.2" # 최신 버전 확인
+hiltAndroid = "2.51.1" # Hilt 최신 안정 버전 (Kotlin 2.x와 호환)
 
-# AndroidX
-androidxCore = "1.9.0"
-androidxLifecycle = "2.3.1"
-androidxActivity = "1.5.1"
-androidxAppCompat = "1.6.1"
-androidxConstraintLayout = "2.1.4"
-androidxNavigation = "2.5.2"
-androidxRoom = "2.5.0"
-androidxSplash = "1.0.1"
+# --- AndroidX ---
+androidxCore = "1.13.1" # 최신 안정 버전
+androidxLifecycle = "2.8.0" # 최신 안정 버전
+androidxActivity = "1.9.0" # 최신 안정 버전
+androidxAppCompat = "1.7.0" # 최신 안정 버전
+androidxConstraintLayout = "2.1.4" # 이 버전이 이미 최신 안정 버전
+androidxNavigation = "2.7.7" # 최신 안정 버전
+androidxRoom = "2.6.1" # 최신 안정 버전
+androidxSplash = "1.0.1" # 이 버전이 이미 최신 안정 버전
 
-# Compose
-compose = "1.5.13"
-composeBom = "2022.10.00"
-composeMaterial = "1.3.1"
-composeMaterial3 = "1.2.0-alpha02"
-composeRuntime = "1.2.0-alpha02"
-composeRuntimeLivedata = "1.2.1"
+# --- Compose ---
+composeBom = "2024.06.00" # Kotlin 2.1.0 (Compose Compiler 2.1.0)과 호환되는 최신 BOM
+composeMaterial3 = "1.2.1" # 최신 안정 버전 (composeBom이 관리하는 버전과 일치하는지 확인 필요)
+composeMaterialIconsExtended = "1.7.5"
 
-# Test
-junit = "4.13.2"
-androidxTestJunit = "1.1.5"
-androidxEspresso = "3.5.1"
+# --- Test ---
+junit = "4.13.2" # 최신 안정 버전
+androidxTestJunit = "1.1.5" # 최신 안정 버전
+androidxEspresso = "3.5.1" # 최신 안정 버전
 
-# Google
-materialDesign = "1.9.0"
-playServicesAdsLite = "22.3.0"
-firebaseCrashlytics = "2.9.9"
-firebaseBom = "32.3.1"
+# --- Google ---
+materialDesign = "1.12.0" # 최신 안정 버전
+playServicesAdsLite = "23.0.0" # 최신 안정 버전
+# firebaseCrashlytics = "2.9.9" # 구버전 (플러그인 버전과 라이브러리 버전을 따로 관리하는 듯)
+firebaseCrashlytics = "2.10.1" # 라이브러리 최신 안정 버전
+# firebaseBom = "32.3.1" # 구버전
+firebaseBom = "33.0.0" # 최신 안정 버전 (Firebase 라이브러리 버전 통일)
 
-# Kotlin
-kotlinBom = "1.8.0"
-coroutines = "1.6.4"
+# --- Kotlinx ---
+# kotlinBom = "1.8.0" # 구버전 - 이미 kotlin=2.1.0이 있으므로 이 BOM은 필요 없을 수 있음.
+coroutines = "1.8.1" # Kotlin 2.1.0과 호환되는 최신 안정 버전 (1.7.x도 가능)
 
-# Hilt
-hiltCompiler = "1.1.0"
-hiltAndroidTesting = "2.40"
+# --- Hilt ---
+# hiltCompiler = "1.1.0" # 구버전 (hilt-android 의존)
+hiltCompiler = "1.2.0" # Hilt Android 2.51.1과 호환되는 최신 버전
+# hiltAndroidTesting = "2.40" # 구버전
+hiltAndroidTesting = "2.51.1" # Hilt Android와 버전 통일
 
-# Network
-retrofit = "2.9.0"
-moshi = "1.15.0"
-okhttpBom = "4.9.0"
+# --- Network ---
+retrofit = "2.11.0" # 최신 안정 버전
+moshi = "1.15.1" # 최신 안정 버전
+okhttpBom = "4.12.0" # 최신 안정 버전
+# moshi = "1.14.0" # 중복되고 구버전. 제거. (moshi 버전은 Moshi BOM을 쓰거나 moshi.version.ref으로 통일)
 
-# Other
-accompanistNavigation = "0.25.1"
-billingKtx = "6.0.1"
-socketIo = "2.0.0"
+# --- Other ---
+accompanistNavigation = "0.34.0" # 최신 안정 버전
+billingKtx = "8.0.0" # Kotlin 2.1.0과 호환되는 Billing Library 버전 (8.0.0은 Kotlin 2.1.0+ 호환)
+socketIo = "2.1.0" # 최신 안정 버전 확인 필요
 mpAndroidChart = "v3.1.0"
+roomRuntimeAndroid = "2.6.1" # 최신 안정 버전 (자체 확인 필요)
+
 
 [libraries]
-# AndroidX
+# AndroidX (composeBom을 쓰는 경우 compose-ui 등은 version.ref을 제거할 수 있습니다)
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "androidxCore" }
 androidx-lifecycle-runtime-ktx = { group = "androidx.lifecycle", name = "lifecycle-runtime-ktx", version.ref = "androidxLifecycle" }
 androidx-activity-compose = { group = "androidx.activity", name = "activity-compose", version.ref = "androidxActivity" }
 androidx-appcompat = { group = "androidx.appcompat", name = "appcompat", version.ref = "androidxAppCompat" }
 androidx-constraintlayout = { group = "androidx.constraintlayout", name = "constraintlayout", version.ref = "androidxConstraintLayout" }
-androidx-viewmodel-compose = { group = "androidx.lifecycle", name = "lifecycle-viewmodel-compose", version = "2.5.1" }
+androidx-viewmodel-compose = { group = "androidx.lifecycle", name = "lifecycle-viewmodel-compose", version = "2.8.0" } # lifecycle 버전 ref 일치
 androidx-splashscreen = { group = "androidx.core", name = "core-splashscreen", version.ref = "androidxSplash" }
 
-# Kotlin
-kotlin-bom = { group = "org.jetbrains.kotlin", name = "kotlin-bom", version.ref = "kotlinBom" }
+# Kotlinx
+# kotlin-bom은 이제 필요 없을 수 있음
 kotlinx-coroutines-core = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-core", version.ref = "coroutines" }
 kotlinx-coroutines-android = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-android", version.ref = "coroutines" }
 
-# Compose
+# Compose (composeBom 사용)
 compose-bom = { group = "androidx.compose", name = "compose-bom", version.ref = "composeBom" }
-compose-ui = { group = "androidx.compose.ui", name = "ui" }
-compose-ui-graphics = { group = "androidx.compose.ui", name = "ui-graphics" }
-compose-ui-tooling-preview = { group = "androidx.compose.ui", name = "ui-tooling-preview" }
-compose-material3 = { group = "androidx.compose.material3", name = "material3" }
-compose-material = { group = "androidx.compose.material", name = "material", version.ref = "composeMaterial" }
-compose-material3-windowsize = { group = "androidx.compose.material3", name = "material3-window-size-class", version.ref = "composeMaterial3" }
-compose-runtime = { group = "androidx.compose.runtime", name = "runtime", version.ref = "composeRuntime" }
-compose-runtime-livedata = { group = "androidx.compose.runtime", name = "runtime-livedata", version.ref = "composeRuntime" }
-compose-runtime-rxjava2 = { group = "androidx.compose.runtime", name = "runtime-rxjava2", version.ref = "composeRuntime" }
-compose-runtime-livedata-actual = { group = "androidx.compose.runtime", name = "runtime-livedata", version.ref = "composeRuntimeLivedata" }
-compose-ui-tooling = { group = "androidx.compose.ui", name = "ui-tooling" }
-compose-ui-test-manifest = { group = "androidx.compose.ui", name = "ui-test-manifest" }
-compose-ui-test-junit4 = { group = "androidx.compose.ui", name = "ui-test-junit4" }
+compose-ui = { group = "androidx.compose.ui", name = "ui" } # version.ref 제거
+compose-ui-graphics = { group = "androidx.compose.ui", name = "ui-graphics" } # version.ref 제거
+compose-ui-tooling-preview = { group = "androidx.compose.ui", name = "ui-tooling-preview" } # version.ref 제거
+compose-material3 = { group = "androidx.compose.material3", name = "material3" } # version.ref 제거 (BOM이 관리)
+compose-material = { group = "androidx.compose.material", name = "material" } # version.ref 제거 (BOM이 관리)
+compose-material3-windowsize = { group = "androidx.compose.material3", name = "material3-window-size-class", version.ref = "composeMaterial3" } # composeBom에 포함되지 않는 경우.
+compose-material-icons-extended = { group = "androidx.compose.material", name = "material-icons-extended", version.ref = "composeMaterialIconsExtended" }
+
+compose-runtime = { group = "androidx.compose.runtime", name = "runtime" } # version.ref 제거
+compose-runtime-livedata = { group = "androidx.compose.runtime", name = "runtime-livedata" } # version.ref 제거
+compose-runtime-rxjava2 = { group = "androidx.compose.runtime", name = "runtime-rxjava2" } # version.ref 제거
+# compose-runtime-livedata-actual = { group = "androidx.compose.runtime", name = "runtime-livedata", version.ref = "composeRuntimeLivedata" } # 중복되거나 불필요할 가능성 높음
+
+compose-ui-tooling = { group = "androidx.compose.ui", name = "ui-tooling" } # version.ref 제거
+compose-ui-test-manifest = { group = "androidx.compose.ui", name = "ui-test-manifest" } # version.ref 제거
+compose-ui-test-junit4 = { group = "androidx.compose.ui", name = "ui-test-junit4" } # version.ref 제거
 
 # Google
 material = { group = "com.google.android.material", name = "material", version.ref = "materialDesign" }
 play-services-ads-lite = { group = "com.google.android.gms", name = "play-services-ads-lite", version.ref = "playServicesAdsLite" }
+# firebase-crashlytics-buildtools는 플러그인과 혼동될 수 있으니 주의. 일반적으로 라이브러리는 firebase-crashlytics-ktx
+# 이 라이브러리는 보통 build.gradle.kts (모듈 수준)에서 com.google.firebase:firebase-crashlytics-ktx 처럼 사용됩니다.
 firebase-crashlytics-buildtools = { group = "com.google.firebase", name = "firebase-crashlytics-buildtools", version.ref = "firebaseCrashlytics" }
+
 firebase-bom = { group = "com.google.firebase", name = "firebase-bom", version.ref = "firebaseBom" }
+# BOM을 사용할 때는 하위 라이브러리에서 version.ref을 제거해야 합니다.
 firebase-firestore = { group = "com.google.firebase", name = "firebase-firestore" }
 firebase-firestore-ktx = { group = "com.google.firebase", name = "firebase-firestore-ktx" }
 firebase-database = { group = "com.google.firebase", name = "firebase-database" }
@@ -97,6 +110,7 @@ firebase-messaging-ktx = { group = "com.google.firebase", name = "firebase-messa
 firebase-analytics = { group = "com.google.firebase", name = "firebase-analytics" }
 firebase-analytics-ktx = { group = "com.google.firebase", name = "firebase-analytics-ktx" }
 
+
 # Navigation
 navigation-compose = { group = "androidx.navigation", name = "navigation-compose", version.ref = "androidxNavigation" }
 accompanist-navigation-animation = { group = "com.google.accompanist", name = "accompanist-navigation-animation", version.ref = "accompanistNavigation" }
@@ -104,24 +118,25 @@ accompanist-navigation-animation = { group = "com.google.accompanist", name = "a
 # Room
 room-runtime = { group = "androidx.room", name = "room-runtime", version.ref = "androidxRoom" }
 room-ktx = { group = "androidx.room", name = "room-ktx", version.ref = "androidxRoom" }
-room-compiler = { group = "androidx.room", name = "room-compiler", version.ref = "androidxRoom" }
+room-compiler = { group = "androidx.room", name = "room-compiler", version.ref = "androidxRoom" } # annotationProcessor 또는 kapt 사용
+
 
 # Hilt
 hilt-android = { group = "com.google.dagger", name = "hilt-android", version.ref = "hiltAndroid" }
-hilt-compiler = { group = "com.google.dagger", name = "hilt-compiler", version.ref = "hiltAndroid" }
+hilt-compiler = { group = "com.google.dagger", name = "hilt-compiler", version.ref = "hiltAndroid" } # kapt 사용
 hilt-android-testing = { group = "com.google.dagger", name = "hilt-android-testing", version.ref = "hiltAndroidTesting" }
-androidx-hilt-compiler = { group = "androidx.hilt", name = "hilt-compiler", version.ref = "hiltCompiler" }
+androidx-hilt-compiler = { group = "androidx.hilt", name = "hilt-compiler", version.ref = "hiltCompiler" } # kapt 사용
 androidx-hilt-navigation-compose = { group = "androidx.hilt", name = "hilt-navigation-compose", version.ref = "hiltCompiler" }
 
 # Network
 retrofit = { group = "com.squareup.retrofit2", name = "retrofit", version.ref = "retrofit" }
 retrofit-converter-moshi = { group = "com.squareup.retrofit2", name = "converter-moshi", version.ref = "retrofit" }
-moshi = { group = "com.squareup.moshi", name = "moshi", version = "1.14.0" }
-moshi-kotlin = { group = "com.squareup.moshi", name = "moshi-kotlin", version.ref = "moshi" }
-moshi-kotlin-codegen = { group = "com.squareup.moshi", name = "moshi-kotlin-codegen", version.ref = "moshi" }
+moshi = { group = "com.squareup.moshi", name = "moshi", version.ref = "moshi" } # 버전 통일
+moshi-kotlin = { group = "com.squareup.moshi", name = "moshi-kotlin", version.ref = "moshi" } # 버전 통일
+moshi-kotlin-codegen = { group = "com.squareup.moshi", name = "moshi-kotlin-codegen", version.ref = "moshi" } # 버전 통일
 okhttp-bom = { group = "com.squareup.okhttp3", name = "okhttp-bom", version.ref = "okhttpBom" }
-okhttp = { group = "com.squareup.okhttp3", name = "okhttp" }
-okhttp-logging-interceptor = { group = "com.squareup.okhttp3", name = "logging-interceptor" }
+okhttp = { group = "com.squareup.okhttp3", name = "okhttp" } # 버전 제거
+okhttp-logging-interceptor = { group = "com.squareup.okhttp3", name = "logging-interceptor" } # 버전 제거
 
 # Billing
 billing-ktx = { group = "com.android.billingclient", name = "billing-ktx", version.ref = "billingKtx" }
@@ -136,6 +151,7 @@ mp-android-chart = { group = "com.github.PhilJay", name = "MPAndroidChart", vers
 junit = { group = "junit", name = "junit", version.ref = "junit" }
 androidx-test-ext-junit = { group = "androidx.test.ext", name = "junit", version.ref = "androidxTestJunit" }
 androidx-test-espresso-core = { group = "androidx.test.espresso", name = "espresso-core", version.ref = "androidxEspresso" }
+androidx-room-runtime-android = { group = "androidx.room", name = "room-runtime-android", version.ref = "roomRuntimeAndroid" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "androidGradlePlugin" }
@@ -145,3 +161,4 @@ kotlin-kapt = { id = "org.jetbrains.kotlin.kapt", version.ref = "kotlin" }
 kotlin-parcelize = { id = "org.jetbrains.kotlin.plugin.parcelize", version.ref = "kotlin" }
 hilt-android = { id = "com.google.dagger.hilt.android", version.ref = "hiltAndroid" }
 google-services = { id = "com.google.gms.google-services", version.ref = "googleServices" }
+compose-compiler = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }

@@ -70,12 +70,19 @@ class CustomIdCreateUser @Inject constructor(
     suspend operator fun invoke(localUserData: LocalUserData, customId: String, pin: String): Result<LocalUserData> {
 
         return try {
+            Log.d("CustomIdCreateUser", "===== 사용자 업데이트 시작 =====")
+            Log.d("CustomIdCreateUser", "Input - customId: $customId, pin: $pin")
+            Log.d("CustomIdCreateUser", "기존 localUserData: $localUserData")
+
             val updateLocalData = localUserData.copy(
                 customId = customId,
                 pin = pin
             )
+            Log.d("CustomIdCreateUser", "업데이트할 데이터: $updateLocalData")
 
+            Log.d("CustomIdCreateUser", "로컬 DB 업데이트 시작...")
             userRepository.localUserUpdate(updateLocalData)
+            Log.d("CustomIdCreateUser", "로컬 DB 업데이트 완료")
 
             val userRequest = UserRequest(
                 customId = customId,
@@ -83,25 +90,34 @@ class CustomIdCreateUser @Inject constructor(
                 pin = updateLocalData.pin,
                 fcmToken = updateLocalData.fcmToken ?: ""
             )
+            Log.d("CustomIdCreateUser", "API 요청 데이터: $userRequest")
 
-           val fetchUserData = UserApi.userService.userUpdate(
+            Log.d("CustomIdCreateUser", "API 호출 시작 - deviceId: ${updateLocalData.id}")
+            val fetchUserData = UserApi.userService.userUpdate(
                 deviceId = updateLocalData.id.toString(),
-                userRequest = userRequest)
+                userRequest = userRequest
+            )
+            Log.d("CustomIdCreateUser", "API 호출 성공 - response: $fetchUserData")
 
-            Result.Success(
+            val result = Result.Success(
                 data = updateLocalData,
                 message = fetchUserData.message
             )
+            Log.d("CustomIdCreateUser", "===== 사용자 업데이트 성공 =====")
+
+            result
 
         } catch (e: Exception) {
+            Log.e("CustomIdCreateUser", "===== 사용자 업데이트 실패 =====")
+            Log.e("CustomIdCreateUser", "에러 타입: ${e::class.java.simpleName}")
+            Log.e("CustomIdCreateUser", "에러 메시지: ${e.message}")
+            Log.e("CustomIdCreateUser", "스택 트레이스:", e)
+
             Result.Error(
                 message = "업데이트를 실패하였습니다.",
                 exception = e
-
             )
         }
-
-
     }
 }
 
@@ -231,38 +247,83 @@ class LocalExistCheckUseCase @Inject constructor(
         }
     }
 
+    // UserUseCases.kt - syncWithServer
+
     private suspend fun syncWithServer(user: LocalUserData): UserResponse? {
         return try {
             val fcmToken = InvestApplication.prefs.getData("fcm_token", "")
             Log.d(TAG("LocalExistCheckUseCase", "syncWithServer"), "서버 동기화 FCM 토큰: $fcmToken")
 
-            val createServerUser = UserRequest(
-                deviceId = user.id.toString(),
-                customId = "",
-                pin = "",
-                fcmToken = user.fcmToken ?: fcmToken
-            )
-            Log.d(TAG("LocalExistCheckUseCase", "syncWithServer"), "서버 요청 데이터: $createServerUser")
+            // ✅ customId 우선, 없으면 deviceId
+            val searchId = if (!user.customId.isNullOrEmpty()) {
+                user.customId!!
+            } else {
+                user.id.toString()
+            }
+
+            Log.d(TAG("LocalExistCheckUseCase", "syncWithServer"), "조회 ID: $searchId")
 
             if (user.id != null) {
-                val serverUser = UserApi.userService.getUserRequest(user.id.toString())
+                // ✅ 404 처리 추가
+                val serverUser = try {
+                    Log.d(TAG("LocalExistCheckUseCase", "syncWithServer"), "서버 조회 시작...")
+                    val response = UserApi.userService.getUserRequest(searchId)
+                    Log.d(TAG("LocalExistCheckUseCase", "syncWithServer"), "서버 조회 성공: ${response.message}")
+                    response
+                } catch (e: retrofit2.HttpException) {
+                    Log.e(TAG("LocalExistCheckUseCase", "syncWithServer"), "HTTP 에러: ${e.code()}")
+                    Log.e(TAG("LocalExistCheckUseCase", "syncWithServer"), "HTTP 메시지: ${e.message()}")
+                    Log.e(TAG("LocalExistCheckUseCase", "syncWithServer"), "HTTP 응답: ${e.response()?.errorBody()?.string()}")
+
+                    if (e.code() == 404) {
+                        Log.d(TAG("LocalExistCheckUseCase", "syncWithServer"), "서버에 유저 없음 (404)")
+                        null
+                    } else {
+                        throw e
+                    }
+                } catch (e: Exception) {
+                    Log.e(TAG("LocalExistCheckUseCase", "syncWithServer"), "일반 에러: ${e.javaClass.simpleName}")
+                    Log.e(TAG("LocalExistCheckUseCase", "syncWithServer"), "일반 에러 메시지: ${e.message}")
+                    Log.e(TAG("LocalExistCheckUseCase", "syncWithServer"), "스택트레이스:", e)
+                    throw e
+                }
+
                 Log.d(TAG("LocalExistCheckUseCase", "syncWithServer"), "서버 응답: $serverUser")
-                if (serverUser.data == null) {
+
+                if (serverUser?.data == null) {
+                    val createServerUser = UserRequest(
+                        deviceId = user.id.toString(),
+                        customId = user.customId ?: "",
+                        pin = user.pin ?: "",
+                        fcmToken = user.fcmToken ?: fcmToken
+                    )
+
+                    Log.d(TAG("LocalExistCheckUseCase", "syncWithServer"), "새 서버 유저 생성 시작: $createServerUser")
                     UserApi.userService.userAddRequest(createServerUser).also {
-                        Log.d(TAG("LocalExistCheckUseCase", "syncWithServer"), "새 서버 유저 생성: $it")
+                        Log.d(TAG("LocalExistCheckUseCase", "syncWithServer"), "새 서버 유저 생성 완료: $it")
                     }
                 } else {
-                    serverUser.also {
-                        Log.d(TAG("LocalExistCheckUseCase", "syncWithServer"), "기존 서버 유저 사용: $it")
-                    }
+                    Log.d(TAG("LocalExistCheckUseCase", "syncWithServer"), "기존 서버 유저 사용")
+                    serverUser
                 }
             } else {
+                val createServerUser = UserRequest(
+                    deviceId = user.id.toString(),
+                    customId = "",
+                    pin = "",
+                    fcmToken = user.fcmToken ?: fcmToken
+                )
+
                 UserApi.userService.userAddRequest(createServerUser).also {
                     Log.d(TAG("LocalExistCheckUseCase", "syncWithServer"), "ID 없는 새 서버 유저 생성: $it")
                 }
             }
         } catch (e: Exception) {
-            Log.e(TAG("LocalExistCheckUseCase", "syncWithServer"), "서버 동기화 실패", e)
+            Log.e(TAG("LocalExistCheckUseCase", "syncWithServer"), "=== 서버 동기화 실패 상세 ===")
+            Log.e(TAG("LocalExistCheckUseCase", "syncWithServer"), "에러 타입: ${e.javaClass.name}")
+            Log.e(TAG("LocalExistCheckUseCase", "syncWithServer"), "에러 메시지: ${e.message}")
+            Log.e(TAG("LocalExistCheckUseCase", "syncWithServer"), "원인: ${e.cause}")
+            e.printStackTrace()
             null
         }
     }

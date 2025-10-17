@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.bobodroid.myapplication.MainActivity.Companion.TAG
 import com.bobodroid.myapplication.models.datamodels.roomDb.ExchangeRate
 import com.bobodroid.myapplication.models.datamodels.roomDb.LocalUserData
+import com.bobodroid.myapplication.models.datamodels.service.exchangeRateApi.RateApi
 import com.bobodroid.myapplication.models.datamodels.websocket.WebSocketClient
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -19,12 +20,42 @@ import javax.inject.Inject
 class LatestRateRepository @Inject constructor(
     private val webSocketClient: WebSocketClient
 ) {
-    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     private val _latestRate = MutableStateFlow(ExchangeRate())
 
     val latestRateFlow = _latestRate.asStateFlow()
 
+
+
+    suspend fun fetchInitialLatestRate() {
+        try {
+            Log.d(TAG("LatestRateRepository", "fetchInitialLatestRate"), "REST API로 최신 환율 요청")
+
+            val response = RateApi.rateService.getLatestRate()
+
+            if (response.isSuccessful) {
+                response.body()?.let { data ->
+                    val exchangeRate = ExchangeRate(
+                        id = data.id,
+                        createAt = data.createAt,
+                        usd = data.exchangeRates.usd,
+                        jpy = data.exchangeRates.jpy
+                    )
+
+                    _latestRate.emit(exchangeRate)
+
+                    Log.d(TAG("LatestRateRepository", "fetchInitialLatestRate"),
+                        "초기 최신 환율 로드 성공: USD=${exchangeRate.usd}, JPY=${exchangeRate.jpy}")
+                }
+            } else {
+                Log.e(TAG("LatestRateRepository", "fetchInitialLatestRate"),
+                    "초기 최신 환율 로드 실패: ${response.code()}")
+            }
+        } catch (e: Exception) {
+            Log.e(TAG("LatestRateRepository", "fetchInitialLatestRate"),
+                "초기 최신 환율 로드 에러: ${e.message}", e)
+        }
+    }
 
     suspend fun subscribeToExchangeRateUpdates() {
         webSocketClient.recentRateWebReceiveData(

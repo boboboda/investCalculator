@@ -23,6 +23,10 @@ data class ExchangeRates(
         return "(USD=$usd, JPY=$jpy)"
     }
 }
+data class CurrencyChange(
+    @Json(name = "USD") val usd: String,
+    @Json(name = "JPY") val jpy: String
+)
 
 // 기본 응답 클래스: Exchange Rate 정보
 data class ExchangeRateResponse(
@@ -32,4 +36,11 @@ data class ExchangeRateResponse(
     @Json(name = "createAt") val createAt: String,
     @Json(name = "documentNumber") val documentNumber: Int,
     @Json(name = "__v") val version: Int
+)
+
+
+data class ExchangeRateDailyChange(
+   @Json(name = "date") val date: String,
+   @Json(name = "latestRate") val latestRate: ExchangeRates,
+   @Json(name = "change") val change: CurrencyChange
 )

@@ -1,5 +1,6 @@
 package com.bobodroid.myapplication.models.viewmodels
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.bobodroid.myapplication.models.datamodels.repository.LatestRateRepository
@@ -12,29 +13,51 @@ import com.bobodroid.myapplication.util.result.onSuccess
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
 class MyPageViewModel @Inject constructor(
     private val userUseCases: UserUseCases,
+    private val userRepository: UserRepository
 ) : ViewModel() {
 
     val _myPageUiState = MutableStateFlow(MyPageUiState())
     val myPageUiState = _myPageUiState.asStateFlow()
 
+    init {
+        viewModelScope.launch {
+            userRepository.userData.collect { userData ->
+                _myPageUiState.update {
+                    it.copy(localUser = userData?.localUserData ?: LocalUserData())
+                    //                   ⭐ 실제 유저 데이터 사용
+                }
+            }
+        }
+    }
 
 
     // -> 완료
     fun createUser(customId: String, pin: String, resultMessage: (String) -> Unit) {
         viewModelScope.launch {
+            // ⭐ 항상 최신 localUser 사용
+            val currentLocalUser = _myPageUiState.value.localUser
+
+            if (currentLocalUser == null) {
+                resultMessage("사용자 정보를 찾을 수 없습니다.")
+                return@launch
+            }
+
+            Log.d("MyPageViewModel", "createUser - deviceId: ${currentLocalUser.id}")
+
             userUseCases.customIdCreateUser(
-                localUserData = _myPageUiState.value.localUser,
+                localUserData = currentLocalUser,
                 customId = customId,
-                pin = pin)
+                pin = pin
+            )
                 .onSuccess { updateData, _ ->
                     val uiState = _myPageUiState.value.copy(localUser = updateData)
-
                     _myPageUiState.emit(uiState)
                     resultMessage("성공적으로 아이디가 생성되었습니다.")
                 }

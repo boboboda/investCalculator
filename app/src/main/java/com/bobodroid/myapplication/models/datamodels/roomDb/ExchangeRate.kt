@@ -10,6 +10,8 @@ import com.google.firebase.firestore.QueryDocumentSnapshot
 import com.google.firebase.firestore.QuerySnapshot
 import org.json.JSONException
 import org.json.JSONObject
+import java.math.BigDecimal
+import java.math.RoundingMode
 import java.util.UUID
 import javax.annotation.Nonnull
 
@@ -77,7 +79,16 @@ data class ExchangeRate(
 
                 // 'USD' 및 'JPY' 필드가 있는지 확인 후 가져오기
                 val usdRate = if (exchangeRates.has("USD")) exchangeRates.optDouble("USD").toString() else null
-                val jpyRate = if (exchangeRates.has("JPY")) exchangeRates.optDouble("JPY").toString() else null
+                val jpyRate = if (exchangeRates.has("JPY")) {
+                    // JPY 값을 100 곱하고 소수점 2자리로 처리
+                    val originalValue = exchangeRates.optDouble("JPY")
+                    if (originalValue != 0.0) {
+                        BigDecimal(originalValue)
+                            .multiply(BigDecimal("100"))
+                            .setScale(2, RoundingMode.DOWN)
+                            .toString()
+                    } else null
+                } else null
 
                 // ExchangeRate 객체 생성
                 ExchangeRate(

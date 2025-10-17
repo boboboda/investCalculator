@@ -27,32 +27,33 @@ import kotlinx.coroutines.launch
 
 @Composable
 fun MainTopBar() {
-
-
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .height(40.dp)
-            .background(TopBarColor)
+            .background(Color(0xFF6366F1))  // 🎨 탑바 색상을 보라색으로 변경
             .padding(horizontal = 10.dp),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.Center) {
+        horizontalArrangement = Arrangement.Center
+    ) {
         Image(
             modifier = Modifier
                 .clip(CircleShape)
                 .padding(5.dp),
             painter = painterResource(id = R.drawable.ic_icon),
-            contentDescription = "")
+            contentDescription = ""
+        )
 
         Spacer(modifier = Modifier.width(10.dp))
+
         AutoSizeText(
             value = "달러 기록",
             fontSize = 18.sp,
             fontWeight = FontWeight.Bold,
             maxLines = 1,
             minFontSize = 10.sp,
-            color = Color.Black)
-
+            color = Color.White  // 🎨 텍스트 색상 흰색으로 변경
+        )
 
         Spacer(modifier = Modifier.weight(1f))
     }

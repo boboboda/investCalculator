@@ -7,6 +7,7 @@ plugins {
     alias(libs.plugins.kotlin.parcelize)
     alias(libs.plugins.hilt.android)
     alias(libs.plugins.google.services)
+    alias(libs.plugins.compose.compiler)
 }
 
 // Properties 파일 로드를 위한 함수
@@ -33,14 +34,14 @@ android {
     val properties = loadProperties()
 
     namespace = "com.bobodroid.myapplication"
-    compileSdk = 34
+    compileSdk = 35
 
     defaultConfig {
         applicationId = "com.bobodroid.myapplication"
         minSdk = 26
-        targetSdk = 34
-        versionCode = 40
-        versionName = "26.1.1"
+        targetSdk = 35
+        versionCode = 43
+        versionName = "26.1.2"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
         vectorDrawables {
@@ -78,23 +79,26 @@ android {
     productFlavors {
         create("emulator") {
             dimension = "environment"
-            buildConfigField("String", "BASE_URL", "\"http://buyoungsil.ddns.net:3000\"")
-            buildConfigField("String", "WEBSOCKET_URL", "\"http://buyoungsil.ddns.net:4200\"")
+            // REST API용 (베이스 URL만, 슬래시 포함)
+            buildConfigField("String", "BASE_URL", "\"https://www.buyoungsilcoding.com/\"")
+
+            // Socket.IO용 (베이스 URL만, 슬래시 없음)
+            buildConfigField("String", "WEBSOCKET_URL", "\"https://www.buyoungsilcoding.com\"")
         }
         create("device") {
             dimension = "environment"
-            buildConfigField("String", "WEBSOCKET_URL", "\"http://192.168.0.66:4200\"")
-            buildConfigField("String", "BASE_URL", "\"http://192.168.0.66:3000\"")
+            buildConfigField("String", "BASE_URL", "\"https://www.buyoungsilcoding.com/\"")
+            buildConfigField("String", "WEBSOCKET_URL", "\"https://www.buyoungsilcoding.com\"")
         }
         create("prod") {
             dimension = "environment"
-            buildConfigField("String", "BASE_URL", "\"http://buyoungsil.ddns.net:3000\"")
-            buildConfigField("String", "WEBSOCKET_URL", "\"http://buyoungsil.ddns.net:4200\"")
+            buildConfigField("String", "BASE_URL", "\"https://www.buyoungsilcoding.com/\"")
+            buildConfigField("String", "WEBSOCKET_URL", "\"https://www.buyoungsilcoding.com\"")
         }
         create("mac") {
             dimension = "environment"
-            buildConfigField("String", "BASE_URL", "\"http://192.168.166.213:3000\"")
-            buildConfigField("String", "WEBSOCKET_URL", "\"http://192.168.166.213:4200\"")
+            buildConfigField("String", "BASE_URL", "\"https://www.buyoungsilcoding.com/\"")
+            buildConfigField("String", "WEBSOCKET_URL", "\"https://www.buyoungsilcoding.com\"")
         }
     }
 
@@ -112,7 +116,7 @@ android {
     }
 
     composeOptions {
-        kotlinCompilerExtensionVersion = libs.versions.compose.get()
+        kotlinCompilerExtensionVersion = libs.versions.composeBom.get()
     }
 
     packaging {
@@ -125,7 +129,6 @@ android {
 dependencies {
     // AndroidX
     implementation(libs.androidx.core.ktx)
-    implementation(libs.kotlin.bom)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.appcompat)
@@ -144,12 +147,12 @@ dependencies {
     implementation(libs.compose.runtime)
     implementation(libs.compose.runtime.livedata)
     implementation(libs.compose.runtime.rxjava2)
-    implementation(libs.compose.runtime.livedata.actual)
+    implementation(libs.compose.runtime.livedata)
+    implementation(libs.compose.material.icons.extended)
 
     // Google
     implementation(libs.material)
     implementation(libs.play.services.ads.lite)
-    implementation(libs.firebase.crashlytics.buildtools)
 
     // Navigation
     implementation(libs.navigation.compose)
@@ -158,6 +161,7 @@ dependencies {
     // Room
     implementation(libs.room.runtime)
     implementation(libs.room.ktx)
+//    implementation(libs.androidx.room.runtime.android)
     annotationProcessor(libs.room.compiler)
     kapt(libs.room.compiler)
 

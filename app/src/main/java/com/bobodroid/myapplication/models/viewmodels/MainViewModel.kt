@@ -139,6 +139,8 @@ class MainViewModel @Inject constructor(
             Log.d(TAG("MainViewModel", "init"), "광고 확인완료")
             receivedLatestRate()
             Log.d(TAG("MainViewModel", "init"), "최신환율 확인완료")
+            latestRateRepository.fetchInitialLatestRate()
+
         }
 
         viewModelScope.launch {
@@ -146,6 +148,8 @@ class MainViewModel @Inject constructor(
             Log.d(TAG("MainViewModel", "init"), "기록불러오기 확인완료")
         }
     }
+
+
 
     // 웹소켓 실시간 데이터 구독 -> 완료
     private suspend fun receivedLatestRate() {
@@ -172,6 +176,10 @@ class MainViewModel @Inject constructor(
         val noticeContent = _noticeUiState.value.notice.content
         val userShowNoticeDate = _mainUiState.value.localUser.userShowNoticeDate
 
+        Log.d(
+            TAG("MainViewModel", "noticeDialogState"),
+            "공지사항 데이터: ${noticeDate}, ${noticeContent}, ${userShowNoticeDate}")
+
         if(noticeContent == null) {
             Log.d(TAG("MainViewModel", "noticeDialogState"), "공지가 없습니다.")
             return
@@ -179,17 +187,21 @@ class MainViewModel @Inject constructor(
 
         // 닫기 후 호출 방지
         if (_noticeUiState.value.noticeState) {
-            val uiState = _noticeUiState.value.copy(showNoticeDialog = true)
             if (userShowNoticeDate.isNullOrEmpty()) {
                 Log.d(TAG("MainViewModel", "noticeDialogState"), "날짜 값이 없습니다.")
-                _noticeUiState.emit(uiState)
+                _noticeUiState.update {
+                    _noticeUiState.value.copy(showNoticeDialog = true, noticeState = true)
+                }
             } else {
                 // 안전한 널 검사 및 비교
                 if (noticeDate != null && noticeDate > userShowNoticeDate) {
                     Log.d(TAG("MainViewModel", "noticeDialogState"), "공지사항 날짜가 더 큽니다.")
-                    _noticeUiState.emit(uiState)
+                    _noticeUiState.update {
+                        _noticeUiState.value.copy(showNoticeDialog = true, noticeState = true)
+                    }
                 } else {
                     Log.d(TAG("MainViewModel", "noticeDialogState"), "로컬에 저장된 날짜가 더 큽니다.")
+                    _noticeUiState.value.copy(showNoticeDialog = false, noticeState = false)
                 }
             }
         } else {
@@ -246,10 +258,10 @@ class MainViewModel @Inject constructor(
 
 
     // -> 완료
-    fun reFreshProfit(reFreshClicked: (ExchangeRate) -> Unit) {
+    suspend fun reFreshProfit() {
         val resentRate = _mainUiState.value.recentRate
 
-        reFreshClicked.invoke(resentRate)
+        recordUseCase.reFreshProfit(resentRate, _recordListUiState.value.foreignCurrencyRecord)
     }
 
 
@@ -336,7 +348,7 @@ class MainViewModel @Inject constructor(
        val krMoney = _recordListUiState.value.selectedRecord?.money ?: return
 
        val sellProfit = recordUseCase.sellProfit(exchangeMoney, sellRate, krMoney, _mainUiState.value.selectedCurrencyType).toString()
-       val sellPercent = recordUseCase.sellPercent(exchangeMoney, krMoney).toString()
+       val sellPercent = recordUseCase.sellPercent(sellProfit, krMoney).toString()
 
        val recordUiUpdateState = _recordListUiState.value.copy(sellProfit = sellProfit, sellPercent = sellPercent)
 
@@ -743,7 +755,7 @@ data class MainUiState (
 data class NoticeUiState(
     val showNoticeDialog: Boolean = false,
     val notice: Notice = Notice(),
-    val noticeState: Boolean = false
+    val noticeState: Boolean = true
 )
 
 // 광고 관련 상태

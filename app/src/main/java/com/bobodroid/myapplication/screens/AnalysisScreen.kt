@@ -151,10 +151,7 @@ fun ChartScreen(
     onBackPress: () -> Unit
 ) {
 
-    val selectedTabIndex by analysisViewModel.selectedTabIndex.collectAsState()
-    val rates by analysisViewModel.selectedRates.collectAsState()
-
-    Log.d(TAG("ChartScreen", "rates"), rates.toString())
+    val analysisUiState by analysisViewModel.analysisUiState.collectAsState()
 
     var currencyExpanded by remember { mutableStateOf(false) }
 
@@ -162,12 +159,35 @@ fun ChartScreen(
         mutableStateOf(CurrencyType.USD)
     }
 
-    val rangeRateMapCurrencyType = rates.map {
+    val rangeRateMapCurrencyType = analysisUiState.selectedRates.map {
         when (targetRateMoneyType) {
             CurrencyType.USD -> RateRangeCurrency(it.usd.toFloat(), it.createAt)
             CurrencyType.JPY -> RateRangeCurrency(it.jpy.toFloat(), it.createAt)
         }
     }
+
+    val latestRate = when(targetRateMoneyType) {
+        CurrencyType.USD -> analysisUiState.latestRate.usd
+        CurrencyType.JPY -> analysisUiState.latestRate.jpy
+    }
+
+    val changeRate = when(targetRateMoneyType) {
+        CurrencyType.USD -> analysisUiState.change.usd
+            CurrencyType.JPY -> analysisUiState.change.jpy
+    }
+
+    val changeIcon = when(targetRateMoneyType) {
+        CurrencyType.USD -> analysisUiState.usdChangeIcon
+        CurrencyType.JPY -> analysisUiState.jpyChangeIcon
+    }
+
+
+    val changeColor = when(targetRateMoneyType) {
+        CurrencyType.USD -> analysisUiState.usdChangeColor
+        CurrencyType.JPY -> analysisUiState.jpyChangeColor
+    }
+
+
 
 
     Log.d(TAG("ChartScreen", "rangeRateMapCurrencyType"), rangeRateMapCurrencyType.toString())
@@ -186,12 +206,14 @@ fun ChartScreen(
                 modifier = Modifier.weight(0.5f)
             ) {
                 Text(text = "실시간 환율", fontSize = 12.sp, color = Color.Gray)
-                Text(text ="1,300원", fontSize = 24.sp, fontWeight = FontWeight.Bold)
+
+
+                Text(text ="${latestRate}원", fontSize = 24.sp, fontWeight = FontWeight.Bold)
 
                 Spacer(modifier = Modifier.height(10.dp))
                 Row(modifier = Modifier.fillMaxWidth()) {
                     Text(text = "전일대비", fontSize = 12.sp, color = Color.Gray)
-                    Text(text = "▲ 5.75", fontSize = 12.sp, color = Color.Red)
+                    Text(text = "$changeIcon $changeRate", fontSize = 12.sp, color = changeColor)
 
                 }
             }
@@ -261,7 +283,7 @@ fun ChartScreen(
                 .padding(horizontal = 10.dp)
         ) {
             BackgroundEmphasisTabRow(
-                selectedTabIndex = selectedTabIndex,
+                selectedTabIndex = analysisUiState.selectedTabIndex,
                 onTabSelected = { analysisViewModel.onTabSelected(it) }
             )
         }

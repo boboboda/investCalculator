@@ -1,18 +1,12 @@
 package com.bobodroid.myapplication.screens
 
 import android.app.Activity
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
 import androidx.compose.material3.SnackbarDuration
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowDropDown
-import androidx.compose.material.icons.rounded.KeyboardArrowDown
 import androidx.compose.material3.Card
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -22,58 +16,37 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.*
 import com.bobodroid.myapplication.components.*
 import com.bobodroid.myapplication.components.Caldenders.RangeDateDialog
-import com.bobodroid.myapplication.models.viewmodels.DollarViewModel
 import kotlinx.coroutines.launch
-import java.text.SimpleDateFormat
 import java.util.*
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import com.bobodroid.myapplication.components.Dialogs.NoticeDialog
 import kotlinx.coroutines.delay
-import java.math.BigDecimal
 import androidx.compose.material3.Text
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.DropdownMenu
-import com.bobodroid.myapplication.ui.theme.WelcomeScreenBackgroundColor
-import androidx.compose.material3.Icon
 import androidx.compose.ui.platform.LocalFocusManager
-import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.zIndex
-import com.bobodroid.myapplication.MainActivity
-import com.bobodroid.myapplication.R
-import com.bobodroid.myapplication.components.Dialogs.FloatPopupNumberView
-import com.bobodroid.myapplication.components.Dialogs.PopupNumberView
 import com.bobodroid.myapplication.components.Dialogs.RewardShowAskDialog
 import com.bobodroid.myapplication.components.Dialogs.SellResultDialog
 import com.bobodroid.myapplication.components.Dialogs.TextFieldDialog
 import com.bobodroid.myapplication.components.Dialogs.ThanksDialog
-import com.bobodroid.myapplication.components.admobs.BannerAd
 import com.bobodroid.myapplication.components.admobs.showTargetRewardedAdvertisement
 import com.bobodroid.myapplication.components.mainComponents.AddBottomSheet
 import com.bobodroid.myapplication.components.mainComponents.EditBottomSheet
 import com.bobodroid.myapplication.components.mainComponents.MainHeader
 import com.bobodroid.myapplication.components.mainComponents.RateBottomSheet
-import com.bobodroid.myapplication.extensions.toDate
 import com.bobodroid.myapplication.extensions.toLocalDate
-import com.bobodroid.myapplication.lists.dollorList.RecordListView
+import com.bobodroid.myapplication.lists.foreignCurrencyList.RecordListView
 import com.bobodroid.myapplication.models.datamodels.roomDb.CurrencyType
 import com.bobodroid.myapplication.models.datamodels.roomDb.ForeignCurrencyRecord
 import com.bobodroid.myapplication.models.viewmodels.CurrencyRecordState
 import com.bobodroid.myapplication.models.viewmodels.MainViewModel
 import com.bobodroid.myapplication.screens.MainEvent.BottomSheetEvent
-import com.bobodroid.myapplication.ui.theme.BottomSheetTitleColor
-import com.bobodroid.myapplication.ui.theme.BuyColor
-import com.bobodroid.myapplication.ui.theme.primaryColor
 import androidx.compose.material3.SnackbarHostState
-import androidx.compose.ui.window.Dialog
 
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterialApi::class)
 @Composable
 fun MainScreen(
     mainViewModel: MainViewModel,
-
     activity: Activity
 ) {
     val mainUiState by mainViewModel.mainUiState.collectAsState()
@@ -159,8 +132,7 @@ fun MainScreen(
     {
         Column(
             modifier = Modifier
-                .fillMaxSize()
-                .padding(top = 10.dp),
+                .fillMaxSize(),
             horizontalAlignment = Alignment.CenterHorizontally
         )
         {
@@ -184,6 +156,7 @@ fun MainScreen(
                     .addFocusCleaner(focusManager)
             ) {
                 RecordListView(
+                    mainUiState.selectedCurrencyType,
                     records,
                     hideSellRecordState = hideSellRecordState,
                     onEvent = {event ->
@@ -379,11 +352,9 @@ fun MainScreen(
                 mainViewModel.handleMainEvent(MainEvent.ShowDateRangeDialog)
             },
             refreshClicked = {
-//                allViewModel.reFreshProfit { recentRate ->
-//                    dollarViewModel.calculateProfit(recentRate)
-//
-//                    yenViewModel.calculateProfit(recentRate)
-//                }
+                coroutineScope.launch {
+                    mainViewModel.reFreshProfit()
+                }
             })
 
 

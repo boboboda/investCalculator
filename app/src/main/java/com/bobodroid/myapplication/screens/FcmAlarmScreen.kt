@@ -362,7 +362,8 @@ fun FcmAlarmScreen() {
             // Add FAB
             FloatingActionButton(
                 onClick = {
-                    if(rates != null && rates.last().number < 5) {
+                    // ⭐ 올바른 조건: 리스트 크기가 5개 미만
+                    if(rates == null || rates.size < 5) {
                         targetRateState = if(selectedTabIndex == 0) RateDirection.HIGH else RateDirection.LOW
                         addTargetDialog = true
                     } else {
@@ -376,7 +377,6 @@ fun FcmAlarmScreen() {
                             }
                         }
                     }
-
                 },
                 modifier = Modifier
                     .align(Alignment.End)
@@ -444,10 +444,7 @@ fun FcmAlarmScreen() {
 
     if(addTargetDialog) {
 
-        val lastRate = if(rates == null) {
-            null
-        } else { rates.last()}
-
+        val lastRate = rates?.lastOrNull()  // ⭐ 한 줄로 해결!
 
         TargetRateDialog(
             onDismissRequest = {
@@ -466,7 +463,6 @@ fun FcmAlarmScreen() {
                 addTargetDialog = false
             }
         )
-
     }
 }
 

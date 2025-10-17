@@ -2,11 +2,13 @@ package com.bobodroid.myapplication.models.datamodels.useCases
 
 import android.util.Log
 import androidx.lifecycle.viewModelScope
+import androidx.room.util.copy
 import com.bobodroid.myapplication.MainActivity.Companion.TAG
 import com.bobodroid.myapplication.extensions.toBigDecimalWon
 import com.bobodroid.myapplication.models.datamodels.repository.InvestRepository
 import com.bobodroid.myapplication.models.datamodels.roomDb.CurrencyType
 import com.bobodroid.myapplication.models.datamodels.roomDb.DrBuyRecord
+import com.bobodroid.myapplication.models.datamodels.roomDb.ExchangeRate
 import com.bobodroid.myapplication.models.datamodels.roomDb.ForeignCurrencyRecord
 import com.bobodroid.myapplication.models.datamodels.roomDb.YenBuyRecord
 import com.bobodroid.myapplication.models.viewmodels.CurrencyRecordState
@@ -48,8 +50,8 @@ class RecordUseCase @Inject constructor(
     }
 
     suspend fun addCurrencyRecord(request: CurrencyRecordRequest) {
-        val exchangeMoney = calculateExchangeMoney(request.money, request.inputRate)
-        val expectedProfit = calculateExpectedProfit(exchangeMoney, request.money, request.latestRate)
+        val exchangeMoney = calculateExchangeMoney(request.type, request.money, request.inputRate)
+        val expectedProfit = calculateExpectedProfit(request.type,exchangeMoney, request.money, request.latestRate)
 
         when (request.type) {
             CurrencyType.USD -> {
@@ -105,7 +107,7 @@ class RecordUseCase @Inject constructor(
 
                 val drBuyRecord = record as DrBuyRecord
 
-                val exchangeMoney = calculateExchangeMoney(editMoney, editRate)
+                val exchangeMoney = calculateExchangeMoney(type, editMoney, editRate)
                 val editData = drBuyRecord.copy(
                     date = editDate,
                     money = editMoney,
@@ -120,7 +122,7 @@ class RecordUseCase @Inject constructor(
             CurrencyType.JPY -> {
                 val drBuyRecord = record as YenBuyRecord
 
-                val exchangeMoney = calculateExchangeMoney(editMoney, editRate)
+                val exchangeMoney = calculateExchangeMoney(type, editMoney, editRate)
                 val editData = drBuyRecord.copy(
                     date = editDate,
                     money = editMoney,
@@ -133,10 +135,6 @@ class RecordUseCase @Inject constructor(
                 investRepository.updateYenBuyRecord(editData)
             }
         }
-
-
-
-
     }
 
     suspend fun onSellRecord(record: ForeignCurrencyRecord,
@@ -215,6 +213,40 @@ class RecordUseCase @Inject constructor(
         }
     }
 
+    suspend fun reFreshProfit(
+        latestRate: ExchangeRate,
+        records: ForeignCurrencyRecordList
+    ) {
+        fun calculate(record: ForeignCurrencyRecord, rate: String?): String? {
+            return rate?.let { r ->
+                record.money?.let { m ->
+                    record.exchangeMoney?.let { e ->
+                        calculateExpectedProfit(record.toType(), e, m, r)
+                    }
+                }
+            }
+        }
+
+        records.dollarState.records
+            .filter { it.recordColor == true }  // true인 것만 필터링
+            .forEach { record ->
+                val profit = calculate(record, latestRate.usd)
+                investRepository.updateDollarBuyRecord(
+                    record.copyWithProfitAndExpectProfit(profit) as DrBuyRecord
+                )
+            }
+
+        records.yenState.records
+            .filter { it.recordColor == true }
+            .forEach { record ->
+
+            val profit = calculate(record, latestRate.jpy)
+            investRepository.updateYenBuyRecord(
+                record.copyWithProfitAndExpectProfit(profit)  as YenBuyRecord
+            )
+        }
+    }
+
 
     suspend fun cancelSellRecord(id: UUID, currencyType: CurrencyType): Boolean {
         val searchBuyRecord = when(currencyType) {
@@ -285,23 +317,52 @@ class RecordUseCase @Inject constructor(
     }
 
 
-   private fun calculateExpectedProfit(exchangeMoney: String, inputMoney: String, latestRate: String): String {
+   private fun calculateExpectedProfit(type: CurrencyType, exchangeMoney: String, inputMoney: String, latestRate: String): String {
 
+        val profit = when(type) {
+            CurrencyType.USD -> {
+                ((BigDecimal(exchangeMoney).times(BigDecimal(latestRate)))
+                    .setScale(20, RoundingMode.HALF_UP)
+                        ).minus(BigDecimal(inputMoney))
 
-        val profit = ((BigDecimal(exchangeMoney).times(BigDecimal(latestRate)))
-            .setScale(20, RoundingMode.HALF_UP)
-                ).minus(BigDecimal(inputMoney))
-        Log.d(TAG("DollarViewModel", "expectSellValue"), "개별 profit 결과 값 ${profit}")
+            }
 
+            CurrencyType.JPY -> {
+
+                Log.d(TAG("RecordUseCase", "expectSellValue"), "산 원화: ${inputMoney}")
+
+                ((BigDecimal(exchangeMoney).times(BigDecimal(latestRate))).divide(BigDecimal(100))
+                    .setScale(20, RoundingMode.HALF_UP)
+                        ).minus(BigDecimal(inputMoney))
+
+            }
+        }
+
+       Log.d(TAG("RecordUseCase", "expectSellValue"), "개별 profit 결과 값 ${profit}")
         return profit.toString()
     }
 
+    private fun calculateExchangeMoney(type:CurrencyType, money: String, rate: String) =
 
-    private fun calculateExchangeMoney(money: String, rate: String) = BigDecimal(money).divide(
-        BigDecimal(rate),
-        20,
-        RoundingMode.HALF_UP
-    ).toString()
+        when(type) {
+            CurrencyType.USD -> {
+                BigDecimal(money).divide(
+                    BigDecimal(rate),
+                    20,
+                    RoundingMode.HALF_UP
+                ).toString()
+            }
+            CurrencyType.JPY -> {
+                BigDecimal(money).multiply(BigDecimal(100)).divide(
+                    BigDecimal(rate),
+                    20,
+                    RoundingMode.HALF_UP
+                ).toString()
+            }
+        }
+
+
+
 
 
     private fun <T> setGroup(recordList: List<T>, categorySelector: (T) -> String?): Map<String, List<T>> {
@@ -333,10 +394,10 @@ class RecordUseCase @Inject constructor(
     }
 
     fun sellPercent(
-        exchangeMoney: String,
+        profit: String,
         krMoney: String
     ): Float =
-        (exchangeMoney.toFloat() / krMoney.toFloat()) * 100f
+        (profit.toFloat() / krMoney.toFloat()) * 100f
 
     fun sumProfit(
         record: List<ForeignCurrencyRecord>,
@@ -354,7 +415,6 @@ class RecordUseCase @Inject constructor(
             return ""
         }
     }
-
 
 
 }

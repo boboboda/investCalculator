@@ -25,14 +25,16 @@ class NoticeRepository @Inject constructor() {
     }
 
     suspend fun loadNotice() {
+        Log.d(TAG("noticeRepository", "loadNotice"), "실행")
         try {
-            val noticeResponse = NoticeApi.noticeService.noticeRequest().data.firstOrNull()
+            val noticeResponse = NoticeApi.noticeService.noticeRequest().data
             _noticeData.value = NoticeResult.Success(
                 if(noticeResponse == null) null
                 else Notice(content = noticeResponse.content, date = noticeResponse.createdAt)
             )
         } catch (e: Exception) {
             _noticeData.value = NoticeResult.Error(e)
+            Log.e(TAG("noticeRepository", "loadNotice"), "${_noticeData.value}")
         }
     }
 

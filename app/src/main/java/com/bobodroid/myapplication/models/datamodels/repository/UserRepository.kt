@@ -22,7 +22,7 @@ import javax.inject.Singleton
 @Singleton
 class UserRepository @Inject constructor(
     private val localUserDatabaseDao: LocalUserDatabaseDao
-) {
+){
     private val _userData = MutableStateFlow<UserDataType?>(null)
     val userData = _userData.asStateFlow()
 
@@ -31,6 +31,7 @@ class UserRepository @Inject constructor(
 
     suspend fun localUserUpdate(localUserData: LocalUserData) {
         try {
+
             val updatedUser = localUserDatabaseDao.updateAndGetUser(localUserData)
             _localUserData.value = updatedUser
         } catch (e: Exception) {

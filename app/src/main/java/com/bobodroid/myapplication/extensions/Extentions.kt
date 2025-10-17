@@ -26,13 +26,13 @@ fun BigDecimal.toBigDecimalWon(): String {
 
 fun BigDecimal.toBigDecimalUs(): String {
     val us = NumberFormat.getCurrencyInstance(Locale.US)
-    us.maximumFractionDigits = 2
+    us.maximumFractionDigits = 0
     return us.format(this)
 }
 
 fun BigDecimal.toBigDecimalYen(): String {
     val won = NumberFormat.getCurrencyInstance(Locale.JAPAN)
-    won.maximumFractionDigits = 2
+    won.maximumFractionDigits = 0
     return won.format(this)
 }
 

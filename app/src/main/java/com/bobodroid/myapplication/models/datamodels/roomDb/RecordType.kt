@@ -340,6 +340,14 @@ interface ForeignCurrencyRecord {
     fun copyWithMemo(memo: String): ForeignCurrencyRecord
 
     fun copyWithSell(sellDate:String, sellRate:String, sellProfit:String): ForeignCurrencyRecord
+
+    fun toType(): CurrencyType = when (this) {
+        is DrBuyRecord -> CurrencyType.USD
+        is YenBuyRecord -> CurrencyType.JPY
+        else -> {CurrencyType.USD}
+    }
+
+    fun copyWithProfitAndExpectProfit(profit: String?): ForeignCurrencyRecord
 }
 
 @Entity(tableName = "buyDollar_table")
@@ -394,6 +402,8 @@ data class DrBuyRecord(
         sellRate: String,
         sellProfit: String
     ): ForeignCurrencyRecord = copy(sellDate = sellDate, sellRate =  sellRate, sellProfit = sellProfit)
+
+    override fun copyWithProfitAndExpectProfit(profit: String?): ForeignCurrencyRecord = copy(profit = profit, expectProfit = profit)
 }
 
 
@@ -449,6 +459,8 @@ data class YenBuyRecord(
         sellRate: String,
         sellProfit: String
     ): ForeignCurrencyRecord = copy(sellDate = sellDate, sellRate =  sellRate, sellProfit = sellProfit)
+
+    override fun copyWithProfitAndExpectProfit(profit: String?): ForeignCurrencyRecord = copy(profit = profit, expectProfit = profit)
 }
 
 

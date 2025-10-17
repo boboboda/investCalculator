@@ -8,11 +8,12 @@ import com.android.billingclient.api.BillingClient
 import com.android.billingclient.api.BillingClientStateListener
 import com.android.billingclient.api.BillingFlowParams
 import com.android.billingclient.api.BillingResult
+import com.android.billingclient.api.PendingPurchasesParams
 import com.android.billingclient.api.ProductDetails
 import com.android.billingclient.api.ProductDetailsResponseListener
 import com.android.billingclient.api.PurchasesUpdatedListener
 import com.android.billingclient.api.QueryProductDetailsParams
-import com.google.firebase.crashlytics.buildtools.reloc.com.google.common.collect.ImmutableList
+import com.android.billingclient.api.QueryProductDetailsResult
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -84,10 +85,12 @@ class BillingClientLifecycle private constructor(
     // object 형태로 리스너를 받아도 됨
     // 리스너 메소드가 하나만 있을 경우에는 람다로 대체 가능
     private val productDetailsResponseListener = object : ProductDetailsResponseListener {
-        override fun onProductDetailsResponse(billingResult: BillingResult, fetchedProductList: MutableList<ProductDetails>) {
-            Log.d(TAG, "onProductDetailsResponse: billingResult: $billingResult, fetchedProductList: $fetchedProductList")
+
+        override fun onProductDetailsResponse(p0: BillingResult, p1: QueryProductDetailsResult) {
+            Log.d(TAG, "onProductDetailsResponse: billingResult: $p0, fetchedProductList: ${p1.productDetailsList}")
             externalScope.launch {
-                _fetchedProductList.emit(fetchedProductList.toList())
+                // 이제 productDetailsList는 이미 List<ProductDetails>이므로 toList() 호출 필요 없음
+                _fetchedProductList.emit(p1.productDetailsList)
             }
         }
     }
@@ -97,11 +100,17 @@ class BillingClientLifecycle private constructor(
     // 내부에서 사용하기 위한 결제 클라이언트
     private var billingClient: BillingClient
 
+
     init {
+
+        val pendingPurchasesParams = PendingPurchasesParams.newBuilder()
+            .enableOneTimeProducts() // <-- 이 줄을 추가합니다.
+            .build()
+
         Log.d(TAG, "init() called")
         billingClient = BillingClient.newBuilder(this.applicationContext)
             .setListener(purchasesUpdatedListener) // 구매 업데이트 리스너 같이 연결
-            .enablePendingPurchases()
+            .enablePendingPurchases(pendingPurchasesParams)
             .build() // builder 패턴으로 생성
 
         // 결제 클라이언트가 준비되지 않았다면
@@ -116,12 +125,14 @@ class BillingClientLifecycle private constructor(
     val queryProductDetailsParams =
         QueryProductDetailsParams.newBuilder()
             .setProductList(
-                ImmutableList.of(
+                // ImmutableList.of(...) 대신 Kotlin의 listOf(...) 사용
+                listOf(
                     QueryProductDetailsParams.Product.newBuilder()
                         .setProductId("recordadvertisementremove")
                         .setProductType(BillingClient.ProductType.SUBS)
                         .build(),
-                ))
+                )
+            )
             .build()
 
     // 구입 가능한 제품 표시

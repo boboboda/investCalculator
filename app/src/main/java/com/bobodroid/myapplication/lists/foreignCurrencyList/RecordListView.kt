@@ -1,40 +1,24 @@
 package com.bobodroid.myapplication.lists.foreignCurrencyList
 
-import android.annotation.SuppressLint
 import androidx.compose.foundation.ExperimentalFoundationApi
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material3.Divider
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.bobodroid.myapplication.components.RecordHeader
-import com.bobodroid.myapplication.components.RecordTextView
 import com.bobodroid.myapplication.models.datamodels.roomDb.CurrencyType
-import com.bobodroid.myapplication.models.datamodels.roomDb.ForeignCurrencyRecord
 import com.bobodroid.myapplication.models.viewmodels.CurrencyRecordState
+import com.bobodroid.myapplication.models.datamodels.roomDb.ForeignCurrencyRecord
 import com.bobodroid.myapplication.screens.RecordListEvent
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 @ExperimentalMaterialApi
-@OptIn(ExperimentalFoundationApi::class,
-    ExperimentalStdlibApi::class
-)
-@SuppressLint("StateFlowValueCalledInComposition")
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun RecordListView(
     currencyType: CurrencyType,
@@ -42,9 +26,7 @@ fun RecordListView(
     hideSellRecordState: Boolean,
     onEvent: (RecordListEvent) -> Unit
 ) {
-
     val buyRecordHistory = currencyRecordState.groupedRecords
-
     val groupList = currencyRecordState.groups
 
     val filterRecord = if (hideSellRecordState) {
@@ -53,91 +35,41 @@ fun RecordListView(
         buyRecordHistory
     }
 
-    val lazyScrollState = rememberLazyListState()
-
+    val lazyScrollState = androidx.compose.foundation.lazy.rememberLazyListState()
     val coroutineScope = rememberCoroutineScope()
 
-    val recordTextName = when(currencyType) {
-        CurrencyType.USD -> "매수달러"
-        CurrencyType.JPY -> "매수엔화"
-    }
-
-
-
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(55.dp),
-        horizontalArrangement = Arrangement.Center,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        RecordTextView(
-            recordText = "매수날짜\n " + "(매도날짜)",
-            45.dp,
-            16,
-            2.5f,
-            0.dp,
-            color = Color.Black
-        )
-        Spacer(modifier = Modifier.width(1.dp))
-        RecordTextView(recordText = "${recordTextName}\n" + "(매수금)", 45.dp, 16, 2.5f, 0.dp, color = Color.Black)
-        Spacer(modifier = Modifier.width(1.dp))
-        RecordTextView(recordText = "매수환율\n" + "(매도환율)", 45.dp, 16, 2.5f, 0.dp, color = Color.Black)
-        Spacer(modifier = Modifier.width(1.dp))
-        RecordTextView(
-            recordText = "예상수익\n " + "(확정수익)",
-            45.dp,
-            16,
-            2.5f,
-            0.dp,
-            color = Color.Black
-        )
-    }
-
-
-    //리스트 아이템
-
-    Column(
-    ) {
-
-        Spacer(
-            modifier = Modifier
-                .fillMaxWidth()
-                .background(Color.Gray)
-                .height(2.dp)
-        )
+    Column {
+        // ❌ 헤더 제거! (RecordTextView 모두 삭제)
 
         LazyColumn(
             modifier = Modifier.fillMaxWidth(),
-            state = lazyScrollState
+            state = lazyScrollState,
+            contentPadding = PaddingValues(vertical = 8.dp)
         ) {
-
             filterRecord.onEachIndexed { groupIndex: Int, (key, items) ->
                 stickyHeader {
                     RecordHeader(key = key)
                 }
+
                 items(
-                    items = items,
-                    key = { it.id!! }
-                ) { Buy ->
+                    count = items.size,
+                    key = { index -> items[index].id!! }
+                ) { index ->
+                    val record = items[index]
 
-                    var accmulatedCount = 1
-
-
+                    var accumulatedCount = 1
                     (0..<groupIndex).forEach { foreachIndex ->
                         val currentKey = filterRecord.keys.elementAt(foreachIndex)
                         val elements = filterRecord.getValue(currentKey)
-                        accmulatedCount += elements.count()
+                        accumulatedCount += elements.count()
                     }
 
-                    val foundIndex = items.indexOfFirst { it.id === Buy.id }
-
-                    val finalIndex = foundIndex + accmulatedCount + groupIndex
+                    val finalIndex = index + accumulatedCount + groupIndex
 
                     RecordListRowView(
-                        currencyType,
-                        Buy,
-                        sellState = Buy.recordColor!!,
+                        currencyType = currencyType,
+                        data = record,
+                        sellState = record.recordColor!!,
                         groupList = groupList,
                         onEvent = { event ->
                             onEvent(event)
@@ -155,10 +87,8 @@ fun RecordListView(
             }
 
             item {
-                Spacer(modifier = Modifier.height(100.dp))  // 원하는 높이 지정
+                Spacer(modifier = Modifier.height(100.dp))
             }
-
-
         }
     }
 }

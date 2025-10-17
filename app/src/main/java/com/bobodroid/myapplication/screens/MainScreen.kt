@@ -1,9 +1,11 @@
 package com.bobodroid.myapplication.screens
 
 import android.app.Activity
+import android.util.Log
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
 import androidx.compose.material3.SnackbarDuration
@@ -41,6 +43,7 @@ import com.bobodroid.myapplication.models.viewmodels.CurrencyRecordState
 import com.bobodroid.myapplication.models.viewmodels.MainViewModel
 import com.bobodroid.myapplication.screens.MainEvent.BottomSheetEvent
 import androidx.compose.material3.SnackbarHostState
+import kotlinx.coroutines.Job
 
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterialApi::class)
@@ -77,6 +80,97 @@ fun MainScreen(
 
     var thankShowingDialog by remember { mutableStateOf(false) }
 
+    val listScrollState = rememberLazyListState()
+
+    // 🎯 스크롤 상태 관리
+    var isCollapsedState by remember { mutableStateOf(false) }
+    var previousFirstVisibleItemIndex by remember { mutableStateOf(0) }
+    var previousScrollOffset by remember { mutableStateOf(0) }
+
+    // 🎯 스크롤 감지 및 헤더 축소/확대 로직
+    LaunchedEffect(
+        listScrollState.firstVisibleItemIndex,
+        listScrollState.firstVisibleItemScrollOffset,
+        listScrollState.canScrollBackward
+    ) {
+
+        val currentIndex = listScrollState.firstVisibleItemIndex
+        val currentOffset = listScrollState.firstVisibleItemScrollOffset
+
+
+        // 전체 스크롤 위치 계산 (각 아이템을 평균 1000px로 가정)
+        val currentPosition = currentIndex * 1000 + currentOffset
+        val previousPosition = previousFirstVisibleItemIndex * 1000 + previousScrollOffset
+        val scrollDelta = currentPosition - previousPosition
+
+        Log.d("MainScreen_Scroll", "════════════════════════════════════")
+        Log.d("MainScreen_Scroll", "📊 스크롤 상태 정보:")
+        Log.d("MainScreen_Scroll", "  - currentIndex: $currentIndex")
+        Log.d("MainScreen_Scroll", "  - currentOffset: $currentOffset")
+        Log.d("MainScreen_Scroll", "  - currentPosition: $currentPosition")
+        Log.d("MainScreen_Scroll", "  - previousPosition: $previousPosition")
+        Log.d("MainScreen_Scroll", "  - scrollDelta: $scrollDelta")
+        Log.d("MainScreen_Scroll", "  - isCollapsed (before): $isCollapsedState")
+
+        var stateChanged = false
+
+        when {
+            // 최상단 (무조건 확대)
+            currentPosition == 0 -> {
+                if (isCollapsedState) {
+                    isCollapsedState = false
+                    stateChanged = true
+                    Log.d("MainScreen_Scroll", "🔼 헤더 확대됨 (최상단 도달)")
+                } else {
+                    Log.d("MainScreen_Scroll", "➡️ 상태 유지 (이미 최상단)")
+                }
+            }
+            // 🎯 축소 상태인데 더 이상 위로 스크롤 불가능하면 강제 확대
+            isCollapsedState && !listScrollState.canScrollBackward -> {
+                isCollapsedState = false
+                stateChanged = true
+                Log.d("MainScreen_Scroll", "🔼 헤더 확대됨 (더 이상 위로 스크롤 불가)")
+            }
+            // 🎯 최상단 근처 (100px 미만)면 무조건 확대
+            currentPosition < 100 && isCollapsedState -> {
+                isCollapsedState = false
+                stateChanged = true
+                Log.d("MainScreen_Scroll", "🔼 헤더 확대됨 (최상단 근처: pos=$currentPosition)")
+            }
+            // 아래로 스크롤 중 (축소)
+            scrollDelta > 10 && currentPosition > 200 && !isCollapsedState -> {
+                isCollapsedState = true
+                stateChanged = true
+                Log.d("MainScreen_Scroll", "🔽 헤더 축소됨 (아래로 스크롤: delta=$scrollDelta, pos=$currentPosition)")
+            }
+            // 위로 스크롤 중 (확대) - 충분히 위로 올라갔을 때만
+            scrollDelta < -10 && currentPosition < 300 && isCollapsedState -> {
+                isCollapsedState = false
+                stateChanged = true
+                Log.d("MainScreen_Scroll", "🔼 헤더 확대됨 (위로 스크롤: delta=$scrollDelta, pos=$currentPosition)")
+            }
+            // 변경 없음
+            else -> {
+                Log.d("MainScreen_Scroll", "➡️ 상태 유지 (delta=$scrollDelta)")
+            }
+        }
+
+        Log.d("MainScreen_Scroll", "  - isCollapsed (after): $isCollapsedState")
+        Log.d("MainScreen_Scroll", "════════════════════════════════════")
+
+        // 상태가 변경되었으면 짧은 딜레이 후 이전 값 저장
+        if (stateChanged) {
+            Log.d("MainScreen_Scroll", "⏸️ 상태 변경 - 300ms 대기")
+            delay(300)  // 헤더 애니메이션 시간
+            Log.d("MainScreen_Scroll", "✅ 애니메이션 완료")
+        }
+
+        // 이전 값 저장
+        previousFirstVisibleItemIndex = currentIndex
+        previousScrollOffset = currentOffset
+    }
+
+
     // 리스트
     // 매도기록 노출 여부
     var hideSellRecordState by remember { mutableStateOf(false) }
@@ -85,14 +179,7 @@ fun MainScreen(
 
     val focusManager = LocalFocusManager.current
 
-//    val reFreshDate = allViewModel.refreshDateFlow.collectAsState()
-
-//    val totalDrSellProfit = dollarViewModel.totalSellProfit.collectAsState()
-
-//    val bannerState = allViewModel.deleteBannerStateFlow.collectAsState()
-
     LaunchedEffect(key1 = Unit, block = {
-
         coroutineScope.launch {
             delay(1000)
             isVisible = false
@@ -124,7 +211,7 @@ fun MainScreen(
         }
     }
 
-        Box(
+    Box(
         modifier = Modifier
             .fillMaxSize(),
         contentAlignment = Alignment.BottomCenter,
@@ -146,8 +233,8 @@ fun MainScreen(
                 hideSellRecordState = hideSellRecordState,
                 onHide = {
                     hideSellRecordState = it
-                }
-
+                },
+                isCollapsed = isCollapsedState // 🎯 스크롤에 따라 변경되는 상태
             )
 
             Column(
@@ -159,20 +246,17 @@ fun MainScreen(
                     mainUiState.selectedCurrencyType,
                     records,
                     hideSellRecordState = hideSellRecordState,
+                    scrollState = listScrollState,  // 🎯 스크롤 상태 전달
                     onEvent = {event ->
-
                         when(event) {
                             is RecordListEvent.SellRecord -> {
-                               val record = event.data
+                                val record = event.data
                                 mainViewModel.handleMainEvent(MainEvent.ShowRateBottomSheet(record))
                             }
-
                             else -> mainViewModel.handleRecordEvent(event)
                         }
-
-
-                    })
-
+                    }
+                )
             }
 
             // bottomsheet
@@ -192,7 +276,6 @@ fun MainScreen(
                             }
                             else -> mainViewModel.handleMainEvent(bottomSheetEvent)
                         }
-
                     }
                 )
             }
@@ -237,13 +320,9 @@ fun MainScreen(
                                 }
                             }
                             else -> mainViewModel.handleMainEvent(event)
-
                         }
-
-
                     }
                 )
-
             }
 
 
@@ -265,7 +344,6 @@ fun MainScreen(
                 TextFieldDialog(
                     onDismissRequest = {
                         mainViewModel.handleMainEvent(MainEvent.HideGroupAddDialog)
-
                     },
                     placeholder = "새 그룹명을 작성해주세요",
                     onClickedLabel = "추가",
@@ -285,7 +363,6 @@ fun MainScreen(
                         coroutineScope.launch {
                             mainViewModel.handleRecordEvent(RecordListEvent.TotalSumProfit(selectedStartDate, selectedEndDate))
                         }
-
                     },
                 )
             }
@@ -315,7 +392,6 @@ fun MainScreen(
                     onClicked = {
                         showTargetRewardedAdvertisement(activity, onAdDismissed = {
                             mainViewModel.rewardDelayDate()
-//                            mainViewModel.deleteBannerDelayDate()
                             mainViewModel.closeRewardDialog()
                             thankShowingDialog = true
                         })
@@ -332,15 +408,12 @@ fun MainScreen(
                     },
                     percent = recordListUiState.sellPercent,
                     sellProfit = recordListUiState.sellProfit)
-
             }
 
             if(thankShowingDialog)
                 ThanksDialog(onDismissRequest = { value ->
                     thankShowingDialog = value
                 })
-
-
         }
 
         // 플로팅 버튼
@@ -377,7 +450,6 @@ fun MainScreen(
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.Start
                         ) {
-
                             Text(
                                 text = snackBarData.visuals.message,
                                 fontSize = 15.sp,
@@ -400,8 +472,6 @@ fun MainScreen(
                     }
                 })
         }
-
-
     }
 }
 
@@ -432,8 +502,8 @@ sealed class MainEvent {
         data object OnDateSelect : BottomSheetEvent()
         data object DismissSheet : BottomSheetEvent()
         data class Popup(val event: PopupEvent) : BottomSheetEvent()
-
     }
+
     sealed class RateBottomSheetEvent: MainEvent() {
         data object DismissRequest : RateBottomSheetEvent()
         data object ShowDatePickerDialog : RateBottomSheetEvent()
@@ -463,11 +533,3 @@ sealed class RecordListEvent {
     data class RemoveRecord(val data: ForeignCurrencyRecord): RecordListEvent()
     data class TotalSumProfit(val startDate: String, val endDate: String): RecordListEvent()
 }
-
-
-
-
-
-
-
-

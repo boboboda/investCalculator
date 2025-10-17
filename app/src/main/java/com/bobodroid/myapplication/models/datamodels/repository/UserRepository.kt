@@ -7,16 +7,12 @@ import com.bobodroid.myapplication.models.datamodels.roomDb.LocalUserDatabaseDao
 import com.bobodroid.myapplication.models.datamodels.useCases.UserDataType
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.conflate
-import kotlinx.coroutines.flow.flowOn
-import javax.inject.Inject
-import com.bobodroid.myapplication.util.result.Result
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.firstOrNull
-import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.withContext
+import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
@@ -29,9 +25,9 @@ class UserRepository @Inject constructor(
     private val _localUserData = MutableStateFlow<LocalUserData?>(null)
     val localUserData = _localUserData.asStateFlow()
 
-    suspend fun localUserUpdate(localUserData: LocalUserData) {
+    // ✅ IO 스레드에서 실행
+    suspend fun localUserUpdate(localUserData: LocalUserData) = withContext(Dispatchers.IO) {
         try {
-
             val updatedUser = localUserDatabaseDao.updateAndGetUser(localUserData)
             _localUserData.value = updatedUser
         } catch (e: Exception) {
@@ -39,7 +35,7 @@ class UserRepository @Inject constructor(
         }
     }
 
-    suspend fun localUserAdd(localUserData: LocalUserData) {
+    suspend fun localUserAdd(localUserData: LocalUserData) = withContext(Dispatchers.IO) {
         try {
             localUserDatabaseDao.insert(localUserData)
             _localUserData.value = localUserData
@@ -48,7 +44,7 @@ class UserRepository @Inject constructor(
         }
     }
 
-    suspend fun localUserDataDelete() {
+    suspend fun localUserDataDelete() = withContext(Dispatchers.IO) {
         try {
             localUserDatabaseDao.deleteAll()
             _localUserData.value = null

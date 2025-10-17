@@ -129,23 +129,34 @@ class MainViewModel @Inject constructor(
 
     // 초기화 매소드
     private fun startInitialData() {
+        // ✅ Flow collect는 별도 코루틴으로 분리 (무한 루프이기 때문)
         viewModelScope.launch {
-            localUserExistCheck()
-            Log.d(TAG("MainViewModel", "init"), "로컬유저 확인완료")
-            noticeExistCheck()
-            noticeDialogState()
-            Log.d(TAG("MainViewModel", "init"), "공지사항 확인완료")
-            adDialogState()
-            Log.d(TAG("MainViewModel", "init"), "광고 확인완료")
             receivedLatestRate()
-            Log.d(TAG("MainViewModel", "init"), "최신환율 확인완료")
-            latestRateRepository.fetchInitialLatestRate()
-
         }
 
+        // ✅ 기록 수집도 별도 코루틴으로
         viewModelScope.launch {
             getRecords()
             Log.d(TAG("MainViewModel", "init"), "기록불러오기 확인완료")
+        }
+
+        // ✅ 초기화 작업들은 순차적으로 실행
+        viewModelScope.launch {
+            localUserExistCheck()
+            Log.d(TAG("MainViewModel", "init"), "로컬유저 확인완료")
+
+            noticeExistCheck()
+            Log.d(TAG("MainViewModel", "init"), "공지사항 확인완료")
+
+            noticeDialogState()
+            Log.d(TAG("MainViewModel", "init"), "공지사항 다이얼로그 확인완료")
+
+            adDialogState()
+            Log.d(TAG("MainViewModel", "init"), "광고 확인완료")
+
+            // ✅ REST API로 초기 환율 데이터 fetch
+            latestRateRepository.fetchInitialLatestRate()
+            Log.d(TAG("MainViewModel", "init"), "초기 최신환율 확인완료")
         }
     }
 

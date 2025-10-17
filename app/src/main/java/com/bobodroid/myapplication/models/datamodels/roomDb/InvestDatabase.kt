@@ -46,9 +46,11 @@ import androidx.room.migration.AutoMigrationSpec
             to = 17,
             spec = InvestDatabase.MyAutoMigration::class),
         AutoMigration(from = 17, to = 18),
-        AutoMigration(from = 18, to = 19, spec = InvestDatabase.MyAutoMigration::class)
+        AutoMigration(from = 18, to = 19, spec = InvestDatabase.MyAutoMigration::class),
+        AutoMigration(from = 19, to = 20, spec = InvestDatabase.MyAutoMigration::class),
+        AutoMigration(from = 20, to = 21, spec = InvestDatabase.MyAutoMigration::class)
                      ],
-    version = 19, exportSchema = true)
+    version = 21, exportSchema = true)
 
 @DeleteTable.Entries(
     DeleteTable(tableName = "sellWon_table"),

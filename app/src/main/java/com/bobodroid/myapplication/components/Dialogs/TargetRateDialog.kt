@@ -39,7 +39,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import com.bobodroid.myapplication.components.CustomCard
-import com.bobodroid.myapplication.components.CustomOutLinedTextField
 import com.bobodroid.myapplication.components.addFocusCleaner
 import com.bobodroid.myapplication.components.admobs.showTargetRewardedAdvertisement
 import com.bobodroid.myapplication.models.datamodels.roomDb.RateType

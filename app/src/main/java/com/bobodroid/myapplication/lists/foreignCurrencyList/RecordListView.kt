@@ -3,11 +3,14 @@ package com.bobodroid.myapplication.lists.foreignCurrencyList
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material3.Divider
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.unit.dp
 import com.bobodroid.myapplication.components.RecordHeader
 import com.bobodroid.myapplication.models.datamodels.roomDb.CurrencyType
@@ -24,6 +27,7 @@ fun RecordListView(
     currencyType: CurrencyType,
     currencyRecordState: CurrencyRecordState<ForeignCurrencyRecord>,
     hideSellRecordState: Boolean,
+    scrollState: LazyListState = rememberLazyListState(),
     onEvent: (RecordListEvent) -> Unit
 ) {
     val buyRecordHistory = currencyRecordState.groupedRecords
@@ -35,15 +39,17 @@ fun RecordListView(
         buyRecordHistory
     }
 
-    val lazyScrollState = androidx.compose.foundation.lazy.rememberLazyListState()
     val coroutineScope = rememberCoroutineScope()
 
-    Column {
-        // ❌ 헤더 제거! (RecordTextView 모두 삭제)
+    // 🎯 화면 높이의 60%를 여백으로 추가 (항상 스크롤 가능하도록)
+    val configuration = LocalConfiguration.current
+    val screenHeight = configuration.screenHeightDp.dp
+    val bottomPadding = screenHeight * 0.6f  // 화면 높이의 60%
 
+    Column {
         LazyColumn(
             modifier = Modifier.fillMaxWidth(),
-            state = lazyScrollState,
+            state = scrollState,
             contentPadding = PaddingValues(vertical = 8.dp)
         ) {
             filterRecord.onEachIndexed { groupIndex: Int, (key, items) ->
@@ -77,7 +83,7 @@ fun RecordListView(
                         scrollEvent = {
                             coroutineScope.launch {
                                 delay(300)
-                                lazyScrollState.animateScrollToItem(finalIndex, -55)
+                                scrollState.animateScrollToItem(finalIndex, -55)
                             }
                         }
                     )
@@ -86,8 +92,9 @@ fun RecordListView(
                 }
             }
 
+            // 🎯 충분한 하단 여백 - 항상 스크롤 가능하도록
             item {
-                Spacer(modifier = Modifier.height(100.dp))
+                Spacer(modifier = Modifier.height(bottomPadding))
             }
         }
     }

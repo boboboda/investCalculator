@@ -78,16 +78,19 @@ class FcmAlarmViewModel@Inject constructor(
 
 
     init {
+        // receivedLatestRate는 별도 코루틴
         viewModelScope.launch {
-            initViewModel()
+            receivedLatestRate()
+        }
+
+        // initAlarmData는 별도 코루틴
+        viewModelScope.launch {
+            initAlarmData()
         }
 
     }
 
-    private suspend fun initViewModel() {
-        initAlarmData()
-        receivedLatestRate()
-    }
+
 
     fun initAlarmData() {
         viewModelScope.launch {

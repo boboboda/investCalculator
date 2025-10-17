@@ -64,7 +64,15 @@ data class LocalUserData(
     var yenBuySpread: Int? = null,
 
     @ColumnInfo(name = "yen_Sell_Spread", defaultValue = "")
-    var yenSellSpread: Int? = null
+    var yenSellSpread: Int? = null,
+
+    @ColumnInfo(name = "monthly_profit_goal", defaultValue = "0")
+    var monthlyProfitGoal: Long = 0L,
+
+    // ⭐ 새로 추가: 목표 설정 날짜 (월 단위로 리셋)
+    @ColumnInfo(name = "goal_set_month", defaultValue = "")
+    var goalSetMonth: String? = null  // "2025-10" 형식
+
 ) {
     constructor(data: DocumentSnapshot) : this() {
         this.customId = data["customId"] as String? ?: ""
@@ -79,6 +87,11 @@ data class LocalUserData(
         )
     }
 }
+
+
+
+
+
 
 @Entity(tableName = "sellDollar_table")
 data class DrSellRecord(

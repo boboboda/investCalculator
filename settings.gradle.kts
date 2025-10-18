@@ -13,6 +13,8 @@ dependencyResolutionManagement {
         google()
         mavenCentral()
         maven { url = uri("https://www.jitpack.io") }
+
+        maven { url = uri("https://devrepo.kakao.com/nexus/content/groups/public/") }
     }
 
     // 버전 카탈로그 설정은 dependencyResolutionManagement 블록 안에 포함시켜야 합니다

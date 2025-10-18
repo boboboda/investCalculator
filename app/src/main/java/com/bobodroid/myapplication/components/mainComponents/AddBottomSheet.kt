@@ -1,51 +1,21 @@
 package com.bobodroid.myapplication.components.mainComponents
 
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.wrapContentHeight
-import androidx.compose.foundation.layout.wrapContentSize
-import androidx.compose.foundation.layout.wrapContentWidth
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.KeyboardArrowDown
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.Divider
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.SheetState
-import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
+import androidx.compose.material.icons.rounded.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.bobodroid.myapplication.components.Buttons
 import com.bobodroid.myapplication.components.CustomCard
 import com.bobodroid.myapplication.components.Dialogs.FloatPopupNumberView
 import com.bobodroid.myapplication.components.Dialogs.PopupNumberView
@@ -54,9 +24,6 @@ import com.bobodroid.myapplication.models.viewmodels.MainUiState
 import com.bobodroid.myapplication.models.viewmodels.RecordListUiState
 import com.bobodroid.myapplication.screens.MainEvent
 import com.bobodroid.myapplication.screens.PopupEvent
-import com.bobodroid.myapplication.ui.theme.BottomSheetTitleColor
-import com.bobodroid.myapplication.ui.theme.BuyColor
-import com.bobodroid.myapplication.ui.theme.WelcomeScreenBackgroundColor
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -69,29 +36,22 @@ fun AddBottomSheet(
     mainUiState: MainUiState,
     onEvent: (MainEvent.BottomSheetEvent) -> Unit
 ) {
-
     var numberInput by remember { mutableStateOf("") }
-
     var rateInput by remember { mutableStateOf("") }
-
     val isBtnActive = numberInput.isNotEmpty() && rateInput.isNotEmpty()
-
     val coroutineScope = rememberCoroutineScope()
 
     // 그룹
     var group by remember { mutableStateOf("미지정") }
-
     var groupDropdownExpanded by remember { mutableStateOf(false) }
 
     val groupList = when(mainUiState.selectedCurrencyType) {
-        CurrencyType.USD-> { recordListUiState.foreignCurrencyRecord.dollarState.groups }
-        CurrencyType.JPY-> { recordListUiState.foreignCurrencyRecord.yenState.groups }
+        CurrencyType.USD -> { recordListUiState.foreignCurrencyRecord.dollarState.groups }
+        CurrencyType.JPY -> { recordListUiState.foreignCurrencyRecord.yenState.groups }
     }
 
     var numberPadPopViewIsVible by remember { mutableStateOf(false) }
-
     var ratePadPopViewIsVible by remember { mutableStateOf(false) }
-
 
     BottomSheet(
         sheetState = sheetState,
@@ -100,38 +60,300 @@ fun AddBottomSheet(
             onEvent(MainEvent.BottomSheetEvent.DismissSheet)
         },
     ) {
-        // Sheet content
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .wrapContentHeight()
+                .padding(bottom = 32.dp)
         ) {
+            // 헤더
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 24.dp)
+                    .padding(bottom = 16.dp)
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "기록 추가",
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFF1F2937)
+                    )
+
+                    IconButton(onClick = {
+                        onEvent(MainEvent.BottomSheetEvent.DismissSheet)
+                    }) {
+                        Icon(
+                            imageVector = Icons.Rounded.Close,
+                            contentDescription = "닫기",
+                            tint = Color(0xFF6B7280)
+                        )
+                    }
+                }
+
+                Text(
+                    text = "선택한 통화: ${mainUiState.selectedCurrencyType.koreanName}",
+                    fontSize = 14.sp,
+                    color = Color(0xFF6B7280)
+                )
+            }
+
+            HorizontalDivider(color = Color(0xFFE5E7EB))
+
+            // 입력 섹션
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 24.dp)
+                    .padding(top = 24.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                // 금액 입력
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Text(
+                        text = "금액",
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = Color(0xFF374151)
+                    )
+
+                    CustomCard(
+                        label = numberInput.ifEmpty { "금액을 입력하세요" },
+                        fontSize = 15,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(56.dp),
+                        fontColor = if (numberInput.isEmpty()) Color(0xFF9CA3AF) else Color.Black,
+                        cardColor = Color(0xFFF9FAFB),
+                        onClick = {
+                            coroutineScope.launch {
+                                if (ratePadPopViewIsVible) {
+                                    ratePadPopViewIsVible = false
+                                    delay(500)
+                                    numberPadPopViewIsVible = true
+                                } else {
+                                    numberPadPopViewIsVible = true
+                                }
+                            }
+                        }
+                    )
+                }
+
+                // 환율 입력
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Text(
+                        text = "환율",
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = Color(0xFF374151)
+                    )
+
+                    CustomCard(
+                        label = rateInput.ifEmpty { "환율을 입력하세요" },
+                        fontSize = 15,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(56.dp),
+                        fontColor = if (rateInput.isEmpty()) Color(0xFF9CA3AF) else Color.Black,
+                        cardColor = Color(0xFFF9FAFB),
+                        onClick = {
+                            coroutineScope.launch {
+                                if (numberPadPopViewIsVible) {
+                                    numberPadPopViewIsVible = false
+                                    delay(500)
+                                    ratePadPopViewIsVible = true
+                                } else {
+                                    ratePadPopViewIsVible = true
+                                }
+                            }
+                        }
+                    )
+                }
+
+                // 그룹 선택
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Text(
+                        text = "그룹",
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = Color(0xFF374151)
+                    )
+
+                    Box(modifier = Modifier.fillMaxWidth()) {
+                        Surface(
+                            onClick = { groupDropdownExpanded = true },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(56.dp),
+                            color = Color(0xFFF9FAFB),
+                            shape = RoundedCornerShape(8.dp)
+                        ) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .padding(horizontal = 16.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Rounded.Folder,
+                                        contentDescription = null,
+                                        tint = Color(0xFF6366F1),
+                                        modifier = Modifier.size(20.dp)
+                                    )
+                                    Text(
+                                        text = group,
+                                        fontSize = 15.sp,
+                                        color = Color(0xFF1F2937)
+                                    )
+                                }
+                                Icon(
+                                    imageVector = Icons.Rounded.KeyboardArrowDown,
+                                    contentDescription = null,
+                                    tint = Color(0xFF6B7280)
+                                )
+                            }
+                        }
+
+                        DropdownMenu(
+                            expanded = groupDropdownExpanded,
+                            onDismissRequest = { groupDropdownExpanded = false },
+                            modifier = Modifier.fillMaxWidth(0.85f)
+                        ) {
+                            // 새 그룹 만들기
+                            DropdownMenuItem(
+                                text = {
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Rounded.Add,
+                                            contentDescription = null,
+                                            tint = Color(0xFF6366F1),
+                                            modifier = Modifier.size(20.dp)
+                                        )
+                                        Text(
+                                            text = "새 그룹 만들기",
+                                            fontSize = 14.sp,
+                                            fontWeight = FontWeight.SemiBold,
+                                            color = Color(0xFF6366F1)
+                                        )
+                                    }
+                                },
+                                onClick = {
+                                    onEvent(MainEvent.BottomSheetEvent.OnGroupSelect)
+                                    groupDropdownExpanded = false
+                                }
+                            )
+
+                            HorizontalDivider(
+                                modifier = Modifier.padding(vertical = 4.dp),
+                                color = Color(0xFFE5E7EB)
+                            )
+
+                            // 그룹 리스트
+                            groupList.forEach { groupValue ->
+                                DropdownMenuItem(
+                                    text = {
+                                        Row(
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                        ) {
+                                            Icon(
+                                                imageVector = Icons.Rounded.Folder,
+                                                contentDescription = null,
+                                                tint = Color(0xFF9CA3AF),
+                                                modifier = Modifier.size(20.dp)
+                                            )
+                                            Text(
+                                                text = groupValue,
+                                                fontSize = 14.sp,
+                                                color = Color(0xFF1F2937)
+                                            )
+                                        }
+                                    },
+                                    onClick = {
+                                        group = groupValue
+                                        groupDropdownExpanded = false
+                                    }
+                                )
+                            }
+                        }
+                    }
+                }
+
+                // 날짜 선택
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Text(
+                        text = "날짜",
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = Color(0xFF374151)
+                    )
+
+                    Surface(
+                        onClick = { onEvent(MainEvent.BottomSheetEvent.OnDateSelect) },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(56.dp),
+                        color = Color(0xFFF9FAFB),
+                        shape = RoundedCornerShape(8.dp)
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(horizontal = 16.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Rounded.CalendarToday,
+                                contentDescription = null,
+                                tint = Color(0xFF6366F1),
+                                modifier = Modifier.size(20.dp)
+                            )
+                            Text(
+                                text = mainUiState.selectedDate,
+                                fontSize = 15.sp,
+                                color = Color(0xFF1F2937)
+                            )
+                        }
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            // 액션 버튼
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(start = 20.dp, bottom = 20.dp, end = 20.dp),
-                horizontalArrangement = Arrangement.spacedBy(
-                    10.dp,
-                    alignment = Alignment.End
-                ),
-                verticalAlignment = Alignment.CenterVertically
+                    .padding(horizontal = 24.dp),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                CustomCard(
-                    label = mainUiState.selectedCurrencyType.koreanName,
-                    fontSize = 15,
-                    modifier = Modifier
-                        .width(60.dp)
-                        .height(50.dp)
-                        .padding(bottom = 5.dp),
-                    fontColor = Color.Black,
-                    cardColor = BottomSheetTitleColor
-                )
-
-                Spacer(Modifier.weight(1f))
-
-                Buttons(
-                    enabled = isBtnActive,
-                    onClicked = {
+                FilledTonalButton(
+                    onClick = {
                         onEvent(MainEvent.BottomSheetEvent.OnRecordAdd(
                             numberInput,
                             rateInput,
@@ -140,270 +362,54 @@ fun AddBottomSheet(
                         group = "미지정"
                         onEvent(MainEvent.BottomSheetEvent.DismissSheet)
                     },
-                    color = BuyColor,
-                    fontColor = Color.Black,
+                    enabled = isBtnActive,
                     modifier = Modifier
+                        .weight(1f)
+                        .height(48.dp),
+                    colors = ButtonDefaults.filledTonalButtonColors(
+                        containerColor = Color(0xFF6366F1),
+                        contentColor = Color.White,
+                        disabledContainerColor = Color(0xFFE5E7EB),
+                        disabledContentColor = Color(0xFF9CA3AF)
+                    ),
+                    shape = RoundedCornerShape(8.dp)
                 ) {
-                    Text(text = "기록", fontSize = 15.sp)
+                    Text(
+                        text = "기록",
+                        fontSize = 15.sp,
+                        fontWeight = FontWeight.SemiBold
+                    )
                 }
 
-                Buttons(
-                    onClicked = {
+                OutlinedButton(
+                    onClick = {
                         onEvent(MainEvent.BottomSheetEvent.DismissSheet)
                     },
-                    color = BuyColor,
-                    fontColor = Color.Black,
-                    modifier = Modifier,
-
-                    ) {
-                    Text(text = "닫기", fontSize = 15.sp)
-                }
-            }
-
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(start = 20.dp, bottom = 20.dp, end = 10.dp),
-                horizontalArrangement = Arrangement.spacedBy(
-                    10.dp,
-                    alignment = Alignment.End
-                ),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-
-                Card(
-                    colors = CardDefaults.cardColors(WelcomeScreenBackgroundColor),
-                    elevation = CardDefaults.cardElevation(3.dp),
-                    shape = RoundedCornerShape(1.dp),
-                    modifier = Modifier
-                        .height(40.dp)
-                        .wrapContentWidth()
-                ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxHeight()
-                            .wrapContentWidth()
-                            .padding(horizontal = 10.dp),
-                        horizontalArrangement = Arrangement.Center,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(text = group)
-                    }
-                }
-
-
-                Box(
-                    modifier = Modifier
-                        .wrapContentSize(Alignment.TopEnd)
-                ) {
-                    Card(
-                        colors = CardDefaults.cardColors(WelcomeScreenBackgroundColor),
-                        elevation = CardDefaults.cardElevation(3.dp),
-                        shape = RoundedCornerShape(1.dp),
-                        modifier = Modifier
-                            .height(40.dp)
-                            .wrapContentWidth(),
-                        onClick = {
-                            groupDropdownExpanded = !groupDropdownExpanded
-                        }) {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxHeight()
-                                .wrapContentWidth()
-                                .padding(horizontal = 10.dp),
-                            horizontalArrangement = Arrangement.Center,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text(text = "그룹지정")
-
-                            Icon(imageVector = Icons.Rounded.KeyboardArrowDown, contentDescription = "")
-                        }
-                    }
-                    DropdownMenu(
-                        scrollState = rememberScrollState(),
-                        modifier = Modifier
-                            .wrapContentHeight()
-                            .heightIn(max = 200.dp)
-                            .width(200.dp),
-                        offset = DpOffset(x = 0.dp, y = 10.dp),
-                        expanded = groupDropdownExpanded,
-                        onDismissRequest = {
-                            groupDropdownExpanded = false
-                        }
-                    ) {
-
-                        DropdownMenuItem(
-                            modifier = Modifier
-                                .fillMaxWidth(),
-                            text = {
-                                Box(
-                                    modifier = Modifier
-                                        .fillMaxWidth(),
-                                    contentAlignment = Alignment.TopStart
-                                ) {
-                                    Text(
-                                        text = "새그룹",
-                                        color = Color.Blue,
-                                        fontSize = 13.sp
-                                    )
-                                }
-                            }, onClick = {
-                                onEvent(MainEvent.BottomSheetEvent.OnGroupSelect)
-                                groupDropdownExpanded = false
-                            })
-
-                        Divider(
-                            Modifier
-                                .fillMaxWidth(),
-                            color = Color.Gray.copy(alpha = 0.2f),
-                            thickness = 2.dp
-                        )
-
-                        groupList.forEach { groupValue ->
-                            DropdownMenuItem(
-                                modifier = Modifier
-                                    .fillMaxWidth(),
-                                text = {
-                                    Box(
-                                        modifier = Modifier
-                                            .fillMaxWidth(),
-                                        contentAlignment = Alignment.TopStart
-                                    ) {
-                                        Text(
-                                            text = groupValue,
-                                            fontSize = 13.sp
-                                        )
-                                    }
-                                }, onClick = {
-                                    group = groupValue
-                                    groupDropdownExpanded = false
-                                })
-                        }
-
-
-                    }
-                }
-
-                Spacer(modifier = Modifier.weight(1f))
-
-                Card(
-                    modifier = Modifier
-                        .width(160.dp)
-                        .padding(end = 10.dp)
-                        .height(40.dp),
-                    border = BorderStroke(1.dp, Color.Black),
-                    colors = CardDefaults.cardColors(
-                        contentColor = Color.Black,
-                        containerColor = Color.White
+                    modifier = Modifier.height(48.dp),
+                    colors = ButtonDefaults.outlinedButtonColors(
+                        contentColor = Color(0xFF374151)
                     ),
-                    onClick = {
-                        onEvent(MainEvent.BottomSheetEvent.OnDateSelect)
-                    }
+                    border = ButtonDefaults.outlinedButtonBorder.copy(
+                        width = 1.dp,
+                        brush = androidx.compose.ui.graphics.SolidColor(Color(0xFFE5E7EB))
+                    ),
+                    shape = RoundedCornerShape(8.dp)
                 ) {
-
-                    Row(
-                        modifier = Modifier
-                            .fillMaxSize(),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.Center
-                    ) {
-                        Text(
-                            text = mainUiState.selectedDate,
-                            color = Color.Black,
-                            fontSize = 18.sp,
-                            textAlign = TextAlign.Center,
-                            modifier = Modifier
-                        )
-                    }
-
+                    Text(
+                        text = "닫기",
+                        fontSize = 15.sp
+                    )
                 }
             }
 
-//            Row(
-//                modifier = Modifier
-//                    .fillMaxWidth()
-//                    .padding(start = 20.dp, bottom = 20.dp, end = 10.dp),
-//                horizontalArrangement = Arrangement.spacedBy(
-//                    10.dp,
-//                    alignment = Alignment.Start
-//                ),
-//                verticalAlignment = Alignment.CenterVertically
-//            ) {
-//
-//                MoneyChButtonView(
-//                    mainText = "달러",
-//                    currencyType = CurrencyType.USD,
-//                    selectedCurrencyType = mainUiState.selectedCurrencyType,
-//                    selectAction = {
-//                        onEvent(BottomSheetEvent.OnCurrencyTypeChange(it))
-//                    })
-//
-//                Spacer(modifier = Modifier.width(20.dp))
-//
-//                MoneyChButtonView(
-//                    mainText = "엔화",
-//                    currencyType = CurrencyType.JPY,
-//                    selectedCurrencyType = mainUiState.selectedCurrencyType,
-//                    selectAction = {
-//                        onEvent(BottomSheetEvent.OnCurrencyTypeChange(it))
-//                    })
-//
-//            }
-
-
-
-            BottomSheetNumberField(
-                title = numberInput,
-                selectedState = numberPadPopViewIsVible,
-                modifier = Modifier
-            ) {
-                coroutineScope.launch {
-                    if (ratePadPopViewIsVible) {
-                        ratePadPopViewIsVible = false
-                        delay(500)
-                        numberPadPopViewIsVible = true
-                    } else {
-                        numberPadPopViewIsVible = true
-                    }
-                }
-
-            }
-
-            Spacer(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(10.dp)
-            )
-
-            BottomSheetRateNumberField(
-                title = rateInput,
-                placeholder = "환율을 입력해주세요",
-                selectedState = ratePadPopViewIsVible,
-                modifier = Modifier.padding(10.dp)
-            ) {
-                coroutineScope.launch {
-
-                    if (numberPadPopViewIsVible) {
-                        numberPadPopViewIsVible = false
-                        delay(500)
-                        ratePadPopViewIsVible = true
-                    } else {
-                        ratePadPopViewIsVible = true
-                    }
-
-
-                }
-
-            }
-
-
-            Box() {
+            // 팝업 영역
+            Box {
                 Spacer(modifier = Modifier.height(50.dp))
 
                 Column {
                     AnimatedVisibility(visible = numberPadPopViewIsVible) {
                         PopupNumberView(
-                            event = { event->
+                            event = { event ->
                                 when(event) {
                                     is PopupEvent.OnClicked -> {
                                         coroutineScope.launch {
@@ -432,17 +438,11 @@ fun AddBottomSheet(
                                     is PopupEvent.SnackBarEvent ->
                                         onEvent(MainEvent.BottomSheetEvent.Popup(PopupEvent.SnackBarEvent(event.message)))
                                 }
-
-                            })
+                            }
+                        )
                     }
                 }
             }
-
-
         }
     }
-
 }
-
-
-

@@ -1,11 +1,13 @@
 package com.bobodroid.myapplication.models.viewmodels
 
+import android.app.Activity
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.bobodroid.myapplication.models.datamodels.repository.InvestRepository
 import com.bobodroid.myapplication.models.datamodels.repository.UserRepository
 import com.bobodroid.myapplication.models.datamodels.roomDb.LocalUserData
+import com.bobodroid.myapplication.models.datamodels.useCases.SocialLoginUseCases
 import com.bobodroid.myapplication.models.datamodels.useCases.UserUseCases
 import com.bobodroid.myapplication.util.result.onError
 import com.bobodroid.myapplication.util.result.onSuccess
@@ -25,7 +27,8 @@ import javax.inject.Inject
 class MyPageViewModel @Inject constructor(
     private val userUseCases: UserUseCases,
     private val userRepository: UserRepository,
-    private val investRepository: InvestRepository
+    private val investRepository: InvestRepository,
+    private val socialLoginUseCases: SocialLoginUseCases,
 ) : ViewModel() {
 
     val _myPageUiState = MutableStateFlow(MyPageUiState())
@@ -59,6 +62,80 @@ class MyPageViewModel @Inject constructor(
             calculateBadges()
         }
     }
+
+
+    // ✅ Google 로그인
+    fun loginWithGoogle(activity: Activity, result: (String) -> Unit) {
+        viewModelScope.launch {
+            val localUser = _myPageUiState.value.localUser
+
+            socialLoginUseCases.googleLogin(activity, localUser)
+                .onSuccess { updatedUser ->
+                    Log.d("MyPageViewModel", "Google 로그인 성공: ${updatedUser.email}")
+                    result("Google 로그인 성공!")
+                }
+                .onError { message, exception ->
+                    Log.e("MyPageViewModel", "Google 로그인 실패: $message", exception)
+                    result(message)
+                }
+        }
+    }
+
+    // ✅ Kakao 로그인
+    fun loginWithKakao(activity: Activity, result: (String) -> Unit) {
+        viewModelScope.launch {
+            val localUser = _myPageUiState.value.localUser
+
+            socialLoginUseCases.kakaoLogin(activity, localUser)
+                .onSuccess { updatedUser ->
+                    Log.d("MyPageViewModel", "Kakao 로그인 성공: ${updatedUser.email}")
+                    result("Kakao 로그인 성공!")
+                }
+                .onError { message, exception ->
+                    Log.e("MyPageViewModel", "Kakao 로그인 실패: $message", exception)
+                    result(message)
+                }
+        }
+    }
+
+
+    fun logout(result: (String) -> Unit) {
+        viewModelScope.launch {
+            val localUser = _myPageUiState.value.localUser
+
+            socialLoginUseCases.socialLogout(localUser)
+                .onSuccess {
+                    Log.d("MyPageViewModel", "로그아웃 성공")
+                    result("로그아웃되었습니다")
+                }
+                .onError { message, exception ->
+                    Log.e("MyPageViewModel", "로그아웃 실패: $message", exception)
+                    result(message)
+                }
+        }
+    }
+
+    // ✅ 서버 백업
+    fun syncToServer(result: (String) -> Unit) {
+        viewModelScope.launch {
+            val localUser = _myPageUiState.value.localUser
+
+            socialLoginUseCases.syncToServer(localUser)
+                .onSuccess {
+                    Log.d("MyPageViewModel", "백업 성공")
+                    result("데이터가 백업되었습니다")
+                }
+                .onError { message, exception ->
+                    Log.e("MyPageViewModel", "백업 실패: $message", exception)
+                    result(message)
+                }
+        }
+    }
+
+
+
+
+
 
     // ✅ DB Flow는 이미 flowOn으로 IO 처리되므로 추가 작업 불필요
     private suspend fun calculateInvestmentStats() {

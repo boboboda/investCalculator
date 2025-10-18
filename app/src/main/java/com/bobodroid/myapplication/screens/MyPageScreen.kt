@@ -84,11 +84,11 @@ fun MyPageScreen() {
             }
 
             composable(MyPageRoute.CreateUser.routeName!!) {
-                CreateUserView(
+                AccountManageView(
                     routeAction = myPageRouteAction,
-                    uiState.localUser,
-                    logIn = { cloudId, pin ->
-                        myPageViewModel.logIn(cloudId, pin) { resultMessage ->
+                    localUser = uiState.localUser,
+                    onGoogleLogin = { activity ->
+                        myPageViewModel.loginWithGoogle(activity) { resultMessage ->
                             coroutineScope.launch {
                                 mainScreenSnackBarHostState.showSnackbar(
                                     resultMessage,
@@ -98,27 +98,27 @@ fun MyPageScreen() {
                             }
                         }
                     },
-                    logOut = {
-                        myPageViewModel.logout(result = {
+                    onKakaoLogin = { activity ->
+                        myPageViewModel.loginWithKakao(activity) { resultMessage ->
                             coroutineScope.launch {
                                 mainScreenSnackBarHostState.showSnackbar(
-                                    it,
+                                    resultMessage,
                                     actionLabel = "닫기",
                                     duration = SnackbarDuration.Short
                                 )
                             }
-                        })
+                        }
                     },
-                    createUser = { id, pw ->
-                        myPageViewModel.createUser(id, pw, resultMessage = {
+                    onLogout = {
+                        myPageViewModel.logout { resultMessage ->
                             coroutineScope.launch {
                                 mainScreenSnackBarHostState.showSnackbar(
-                                    it,
+                                    resultMessage,
                                     actionLabel = "닫기",
                                     duration = SnackbarDuration.Short
                                 )
                             }
-                        })
+                        }
                     }
                 )
             }

@@ -4,10 +4,15 @@ import com.squareup.moshi.JsonClass
 
 @JsonClass(generateAdapter = true)
 data class UserRequest(
-    val customId: String? = "",
     val deviceId: String,
-    val pin: String? = "",
-    val fcmToken: String
+    val fcmToken: String,
+
+    // ✅ 소셜 로그인 관련 필드 추가
+    val socialId: String? = null,
+    val socialType: String? = null,  // "GOOGLE", "KAKAO", "NONE"
+    val email: String? = null,
+    val nickname: String? = null,
+    val profileUrl: String? = null
 )
 
 @JsonClass(generateAdapter = true)

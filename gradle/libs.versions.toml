@@ -58,6 +58,10 @@ socketIo = "2.1.0" # 최신 안정 버전 확인 필요
 mpAndroidChart = "v3.1.0"
 roomRuntimeAndroid = "2.6.1" # 최신 안정 버전 (자체 확인 필요)
 
+# ✅ 소셜 로그인 추가
+playServicesAuth = "21.0.0"  # Google 로그인
+kakaoSdk = "2.20.1"
+
 
 [libraries]
 # AndroidX (composeBom을 쓰는 경우 compose-ui 등은 version.ref을 제거할 수 있습니다)
@@ -152,6 +156,10 @@ junit = { group = "junit", name = "junit", version.ref = "junit" }
 androidx-test-ext-junit = { group = "androidx.test.ext", name = "junit", version.ref = "androidxTestJunit" }
 androidx-test-espresso-core = { group = "androidx.test.espresso", name = "espresso-core", version.ref = "androidxEspresso" }
 androidx-room-runtime-android = { group = "androidx.room", name = "room-runtime-android", version.ref = "roomRuntimeAndroid" }
+
+# ✅ 소셜 로그인 라이브러리
+play-services-auth = { group = "com.google.android.gms", name = "play-services-auth", version.ref = "playServicesAuth" }
+kakao-sdk-user = { group = "com.kakao.sdk", name = "v2-user", version.ref = "kakaoSdk" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "androidGradlePlugin" }

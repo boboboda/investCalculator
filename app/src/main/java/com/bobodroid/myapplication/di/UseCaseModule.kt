@@ -1,13 +1,17 @@
 package com.bobodroid.myapplication.di
 
 import com.bobodroid.myapplication.models.datamodels.repository.UserRepository
-import com.bobodroid.myapplication.models.datamodels.useCases.CustomIdCreateUser
+import com.bobodroid.myapplication.models.datamodels.social.SocialLoginManager
 import com.bobodroid.myapplication.models.datamodels.useCases.DeleteUserUseCase
+import com.bobodroid.myapplication.models.datamodels.useCases.GoogleLoginUseCase
+import com.bobodroid.myapplication.models.datamodels.useCases.KakaoLoginUseCase
 import com.bobodroid.myapplication.models.datamodels.useCases.LocalExistCheckUseCase
 import com.bobodroid.myapplication.models.datamodels.useCases.LocalIdAddUseCase
 import com.bobodroid.myapplication.models.datamodels.useCases.LocalUserUpdate
-import com.bobodroid.myapplication.models.datamodels.useCases.LogInUseCase
-import com.bobodroid.myapplication.models.datamodels.useCases.LogoutUseCase
+import com.bobodroid.myapplication.models.datamodels.useCases.RestoreFromServerUseCase
+import com.bobodroid.myapplication.models.datamodels.useCases.SocialLoginUseCases
+import com.bobodroid.myapplication.models.datamodels.useCases.SocialLogoutUseCase
+import com.bobodroid.myapplication.models.datamodels.useCases.SyncToServerUseCase
 import com.bobodroid.myapplication.models.datamodels.useCases.TargetRateAddUseCase
 import com.bobodroid.myapplication.models.datamodels.useCases.TargetRateDeleteUseCase
 import com.bobodroid.myapplication.models.datamodels.useCases.TargetRateUpdateUseCase
@@ -44,15 +48,34 @@ object UseCaseModule {
 
     // user di
     @Provides
+    @Singleton
     fun provideUserUseCases(
-        userRepository: UserRepository,
+        deleteUser: DeleteUserUseCase,
+        localUserUpdate: LocalUserUpdate,
+        socialLoginUseCases: SocialLoginUseCases
     ): UserUseCases {
         return UserUseCases(
-            customIdCreateUser = CustomIdCreateUser(userRepository),
-            logIn = LogInUseCase(userRepository),
-            logout = LogoutUseCase(userRepository), // 주입받은 인스턴스 사용
-            deleteUser = DeleteUserUseCase(userRepository),
-            localUserUpdate = LocalUserUpdate(userRepository)
+            deleteUser = deleteUser,
+            localUserUpdate = localUserUpdate,
+            socialLoginUseCases = socialLoginUseCases
+        )
+    }
+
+    @Provides
+    @Singleton
+    fun provideSocialLoginUseCases(
+        googleLogin: GoogleLoginUseCase,
+        kakaoLogin: KakaoLoginUseCase,
+        socialLogout: SocialLogoutUseCase,
+        syncToServer: SyncToServerUseCase,
+        restoreFromServer: RestoreFromServerUseCase
+    ): SocialLoginUseCases {
+        return SocialLoginUseCases(
+            googleLogin = googleLogin,
+            kakaoLogin = kakaoLogin,
+            socialLogout = socialLogout,
+            syncToServer = syncToServer,
+            restoreFromServer = restoreFromServer
         )
     }
 
@@ -67,5 +90,49 @@ object UseCaseModule {
             targetRateDeleteUseCase = TargetRateDeleteUseCase()
         )
     }
+
+
+
+
+    // ✅ 개별 UseCase 제공
+    @Provides
+    fun provideDeleteUserUseCase(
+        userRepository: UserRepository
+    ): DeleteUserUseCase = DeleteUserUseCase(userRepository)
+
+    @Provides
+    fun provideLocalUserUpdate(
+        userRepository: UserRepository
+    ): LocalUserUpdate = LocalUserUpdate(userRepository)
+
+
+    // ✅ 소셜 로그인 개별 UseCase 제공
+    @Provides
+    fun provideGoogleLoginUseCase(
+        userRepository: UserRepository,
+        socialLoginManager: SocialLoginManager
+    ): GoogleLoginUseCase = GoogleLoginUseCase(userRepository, socialLoginManager)
+
+    @Provides
+    fun provideKakaoLoginUseCase(
+        userRepository: UserRepository,
+        socialLoginManager: SocialLoginManager
+    ): KakaoLoginUseCase = KakaoLoginUseCase(userRepository, socialLoginManager)
+
+    @Provides
+    fun provideSocialLogoutUseCase(
+        userRepository: UserRepository,
+        socialLoginManager: SocialLoginManager
+    ): SocialLogoutUseCase = SocialLogoutUseCase(userRepository, socialLoginManager)
+
+    @Provides
+    fun provideSyncToServerUseCase(
+        userRepository: UserRepository
+    ): SyncToServerUseCase = SyncToServerUseCase(userRepository)
+
+    @Provides
+    fun provideRestoreFromServerUseCase(
+        userRepository: UserRepository
+    ): RestoreFromServerUseCase = RestoreFromServerUseCase(userRepository)
 
 }

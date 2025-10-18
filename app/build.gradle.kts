@@ -218,4 +218,7 @@ dependencies {
     kaptAndroidTest(libs.hilt.compiler)
     testImplementation(libs.hilt.android.testing)
     kaptTest(libs.hilt.compiler)
+
+    implementation(libs.play.services.auth)    // Google 로그인
+    implementation(libs.kakao.sdk.user)
 }

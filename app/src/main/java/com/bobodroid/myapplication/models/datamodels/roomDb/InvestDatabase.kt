@@ -48,9 +48,10 @@ import androidx.room.migration.AutoMigrationSpec
         AutoMigration(from = 17, to = 18),
         AutoMigration(from = 18, to = 19, spec = InvestDatabase.MyAutoMigration::class),
         AutoMigration(from = 19, to = 20, spec = InvestDatabase.MyAutoMigration::class),
-        AutoMigration(from = 20, to = 21, spec = InvestDatabase.MyAutoMigration::class)
+        AutoMigration(from = 20, to = 21, spec = InvestDatabase.MyAutoMigration::class),
+        AutoMigration(from = 21, to = 22, spec = InvestDatabase.MyAutoMigration::class)
                      ],
-    version = 21, exportSchema = true)
+    version = 22, exportSchema = true)
 
 @DeleteTable.Entries(
     DeleteTable(tableName = "sellWon_table"),
@@ -133,6 +134,15 @@ abstract class InvestDatabase: RoomDatabase() {
     @DeleteColumn(
         tableName = "LocalUserData_table",
         columnName = "user_Reset_State"
+    )
+
+    @DeleteColumn(
+        tableName = "LocalUserData_table",
+        columnName = "customId"
+    )
+    @DeleteColumn(
+        tableName = "LocalUserData_table",
+        columnName = "pin"
     )
 
 

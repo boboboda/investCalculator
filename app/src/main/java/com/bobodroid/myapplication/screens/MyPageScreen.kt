@@ -1,5 +1,6 @@
 package com.bobodroid.myapplication.screens
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -25,11 +26,14 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.bobodroid.myapplication.components.Dialogs.OnboardingTooltipDialog
 import com.bobodroid.myapplication.models.datamodels.roomDb.LocalUserData
+import com.bobodroid.myapplication.models.viewmodels.BadgeInfo
 import com.bobodroid.myapplication.models.viewmodels.InvestmentStats
 import com.bobodroid.myapplication.models.viewmodels.MonthlyGoal
 import com.bobodroid.myapplication.models.viewmodels.MyPageViewModel
@@ -52,6 +56,10 @@ fun MyPageScreen() {
         RouteAction<MyPageRoute>(navController, MyPageRoute.SelectView.routeName)
     }
 
+    var showOnboarding by remember { mutableStateOf(false) }
+
+
+
     Box(
         modifier = Modifier.fillMaxSize(),
         contentAlignment = Alignment.BottomCenter
@@ -67,7 +75,11 @@ fun MyPageScreen() {
                     investmentStats = uiState.investmentStats,  // ⭐ 통계 전달
                     recentActivities = uiState.recentActivities, // ⭐ 활동 전달
                     monthlyGoal = uiState.monthlyGoal,          // ⭐ 목표 전달
-                    onSetGoal = { amount -> myPageViewModel.setMonthlyGoal(amount) }  // ⭐ 목표 설정
+                    onSetGoal = { amount -> myPageViewModel.setMonthlyGoal(amount) },  // ⭐ 목표 설정
+                    showOnboarding = {
+                        showOnboarding = true
+                    },
+                    badges = uiState.badges
                 )
             }
 
@@ -120,6 +132,13 @@ fun MyPageScreen() {
             hostState = mainScreenSnackBarHostState,
             modifier = Modifier.padding(bottom = 20.dp)
         )
+
+        // 온보딩 다이얼로그
+        if (showOnboarding) {
+            OnboardingTooltipDialog(
+                onDismiss = { showOnboarding = false }
+            )
+        }
     }
 }
 
@@ -130,8 +149,13 @@ fun ImprovedMyPageView(
     investmentStats: InvestmentStats = InvestmentStats(),  // ⭐ 통계 데이터 추가
     recentActivities: List<RecentActivity> = emptyList(),   // ⭐ 활동 데이터 추가
     monthlyGoal: MonthlyGoal = MonthlyGoal(),              // ⭐ 목표 데이터 추가
-    onSetGoal: (Long) -> Unit = {}                          // ⭐ 목표 설정 콜백
-) {
+    onSetGoal: (Long) -> Unit = {}, // ⭐ 목표 설정 콜백
+    showOnboarding: () -> Unit,
+    badges: List<BadgeInfo>,
+    ) {
+
+
+
     val gradientColors = listOf(
         Color(0xFF667EEA),
         Color(0xFF764BA2)
@@ -170,15 +194,16 @@ fun ImprovedMyPageView(
 
         // 나의 뱃지
         item {
-            BadgeSection()
+            BadgeSection(badges = badges)
         }
 
         // 설정 메뉴
         item {
             SettingsSection(
-                onCustomerServiceClick = {
-                    myPageRouteAction.navTo(MyPageRoute.CustomerServiceCenter)
-                }
+                onCustomerServiceClick = { /* 고객센터 */ },
+                onShowOnboardingClick = {
+                    showOnboarding()
+                     }
             )
         }
 
@@ -588,80 +613,296 @@ fun GoalSettingDialog(
     onConfirm: (Long) -> Unit
 ) {
     var goalText by remember { mutableStateOf(if (currentGoal > 0) currentGoal.toString() else "") }
+    var selectedQuickAmount by remember { mutableStateOf<Long?>(null) }
 
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = {
-            Text(
-                text = "이번 달 수익 목표",
-                fontWeight = FontWeight.Bold
-            )
-        },
-        text = {
-            Column {
+    Dialog(onDismissRequest = onDismiss) {
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            shape = RoundedCornerShape(24.dp),
+            colors = CardDefaults.cardColors(containerColor = Color.White)
+        ) {
+            Column(
+                modifier = Modifier.padding(24.dp)
+            ) {
+                // 헤더
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column {
+                        Text(
+                            text = "이번 달 수익 목표",
+                            fontSize = 20.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color(0xFF1F2937)
+                        )
+                        Text(
+                            text = "달성하고 싶은 금액을 설정하세요",
+                            fontSize = 13.sp,
+                            color = Color.Gray,
+                            modifier = Modifier.padding(top = 4.dp)
+                        )
+                    }
+
+                    IconButton(
+                        onClick = onDismiss,
+                        modifier = Modifier.size(32.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Rounded.Close,
+                            contentDescription = "닫기",
+                            tint = Color.Gray
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(24.dp))
+
+                // 빠른 선택 버튼들
                 Text(
-                    text = "달성하고 싶은 수익 금액을 입력하세요",
+                    text = "빠른 선택",
                     fontSize = 14.sp,
-                    color = Color.Gray
+                    fontWeight = FontWeight.Medium,
+                    color = Color(0xFF6B7280),
+                    modifier = Modifier.padding(bottom = 12.dp)
                 )
 
-                Spacer(modifier = Modifier.height(16.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    listOf(
+                        100000L to "10만원",
+                        300000L to "30만원"
+                    ).forEach { (amount, label) ->
+                        Card(
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(56.dp),
+                            shape = RoundedCornerShape(12.dp),
+                            colors = CardDefaults.cardColors(
+                                containerColor = if (selectedQuickAmount == amount)
+                                    Color(0xFF6366F1) else Color(0xFFF3F4F6)
+                            ),
+                            onClick = {
+                                selectedQuickAmount = amount
+                                goalText = amount.toString()
+                            }
+                        ) {
+                            Box(
+                                modifier = Modifier.fillMaxSize(),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    text = label,
+                                    fontSize = 14.sp,
+                                    fontWeight = FontWeight.Medium,
+                                    color = if (selectedQuickAmount == amount)
+                                        Color.White else Color(0xFF374151)
+                                )
+                            }
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    listOf(
+                        500000L to "50만원",
+                        1000000L to "100만원"
+                    ).forEach { (amount, label) ->
+                        Card(
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(56.dp),
+                            shape = RoundedCornerShape(12.dp),
+                            colors = CardDefaults.cardColors(
+                                containerColor = if (selectedQuickAmount == amount)
+                                    Color(0xFF6366F1) else Color(0xFFF3F4F6)
+                            ),
+                            onClick = {
+                                selectedQuickAmount = amount
+                                goalText = amount.toString()
+                            }
+                        ) {
+                            Box(
+                                modifier = Modifier.fillMaxSize(),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    text = label,
+                                    fontSize = 14.sp,
+                                    fontWeight = FontWeight.Medium,
+                                    color = if (selectedQuickAmount == amount)
+                                        Color.White else Color(0xFF374151)
+                                )
+                            }
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(20.dp))
+
+                // 구분선
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    HorizontalDivider(modifier = Modifier.weight(1f), color = Color(0xFFE5E7EB))
+                    Text(
+                        text = "또는",
+                        fontSize = 12.sp,
+                        color = Color.Gray,
+                        modifier = Modifier.padding(horizontal = 12.dp)
+                    )
+                    HorizontalDivider(modifier = Modifier.weight(1f), color = Color(0xFFE5E7EB))
+                }
+
+                Spacer(modifier = Modifier.height(20.dp))
+
+                // 직접 입력
+                Text(
+                    text = "직접 입력",
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Medium,
+                    color = Color(0xFF6B7280),
+                    modifier = Modifier.padding(bottom = 12.dp)
+                )
 
                 OutlinedTextField(
                     value = goalText,
                     onValueChange = {
                         if (it.isEmpty() || it.all { char -> char.isDigit() }) {
                             goalText = it
+                            selectedQuickAmount = null
                         }
                     },
-                    label = { Text("목표 금액") },
-                    placeholder = { Text("예: 500000") },
-                    prefix = { Text("₩") },
+                    modifier = Modifier.fillMaxWidth(),
+                    placeholder = {
+                        Text(
+                            "원하는 금액 입력",
+                            color = Color(0xFF9CA3AF)
+                        )
+                    },
+                    prefix = {
+                        Text(
+                            "₩",
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color(0xFF6366F1)
+                        )
+                    },
+                    suffix = {
+                        Text(
+                            "원",
+                            color = Color.Gray
+                        )
+                    },
                     singleLine = true,
-                    modifier = Modifier.fillMaxWidth()
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = Color(0xFF6366F1),
+                        unfocusedBorderColor = Color(0xFFE5E7EB),
+                        focusedContainerColor = Color(0xFFF9FAFB),
+                        unfocusedContainerColor = Color(0xFFF9FAFB)
+                    ),
+                    shape = RoundedCornerShape(12.dp),
+                    textStyle = androidx.compose.ui.text.TextStyle(
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Medium
+                    )
                 )
 
-                Spacer(modifier = Modifier.height(8.dp))
-
-                // 빠른 선택 버튼
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    listOf(100000L, 300000L, 500000L, 1000000L).forEach { amount ->
-                        OutlinedButton(
-                            onClick = { goalText = amount.toString() },
-                            modifier = Modifier.weight(1f)
+                // 미리보기
+                if (goalText.isNotEmpty() && goalText.toLongOrNull() != null) {
+                    val amount = goalText.toLong()
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = CardDefaults.cardColors(
+                            containerColor = Color(0xFFEEF2FF)
+                        ),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(16.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
                         ) {
                             Text(
-                                text = if (amount >= 1000000) "${amount / 1000000}백만"
-                                else "${amount / 10000}만",
-                                fontSize = 11.sp
+                                text = "설정될 목표",
+                                fontSize = 13.sp,
+                                color = Color(0xFF6366F1)
+                            )
+                            Text(
+                                text = "₩%,d".format(amount),
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color(0xFF6366F1)
                             )
                         }
                     }
                 }
-            }
-        },
-        confirmButton = {
-            Button(
-                onClick = {
-                    val amount = goalText.toLongOrNull() ?: 0L
-                    if (amount > 0) {
-                        onConfirm(amount)
+
+                Spacer(modifier = Modifier.height(24.dp))
+
+                // 버튼
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    OutlinedButton(
+                        onClick = onDismiss,
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(52.dp),
+                        shape = RoundedCornerShape(12.dp),
+                        border = BorderStroke(1.dp, Color(0xFFE5E7EB))
+                    ) {
+                        Text(
+                            "취소",
+                            fontSize = 15.sp,
+                            color = Color(0xFF6B7280)
+                        )
                     }
-                },
-                enabled = goalText.isNotEmpty() && goalText.toLongOrNull() != null && goalText.toLong() > 0
-            ) {
-                Text("설정")
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text("취소")
+
+                    Button(
+                        onClick = {
+                            val amount = goalText.toLongOrNull() ?: 0L
+                            if (amount > 0) {
+                                onConfirm(amount)
+                            }
+                        },
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(52.dp),
+                        enabled = goalText.isNotEmpty() &&
+                                goalText.toLongOrNull() != null &&
+                                goalText.toLong() > 0,
+                        shape = RoundedCornerShape(12.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color(0xFF6366F1),
+                            disabledContainerColor = Color(0xFFE5E7EB)
+                        )
+                    ) {
+                        Text(
+                            "설정하기",
+                            fontSize = 15.sp,
+                            fontWeight = FontWeight.Medium
+                        )
+                    }
+                }
             }
         }
-    )
+    }
 }
 
 @Composable
@@ -840,15 +1081,10 @@ private fun formatActivityDate(dateString: String): String {
     }
 }
 
-@Composable
-fun BadgeSection() {
-    val badges = listOf(
-        Badge("🥇", "첫 거래 완료", true, 100),
-        Badge("📈", "연속 10일 기록", true, 100),
-        Badge("💰", "100만원 투자", false, 85),
-        Badge("🎯", "수익률 +20%", false, 0)
-    )
+// BadgeSection 함수 전체를 이것으로 교체:
 
+@Composable
+fun BadgeSection(badges: List<BadgeInfo>) {  // ⭐ 파라미터 추가
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -856,20 +1092,35 @@ fun BadgeSection() {
             .padding(top = 24.dp)
     ) {
         Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Icon(
-                imageVector = Icons.Rounded.EmojiEvents,
-                contentDescription = "Badges",
-                tint = Color(0xFFF59E0B),
-                modifier = Modifier.size(24.dp)
-            )
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Rounded.EmojiEvents,
+                    contentDescription = "Badges",
+                    tint = Color(0xFFF59E0B),
+                    modifier = Modifier.size(24.dp)
+                )
+                Text(
+                    text = "나의 뱃지",
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFF1F2937)
+                )
+            }
+
+            // ⭐ 달성 개수
+            val unlockedCount = badges.count { it.isUnlocked }
             Text(
-                text = "나의 뱃지",
-                fontSize = 18.sp,
-                fontWeight = FontWeight.Bold,
-                color = Color(0xFF1F2937)
+                text = "$unlockedCount/${badges.size}",
+                fontSize = 14.sp,
+                color = Color(0xFF6366F1),
+                fontWeight = FontWeight.Medium
             )
         }
 
@@ -880,27 +1131,35 @@ fun BadgeSection() {
             colors = CardDefaults.cardColors(containerColor = Color.White),
             elevation = CardDefaults.cardElevation(4.dp)
         ) {
-            Column(
-                modifier = Modifier.padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                badges.forEach { badge ->
-                    BadgeItem(badge)
+            if (badges.isEmpty()) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(32.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = "뱃지를 수집해보세요!",
+                        color = Color.Gray
+                    )
+                }
+            } else {
+                Column(
+                    modifier = Modifier.padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    badges.forEach { badge ->
+                        BadgeItemNew(badge)  // ⭐ 새 함수 사용
+                    }
                 }
             }
         }
     }
 }
 
-data class Badge(
-    val icon: String,
-    val title: String,
-    val isUnlocked: Boolean,
-    val progress: Int
-)
-
+// ⭐ 새로운 BadgeItem
 @Composable
-fun BadgeItem(badge: Badge) {
+fun BadgeItemNew(badge: BadgeInfo) {
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceBetween,
@@ -929,12 +1188,33 @@ fun BadgeItem(badge: Badge) {
                     fontWeight = FontWeight.Medium,
                     color = if (badge.isUnlocked) Color(0xFF1F2937) else Color.Gray
                 )
+                Text(
+                    text = badge.description,
+                    fontSize = 12.sp,
+                    color = Color.Gray
+                )
                 if (!badge.isUnlocked && badge.progress > 0) {
-                    Text(
-                        text = "${badge.progress}% 달성",
-                        fontSize = 12.sp,
-                        color = Color(0xFF6366F1)
-                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        LinearProgressIndicator(
+                            progress = badge.progress / 100f,
+                            modifier = Modifier
+                                .width(100.dp)
+                                .height(4.dp)
+                                .clip(RoundedCornerShape(2.dp)),
+                            color = Color(0xFF6366F1),
+                            trackColor = Color(0xFFE5E7EB)
+                        )
+                        Text(
+                            text = "${badge.currentValue}/${badge.targetValue}",
+                            fontSize = 11.sp,
+                            color = Color(0xFF6366F1),
+                            fontWeight = FontWeight.Medium
+                        )
+                    }
                 }
             }
         }
@@ -952,7 +1232,8 @@ fun BadgeItem(badge: Badge) {
 
 @Composable
 fun SettingsSection(
-    onCustomerServiceClick: () -> Unit
+    onCustomerServiceClick: () -> Unit,
+    onShowOnboardingClick: () -> Unit  // 🎯 새로 추가
 ) {
     Column(
         modifier = Modifier
@@ -986,35 +1267,30 @@ fun SettingsSection(
             elevation = CardDefaults.cardElevation(4.dp)
         ) {
             Column {
+                // 🎯 사용법 다시보기 추가
+                SettingItem(
+                    icon = Icons.Rounded.Help,
+                    title = "사용법 다시보기",
+                    subtitle = "스와이프 기능 안내",
+                    onClick = onShowOnboardingClick
+                )
+
+                HorizontalDivider(color = Color(0xFFE5E7EB))
+
                 SettingItem(
                     icon = Icons.Rounded.Palette,
                     title = "테마 변경",
                     subtitle = "라이트 / 다크",
                     onClick = { /* TODO */ }
                 )
-                HorizontalDivider(color = Color(0xFFE5E7EB))
 
-                SettingItem(
-                    icon = Icons.Rounded.Language,
-                    title = "언어 설정",
-                    subtitle = "한국어",
-                    onClick = { /* TODO */ }
-                )
                 HorizontalDivider(color = Color(0xFFE5E7EB))
 
                 SettingItem(
                     icon = Icons.Rounded.Help,
                     title = "고객센터",
-                    subtitle = "문의 및 공지사항",
+                    subtitle = "문의하기",
                     onClick = onCustomerServiceClick
-                )
-                HorizontalDivider(color = Color(0xFFE5E7EB))
-
-                SettingItem(
-                    icon = Icons.Rounded.Info,
-                    title = "앱 정보",
-                    subtitle = "버전 1.0.0",
-                    onClick = { /* TODO */ }
                 )
             }
         }

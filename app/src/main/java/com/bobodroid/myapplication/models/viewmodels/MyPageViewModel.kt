@@ -50,6 +50,14 @@ class MyPageViewModel @Inject constructor(
         viewModelScope.launch {
             collectRecentActivities()
         }
+
+        viewModelScope.launch {
+            calculateGoalProgress()
+        }
+
+        viewModelScope.launch {
+            calculateBadges()
+        }
     }
 
     // ✅ DB Flow는 이미 flowOn으로 IO 처리되므로 추가 작업 불필요
@@ -312,10 +320,125 @@ class MyPageViewModel @Inject constructor(
             )
 
             userRepository.localUserUpdate(updatedUser)
-
+            Log.d("MyPageViewModel", "유저 데이터: ₩$updatedUser")
             Log.d("MyPageViewModel", "목표 설정 완료: ₩$goalAmount")
         }
     }
+
+
+    private suspend fun calculateBadges() {
+        combine(
+            investRepository.getAllDollarBuyRecords(),
+            investRepository.getAllYenBuyRecords()
+        ) { dollarRecords, yenRecords ->
+
+            val totalTrades = dollarRecords.size + yenRecords.size
+            val sellCount = dollarRecords.count { it.recordColor == true } +
+                    yenRecords.count { it.recordColor == true }
+
+            val totalInvestment = (dollarRecords + yenRecords).sumOf {
+                it.money?.replace(",", "")?.toBigDecimalOrNull()?.toLong() ?: 0L
+            }
+
+            val totalProfit = (dollarRecords + yenRecords).sumOf {
+                it.expectProfit?.replace(",", "")?.toBigDecimalOrNull() ?: BigDecimal.ZERO
+            }
+
+            val profitRate = if (totalInvestment > 0) {
+                (totalProfit.divide(BigDecimal(totalInvestment), 4, RoundingMode.HALF_UP) * BigDecimal(100))
+                    .toFloat()
+            } else 0f
+
+            listOf(
+                BadgeInfo(
+                    type = BadgeType.FIRST_TRADE,
+                    icon = "🥇",
+                    title = "첫 거래 완료",
+                    description = "첫 번째 거래를 완료했습니다",
+                    isUnlocked = totalTrades >= 1,
+                    progress = if (totalTrades >= 1) 100 else 0,
+                    currentValue = totalTrades,
+                    targetValue = 1
+                ),
+                BadgeInfo(
+                    type = BadgeType.TRADER_50,
+                    icon = "📊",
+                    title = "거래왕",
+                    description = "총 50건의 거래를 완료했습니다",
+                    isUnlocked = totalTrades >= 50,
+                    progress = ((totalTrades.toFloat() / 50f) * 100).toInt().coerceIn(0, 100),
+                    currentValue = totalTrades,
+                    targetValue = 50
+                ),
+                BadgeInfo(
+                    type = BadgeType.TRADER_100,
+                    icon = "💯",
+                    title = "백전백승",
+                    description = "총 100건의 거래를 완료했습니다",
+                    isUnlocked = totalTrades >= 100,
+                    progress = ((totalTrades.toFloat() / 100f) * 100).toInt().coerceIn(0, 100),
+                    currentValue = totalTrades,
+                    targetValue = 100
+                ),
+                BadgeInfo(
+                    type = BadgeType.FIRST_PROFIT,
+                    icon = "💰",
+                    title = "첫 수익",
+                    description = "첫 번째 매도 수익을 달성했습니다",
+                    isUnlocked = sellCount >= 1,
+                    progress = if (sellCount >= 1) 100 else 0,
+                    currentValue = sellCount,
+                    targetValue = 1
+                ),
+                BadgeInfo(
+                    type = BadgeType.PROFIT_RATE_10,
+                    icon = "🎯",
+                    title = "수익률 달인",
+                    description = "수익률 +10%를 달성했습니다",
+                    isUnlocked = profitRate >= 10f,
+                    progress = ((profitRate / 10f) * 100).toInt().coerceIn(0, 100),
+                    currentValue = profitRate.toInt(),
+                    targetValue = 10
+                ),
+                BadgeInfo(
+                    type = BadgeType.PROFIT_RATE_20,
+                    icon = "🚀",
+                    title = "수익률 고수",
+                    description = "수익률 +20%를 달성했습니다",
+                    isUnlocked = profitRate >= 20f,
+                    progress = ((profitRate / 20f) * 100).toInt().coerceIn(0, 100),
+                    currentValue = profitRate.toInt(),
+                    targetValue = 20
+                ),
+                BadgeInfo(
+                    type = BadgeType.INVESTMENT_1M,
+                    icon = "💵",
+                    title = "백만장자",
+                    description = "총 투자금 100만원을 달성했습니다",
+                    isUnlocked = totalInvestment >= 1_000_000L,
+                    progress = ((totalInvestment.toFloat() / 1_000_000f) * 100).toInt().coerceIn(0, 100),
+                    currentValue = (totalInvestment / 10000).toInt(),
+                    targetValue = 100
+                ),
+                BadgeInfo(
+                    type = BadgeType.INVESTMENT_10M,
+                    icon = "💎",
+                    title = "천만장자",
+                    description = "총 투자금 1,000만원을 달성했습니다",
+                    isUnlocked = totalInvestment >= 10_000_000L,
+                    progress = ((totalInvestment.toFloat() / 10_000_000f) * 100).toInt().coerceIn(0, 100),
+                    currentValue = (totalInvestment / 10000).toInt(),
+                    targetValue = 1000
+                )
+            )
+        }.collect { badges ->
+            _myPageUiState.update {
+                it.copy(badges = badges)
+            }
+        }
+    }
+
+
 
     // ========== 기존 함수들 ==========
 
@@ -395,11 +518,36 @@ data class MonthlyGoal(
     val isSet: Boolean = false         // 목표 설정 여부
 )
 
+enum class BadgeType {
+    FIRST_TRADE,
+    TRADER_50,
+    TRADER_100,
+    FIRST_PROFIT,
+    PROFIT_RATE_10,
+    PROFIT_RATE_20,
+    INVESTMENT_1M,
+    INVESTMENT_10M,
+    STREAK_7,
+    STREAK_30
+}
+
+data class BadgeInfo(
+    val type: BadgeType,
+    val icon: String,
+    val title: String,
+    val description: String,
+    val isUnlocked: Boolean,
+    val progress: Int,
+    val currentValue: Int,
+    val targetValue: Int
+)
+
 
 // UiState
 data class MyPageUiState(
     val localUser: LocalUserData = LocalUserData(),
     val investmentStats: InvestmentStats = InvestmentStats(),
     val recentActivities: List<RecentActivity> = emptyList(),
-    val monthlyGoal: MonthlyGoal = MonthlyGoal()
+    val monthlyGoal: MonthlyGoal = MonthlyGoal(),
+    val badges: List<BadgeInfo> = emptyList()
 )

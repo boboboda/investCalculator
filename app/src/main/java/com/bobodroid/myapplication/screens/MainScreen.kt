@@ -43,6 +43,9 @@ import com.bobodroid.myapplication.models.viewmodels.CurrencyRecordState
 import com.bobodroid.myapplication.models.viewmodels.MainViewModel
 import com.bobodroid.myapplication.screens.MainEvent.BottomSheetEvent
 import androidx.compose.material3.SnackbarHostState
+import com.bobodroid.myapplication.components.Dialogs.OnboardingTooltipDialog
+import com.bobodroid.myapplication.components.mainComponents.GroupChangeBottomSheet
+import com.bobodroid.myapplication.util.PreferenceUtil
 import kotlinx.coroutines.Job
 
 
@@ -70,7 +73,8 @@ fun MainScreen(
 
     var isVisible by remember { mutableStateOf(true) }
 
-    val context = LocalContext.current
+    val groupChangeSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+
 
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
@@ -81,6 +85,12 @@ fun MainScreen(
     var thankShowingDialog by remember { mutableStateOf(false) }
 
     val listScrollState = rememberLazyListState()
+
+    val context = LocalContext.current
+    val preferenceUtil = remember { PreferenceUtil(context) }
+    var showOnboarding by remember {
+        mutableStateOf(preferenceUtil.getData("onboarding_completed", "false") == "false")
+    }
 
     // 🎯 스크롤 상태 관리
     var isCollapsedState by remember { mutableStateOf(false) }
@@ -102,15 +112,6 @@ fun MainScreen(
         val currentPosition = currentIndex * 1000 + currentOffset
         val previousPosition = previousFirstVisibleItemIndex * 1000 + previousScrollOffset
         val scrollDelta = currentPosition - previousPosition
-
-        Log.d("MainScreen_Scroll", "════════════════════════════════════")
-        Log.d("MainScreen_Scroll", "📊 스크롤 상태 정보:")
-        Log.d("MainScreen_Scroll", "  - currentIndex: $currentIndex")
-        Log.d("MainScreen_Scroll", "  - currentOffset: $currentOffset")
-        Log.d("MainScreen_Scroll", "  - currentPosition: $currentPosition")
-        Log.d("MainScreen_Scroll", "  - previousPosition: $previousPosition")
-        Log.d("MainScreen_Scroll", "  - scrollDelta: $scrollDelta")
-        Log.d("MainScreen_Scroll", "  - isCollapsed (before): $isCollapsedState")
 
         var stateChanged = false
 
@@ -253,6 +254,9 @@ fun MainScreen(
                                 val record = event.data
                                 mainViewModel.handleMainEvent(MainEvent.ShowRateBottomSheet(record))
                             }
+                            is RecordListEvent.ShowGroupChangeBottomSheet -> {  // 🎯 추가
+                                mainViewModel.handleRecordEvent(event)
+                            }
                             else -> mainViewModel.handleRecordEvent(event)
                         }
                     }
@@ -296,6 +300,24 @@ fun MainScreen(
                                 }
                             }
                             else -> mainViewModel.handleMainEvent(event)
+                        }
+                    }
+                )
+            }
+
+            if(mainUiState.showGroupChangeBottomSheet) {
+                val record = recordListUiState.selectedRecord ?: return
+                GroupChangeBottomSheet(
+                    sheetState = groupChangeSheetState,
+                    record = record,
+                    groupList = records.groups,
+                    onEvent = { event ->
+                        mainViewModel.handleRecordEvent(event)
+                    },
+                    onDismiss = {
+                        coroutineScope.launch {
+                            groupChangeSheetState.hide()
+                            mainViewModel.handleMainEvent(MainEvent.HideGroupChangeBottomSheet)
                         }
                     }
                 )
@@ -472,6 +494,15 @@ fun MainScreen(
                     }
                 })
         }
+
+        if (showOnboarding) {
+            OnboardingTooltipDialog(
+                onDismiss = {
+                    preferenceUtil.setData("onboarding_completed", "true")
+                    showOnboarding = false
+                }
+            )
+        }
     }
 }
 
@@ -493,6 +524,7 @@ sealed class MainEvent {
     data object HideSellResultDialog : MainEvent()
     data object HideDateRangeDialog: MainEvent()
     data object ShowDateRangeDialog : MainEvent()
+    data object HideGroupChangeBottomSheet : MainEvent()
 
     // 바텀시트 관련 이벤트 정의
     sealed class BottomSheetEvent: MainEvent() {
@@ -502,6 +534,7 @@ sealed class MainEvent {
         data object OnDateSelect : BottomSheetEvent()
         data object DismissSheet : BottomSheetEvent()
         data class Popup(val event: PopupEvent) : BottomSheetEvent()
+
     }
 
     sealed class RateBottomSheetEvent: MainEvent() {
@@ -532,4 +565,6 @@ sealed class RecordListEvent {
     data class SellRecord(val data: ForeignCurrencyRecord): RecordListEvent()
     data class RemoveRecord(val data: ForeignCurrencyRecord): RecordListEvent()
     data class TotalSumProfit(val startDate: String, val endDate: String): RecordListEvent()
+    data object ShowAddBottomSheet : RecordListEvent()
+    data class ShowGroupChangeBottomSheet(val data: ForeignCurrencyRecord) : RecordListEvent()
 }

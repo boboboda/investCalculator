@@ -4,8 +4,10 @@ import android.util.Log
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -159,354 +161,391 @@ fun RecordListRowView(
                 )
             }
         },
+        // RecordListRowView.kt의 dismissContent 부분만 교체
+
+        // RecordListRowView.kt의 dismissContent 부분만 교체
+
         dismissContent = {
-            // 🎨 모던한 카드 디자인
-            Card(
+            // 🎨 매도 완료 카드 디자인 개선
+            Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 6.dp),
-                elevation = CardDefaults.cardElevation(4.dp),
-                shape = RoundedCornerShape(16.dp),
-                colors = CardDefaults.cardColors(
-                    containerColor = if (sellState) Color(0xFFF3F4F6) else Color.White
-                ),
-                onClick = {
-                    if (!itemRowVisible) {
-                        coroutineScope.launch {
-                            itemRowVisible = true
-                            scrollEvent()
-                        }
-                    } else {
-                        focusManager.clearFocus()
-                    }
-                }
+                    .padding(horizontal = 16.dp, vertical = 6.dp)
             ) {
-                Column(
+                // 좌측 accent bar (매도 완료 시만 표시)
+                if (sellState) {
+                    Box(
+                        modifier = Modifier
+                            .width(4.dp)
+                            .fillMaxHeight()
+                            .background(
+                                color = Color(0xFF10B981),
+                                shape = RoundedCornerShape(topStart = 16.dp, bottomStart = 16.dp)
+                            )
+                            .align(Alignment.CenterStart)
+                    )
+                }
+
+                Card(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(16.dp)
-                ) {
-                    // 🎨 헤더: 날짜 + 메뉴
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(6.dp)
-                        ) {
-                            Icon(
-                                imageVector = Icons.Rounded.CalendarToday,
-                                contentDescription = null,
-                                tint = Color(0xFF6B7280),
-                                modifier = Modifier.size(16.dp)
-                            )
-                            Text(
-                                text = displayDate ?: "",
-                                fontSize = 13.sp,
-                                color = Color(0xFF6B7280),
-                                fontWeight = FontWeight.Medium
-                            )
-
-                            // 매도 상태 뱃지
+                        .then(
                             if (sellState) {
-                                Surface(
-                                    shape = RoundedCornerShape(4.dp),
-                                    color = Color(0xFF10B981).copy(alpha = 0.1f)
-                                ) {
-                                    Text(
-                                        text = "매도완료",
-                                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
-                                        fontSize = 10.sp,
-                                        color = Color(0xFF10B981),
-                                        fontWeight = FontWeight.Bold
-                                    )
-                                }
+                                Modifier.border(
+                                    width = 1.dp,
+                                    color = Color(0xFF10B981).copy(alpha = 0.3f),
+                                    shape = RoundedCornerShape(16.dp)
+                                )
+                            } else Modifier
+                        ),
+                    elevation = CardDefaults.cardElevation(if (sellState) 6.dp else 4.dp),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = if (sellState) Color(0xFFECFDF5) else Color.White
+                    ),
+                    onClick = {
+                        if (!itemRowVisible) {
+                            coroutineScope.launch {
+                                itemRowVisible = true
+                                scrollEvent()
                             }
-                        }
-
-                        // 메뉴 버튼
-                        Box {
-                            IconButton(onClick = { dropdownExpanded = true }) {
-                                Icon(
-                                    imageVector = Icons.Rounded.MoreVert,
-                                    contentDescription = "메뉴",
-                                    tint = Color(0xFF6B7280)
-                                )
-                            }
-
-                            DropdownMenu(
-                                expanded = dropdownExpanded,
-                                onDismissRequest = { dropdownExpanded = false }
-                            ) {
-                                DropdownMenuItem(
-                                    text = { Text("매도", fontSize = 13.sp) },
-                                    onClick = {
-                                        dropdownExpanded = false
-                                        if (!data.recordColor!!) {
-                                            onEvent(RecordListEvent.SellRecord(data))
-                                        } else {
-                                            onEvent(RecordListEvent.SnackBarEvent("매도한 기록입니다."))
-                                        }
-                                    },
-                                    leadingIcon = {
-                                        Icon(Icons.Rounded.TrendingUp, null, modifier = Modifier.size(20.dp))
-                                    }
-                                )
-
-                                DropdownMenuItem(
-                                    text = { Text("수정", fontSize = 13.sp) },
-                                    onClick = {
-                                        dropdownExpanded = false
-                                        onEvent(RecordListEvent.ShowEditBottomSheet(data))
-                                    },
-                                    leadingIcon = {
-                                        Icon(Icons.Rounded.Edit, null, modifier = Modifier.size(20.dp))
-                                    }
-                                )
-
-                                DropdownMenuItem(
-                                    text = { Text("매도 취소", fontSize = 13.sp) },
-                                    onClick = {
-                                        coroutineScope.launch {
-                                            dropdownExpanded = false
-                                            if (data.recordColor == false) {
-                                                onEvent(RecordListEvent.SnackBarEvent("매도한 기록이 없습니다."))
-                                            } else {
-                                                onEvent(RecordListEvent.CancelSellRecord(data.id))
-                                            }
-                                        }
-                                    },
-                                    leadingIcon = {
-                                        Icon(Icons.Rounded.Close, null, modifier = Modifier.size(20.dp))
-                                    }
-                                )
-
-                                DropdownMenuItem(
-                                    text = { Text("그룹 변경", fontSize = 13.sp) },
-                                    onClick = {
-                                        groupDropdownExpanded = true
-                                    },
-                                    leadingIcon = {
-                                        Icon(Icons.Rounded.Folder, null, modifier = Modifier.size(20.dp))
-                                    }
-                                )
-
-                                Divider()
-
-                                DropdownMenuItem(
-                                    text = { Text("삭제", fontSize = 13.sp, color = Color(0xFFEF4444)) },
-                                    onClick = {
-                                        dropdownExpanded = false
-                                        deleteAskDialog.value = true
-                                    },
-                                    leadingIcon = {
-                                        Icon(Icons.Rounded.Delete, null, tint = Color(0xFFEF4444), modifier = Modifier.size(20.dp))
-                                    }
-                                )
-                            }
-
-                            // 그룹 변경 드롭다운
-                            DropdownMenu(
-                                scrollState = rememberScrollState(),
-                                modifier = Modifier
-                                    .wrapContentHeight()
-                                    .heightIn(max = 200.dp),
-                                expanded = groupDropdownExpanded,
-                                onDismissRequest = { groupDropdownExpanded = false }
-                            ) {
-                                DropdownMenuItem(
-                                    text = {
-                                        Text(
-                                            text = "새그룹",
-                                            color = Color(0xFF6366F1),
-                                            fontSize = 13.sp,
-                                            fontWeight = FontWeight.Bold
-                                        )
-                                    },
-                                    onClick = {
-                                        groupAddDialog = true
-                                    }
-                                )
-
-                                HorizontalDivider()
-
-                                groupList.forEach { groupName ->
-                                    DropdownMenuItem(
-                                        text = { Text(text = groupName, fontSize = 13.sp) },
-                                        onClick = {
-                                            onEvent(RecordListEvent.UpdateRecordCategory(data, groupName))
-                                            dropdownExpanded = false
-                                            groupDropdownExpanded = false
-                                        }
-                                    )
-                                }
-                            }
+                        } else {
+                            focusManager.clearFocus()
                         }
                     }
-
-                    Spacer(modifier = Modifier.height(12.dp))
-
-                    // 🎨 금액 정보 그리드
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp)
                     ) {
-                        // 외화 금액
-                        Column {
-                            Text(
-                                text = "보유량",
-                                fontSize = 11.sp,
-                                color = Color(0xFF9CA3AF),
-                                fontWeight = FontWeight.Medium
-                            )
-                            Spacer(modifier = Modifier.height(4.dp))
-                            Text(
-                                text = foreignCurrencyMoney,
-                                fontSize = 15.sp,
-                                color = Color(0xFF1F2937),
-                                fontWeight = FontWeight.Bold
-                            )
-                            Text(
-                                text = "₩${BigDecimal(data.money, mathContext).toBigDecimalWon()}",
-                                fontSize = 11.sp,
-                                color = Color(0xFF6B7280)
-                            )
+                        // 🎨 헤더: 날짜 + 매도완료 뱃지
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.Top
+                        ) {
+                            // 왼쪽: 날짜 + 매도완료 뱃지
+                            Column(
+                                verticalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Rounded.CalendarToday,
+                                        contentDescription = null,
+                                        tint = if (sellState) Color(0xFF059669) else Color(0xFF6B7280),
+                                        modifier = Modifier.size(16.dp)
+                                    )
+                                    Text(
+                                        text = displayDate ?: "",
+                                        fontSize = 13.sp,
+                                        color = if (sellState) Color(0xFF059669) else Color(0xFF6B7280),
+                                        fontWeight = if (sellState) FontWeight.SemiBold else FontWeight.Medium
+                                    )
+                                }
+
+                                // 매도 상태 뱃지
+                                if (sellState) {
+                                    Surface(
+                                        shape = RoundedCornerShape(6.dp),
+                                        color = Color(0xFF10B981)
+                                    ) {
+                                        Row(
+                                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.spacedBy(4.dp)
+                                        ) {
+                                            Icon(
+                                                imageVector = Icons.Rounded.CheckCircle,
+                                                contentDescription = null,
+                                                tint = Color.White,
+                                                modifier = Modifier.size(14.dp)
+                                            )
+                                            Text(
+                                                text = "매도완료",
+                                                fontSize = 12.sp,
+                                                color = Color.White,
+                                                fontWeight = FontWeight.Bold
+                                            )
+                                        }
+                                    }
+                                }
+                            }
                         }
 
-                        // 환율
-                        Column(horizontalAlignment = Alignment.End) {
-                            Text(
-                                text = "환율",
-                                fontSize = 11.sp,
-                                color = Color(0xFF9CA3AF),
-                                fontWeight = FontWeight.Medium
-                            )
-                            Spacer(modifier = Modifier.height(4.dp))
-                            Text(
-                                text = displayRate ?: "",
-                                fontSize = 15.sp,
-                                color = Color(0xFF1F2937),
-                                fontWeight = FontWeight.Bold
-                            )
+                        Spacer(modifier = Modifier.height(16.dp))
+
+                        // 🎨 금액 및 환율 정보
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Column {
+                                Text(
+                                    text = "매수금액",
+                                    fontSize = 11.sp,
+                                    color = Color(0xFF9CA3AF),
+                                    fontWeight = FontWeight.Medium
+                                )
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Text(
+                                    text = foreignCurrencyMoney,
+                                    fontSize = 15.sp,
+                                    color = Color(0xFF1F2937),
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+
+                            Column(horizontalAlignment = Alignment.End) {
+                                Text(
+                                    text = "매수환율",
+                                    fontSize = 11.sp,
+                                    color = Color(0xFF9CA3AF),
+                                    fontWeight = FontWeight.Medium
+                                )
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Text(
+                                    text = displayRate ?: "",
+                                    fontSize = 15.sp,
+                                    color = Color(0xFF1F2937),
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
                         }
 
-                        // 수익
-                        Column(horizontalAlignment = Alignment.End) {
+                        Spacer(modifier = Modifier.height(12.dp))
+                        HorizontalDivider(color = Color(0xFFE5E7EB))
+                        Spacer(modifier = Modifier.height(12.dp))
+
+                        // 🎨 수익 정보
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
                             Text(
                                 text = if (sellState) "실현수익" else "예상수익",
-                                fontSize = 11.sp,
-                                color = Color(0xFF9CA3AF),
-                                fontWeight = FontWeight.Medium
+                                fontSize = if (sellState) 13.sp else 11.sp,
+                                color = if (sellState) Color(0xFF059669) else Color(0xFF9CA3AF),
+                                fontWeight = if (sellState) FontWeight.Bold else FontWeight.Medium
                             )
-                            Spacer(modifier = Modifier.height(4.dp))
+
                             Row(
                                 verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(4.dp)
+                                horizontalArrangement = Arrangement.spacedBy(6.dp)
                             ) {
                                 Icon(
                                     imageVector = if (isProfit) Icons.Rounded.TrendingUp else Icons.Rounded.TrendingDown,
                                     contentDescription = null,
                                     tint = profitColor,
-                                    modifier = Modifier.size(16.dp)
+                                    modifier = Modifier.size(if (sellState) 20.dp else 16.dp)
                                 )
                                 Text(
-                                    text = BigDecimal(profit, mathContext).toBigDecimalWon(),
-                                    fontSize = 15.sp,
+                                    text = profitValue.toBigDecimalWon(),
+                                    fontSize = if (sellState) 18.sp else 15.sp,
                                     color = profitColor,
                                     fontWeight = FontWeight.Bold
                                 )
                             }
                         }
-                    }
 
-                    // 🎨 확장 영역 (메모)
-                    AnimatedVisibility(visible = itemRowVisible) {
-                        Column(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(top = 16.dp)
-                        ) {
-                            HorizontalDivider(color = Color(0xFFE5E7EB))
-
-                            Spacer(modifier = Modifier.height(12.dp))
-
-                            // 메모 레이블
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(4.dp)
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Rounded.Edit,
-                                    contentDescription = null,
-                                    tint = Color(0xFF6B7280),
-                                    modifier = Modifier.size(16.dp)
-                                )
-                                Text(
-                                    text = "메모",
-                                    fontSize = 13.sp,
-                                    color = Color(0xFF6B7280),
-                                    fontWeight = FontWeight.Medium
-                                )
-                            }
-
-                            Spacer(modifier = Modifier.height(8.dp))
-
-                            // 메모 입력 필드
-                            OutlinedTextField(
+                        // 🎨 확장 영역 (액션 버튼 먼저, 메모 나중)
+                        AnimatedVisibility(visible = itemRowVisible) {
+                            Column(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .focusRequester(focusRequester = focusRequester),
-                                placeholder = {
-                                    Text(text = "메모를 입력해주세요", fontSize = 14.sp)
-                                },
-                                value = memoTextInput,
-                                onValueChange = {
-                                    if (it.length <= 100) {
-                                        memoTextInput = it
-                                    } else {
-                                        focusManager.clearFocus()
-                                        onEvent(RecordListEvent.SnackBarEvent("100자 이하로 작성해주세요"))
+                                    .padding(top = 16.dp)
+                            ) {
+                                HorizontalDivider(color = Color(0xFFE5E7EB))
+                                Spacer(modifier = Modifier.height(16.dp))
+
+                                // 🎯 액션 버튼들 (메모보다 먼저)
+                                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                    // 첫 번째 줄: 수정 + 그룹 변경
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                    ) {
+                                        OutlinedButton(
+                                            onClick = {
+                                                onEvent(RecordListEvent.ShowEditBottomSheet(data))
+                                            },
+                                            modifier = Modifier.weight(1f),
+                                            colors = ButtonDefaults.outlinedButtonColors(
+                                                contentColor = Color(0xFF6366F1)
+                                            ),
+                                            border = BorderStroke(1.dp, Color(0xFF6366F1)),
+                                            shape = RoundedCornerShape(8.dp)
+                                        ) {
+                                            Icon(
+                                                imageVector = Icons.Rounded.Edit,
+                                                contentDescription = null,
+                                                modifier = Modifier.size(18.dp)
+                                            )
+                                            Spacer(modifier = Modifier.width(6.dp))
+                                            Text("수정", fontSize = 14.sp)
+                                        }
+
+                                        OutlinedButton(
+                                            onClick = {
+                                                // 🎯 바텀시트로 변경
+                                                onEvent(RecordListEvent.ShowGroupChangeBottomSheet(data))
+                                            },
+                                            modifier = Modifier.weight(1f),
+                                            colors = ButtonDefaults.outlinedButtonColors(
+                                                contentColor = Color(0xFF8B5CF6)
+                                            ),
+                                            border = BorderStroke(1.dp, Color(0xFF8B5CF6)),
+                                            shape = RoundedCornerShape(8.dp)
+                                        ) {
+                                            Icon(
+                                                imageVector = Icons.Rounded.Folder,
+                                                contentDescription = null,
+                                                modifier = Modifier.size(18.dp)
+                                            )
+                                            Spacer(modifier = Modifier.width(6.dp))
+                                            Text("그룹", fontSize = 14.sp)
+                                        }
                                     }
-                                },
-                                textStyle = TextStyle(
-                                    fontSize = 14.sp,
-                                    fontWeight = FontWeight.Normal
-                                ),
-                                colors = TextFieldDefaults.outlinedTextFieldColors(
-                                    focusedBorderColor = Color(0xFF6366F1),
-                                    unfocusedBorderColor = Color(0xFFD1D5DB)
-                                ),
-                                shape = RoundedCornerShape(8.dp)
-                            )
 
-                            // 버튼 행
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(top = 8.dp),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Text(
-                                    text = "${memoTextInput.length}/100",
-                                    fontSize = 12.sp,
-                                    color = Color(0xFF9CA3AF)
-                                )
-
-                                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                    TextButton(
-                                        onClick = {
-                                            itemRowVisible = false
-                                            coroutineScope.launch {
-                                                delay(300)
-                                                memoTextInput = data.memo ?: ""
+                                    // 두 번째 줄: 매도/매도취소 + 삭제
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                    ) {
+                                        if (sellState) {
+                                            // 매도 완료 상태: 매도 취소 버튼
+                                            OutlinedButton(
+                                                onClick = {
+                                                    onEvent(RecordListEvent.CancelSellRecord(data.id))
+                                                },
+                                                modifier = Modifier.weight(1f),
+                                                colors = ButtonDefaults.outlinedButtonColors(
+                                                    contentColor = Color(0xFFF59E0B)
+                                                ),
+                                                border = BorderStroke(1.dp, Color(0xFFF59E0B)),
+                                                shape = RoundedCornerShape(8.dp)
+                                            ) {
+                                                Icon(
+                                                    imageVector = Icons.Rounded.Undo,
+                                                    contentDescription = null,
+                                                    modifier = Modifier.size(18.dp)
+                                                )
+                                                Spacer(modifier = Modifier.width(6.dp))
+                                                Text("매도취소", fontSize = 14.sp)
+                                            }
+                                        } else {
+                                            // 미매도 상태: 매도 버튼
+                                            FilledTonalButton(
+                                                onClick = {
+                                                    onEvent(RecordListEvent.SellRecord(data))
+                                                },
+                                                modifier = Modifier.weight(1f),
+                                                colors = ButtonDefaults.filledTonalButtonColors(
+                                                    containerColor = Color(0xFF10B981).copy(alpha = 0.1f),
+                                                    contentColor = Color(0xFF10B981)
+                                                ),
+                                                shape = RoundedCornerShape(8.dp)
+                                            ) {
+                                                Icon(
+                                                    imageVector = Icons.Rounded.TrendingUp,
+                                                    contentDescription = null,
+                                                    modifier = Modifier.size(18.dp)
+                                                )
+                                                Spacer(modifier = Modifier.width(6.dp))
+                                                Text("매도", fontSize = 14.sp, fontWeight = FontWeight.Bold)
                                             }
                                         }
-                                    ) {
-                                        Text("닫기", fontSize = 13.sp)
+
+                                        // 삭제 버튼 (항상 표시)
+                                        OutlinedButton(
+                                            onClick = {
+                                                deleteAskDialog.value = true
+                                            },
+                                            modifier = Modifier.weight(1f),
+                                            colors = ButtonDefaults.outlinedButtonColors(
+                                                contentColor = Color(0xFFEF4444)
+                                            ),
+                                            border = BorderStroke(1.dp, Color(0xFFEF4444)),
+                                            shape = RoundedCornerShape(8.dp)
+                                        ) {
+                                            Icon(
+                                                imageVector = Icons.Rounded.Delete,
+                                                contentDescription = null,
+                                                modifier = Modifier.size(18.dp)
+                                            )
+                                            Spacer(modifier = Modifier.width(6.dp))
+                                            Text("삭제", fontSize = 14.sp)
+                                        }
                                     }
+                                }
+
+                                Spacer(modifier = Modifier.height(16.dp))
+                                HorizontalDivider(color = Color(0xFFE5E7EB))
+                                Spacer(modifier = Modifier.height(16.dp))
+
+                                // 메모 섹션 (액션 버튼 아래로 이동)
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Rounded.Edit,
+                                        contentDescription = null,
+                                        tint = Color(0xFF6B7280),
+                                        modifier = Modifier.size(16.dp)
+                                    )
+                                    Text(
+                                        text = "메모",
+                                        fontSize = 13.sp,
+                                        color = Color(0xFF6B7280),
+                                        fontWeight = FontWeight.Medium
+                                    )
+                                }
+
+                                Spacer(modifier = Modifier.height(8.dp))
+
+                                OutlinedTextField(
+                                    value = memoTextInput,
+                                    onValueChange = {
+                                        if (it.length <= 100) {
+                                            memoTextInput = it
+                                        } else {
+                                            focusManager.clearFocus()
+                                            onEvent(RecordListEvent.SnackBarEvent("100자 이하로 작성해주세요"))
+                                        }
+                                    },
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .focusRequester(focusRequester),
+                                    placeholder = {
+                                        Text("메모를 입력하세요", fontSize = 13.sp)
+                                    },
+                                    textStyle = TextStyle(
+                                        fontSize = 13.sp,
+                                        color = Color(0xFF1F2937)
+                                    ),
+                                    colors = TextFieldDefaults.outlinedTextFieldColors(
+                                        focusedBorderColor = Color(0xFF6366F1),
+                                        unfocusedBorderColor = Color(0xFFE5E7EB)
+                                    )
+                                )
+
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(top = 4.dp),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text(
+                                        text = "${memoTextInput.length}/100",
+                                        fontSize = 11.sp,
+                                        color = Color(0xFF9CA3AF)
+                                    )
 
                                     Button(
                                         onClick = {
@@ -516,12 +555,57 @@ fun RecordListRowView(
                                         colors = ButtonDefaults.buttonColors(
                                             containerColor = Color(0xFF6366F1)
                                         ),
-                                        shape = RoundedCornerShape(8.dp)
+                                        shape = RoundedCornerShape(8.dp),
+                                        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
                                     ) {
+                                        Icon(
+                                            imageVector = Icons.Rounded.Save,
+                                            contentDescription = null,
+                                            modifier = Modifier.size(16.dp)
+                                        )
+                                        Spacer(modifier = Modifier.width(4.dp))
                                         Text("저장", fontSize = 13.sp)
                                     }
                                 }
                             }
+                        }
+                    }
+                }
+
+                // 그룹 변경 드롭다운 (이것만 유지)
+                Box {
+                    DropdownMenu(
+                        scrollState = rememberScrollState(),
+                        modifier = Modifier
+                            .wrapContentHeight()
+                            .heightIn(max = 200.dp),
+                        expanded = groupDropdownExpanded,
+                        onDismissRequest = { groupDropdownExpanded = false }
+                    ) {
+                        DropdownMenuItem(
+                            text = {
+                                Text(
+                                    text = "새그룹",
+                                    color = Color(0xFF6366F1),
+                                    fontSize = 13.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            },
+                            onClick = {
+                                groupAddDialog = true
+                            }
+                        )
+
+                        HorizontalDivider()
+
+                        groupList.forEach { groupName ->
+                            DropdownMenuItem(
+                                text = { Text(text = groupName, fontSize = 13.sp) },
+                                onClick = {
+                                    onEvent(RecordListEvent.AddGroup(data, groupName))
+                                    groupDropdownExpanded = false
+                                }
+                            )
                         }
                     }
                 }
@@ -538,7 +622,6 @@ fun RecordListRowView(
                         onEvent(RecordListEvent.AddGroup(data, name))
                         groupAddDialog = false
                         groupDropdownExpanded = false
-                        dropdownExpanded = false
                     }
                 )
             }

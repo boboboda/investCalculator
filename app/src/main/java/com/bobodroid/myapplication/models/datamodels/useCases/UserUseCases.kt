@@ -228,7 +228,7 @@ class LocalExistCheckUseCase @Inject constructor(
             val serverUser = syncWithServer(user)
             Log.d(TAG("LocalExistCheckUseCase", "invoke"), "서버 동기화 완료: $serverUser")
 
-            val userDataType = UserDataType(
+            val userDataType = UserData(
                 localUserData = user,
                 exchangeRates = serverUser?.data?.let { serverData ->
                     TargetRates(
@@ -329,10 +329,10 @@ class LocalExistCheckUseCase @Inject constructor(
     }
 }
 
-data class UserDataType (
-        val localUserData: LocalUserData,
-        val exchangeRates: TargetRates? = null
-        )
+data class UserData(
+    val localUserData: LocalUserData,
+    val exchangeRates: TargetRates? = null
+)
 
 private suspend fun serverUpdateUser(user: LocalUserData): UserResponse? {
     return try {

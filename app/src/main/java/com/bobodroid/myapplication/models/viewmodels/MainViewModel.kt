@@ -552,6 +552,14 @@ class MainViewModel @Inject constructor(
                 }
             }
 
+            is MainEvent.HideGroupChangeBottomSheet -> {
+                viewModelScope.launch {
+                    _mainUiState.update {
+                        it.copy(showGroupChangeBottomSheet = false)
+                    }
+                }
+            }
+
             MainEvent.HideDatePickerDialog -> {
                 _mainUiState.update {
                     it.copy(
@@ -650,6 +658,29 @@ class MainViewModel @Inject constructor(
                            _recordListUiState.emit(updatedState)
                        }
                    }
+                }
+
+                is RecordListEvent.ShowGroupChangeBottomSheet -> {
+                    viewModelScope.launch {
+                        _recordListUiState.update {
+                            it.copy(selectedRecord = event.data)
+                        }
+                        _mainUiState.update {
+                            it.copy(showGroupChangeBottomSheet = true)
+                        }
+                    }
+                }
+
+                is RecordListEvent.UpdateRecordCategory -> {
+                    viewModelScope.launch {
+                        // 기록 업데이트 로직 (기존에 있을 것으로 예상)
+                        recordUseCase.updateRecordCategory(event.record, event.groupName, _mainUiState.value.selectedCurrencyType)
+
+                        // 바텀시트 닫기
+                        _mainUiState.update {
+                            it.copy(showGroupChangeBottomSheet = false)
+                        }
+                    }
                 }
 
                 is RecordListEvent.ShowEditBottomSheet -> {
@@ -758,7 +789,8 @@ data class MainUiState (
         val showAddBottomSheet: Boolean = false,
         val showGroupAddDialog: Boolean = false,
         val showDatePickerDialog: Boolean = false,
-        val showDateRangeDialog: Boolean = false
+        val showDateRangeDialog: Boolean = false,
+        val showGroupChangeBottomSheet: Boolean = false,
 )
 
 

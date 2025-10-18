@@ -12,6 +12,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.unit.dp
+import com.bobodroid.myapplication.components.EmptyRecordView
 import com.bobodroid.myapplication.components.RecordHeader
 import com.bobodroid.myapplication.models.datamodels.roomDb.CurrencyType
 import com.bobodroid.myapplication.models.viewmodels.CurrencyRecordState
@@ -46,56 +47,82 @@ fun RecordListView(
     val screenHeight = configuration.screenHeightDp.dp
     val bottomPadding = screenHeight * 0.6f  // 화면 높이의 60%
 
+
+    // 🎯 기록이 없는지 확인
+    val isEmpty = filterRecord.values.all { it.isEmpty() }
+    val currencyName = when(currencyType) {
+        CurrencyType.USD -> "달러"
+        CurrencyType.JPY -> "엔화"
+    }
+
+
     Column {
-        LazyColumn(
-            modifier = Modifier.fillMaxWidth(),
-            state = scrollState,
-            contentPadding = PaddingValues(vertical = 8.dp)
-        ) {
-            filterRecord.onEachIndexed { groupIndex: Int, (key, items) ->
-                stickyHeader {
-                    RecordHeader(key = key)
+
+        if (isEmpty) {
+            // 🎯 빈 화면 표시
+            EmptyRecordView(
+                currencyName = currencyName,
+                onAddClick = {
+                    // 추가 버튼 클릭 이벤트
+                    onEvent(RecordListEvent.ShowAddBottomSheet)
                 }
-
-                items(
-                    count = items.size,
-                    key = { index -> items[index].id!! }
-                ) { index ->
-                    val record = items[index]
-
-                    var accumulatedCount = 1
-                    (0..<groupIndex).forEach { foreachIndex ->
-                        val currentKey = filterRecord.keys.elementAt(foreachIndex)
-                        val elements = filterRecord.getValue(currentKey)
-                        accumulatedCount += elements.count()
+            )
+        } else {
+            LazyColumn(
+                modifier = Modifier.fillMaxWidth(),
+                state = scrollState,
+                contentPadding = PaddingValues(vertical = 8.dp)
+            ) {
+                filterRecord.onEachIndexed { groupIndex: Int, (key, items) ->
+                    stickyHeader {
+                        RecordHeader(key = key)
                     }
 
-                    val finalIndex = index + accumulatedCount + groupIndex
+                    items(
+                        count = items.size,
+                        key = { index -> items[index].id!! }
+                    ) { index ->
+                        val record = items[index]
 
-                    RecordListRowView(
-                        currencyType = currencyType,
-                        data = record,
-                        sellState = record.recordColor!!,
-                        groupList = groupList,
-                        onEvent = { event ->
-                            onEvent(event)
-                        },
-                        scrollEvent = {
-                            coroutineScope.launch {
-                                delay(300)
-                                scrollState.animateScrollToItem(finalIndex, -55)
-                            }
+                        var accumulatedCount = 1
+                        (0..<groupIndex).forEach { foreachIndex ->
+                            val currentKey = filterRecord.keys.elementAt(foreachIndex)
+                            val elements = filterRecord.getValue(currentKey)
+                            accumulatedCount += elements.count()
                         }
-                    )
 
-                    Divider()
+                        val finalIndex = index + accumulatedCount + groupIndex
+
+                        RecordListRowView(
+                            currencyType = currencyType,
+                            data = record,
+                            sellState = record.recordColor!!,
+                            groupList = groupList,
+                            onEvent = { event ->
+                                onEvent(event)
+                            },
+                            scrollEvent = {
+                                coroutineScope.launch {
+                                    delay(300)
+                                    scrollState.animateScrollToItem(finalIndex, -55)
+                                }
+                            }
+                        )
+
+                        Divider()
+                    }
+                }
+
+                // 🎯 충분한 하단 여백 - 항상 스크롤 가능하도록
+                item {
+                    Spacer(modifier = Modifier.height(bottomPadding))
                 }
             }
-
-            // 🎯 충분한 하단 여백 - 항상 스크롤 가능하도록
-            item {
-                Spacer(modifier = Modifier.height(bottomPadding))
-            }
         }
+
+
+
+
+
     }
 }

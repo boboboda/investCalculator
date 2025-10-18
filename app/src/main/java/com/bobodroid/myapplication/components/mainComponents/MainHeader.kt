@@ -34,7 +34,8 @@ fun MainHeader(
     updateCurrentForeignCurrency: (CurrencyType) -> Unit,
     hideSellRecordState: Boolean,
     onHide:(Boolean) -> Unit,
-    isCollapsed: Boolean = false
+    isCollapsed: Boolean = false,
+    onToggleClick: () -> Unit  // ✅ 추가: 토글 버튼 클릭 핸들러
 ) {
     var dropdownExpanded by remember { mutableStateOf(false) }
 
@@ -134,7 +135,7 @@ fun MainHeader(
                             }
                         }
 
-                        // 오른쪽: 수익
+                        // 중앙: 수익
                         if (hasData) {
                             Row(
                                 verticalAlignment = Alignment.CenterVertically,
@@ -169,6 +170,18 @@ fun MainHeader(
                                 }
                             }
                         }
+
+                        // ✅ 추가: 우측 토글 버튼 (확대)
+                        IconButton(
+                            onClick = onToggleClick,
+                            modifier = Modifier.size(32.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Rounded.ExpandMore,
+                                contentDescription = "헤더 펼치기",
+                                tint = Color(0xFF6366F1)
+                            )
+                        }
                     }
                 }
             } else {
@@ -193,7 +206,7 @@ fun MainHeader(
                                     .fillMaxWidth()
                                     .padding(24.dp)
                             ) {
-                                // 카드 헤더
+                                // ✅ 수정: 카드 헤더에 토글 버튼 추가
                                 Row(
                                     modifier = Modifier.fillMaxWidth(),
                                     horizontalArrangement = Arrangement.SpaceBetween,
@@ -206,52 +219,69 @@ fun MainHeader(
                                         fontWeight = FontWeight.Bold
                                     )
 
-                                    Box {
-                                        Surface(
-                                            shape = RoundedCornerShape(12.dp),
-                                            color = Color.White.copy(alpha = 0.2f),
-                                            onClick = { dropdownExpanded = true }
-                                        ) {
-                                            Row(
-                                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
-                                                verticalAlignment = Alignment.CenterVertically,
-                                                horizontalArrangement = Arrangement.spacedBy(4.dp)
+                                    Row(
+                                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Box {
+                                            Surface(
+                                                shape = RoundedCornerShape(12.dp),
+                                                color = Color.White.copy(alpha = 0.2f),
+                                                onClick = { dropdownExpanded = true }
                                             ) {
-                                                Text(
-                                                    text = when(mainUiState.selectedCurrencyType) {
-                                                        CurrencyType.USD -> "USD"
-                                                        CurrencyType.JPY -> "JPY"
-                                                    },
-                                                    color = Color.White,
-                                                    fontSize = 14.sp,
-                                                    fontWeight = FontWeight.Bold
+                                                Row(
+                                                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                                                    verticalAlignment = Alignment.CenterVertically,
+                                                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                                                ) {
+                                                    Text(
+                                                        text = when(mainUiState.selectedCurrencyType) {
+                                                            CurrencyType.USD -> "USD"
+                                                            CurrencyType.JPY -> "JPY"
+                                                        },
+                                                        color = Color.White,
+                                                        fontSize = 14.sp,
+                                                        fontWeight = FontWeight.Bold
+                                                    )
+                                                    Icon(
+                                                        imageVector = Icons.Default.ArrowDropDown,
+                                                        contentDescription = null,
+                                                        tint = Color.White,
+                                                        modifier = Modifier.size(20.dp)
+                                                    )
+                                                }
+                                            }
+
+                                            DropdownMenu(
+                                                expanded = dropdownExpanded,
+                                                onDismissRequest = { dropdownExpanded = false }
+                                            ) {
+                                                DropdownMenuItem(
+                                                    text = { Text("USD") },
+                                                    onClick = {
+                                                        updateCurrentForeignCurrency(CurrencyType.USD)
+                                                        dropdownExpanded = false
+                                                    }
                                                 )
-                                                Icon(
-                                                    imageVector = Icons.Default.ArrowDropDown,
-                                                    contentDescription = null,
-                                                    tint = Color.White,
-                                                    modifier = Modifier.size(20.dp)
+                                                DropdownMenuItem(
+                                                    text = { Text("JPY") },
+                                                    onClick = {
+                                                        updateCurrentForeignCurrency(CurrencyType.JPY)
+                                                        dropdownExpanded = false
+                                                    }
                                                 )
                                             }
                                         }
 
-                                        DropdownMenu(
-                                            expanded = dropdownExpanded,
-                                            onDismissRequest = { dropdownExpanded = false }
+                                        // ✅ 추가: 토글 버튼 (축소)
+                                        IconButton(
+                                            onClick = onToggleClick,
+                                            modifier = Modifier.size(32.dp)
                                         ) {
-                                            DropdownMenuItem(
-                                                text = { Text("USD") },
-                                                onClick = {
-                                                    updateCurrentForeignCurrency(CurrencyType.USD)
-                                                    dropdownExpanded = false
-                                                }
-                                            )
-                                            DropdownMenuItem(
-                                                text = { Text("JPY") },
-                                                onClick = {
-                                                    updateCurrentForeignCurrency(CurrencyType.JPY)
-                                                    dropdownExpanded = false
-                                                }
+                                            Icon(
+                                                imageVector = Icons.Rounded.ExpandLess,
+                                                contentDescription = "헤더 접기",
+                                                tint = Color.White
                                             )
                                         }
                                     }
@@ -306,8 +336,6 @@ fun MainHeader(
                                                 fontSize = 11.sp
                                             )
                                         }
-
-
                                     }
 
                                     Spacer(modifier = Modifier.width(24.dp))

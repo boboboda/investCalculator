@@ -22,8 +22,10 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
@@ -42,6 +44,8 @@ import com.bobodroid.myapplication.routes.MyPageRoute
 import com.bobodroid.myapplication.routes.RouteAction
 import kotlinx.coroutines.launch
 import java.text.NumberFormat
+import java.time.LocalDate
+import java.time.temporal.ChronoUnit
 import java.util.*
 
 @Composable
@@ -170,7 +174,7 @@ fun ImprovedMyPageView(
         item {
             ProfileHeader(
                 localUser = localUser,
-                onEditClick = { myPageRouteAction.navTo(MyPageRoute.CreateUser) }
+                onProfileClick = {myPageRouteAction.navTo(MyPageRoute.CreateUser)}
             )
         }
 
@@ -216,9 +220,20 @@ fun ImprovedMyPageView(
 @Composable
 fun ProfileHeader(
     localUser: LocalUserData,
-    onEditClick: () -> Unit
+    onProfileClick: () -> Unit  // AccountManageView로 이동하는 콜백
 ) {
-    val displayId = localUser.id.toString()
+    // 소셜 연동 여부 확인
+    val isSocialLinked = localUser.socialType != "NONE" && localUser.socialId != null
+
+    // 표시할 이름 결정
+    val displayName = when {
+        !localUser.nickname.isNullOrEmpty() -> localUser.nickname!!
+        isSocialLinked -> localUser.email?.substringBefore("@") ?: "사용자"
+        else -> "게스트 사용자"
+    }
+
+    // UUID 축약 (첫 8자리)
+    val shortId = localUser.id.toString().take(8)
 
     val gradientColors = listOf(
         Color(0xFF667EEA),
@@ -228,7 +243,8 @@ fun ProfileHeader(
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(16.dp),
+            .padding(16.dp)
+            .clickable { onProfileClick() },  // 카드 전체 클릭 가능
         shape = RoundedCornerShape(20.dp),
         elevation = CardDefaults.cardElevation(8.dp)
     ) {
@@ -243,54 +259,76 @@ fun ProfileHeader(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
+                // 왼쪽: 프로필 정보
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(16.dp)
+                    horizontalArrangement = Arrangement.spacedBy(16.dp),
+                    modifier = Modifier.weight(1f)
                 ) {
                     // 프로필 아이콘
                     Box(
                         modifier = Modifier
-                            .size(64.dp)
-                            .clip(CircleShape)
-                            .background(Color.White.copy(alpha = 0.3f)),
+                            .size(56.dp)
+                            .background(
+                                color = Color.White.copy(alpha = 0.3f),
+                                shape = CircleShape
+                            ),
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(
-                            imageVector = Icons.Default.Person,
+                            imageVector = Icons.Rounded.Person,
                             contentDescription = "Profile",
                             tint = Color.White,
                             modifier = Modifier.size(32.dp)
                         )
                     }
 
+                    // 사용자 정보
                     Column {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Text(
+                                text = displayName,
+                                fontSize = 20.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color.White
+                            )
+
+                            // 게스트 뱃지
+                            if (!isSocialLinked) {
+                                Surface(
+                                    shape = RoundedCornerShape(12.dp),
+                                    color = Color.White.copy(alpha = 0.3f)
+                                ) {
+                                    Text(
+                                        text = "게스트",
+                                        fontSize = 11.sp,
+                                        fontWeight = FontWeight.Medium,
+                                        color = Color.White,
+                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                                    )
+                                }
+                            }
+                        }
+
+                        // ID 표시 (축약)
                         Text(
-                            text = displayId,
-                            color = Color.White,
-                            fontSize = 20.sp,
-                            fontWeight = FontWeight.Bold
-                        )
-                        Text(
-                            text = "환율 투자자",
-                            color = Color.White.copy(alpha = 0.8f),
-                            fontSize = 14.sp
+                            text = "ID: $shortId...",
+                            fontSize = 13.sp,
+                            color = Color.White.copy(alpha = 0.8f)
                         )
                     }
                 }
 
-                IconButton(
-                    onClick = onEditClick,
-                    modifier = Modifier
-                        .size(40.dp)
-                        .clip(CircleShape)
-                        .background(Color.White.copy(alpha = 0.2f))
-                ) {
-                    Icon(
-                        imageVector = Icons.Rounded.Edit,
-                        contentDescription = "Edit",
-                        tint = Color.White
-                    )
-                }
+                // 오른쪽: 화살표 아이콘
+                Icon(
+                    imageVector = Icons.Rounded.ChevronRight,
+                    contentDescription = "자세히 보기",
+                    tint = Color.White,
+                    modifier = Modifier.size(28.dp)
+                )
             }
         }
     }
@@ -812,7 +850,7 @@ fun GoalSettingDialog(
                         unfocusedContainerColor = Color(0xFFF9FAFB)
                     ),
                     shape = RoundedCornerShape(12.dp),
-                    textStyle = androidx.compose.ui.text.TextStyle(
+                    textStyle = TextStyle(
                         fontSize = 18.sp,
                         fontWeight = FontWeight.Medium
                     )
@@ -1065,9 +1103,9 @@ fun ActivityTimelineItem(activity: RecentActivity) {  // ⭐ RecentActivity 사�
 // 날짜를 "오늘", "어제", "3일 전" 형식으로 변환
 private fun formatActivityDate(dateString: String): String {
     return try {
-        val today = java.time.LocalDate.now()
-        val activityDate = java.time.LocalDate.parse(dateString)
-        val daysBetween = java.time.temporal.ChronoUnit.DAYS.between(activityDate, today).toInt()
+        val today = LocalDate.now()
+        val activityDate = LocalDate.parse(dateString)
+        val daysBetween = ChronoUnit.DAYS.between(activityDate, today).toInt()
 
         when (daysBetween) {
             0 -> "오늘"

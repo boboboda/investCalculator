@@ -11,11 +11,11 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.bobodroid.myapplication.extensions.toLongWon
-import com.bobodroid.myapplication.ui.theme.BottomSheetSelectedColor
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -32,23 +32,33 @@ fun BottomSheetNumberField(
         title.toLong().toLongWon()
     }
 
-    val cardColor = if(selectedState) CardDefaults.cardColors(BottomSheetSelectedColor) else CardDefaults.cardColors(
-        Color.White)
+    // 🎨 GroupChangeBottomSheet 스타일 적용
+    val cardColor = if(selectedState) {
+        CardDefaults.cardColors(Color(0xFFEEF2FF)) // 연한 보라 (선택 시)
+    } else {
+        CardDefaults.cardColors(Color(0xFFF9FAFB)) // 연한 회색 (기본)
+    }
+
+    val textColor = if(title == "") Color(0xFF9CA3AF) else Color(0xFF1F2937)
 
     Card(
         modifier = modifier
-            .padding(10.dp)
-            .height(45.dp),
-        border = BorderStroke(1.dp, Color.Black),
+            .fillMaxWidth()
+            .padding(horizontal = 0.dp)
+            .height(56.dp),
+        border = BorderStroke(1.dp, if(selectedState) Color(0xFF6366F1) else Color(0xFFE5E7EB)),
         colors = cardColor,
-
+        elevation = CardDefaults.cardElevation(0.dp),
+        shape = androidx.compose.foundation.shape.RoundedCornerShape(12.dp),
         onClick = onClicked
     ) {
         Text(
             text = formatTitle,
-            fontSize = 18.sp,
+            fontSize = 15.sp,
+            fontWeight = if(title == "") FontWeight.Normal else FontWeight.Medium,
+            color = textColor,
             modifier = Modifier
-                .padding(3.dp, top = 10.dp)
+                .padding(vertical = 18.dp)
                 .fillMaxWidth(),
             textAlign = TextAlign.Center
         )
@@ -68,23 +78,33 @@ fun BottomSheetRateNumberField(
 
     val formatTile = if (title == "") placeholder else title
 
-    val cardColor = if(selectedState) CardDefaults.cardColors(BottomSheetSelectedColor) else CardDefaults.cardColors(Color.White)
+    // 🎨 GroupChangeBottomSheet 스타일 적용
+    val cardColor = if(selectedState) {
+        CardDefaults.cardColors(Color(0xFFEEF2FF)) // 연한 보라 (선택 시)
+    } else {
+        CardDefaults.cardColors(Color(0xFFF9FAFB)) // 연한 회색 (기본)
+    }
 
+    val textColor = if(title == "") Color(0xFF9CA3AF) else Color(0xFF1F2937)
 
     Card(
         modifier = modifier
             .fillMaxWidth()
-            .height(45.dp),
-        border = BorderStroke(1.dp, Color.Black),
+            .padding(horizontal = 0.dp)
+            .height(56.dp),
+        border = BorderStroke(1.dp, if(selectedState) Color(0xFF6366F1) else Color(0xFFE5E7EB)),
         colors = cardColor,
-
+        elevation = CardDefaults.cardElevation(0.dp),
+        shape = androidx.compose.foundation.shape.RoundedCornerShape(12.dp),
         onClick = onClicked
     ) {
         Text(
             text = formatTile,
-            fontSize = 18.sp,
+            fontSize = 15.sp,
+            fontWeight = if(title == "") FontWeight.Normal else FontWeight.Medium,
+            color = textColor,
             modifier = Modifier
-                .padding(3.dp, top = 10.dp)
+                .padding(vertical = 18.dp)
                 .fillMaxWidth(),
             textAlign = TextAlign.Center
         )

@@ -26,8 +26,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.bobodroid.myapplication.extensions.toLongWon
 import com.bobodroid.myapplication.util.CalculateAction
-import com.bobodroid.myapplication.ui.theme.ActionButtonBgColor
-import com.bobodroid.myapplication.ui.theme.DollarColor
 import java.text.NumberFormat
 import androidx.compose.material.SnackbarHostState
 import androidx.compose.ui.unit.Dp
@@ -56,19 +54,24 @@ fun PopupNumberView(
     val scope = rememberCoroutineScope()
 
 
-    Card(modifier = Modifier
-        .heightIn(max = 450.dp)
-        .padding(15.dp)
-        .padding(bottom = 25.dp),
-        colors = CardDefaults.cardColors(containerColor = DollarColor)
+    Card(
+        modifier = Modifier
+            .heightIn(max = 450.dp)
+            .padding(15.dp)
+            .padding(bottom = 25.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = Color(0xFFF9FAFB) // ← DollarColor → GroupChangeBottomSheet 색상
+        ),
+        shape = RoundedCornerShape(16.dp),
+        elevation = CardDefaults.cardElevation(2.dp)
     ) {
 
         BoxWithConstraints(
             modifier = Modifier.fillMaxSize()
         ) {
-
-            val availableHeight = maxHeight
-            val availableWidth = maxWidth
+            // ✅ this를 명시적으로 사용
+            val availableHeight = this.maxHeight
+            val availableWidth = this.maxWidth
 
             val horizontalSize = (availableWidth - (8.dp * 3)) / 4
             val verticalSize = (availableHeight - (8.dp * 4)) / 5
@@ -85,10 +88,15 @@ fun PopupNumberView(
                 verticalArrangement = Arrangement.spacedBy(8.dp),
                 content = {
 
-                    item(span = { GridItemSpan(maxLineSpan) }) {
+                    item(span = {
+                        GridItemSpan(maxLineSpan)
+                    }) {
+
                         Row(
                             verticalAlignment = Alignment.Bottom,
-                            horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End)) {
+                            horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End)
+                        ) {
+
                             Text(
                                 text = "$inputMoney",
                                 fontSize = 40.sp,
@@ -96,32 +104,38 @@ fun PopupNumberView(
                                 textAlign = TextAlign.Center,
                                 lineHeight = 45.sp,
                                 maxLines = 1,
-                                color = Color.Black
+                                color = Color(0xFF1F2937) // ← Color.Black → GroupChangeBottomSheet 색상
                             )
                         }
+
+
                     }
 
                     item(span = {
-                        GridItemSpan(2)
+                        GridItemSpan(1)
                     }) {
                         ActionButton(
                             itemSize,
                             action = CalculateAction.AllClear,
                             onClicked = {
-                                UserInput = ""})
-                    }
-
-                    item(){
-                        ActionButton(
-                            itemSize,
-                            action = CalculateAction.Del,
-                            onClicked = {
-                                UserInput = if(UserInput.length == 1) "0" else UserInput.dropLast(1)
+                                UserInput = ""
                             })
                     }
 
                     item(span = {
-                        GridItemSpan(2)
+                        GridItemSpan(1)
+                    }){
+                        ActionButton(
+                            itemSize,
+                            action = CalculateAction.Del,
+                            onClicked = {
+                                UserInput = if(UserInput.toString().length == 1) "0" else UserInput.dropLast(1)
+                            })
+                    }
+
+
+                    item(span = {
+                        GridItemSpan(3)
                     }) {
                         ActionButton(
                             itemSize,
@@ -129,19 +143,17 @@ fun PopupNumberView(
                             onClicked = { if (UserInput.isNotEmpty())
                             {
                                 event(PopupEvent.OnClicked(UserInput))
-
                             } else {return@ActionButton }
                             }
 
                         )
                     }
 
-
                     items(buttons) { aButtons ->
                         NumberButton(
                             itemSize,
-                            aButtons,
-                            onClicked = {
+                            aButtons, onClicked = {
+
                                 scope.launch {
                                     if(UserInput.length >= limitNumberLength) {
                                         event(PopupEvent.SnackBarEvent("너무 큰 수를 입력하셨습니다.\n ${limitNumberLength}자리 이하 숫자까지만 가능합니다."))
@@ -198,15 +210,15 @@ fun PopupNumberView(
                                         UserInput = ""
                                     } else {
 
-                                        if(UserInput == "") {
+                                        if(UserInput == "")
+                                        {
                                             event(PopupEvent.SnackBarEvent("0원은 입력할 수 없습니다."))
                                             UserInput = ""
-                                        } else {
-                                            UserInput += "00"
-                                        }
+
+                                        } else UserInput += "00"
                                     }
                                 }
-                            }, 20)
+                            }, 30)
                     }
 
                     item(span = {
@@ -236,12 +248,11 @@ fun PopupNumberView(
                             }, 20)
                     }
 
-
+                    // 하단 여백
                     item(span = {
                         GridItemSpan(5)
                     }) {
-                        Row(modifier = Modifier.height(5.dp)) {
-                        }
+                        Spacer(modifier = Modifier.height(8.dp))
                     }
 
 
@@ -252,25 +263,29 @@ fun PopupNumberView(
     }
 
 
-
-
-
-
 }
 
 @Composable
-fun ActionButton(itemSize: Dp, action: CalculateAction, onClicked: (() -> Unit)? = null)  {
+fun ActionButton(
+    itemSize: Dp,
+    action: CalculateAction,
+    onClicked: (() -> Unit)? = null
+) {
     Card(
         modifier = Modifier.size(itemSize),
         colors = CardDefaults.cardColors(
-            containerColor = ActionButtonBgColor
+            containerColor = Color(0xFFEEF2FF) // ← ActionButtonBgColor → 연한 보라
         ),
+        shape = RoundedCornerShape(12.dp),
+        elevation = CardDefaults.cardElevation(0.dp),
         onClick = {
             onClicked?.invoke()
         }
     ) {
-        Box(modifier = Modifier.fillMaxSize(),
-            contentAlignment = Alignment.Center) {
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center
+        ) {
             AutoSizeText(
                 value = action.symbol,
                 fontSize = 30.sp,
@@ -278,34 +293,42 @@ fun ActionButton(itemSize: Dp, action: CalculateAction, onClicked: (() -> Unit)?
                 modifier = Modifier
                     .padding(16.dp),
                 maxLines = 1,
-                minFontSize = 12.sp,
-                color = Color.Black)
+                minFontSize = 15.sp,
+                color = Color(0xFF1F2937) // ← Color.Black → GroupChangeBottomSheet 색상
+            )
         }
-
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun NumberButton(
     itemSize: Dp,
     number: String,
-    onClicked: () -> Unit) {
+    onClicked: () -> Unit
+) {
     Card(
         modifier = Modifier.size(itemSize),
+        colors = CardDefaults.cardColors(
+            containerColor = Color.White
+        ),
+        shape = RoundedCornerShape(12.dp),
+        elevation = CardDefaults.cardElevation(0.dp),
         onClick = onClicked
     ) {
-        Box(modifier = Modifier.fillMaxSize(),
-            contentAlignment = Alignment.Center) {
-        AutoSizeText(
-            value = number,
-            fontSize = 30.sp,
-            fontWeight = FontWeight.Bold,
-            modifier = Modifier
-                .padding(16.dp),
-            maxLines = 1,
-            minFontSize = 12.sp,
-            color = Color.Black)
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center
+        ) {
+            AutoSizeText(
+                value = number,
+                fontSize = 30.sp,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier
+                    .padding(16.dp),
+                maxLines = 1,
+                minFontSize = 15.sp,
+                color = Color(0xFF1F2937) // ← Color.Black → GroupChangeBottomSheet 색상
+            )
         }
     }
 }
@@ -313,10 +336,17 @@ fun NumberButton(
 @Composable
 fun NumberButtonBottom(
     itemSize: Dp,
-    number: String, onClicked: () -> Unit, fontSize: Int) {
+    number: String,
+    onClicked: () -> Unit,
+    fontSize: Int
+) {
     Card(
-        modifier = Modifier
-            .size(itemSize),
+        modifier = Modifier.size(itemSize),
+        colors = CardDefaults.cardColors(
+            containerColor = Color.White
+        ),
+        shape = RoundedCornerShape(12.dp),
+        elevation = CardDefaults.cardElevation(0.dp),
         onClick = onClicked
     ) {
         Box(
@@ -328,10 +358,10 @@ fun NumberButtonBottom(
                 fontSize = fontSize.sp,
                 fontWeight = FontWeight.Bold,
                 modifier = Modifier
-                    .padding(16.dp),
+                    .padding(8.dp),
                 maxLines = 1,
-                minFontSize = 15.sp,
-                color = Color.Black
+                minFontSize = 10.sp,
+                color = Color(0xFF1F2937) // ← Color.Black → GroupChangeBottomSheet 색상
             )
         }
     }
@@ -356,18 +386,24 @@ fun FloatPopupNumberView(
     var inputMoney = if(UserInput == "") "" else "${UserInput}"
 
 
-    Card(modifier = Modifier.heightIn(max = 450.dp)
-        .padding(15.dp)
-        .padding(bottom = 25.dp),
-        colors = CardDefaults.cardColors(containerColor = DollarColor)
+    Card(
+        modifier = Modifier
+            .heightIn(max = 450.dp)
+            .padding(15.dp)
+            .padding(bottom = 25.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = Color(0xFFF9FAFB) // ← DollarColor → GroupChangeBottomSheet 색상
+        ),
+        shape = RoundedCornerShape(16.dp),
+        elevation = CardDefaults.cardElevation(2.dp)
     ) {
 
         BoxWithConstraints(
             modifier = Modifier.fillMaxSize()
         ) {
-
-            val availableHeight = maxHeight
-            val availableWidth = maxWidth
+            // ✅ this를 명시적으로 사용
+            val availableHeight = this.maxHeight
+            val availableWidth = this.maxWidth
 
             val horizontalSize = (availableWidth - (8.dp * 3)) / 4
             val verticalSize = (availableHeight - (8.dp * 4)) / 5
@@ -396,7 +432,7 @@ fun FloatPopupNumberView(
                                 textAlign = TextAlign.Center,
                                 lineHeight = 45.sp,
                                 maxLines = 1,
-                                color = Color.Black
+                                color = Color(0xFF1F2937) // ← Color.Black → GroupChangeBottomSheet 색상
                             )
                         }
 
@@ -446,27 +482,27 @@ fun FloatPopupNumberView(
                             itemSize,
                             aButtons, onClicked = {
 
-                            scope.launch {
-                                if(UserInput.length >= 10) {
-                                    event(PopupEvent.SnackBarEvent("너무 큰 수를 입력하셨습니다.\n 열자리 이하 숫자까지만 가능합니다."))
-                                    UserInput = ""
-                                } else {
-                                    if(UserInput == "")
-                                    {
-                                        if(aButtons == "0") {
-                                            event(PopupEvent.SnackBarEvent("0원은 입력할 수 없습니다."))
-                                            UserInput = ""
-                                        } else {
-                                            UserInput += aButtons
-                                        }
-                                    } else UserInput += aButtons
+                                scope.launch {
+                                    if(UserInput.length >= 10) {
+                                        event(PopupEvent.SnackBarEvent("너무 큰 수를 입력하셨습니다.\n 열자리 이하 숫자까지만 가능합니다."))
+                                        UserInput = ""
+                                    } else {
+                                        if(UserInput == "")
+                                        {
+                                            if(aButtons == "0") {
+                                                event(PopupEvent.SnackBarEvent("0원은 입력할 수 없습니다."))
+                                                UserInput = ""
+                                            } else {
+                                                UserInput += aButtons
+                                            }
+                                        } else UserInput += aButtons
+                                    }
                                 }
-                            }
 
 
 
 
-                        }) //숫자 버튼
+                            }) //숫자 버튼
                     }
 
                     item(span = {
@@ -547,12 +583,16 @@ fun FloatPopupNumberView(
 @Composable
 fun FloatActionButton(
     itemSize: Dp,
-    action: CalculateAction, onClicked: (() -> Unit)? = null)  {
+    action: CalculateAction,
+    onClicked: (() -> Unit)? = null
+) {
     Card(
         modifier = Modifier.size(itemSize),
         colors = CardDefaults.cardColors(
-            containerColor = ActionButtonBgColor
+            containerColor = Color(0xFFEEF2FF) // ← ActionButtonBgColor → 연한 보라
         ),
+        shape = RoundedCornerShape(12.dp),
+        elevation = CardDefaults.cardElevation(0.dp),
         onClick = {
             onClicked?.invoke()
         }
@@ -569,7 +609,7 @@ fun FloatActionButton(
                     .padding(16.dp),
                 maxLines = 1,
                 minFontSize = 15.sp,
-                color = Color.Black
+                color = Color(0xFF1F2937) // ← Color.Black → GroupChangeBottomSheet 색상
             )
         }
     }
@@ -578,9 +618,16 @@ fun FloatActionButton(
 @Composable
 fun FloatNumberButton(
     itemSize: Dp,
-    number: String, onClicked: () -> Unit) {
+    number: String,
+    onClicked: () -> Unit
+) {
     Card(
         modifier = Modifier.size(itemSize),
+        colors = CardDefaults.cardColors(
+            containerColor = Color.White
+        ),
+        shape = RoundedCornerShape(12.dp),
+        elevation = CardDefaults.cardElevation(0.dp),
         onClick = onClicked
     ) {
         Box(
@@ -595,7 +642,7 @@ fun FloatNumberButton(
                     .padding(16.dp),
                 maxLines = 1,
                 minFontSize = 15.sp,
-                color = Color.Black
+                color = Color(0xFF1F2937) // ← Color.Black → GroupChangeBottomSheet 색상
             )
         }
     }

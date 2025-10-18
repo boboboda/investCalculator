@@ -19,12 +19,36 @@ class SocialLoginUseCases(
     val googleLogin: GoogleLoginUseCase,
     val kakaoLogin: KakaoLoginUseCase,
     val socialLogout: SocialLogoutUseCase,
+    val unlinkSocial: UnlinkSocialUseCase,  // ✅ 추가
     val syncToServer: SyncToServerUseCase,
     val restoreFromServer: RestoreFromServerUseCase
 )
 
 /**
- * Google 로그인 UseCase
+ * 동기화 결과 sealed class
+ */
+sealed class SyncResult {
+    object Success : SyncResult()
+    data class AlreadyLinked(
+        val currentSocialType: String,
+        val currentEmail: String?,
+        val currentNickname: String?
+    ) : SyncResult()
+    data class Error(val exception: Exception) : SyncResult()
+}
+
+/**
+ * 소셜 연동 충돌 Exception
+ */
+class AlreadyLinkedException(
+    val currentSocialType: String,
+    val currentEmail: String?,
+    val currentNickname: String?,
+    message: String = "이미 다른 소셜 계정이 연동되어 있습니다"
+) : Exception(message)
+
+/**
+ * Google 로그인 UseCase (연동 차단 처리)
  */
 class GoogleLoginUseCase @Inject constructor(
     private val userRepository: UserRepository,
@@ -50,11 +74,24 @@ class GoogleLoginUseCase @Inject constructor(
                 isSynced = false
             )
 
+            // ⚠️ 서버 동기화 시도 (연동 충돌 체크)
+            val syncResult = syncWithServer(updatedUser)
+
+            // ⚠️ 연동 충돌 체크
+            if (syncResult is SyncResult.AlreadyLinked) {
+                return Result.Error(
+                    message = "이미 ${syncResult.currentSocialType}로 연동되어 있습니다",
+                    exception = AlreadyLinkedException(
+                        currentSocialType = syncResult.currentSocialType,
+                        currentEmail = syncResult.currentEmail,
+                        currentNickname = syncResult.currentNickname
+                    )
+                )
+            }
+
             userRepository.localUserUpdate(updatedUser)
 
             Log.d(TAG("GoogleLoginUseCase", "invoke"), "로컬 DB 업데이트 완료")
-
-            syncWithServer(updatedUser)
 
             Result.Success(
                 data = updatedUser,
@@ -70,8 +107,8 @@ class GoogleLoginUseCase @Inject constructor(
         }
     }
 
-    private suspend fun syncWithServer(user: LocalUserData) {
-        try {
+    private suspend fun syncWithServer(user: LocalUserData): SyncResult {
+        return try {
             val userRequest = UserRequest(
                 deviceId = user.id.toString(),
                 socialId = user.socialId,
@@ -87,19 +124,32 @@ class GoogleLoginUseCase @Inject constructor(
                 userRequest = userRequest
             )
 
+            // ⚠️ 연동 충돌 에러 체크
+            if (response.code == "ALREADY_LINKED") {
+                Log.w(TAG("GoogleLoginUseCase", "syncWithServer"), "이미 다른 소셜 계정이 연동되어 있음")
+                return SyncResult.AlreadyLinked(
+                    currentSocialType = response.data?.socialType ?: "UNKNOWN",
+                    currentEmail = response.data?.email,
+                    currentNickname = response.data?.nickname
+                )
+            }
+
             Log.d(TAG("GoogleLoginUseCase", "syncWithServer"), "서버 동기화 성공: ${response.message}")
 
             val syncedUser = user.copy(isSynced = true)
             userRepository.localUserUpdate(syncedUser)
 
+            SyncResult.Success
+
         } catch (e: Exception) {
             Log.e(TAG("GoogleLoginUseCase", "syncWithServer"), "서버 동기화 실패", e)
+            SyncResult.Error(e)
         }
     }
 }
 
 /**
- * Kakao 로그인 UseCase
+ * Kakao 로그인 UseCase (연동 차단 처리)
  */
 class KakaoLoginUseCase @Inject constructor(
     private val userRepository: UserRepository,
@@ -125,11 +175,24 @@ class KakaoLoginUseCase @Inject constructor(
                 isSynced = false
             )
 
+            // ⚠️ 서버 동기화 시도 (연동 충돌 체크)
+            val syncResult = syncWithServer(updatedUser)
+
+            // ⚠️ 연동 충돌 체크
+            if (syncResult is SyncResult.AlreadyLinked) {
+                return Result.Error(
+                    message = "이미 ${syncResult.currentSocialType}로 연동되어 있습니다",
+                    exception = AlreadyLinkedException(
+                        currentSocialType = syncResult.currentSocialType,
+                        currentEmail = syncResult.currentEmail,
+                        currentNickname = syncResult.currentNickname
+                    )
+                )
+            }
+
             userRepository.localUserUpdate(updatedUser)
 
             Log.d(TAG("KakaoLoginUseCase", "invoke"), "로컬 DB 업데이트 완료")
-
-            syncWithServer(updatedUser)
 
             Result.Success(
                 data = updatedUser,
@@ -145,8 +208,8 @@ class KakaoLoginUseCase @Inject constructor(
         }
     }
 
-    private suspend fun syncWithServer(user: LocalUserData) {
-        try {
+    private suspend fun syncWithServer(user: LocalUserData): SyncResult {
+        return try {
             val userRequest = UserRequest(
                 deviceId = user.id.toString(),
                 socialId = user.socialId,
@@ -162,13 +225,26 @@ class KakaoLoginUseCase @Inject constructor(
                 userRequest = userRequest
             )
 
+            // ⚠️ 연동 충돌 에러 체크
+            if (response.code == "ALREADY_LINKED") {
+                Log.w(TAG("KakaoLoginUseCase", "syncWithServer"), "이미 다른 소셜 계정이 연동되어 있음")
+                return SyncResult.AlreadyLinked(
+                    currentSocialType = response.data?.socialType ?: "UNKNOWN",
+                    currentEmail = response.data?.email,
+                    currentNickname = response.data?.nickname
+                )
+            }
+
             Log.d(TAG("KakaoLoginUseCase", "syncWithServer"), "서버 동기화 성공: ${response.message}")
 
             val syncedUser = user.copy(isSynced = true)
             userRepository.localUserUpdate(syncedUser)
 
+            SyncResult.Success
+
         } catch (e: Exception) {
             Log.e(TAG("KakaoLoginUseCase", "syncWithServer"), "서버 동기화 실패", e)
+            SyncResult.Error(e)
         }
     }
 }
@@ -206,21 +282,12 @@ class SocialLogoutUseCase @Inject constructor(
                 }
             }
 
-            val updatedUser = localUserData.copy(
-                socialId = null,
-                socialType = SocialType.NONE.name,
-                email = null,
-                nickname = null,
-                profileUrl = null,
-                isSynced = false
-            )
-
-            userRepository.localUserUpdate(updatedUser)
-
-            Log.d(TAG("SocialLogoutUseCase", "invoke"), "로그아웃 완료")
+            // ⚠️ 주의: 로그아웃은 클라이언트만 처리 (서버 데이터 변경 없음)
+            // 로컬 상태만 초기화
+            Log.d(TAG("SocialLogoutUseCase", "invoke"), "로그아웃 완료 (로컬만)")
 
             Result.Success(
-                data = updatedUser,
+                data = localUserData,  // 데이터 변경 없음
                 message = "로그아웃되었습니다"
             )
 
@@ -228,6 +295,54 @@ class SocialLogoutUseCase @Inject constructor(
             Log.e(TAG("SocialLogoutUseCase", "invoke"), "로그아웃 실패", e)
             Result.Error(
                 message = "로그아웃에 실패했습니다",
+                exception = e
+            )
+        }
+    }
+}
+
+/**
+ * 소셜 연동 해제 UseCase (새로 추가)
+ */
+class UnlinkSocialUseCase @Inject constructor(
+    private val userRepository: UserRepository
+) {
+    suspend operator fun invoke(localUserData: LocalUserData): Result<Unit> {
+        return try {
+            Log.d(TAG("UnlinkSocialUseCase", "invoke"), "소셜 연동 해제 시작")
+
+            // 서버에 연동 해제 요청
+            val response = UserApi.userService.unlinkSocial(
+                deviceId = localUserData.id.toString()
+            )
+
+            if (!response.success) {
+                return Result.Error(message = response.message)
+            }
+
+            // 로컬 DB 업데이트 (소셜 정보만 초기화, 목표환율 등은 유지)
+            val updatedUser = localUserData.copy(
+                socialId = null,
+                socialType = SocialType.NONE.name,
+                email = null,
+                nickname = null,
+                profileUrl = null,
+                isSynced = true
+            )
+
+            userRepository.localUserUpdate(updatedUser)
+
+            Log.d(TAG("UnlinkSocialUseCase", "invoke"), "소셜 연동 해제 완료")
+
+            Result.Success(
+                data = Unit,
+                message = "연동이 해제되었습니다"
+            )
+
+        } catch (e: Exception) {
+            Log.e(TAG("UnlinkSocialUseCase", "invoke"), "연동 해제 실패", e)
+            Result.Error(
+                message = "연동 해제에 실패했습니다",
                 exception = e
             )
         }
@@ -263,6 +378,10 @@ class SyncToServerUseCase @Inject constructor(
                 userRequest = userRequest
             )
 
+            if (!response.success) {
+                return Result.Error(message = response.message)
+            }
+
             val syncedUser = localUserData.copy(isSynced = true)
             userRepository.localUserUpdate(syncedUser)
 
@@ -289,17 +408,23 @@ class SyncToServerUseCase @Inject constructor(
 class RestoreFromServerUseCase @Inject constructor(
     private val userRepository: UserRepository
 ) {
-    suspend operator fun invoke(socialId: String): Result<LocalUserData> {
+    suspend operator fun invoke(socialId: String, socialType: String): Result<LocalUserData> {
         return try {
-            Log.d(TAG("RestoreFromServerUseCase", "invoke"), "데이터 복구 시작: $socialId")
+            Log.d(TAG("RestoreFromServerUseCase", "invoke"), "데이터 복구 시작: $socialId ($socialType)")
 
-            val response = UserApi.userService.getUserRequest(socialId)
+            // ✅ find-by-social 엔드포인트 사용
+            val response = UserApi.userService.findBySocial(
+                socialId = socialId,
+                socialType = socialType
+            )
 
-            val serverData = response.data
-            if (serverData == null) {
-                return Result.Error(message = "서버에 저장된 데이터가 없습니다")
+            if (!response.success || response.data == null) {
+                return Result.Error(message = response.message ?: "서버에 저장된 데이터가 없습니다")
             }
 
+            val serverData = response.data
+
+            // TODO: 서버 데이터를 LocalUserData로 변환 후 로컬 DB에 저장
             Log.d(TAG("RestoreFromServerUseCase", "invoke"), "데이터 복구 완료")
 
             Result.Error(message = "데이터 복구 기능은 추후 구현 예정입니다")

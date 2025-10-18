@@ -93,6 +93,11 @@ fun RecordListRowView(
         }
     }
 
+    // ✅ 원화 금액 포맷팅 추가
+    val wonMoney = BigDecimal(data.money, mathContext)
+        .setScale(0, RoundingMode.DOWN)
+        .toBigDecimalWon()
+
     // 수익 계산
     val profit = if (!data.recordColor!!) {
         if (data.profit.isNullOrEmpty()) "0" else data.profit
@@ -161,10 +166,6 @@ fun RecordListRowView(
                 )
             }
         },
-        // RecordListRowView.kt의 dismissContent 부분만 교체
-
-        // RecordListRowView.kt의 dismissContent 부분만 교체
-
         dismissContent = {
             // 🎨 매도 완료 카드 디자인 개선
             Box(
@@ -206,11 +207,12 @@ fun RecordListRowView(
                     onClick = {
                         if (!itemRowVisible) {
                             coroutineScope.launch {
-                                itemRowVisible = true
+                                itemRowVisible = true  // 열기
                                 scrollEvent()
                             }
                         } else {
                             focusManager.clearFocus()
+                            itemRowVisible = false  // ✅ 닫기 추가
                         }
                     }
                 ) {
@@ -291,11 +293,20 @@ fun RecordListRowView(
                                     fontWeight = FontWeight.Medium
                                 )
                                 Spacer(modifier = Modifier.height(4.dp))
+                                // ✅ 원화 금액 (메인)
                                 Text(
-                                    text = foreignCurrencyMoney,
+                                    text = wonMoney,
                                     fontSize = 15.sp,
                                     color = Color(0xFF1F2937),
                                     fontWeight = FontWeight.Bold
+                                )
+                                Spacer(modifier = Modifier.height(2.dp))
+                                // ✅ 달러/엔화 금액 (보조)
+                                Text(
+                                    text = foreignCurrencyMoney,
+                                    fontSize = 12.sp,
+                                    color = Color(0xFF9CA3AF),
+                                    fontWeight = FontWeight.Normal
                                 )
                             }
 

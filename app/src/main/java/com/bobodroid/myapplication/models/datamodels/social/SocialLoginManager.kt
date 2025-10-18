@@ -22,9 +22,6 @@ import javax.inject.Singleton
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 
-/**
- * 소셜 로그인 결과 데이터
- */
 data class SocialLoginResult(
     val socialId: String,
     val socialType: SocialType,
@@ -33,18 +30,12 @@ data class SocialLoginResult(
     val profileUrl: String?
 )
 
-/**
- * 소셜 로그인 통합 매니저
- */
 @Singleton
 class SocialLoginManager @Inject constructor(
     @ApplicationContext private val context: Context
 ) {
     private var googleSignInClient: GoogleSignInClient? = null
 
-    /**
-     * Google 로그인 클라이언트 초기화
-     */
     private fun initGoogleSignInClient() {
         if (googleSignInClient == null) {
             val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
@@ -56,27 +47,12 @@ class SocialLoginManager @Inject constructor(
         }
     }
 
-    /**
-     * Kakao SDK 초기화
-     * Application의 onCreate에서 한 번만 호출
-     */
-    fun initKakaoSdk() {
-        // TODO: AndroidManifest.xml에 네이티브 앱 키 추가 필요
-        // TODO: build.gradle에 kakao_app_key 추가 필요
-        // com.kakao.sdk.common.KakaoSdk.init(context, "YOUR_KAKAO_APP_KEY")
-        Log.d(TAG("SocialLoginManager", "initKakaoSdk"), "Kakao SDK 초기화 필요")
-    }
-
-    /**
-     * Google 로그인
-     */
     suspend fun loginWithGoogle(activity: Activity): SocialLoginResult = suspendCancellableCoroutine { continuation ->
         initGoogleSignInClient()
 
         val lastSignedInAccount = GoogleSignIn.getLastSignedInAccount(context)
 
         if (lastSignedInAccount != null) {
-            // 이미 로그인되어 있음
             Log.d(TAG("SocialLoginManager", "loginWithGoogle"), "이미 로그인된 계정 사용")
             val result = SocialLoginResult(
                 socialId = lastSignedInAccount.id ?: "",
@@ -87,25 +63,13 @@ class SocialLoginManager @Inject constructor(
             )
             continuation.resume(result)
         } else {
-            // 새로운 로그인 필요
             Log.d(TAG("SocialLoginManager", "loginWithGoogle"), "새 로그인 시작")
-
-            // Activity Result API를 사용하는 방식으로 변경 권장
-            // 여기서는 기존 방식 사용
-            val signInIntent = googleSignInClient?.signInIntent
-
-            // TODO: Activity에서 startActivityForResult 처리 필요
-            // 임시로 에러 반환
             continuation.resumeWithException(
                 IllegalStateException("Google 로그인은 Activity에서 처리해야 합니다")
             )
         }
     }
 
-    /**
-     * Google 로그인 결과 처리
-     * Activity의 onActivityResult에서 호출
-     */
     fun handleGoogleSignInResult(task: Task<GoogleSignInAccount>): SocialLoginResult {
         return try {
             val account = task.getResult(ApiException::class.java)
@@ -123,23 +87,32 @@ class SocialLoginManager @Inject constructor(
     }
 
     /**
-     * Kakao 로그인
+     * ✅ Kakao 로그인 (Activity Context 사용)
      */
     suspend fun loginWithKakao(activity: Activity): SocialLoginResult = suspendCancellableCoroutine { continuation ->
 
         val callback: (OAuthToken?, Throwable?) -> Unit = { token, error ->
             if (error != null) {
-                Log.e(TAG("SocialLoginManager", "loginWithKakao"), "Kakao 로그인 실패", error)
+                Log.e(TAG("SocialLoginManager", "loginWithKakao"), "❌ Kakao 로그인 실패", error)
                 continuation.resumeWithException(error)
             } else if (token != null) {
-                Log.d(TAG("SocialLoginManager", "loginWithKakao"), "Kakao 로그인 성공")
+                Log.d(TAG("SocialLoginManager", "loginWithKakao"), "✅ Kakao 토큰 발급 성공")
+                Log.d(TAG("SocialLoginManager", "loginWithKakao"), "→ 사용자 정보 요청 중...")
 
-                // 사용자 정보 가져오기
+                // ✅ 사용자 정보 요청
                 UserApiClient.instance.me { user, userError ->
+                    Log.d(TAG("SocialLoginManager", "loginWithKakao"), "→ 사용자 정보 응답 받음")
+
                     if (userError != null) {
-                        Log.e(TAG("SocialLoginManager", "loginWithKakao"), "사용자 정보 요청 실패", userError)
+                        Log.e(TAG("SocialLoginManager", "loginWithKakao"), "❌ 사용자 정보 요청 실패", userError)
                         continuation.resumeWithException(userError)
                     } else if (user != null) {
+                        Log.d(TAG("SocialLoginManager", "loginWithKakao"), "✅ 사용자 정보 조회 성공")
+                        Log.d(TAG("SocialLoginManager", "loginWithKakao"), "   - ID: ${user.id}")
+                        Log.d(TAG("SocialLoginManager", "loginWithKakao"), "   - Email: ${user.kakaoAccount?.email}")
+                        Log.d(TAG("SocialLoginManager", "loginWithKakao"), "   - Nickname: ${user.kakaoAccount?.profile?.nickname}")
+                        Log.d(TAG("SocialLoginManager", "loginWithKakao"), "   - ProfileUrl: ${user.kakaoAccount?.profile?.profileImageUrl}")
+
                         val result = SocialLoginResult(
                             socialId = user.id.toString(),
                             socialType = SocialType.KAKAO,
@@ -147,40 +120,44 @@ class SocialLoginManager @Inject constructor(
                             nickname = user.kakaoAccount?.profile?.nickname,
                             profileUrl = user.kakaoAccount?.profile?.profileImageUrl
                         )
+
+                        Log.d(TAG("SocialLoginManager", "loginWithKakao"), "✅ SocialLoginResult 생성 완료")
                         continuation.resume(result)
+                    } else {
+                        Log.e(TAG("SocialLoginManager", "loginWithKakao"), "❌ user 객체가 null입니다")
+                        continuation.resumeWithException(Exception("사용자 정보를 가져올 수 없습니다"))
                     }
                 }
+            } else {
+                Log.e(TAG("SocialLoginManager", "loginWithKakao"), "❌ token이 null입니다")
+                continuation.resumeWithException(Exception("토큰을 가져올 수 없습니다"))
             }
         }
 
-        // 카카오톡 설치 여부 확인
-        if (UserApiClient.instance.isKakaoTalkLoginAvailable(context)) {
+        // ✅ Activity Context 사용
+        if (UserApiClient.instance.isKakaoTalkLoginAvailable(activity)) {
             // 카카오톡으로 로그인
-            UserApiClient.instance.loginWithKakaoTalk(context) { token, error ->
+            UserApiClient.instance.loginWithKakaoTalk(activity) { token, error ->
                 if (error != null) {
                     Log.e(TAG("SocialLoginManager", "loginWithKakao"), "카카오톡 로그인 실패", error)
 
-                    // 사용자가 취소한 경우
                     if (error is ClientError && error.reason == ClientErrorCause.Cancelled) {
                         continuation.resumeWithException(error)
                         return@loginWithKakaoTalk
                     }
 
                     // 카카오톡 로그인 실패 시 카카오 계정으로 로그인 시도
-                    UserApiClient.instance.loginWithKakaoAccount(context, callback = callback)
+                    UserApiClient.instance.loginWithKakaoAccount(activity, callback = callback)
                 } else {
                     callback(token, null)
                 }
             }
         } else {
             // 카카오 계정으로 로그인
-            UserApiClient.instance.loginWithKakaoAccount(context, callback = callback)
+            UserApiClient.instance.loginWithKakaoAccount(activity, callback = callback)
         }
     }
 
-    /**
-     * Google 로그아웃
-     */
     suspend fun logoutGoogle(): Result<Unit> = suspendCancellableCoroutine { continuation ->
         initGoogleSignInClient()
         googleSignInClient?.signOut()?.addOnCompleteListener { task ->
@@ -194,9 +171,6 @@ class SocialLoginManager @Inject constructor(
         }
     }
 
-    /**
-     * Kakao 로그아웃
-     */
     suspend fun logoutKakao(): Result<Unit> = suspendCancellableCoroutine { continuation ->
         UserApiClient.instance.logout { error ->
             if (error != null) {
@@ -209,9 +183,6 @@ class SocialLoginManager @Inject constructor(
         }
     }
 
-    /**
-     * 통합 로그아웃
-     */
     suspend fun logout(socialType: SocialType): Result<Unit> {
         return when (socialType) {
             SocialType.GOOGLE -> logoutGoogle()

@@ -371,12 +371,18 @@ class MainViewModel @Inject constructor(
         when(event) {
             is MainEvent.GroupAdd -> {
                 viewModelScope.launch {
-
                     recordUseCase.groupAdd(_recordListUiState.value, event.groupName, _mainUiState.value.selectedCurrencyType) { updatedState ->
                         _recordListUiState.value = updatedState
                     }
-
                     MainEvent.HideGroupAddDialog
+                }
+            }
+            is MainEvent.ShowEditBottomSheet -> {
+                _mainUiState.update {
+                    it.copy(showEditBottomSheet = true)
+                }
+                _recordListUiState.update {
+                    it.copy(selectedRecord = event.record)
                 }
             }
             is MainEvent.ShowRateBottomSheet -> {
@@ -552,6 +558,34 @@ class MainViewModel @Inject constructor(
                 }
             }
 
+            // ✅ 추가: GroupChangeBottomSheetEvent 처리
+            is MainEvent.GroupChangeBottomSheetEvent -> {
+                when(event) {
+                    MainEvent.GroupChangeBottomSheetEvent.DismissRequest -> {
+                        _mainUiState.update {
+                            it.copy(showGroupChangeBottomSheet = false)
+                        }
+                    }
+                    is MainEvent.GroupChangeBottomSheetEvent.GroupChanged -> {
+                        viewModelScope.launch {
+                            recordUseCase.updateRecordCategory(
+                                event.record,
+                                event.groupName,
+                                _mainUiState.value.selectedCurrencyType
+                            )
+                            _mainUiState.update {
+                                it.copy(showGroupChangeBottomSheet = false)
+                            }
+                        }
+                    }
+                    MainEvent.GroupChangeBottomSheetEvent.OnGroupSelect -> {
+                        _mainUiState.update {
+                            it.copy(showGroupAddDialog = true)
+                        }
+                    }
+                }
+            }
+
             is MainEvent.HideGroupChangeBottomSheet -> {
                 viewModelScope.launch {
                     _mainUiState.update {
@@ -584,15 +618,14 @@ class MainViewModel @Inject constructor(
             }
 
             is MainEvent.BottomSheetEvent.Popup -> {
-                when(event.event) {
+                when(event.popupEvent) {
                     is PopupEvent.SnackBarEvent -> {
                         viewModelScope.launch {
-                            _sheetSnackBarState.send(event.event.message)
+                            _sheetSnackBarState.send(event.popupEvent.message)
                         }
                     }
                     else -> return
                 }
-
             }
             is MainEvent.EditBottomSheetEvent.Popup -> {
                 when(event.event) {
@@ -630,7 +663,6 @@ class MainViewModel @Inject constructor(
                     )
                 }
             }
-
         }
     }
 

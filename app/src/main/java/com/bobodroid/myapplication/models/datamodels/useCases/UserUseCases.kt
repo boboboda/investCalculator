@@ -74,6 +74,9 @@ class DeleteUserUseCase @Inject constructor(
 /**
  * 로컬 사용자 존재 확인 및 초기화 UseCase
  */
+/**
+ * 로컬 사용자 존재 확인 및 초기화 UseCase
+ */
 class LocalExistCheckUseCase @Inject constructor(
     private val userRepository: UserRepository,
     private val localIdAddUseCase: LocalIdAddUseCase
@@ -144,57 +147,52 @@ class LocalExistCheckUseCase @Inject constructor(
             val fcmToken = InvestApplication.prefs.getData("fcm_token", "")
             Log.d(TAG("LocalExistCheckUseCase", "syncWithServer"), "서버 동기화 FCM 토큰: $fcmToken")
 
-            val searchId = user.socialId ?: user.id.toString()
-            Log.d(TAG("LocalExistCheckUseCase", "syncWithServer"), "조회 ID: $searchId")
+            val deviceId = user.id.toString()
+            Log.d(TAG("LocalExistCheckUseCase", "syncWithServer"), "DeviceId: $deviceId")
 
-            if (user.id != null) {
-                val serverUser = try {
-                    Log.d(TAG("LocalExistCheckUseCase", "syncWithServer"), "서버 조회 시작...")
-                    val response = UserApi.userService.getUserRequest(searchId)
-                    Log.d(TAG("LocalExistCheckUseCase", "syncWithServer"), "서버 조회 성공: ${response.message}")
+            // ✅ deviceId로 서버 사용자 조회
+            val serverUser = try {
+                Log.d(TAG("LocalExistCheckUseCase", "syncWithServer"), "서버 조회 시작...")
+                val response = UserApi.userService.getUserByDeviceId(deviceId)
+                Log.d(TAG("LocalExistCheckUseCase", "syncWithServer"), "서버 조회 성공: ${response.message}")
+
+                if (response.success && response.data != null) {
                     response
-                } catch (e: retrofit2.HttpException) {
-                    if (e.code() == 404) {
-                        Log.d(TAG("LocalExistCheckUseCase", "syncWithServer"), "서버에 유저 없음 (404)")
-                        null
-                    } else {
-                        throw e
-                    }
-                } catch (e: Exception) {
-                    Log.e(TAG("LocalExistCheckUseCase", "syncWithServer"), "일반 에러: ${e.message}")
+                } else {
+                    null
+                }
+            } catch (e: retrofit2.HttpException) {
+                if (e.code() == 404) {
+                    Log.d(TAG("LocalExistCheckUseCase", "syncWithServer"), "서버에 유저 없음 (404)")
+                    null
+                } else {
+                    Log.e(TAG("LocalExistCheckUseCase", "syncWithServer"), "HTTP 에러: ${e.code()}")
                     throw e
                 }
+            } catch (e: Exception) {
+                Log.e(TAG("LocalExistCheckUseCase", "syncWithServer"), "일반 에러: ${e.message}")
+                throw e
+            }
 
-                if (serverUser?.data == null) {
-                    val createServerUser = UserRequest(
-                        deviceId = user.id.toString(),
-                        socialId = user.socialId,
-                        socialType = user.socialType,  // ✅ 이미 String
-                        email = user.email,
-                        nickname = user.nickname,
-                        profileUrl = user.profileUrl,
-                        fcmToken = user.fcmToken ?: fcmToken
-                    )
-
-                    Log.d(TAG("LocalExistCheckUseCase", "syncWithServer"), "새 서버 유저 생성 시작")
-                    UserApi.userService.userAddRequest(createServerUser).also {
-                        Log.d(TAG("LocalExistCheckUseCase", "syncWithServer"), "새 서버 유저 생성 완료: $it")
-                    }
-                } else {
-                    Log.d(TAG("LocalExistCheckUseCase", "syncWithServer"), "기존 서버 유저 사용")
-                    serverUser
-                }
-            } else {
+            if (serverUser == null) {
+                // 서버에 없으면 새로 생성
                 val createServerUser = UserRequest(
-                    deviceId = user.id.toString(),
-                    socialId = null,
-                    socialType = SocialType.NONE.name,  // ✅ String으로 저장
+                    deviceId = deviceId,
+                    socialId = user.socialId,
+                    socialType = user.socialType,
+                    email = user.email,
+                    nickname = user.nickname,
+                    profileUrl = user.profileUrl,
                     fcmToken = user.fcmToken ?: fcmToken
                 )
 
+                Log.d(TAG("LocalExistCheckUseCase", "syncWithServer"), "새 서버 유저 생성 시작")
                 UserApi.userService.userAddRequest(createServerUser).also {
-                    Log.d(TAG("LocalExistCheckUseCase", "syncWithServer"), "ID 없는 새 서버 유저 생성: $it")
+                    Log.d(TAG("LocalExistCheckUseCase", "syncWithServer"), "새 서버 유저 생성 완료: $it")
                 }
+            } else {
+                Log.d(TAG("LocalExistCheckUseCase", "syncWithServer"), "기존 서버 유저 사용")
+                serverUser
             }
         } catch (e: Exception) {
             Log.e(TAG("LocalExistCheckUseCase", "syncWithServer"), "서버 동기화 실패", e)

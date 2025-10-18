@@ -25,7 +25,6 @@ import javax.inject.Inject
 
 @HiltViewModel
 class MyPageViewModel @Inject constructor(
-    private val userUseCases: UserUseCases,
     private val userRepository: UserRepository,
     private val investRepository: InvestRepository,
     private val socialLoginUseCases: SocialLoginUseCases,

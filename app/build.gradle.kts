@@ -30,6 +30,8 @@ android {
         buildConfig = true
     }
 
+
+
     // Properties 로드
     val properties = loadProperties()
 

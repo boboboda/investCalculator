@@ -16,19 +16,36 @@ data class Rate(
     val rate: Int
 )
 
-// 전체 응답 클래스 (메시지 포함)
+// ✅ 전체 응답 클래스 (소셜 로그인 지원)
 @JsonClass(generateAdapter = true)
 data class UserResponse(
-    val message: String, // 메시지 필드 추가
-    val data: UserResponseData? = null// 데이터를 별도로 포함하는 구조로 변경
+    val success: Boolean,           // ✅ 추가: 성공 여부
+    val message: String,
+    val code: String? = null,       // ✅ 추가: 에러 코드 (ALREADY_LINKED 등)
+    val data: UserResponseData? = null,
+    val error: String? = null       // ✅ 추가: 에러 메시지
 )
 
+// ✅ 사용자 데이터 (소셜 로그인 필드 추가)
 @JsonClass(generateAdapter = true)
 data class UserResponseData(
-    val customId: String? = null,
+    // 기본 필드
     val deviceId: String? = null,
-    val createAt: String,
-    val fcmToken: String,
+    val createAt: String? = null,
+    val fcmToken: String? = null,
+
+    // ✅ 소셜 로그인 필드
+    val socialId: String? = null,
+    val socialType: String? = null,  // "GOOGLE", "KAKAO", "NONE"
+    val email: String? = null,
+    val nickname: String? = null,
+    val profileUrl: String? = null,
+
+    // ✅ 동기화 관련
+    val isSynced: Boolean? = null,
+    val updatedAt: String? = null,
+
+    // 목표 환율
     val usdHighRates: List<Rate>? = emptyList(),
     val usdLowRates: List<Rate>? = emptyList(),
     val jpyHighRates: List<Rate>? = emptyList(),
@@ -81,7 +98,9 @@ data class UserResponseData(
     }
 }
 
-// 업데이트 요청 데이터 클래스
+
+
+// ✅ 목표환율만 업데이트 (기존 호환성 유지)
 @JsonClass(generateAdapter = true)
 data class UserRatesUpdateRequest(
     val usdHighRates: List<Rate>? = null,
@@ -89,4 +108,3 @@ data class UserRatesUpdateRequest(
     val jpyHighRates: List<Rate>? = null,
     val jpyLowRates: List<Rate>? = null
 )
-

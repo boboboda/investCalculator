@@ -16,6 +16,7 @@ import com.bobodroid.myapplication.models.datamodels.useCases.TargetRateAddUseCa
 import com.bobodroid.myapplication.models.datamodels.useCases.TargetRateDeleteUseCase
 import com.bobodroid.myapplication.models.datamodels.useCases.TargetRateUpdateUseCase
 import com.bobodroid.myapplication.models.datamodels.useCases.TargetRateUseCases
+import com.bobodroid.myapplication.models.datamodels.useCases.UnlinkSocialUseCase
 import com.bobodroid.myapplication.models.datamodels.useCases.UserUseCases
 import com.bobodroid.myapplication.models.datamodels.websocket.WebSocketClient
 import com.bobodroid.myapplication.util.AdMob.AdUseCase
@@ -68,14 +69,16 @@ object UseCaseModule {
         kakaoLogin: KakaoLoginUseCase,
         socialLogout: SocialLogoutUseCase,
         syncToServer: SyncToServerUseCase,
-        restoreFromServer: RestoreFromServerUseCase
+        restoreFromServer: RestoreFromServerUseCase,
+        unlinkSocialUseCase: UnlinkSocialUseCase
     ): SocialLoginUseCases {
         return SocialLoginUseCases(
             googleLogin = googleLogin,
             kakaoLogin = kakaoLogin,
             socialLogout = socialLogout,
             syncToServer = syncToServer,
-            restoreFromServer = restoreFromServer
+            restoreFromServer = restoreFromServer,
+            unlinkSocial = unlinkSocialUseCase
         )
     }
 

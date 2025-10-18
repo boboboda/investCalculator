@@ -5,14 +5,17 @@ import com.squareup.moshi.JsonClass
 @JsonClass(generateAdapter = true)
 data class UserRequest(
     val deviceId: String,
-    val fcmToken: String,
-
-    // ✅ 소셜 로그인 관련 필드 추가
     val socialId: String? = null,
     val socialType: String? = null,  // "GOOGLE", "KAKAO", "NONE"
     val email: String? = null,
     val nickname: String? = null,
-    val profileUrl: String? = null
+    val profileUrl: String? = null,
+    val fcmToken: String? = null,
+    // 목표 환율
+    val usdHighRates: List<Rate>? = null,
+    val usdLowRates: List<Rate>? = null,
+    val jpyHighRates: List<Rate>? = null,
+    val jpyLowRates: List<Rate>? = null
 )
 
 @JsonClass(generateAdapter = true)

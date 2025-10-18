@@ -131,8 +131,21 @@ class MyPageViewModel @Inject constructor(
         }
     }
 
+    fun unlinkSocial(result: (String) -> Unit) {
+        viewModelScope.launch {
+            val localUser = _myPageUiState.value.localUser
 
-
+            socialLoginUseCases.unlinkSocial(localUser)
+                .onSuccess { _, message ->
+                    Log.d("MyPageViewModel", "소셜 연동 해제 성공")
+                    result(message ?: "소셜 연동이 해제되었습니다")
+                }
+                .onError { error ->
+                    Log.e("MyPageViewModel", "소셜 연동 해제 실패: ${error.message}", error.exception)
+                    result(error.message)
+                }
+        }
+    }
 
 
 

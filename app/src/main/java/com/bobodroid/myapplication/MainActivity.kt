@@ -51,14 +51,17 @@ import com.bobodroid.myapplication.components.admobs.loadInterstitial
 import com.bobodroid.myapplication.components.admobs.loadRewardedAdvertisement
 import com.bobodroid.myapplication.components.admobs.loadTargetRewardedAdvertisement
 import com.bobodroid.myapplication.components.admobs.showTargetRewardedAdvertisement
+import com.bobodroid.myapplication.models.datamodels.social.SocialLoginManager
 import com.bobodroid.myapplication.models.viewmodels.AnalysisViewModel
 import com.bobodroid.myapplication.models.viewmodels.MainViewModel
 import com.bobodroid.myapplication.routes.*
 import com.bobodroid.myapplication.screens.*
 import com.bobodroid.myapplication.ui.theme.InverstCalculatorTheme
 import com.google.android.gms.ads.MobileAds
+import com.google.android.gms.auth.api.signin.GoogleSignIn
 //import com.google.android.gms.ads.MobileAds
 import dagger.hilt.android.AndroidEntryPoint
+import javax.inject.Inject
 
 
 @AndroidEntryPoint
@@ -74,6 +77,9 @@ class MainActivity : ComponentActivity() {
     private val mainViewModel: MainViewModel by viewModels()
 
     private val analysisViewModel: AnalysisViewModel by viewModels()
+
+    @Inject
+    lateinit var socialLoginManager: SocialLoginManager
 
     private lateinit var splashScreen: SplashScreen
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -139,6 +145,10 @@ class MainActivity : ComponentActivity() {
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
 
+        // ✅ Google Sign-In 결과를 SocialLoginManager로 전달
+        socialLoginManager.handleGoogleSignInResult(requestCode, resultCode, data)
+
+        // 기존 보상형 광고 처리
         if (requestCode == 1 && resultCode == RESULT_OK) {
             Log.w(TAG("메인", ""), "보상형 액티비티에서 넘어옴")
         }

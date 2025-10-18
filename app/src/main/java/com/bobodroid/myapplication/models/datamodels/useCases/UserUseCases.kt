@@ -10,6 +10,7 @@ import com.bobodroid.myapplication.models.datamodels.roomDb.TargetRates
 import com.bobodroid.myapplication.models.datamodels.service.UserApi.UserApi
 import com.bobodroid.myapplication.models.datamodels.service.UserApi.UserRequest
 import com.bobodroid.myapplication.models.datamodels.service.UserApi.UserResponse
+import com.bobodroid.myapplication.models.datamodels.social.SocialLoginManager
 import com.bobodroid.myapplication.util.InvestApplication
 import com.bobodroid.myapplication.util.result.Result
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -77,9 +78,13 @@ class DeleteUserUseCase @Inject constructor(
 /**
  * 로컬 사용자 존재 확인 및 초기화 UseCase
  */
+/**
+ * 로컬 사용자 존재 확인 및 초기화 UseCase
+ */
 class LocalExistCheckUseCase @Inject constructor(
     private val userRepository: UserRepository,
-    private val localIdAddUseCase: LocalIdAddUseCase
+    private val localIdAddUseCase: LocalIdAddUseCase,
+    private val socialLoginManager: SocialLoginManager  // ✅ 추가
 ) {
     suspend operator fun invoke() {
         try {
@@ -94,7 +99,10 @@ class LocalExistCheckUseCase @Inject constructor(
 
             val user = if (existingUser != null) {
                 Log.d(TAG("LocalExistCheckUseCase", "invoke"), "기존 유저 사용")
-                existingUser
+
+                // ⚠️ 소셜 로그인 상태 검증
+                val validatedUser = validateSocialLoginState(existingUser)
+                validatedUser
             } else {
                 Log.d(TAG("LocalExistCheckUseCase", "invoke"), "새 유저 생성 시작")
                 if (fcmToken.isNotEmpty()) {
@@ -139,6 +147,54 @@ class LocalExistCheckUseCase @Inject constructor(
             Log.d(TAG("LocalExistCheckUseCase", "invoke"), "UserRepository 업데이트 완료")
         } catch (e: Exception) {
             Log.e(TAG("LocalExistCheckUseCase", "invoke"), "사용자 확인 중 오류", e)
+        }
+    }
+
+    /**
+     * ⚠️ 소셜 로그인 상태 검증
+     * DB에 저장된 소셜 타입과 실제 SDK 토큰 상태를 비교
+     */
+    private suspend fun validateSocialLoginState(user: LocalUserData): LocalUserData {
+        if (user.socialType == "NONE" || user.socialId == null) {
+            // 소셜 로그인 사용 안 함
+            return user
+        }
+
+        Log.d(TAG("LocalExistCheckUseCase", "validateSocialLoginState"), "소셜 로그인 상태 검증: ${user.socialType}")
+
+        val isActuallyLoggedIn = when (user.socialType) {
+            "GOOGLE" -> {
+                // Google 로그인 상태 확인
+                socialLoginManager.isGoogleLoggedIn()
+            }
+            "KAKAO" -> {
+                // Kakao 로그인 상태 확인
+                socialLoginManager.isKakaoLoggedIn()
+            }
+            else -> false
+        }
+
+        return if (!isActuallyLoggedIn) {
+            // SDK에 토큰이 없음 = 실제로는 로그아웃됨
+            Log.w(TAG("LocalExistCheckUseCase", "validateSocialLoginState"),
+                "⚠️ DB에는 ${user.socialType}로 저장되어 있지만, 실제로는 로그아웃 상태입니다. DB를 초기화합니다.")
+
+            val loggedOutUser = user.copy(
+                socialId = null,
+                socialType = "NONE",
+                email = null,
+                nickname = null,
+                profileUrl = null,
+                isSynced = false
+            )
+
+            // DB 업데이트
+            userRepository.localUserUpdate(loggedOutUser)
+            loggedOutUser
+        } else {
+            Log.d(TAG("LocalExistCheckUseCase", "validateSocialLoginState"),
+                "✅ ${user.socialType} 로그인 상태 정상")
+            user
         }
     }
 

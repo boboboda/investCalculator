@@ -12,17 +12,14 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.bobodroid.myapplication.models.datamodels.roomDb.LocalUserData
-import com.bobodroid.myapplication.models.datamodels.roomDb.SocialType
 import com.bobodroid.myapplication.routes.MyPageRoute
 import com.bobodroid.myapplication.routes.RouteAction
-import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -31,11 +28,12 @@ fun AccountManageView(
     localUser: LocalUserData,
     onGoogleLogin: (Activity) -> Unit,
     onKakaoLogin: (Activity) -> Unit,
-    onLogout: () -> Unit
+    onLogout: () -> Unit,
+    onUnlinkSocial: () -> Unit  // ✅ 연동 해제 추가
 ) {
     val context = LocalContext.current
     val activity = context as? Activity
-    val scope = rememberCoroutineScope()
+    var showUnlinkDialog by remember { mutableStateOf(false) }  // ✅ 연동 해제 확인 다이얼로그
 
     Scaffold(
         topBar = {
@@ -67,7 +65,7 @@ fun AccountManageView(
             Spacer(modifier = Modifier.height(24.dp))
 
             // ✅ 로그인 버튼들
-            if (localUser.socialType == "NONE") {  // ✅ String 비교
+            if (localUser.socialType == "NONE") {
                 // 미로그인 상태 - 로그인 버튼 표시
                 SocialLoginSection(
                     onGoogleLogin = {
@@ -78,10 +76,11 @@ fun AccountManageView(
                     }
                 )
             } else {
-                // 로그인된 상태 - 로그아웃 버튼 표시
+                // 로그인된 상태 - 로그아웃 & 연동 해제 버튼 표시
                 LoggedInSection(
                     localUser = localUser,
-                    onLogout = onLogout
+                    onLogout = onLogout,
+                    onUnlinkSocial = { showUnlinkDialog = true }  // ✅ 다이얼로그 표시
                 )
             }
 
@@ -90,6 +89,43 @@ fun AccountManageView(
             // ✅ 혜택 안내
             BenefitsSection()
         }
+    }
+
+    // ✅ 연동 해제 확인 다이얼로그
+    if (showUnlinkDialog) {
+        AlertDialog(
+            onDismissRequest = { showUnlinkDialog = false },
+            title = { Text("소셜 연동 해제") },
+            text = {
+                Column {
+                    Text("정말 소셜 연동을 해제하시겠습니까?")
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = "⚠️ 서버에 저장된 데이터도 모두 삭제됩니다.\n로컬 데이터(목표환율 등)는 유지됩니다.",
+                        fontSize = 13.sp,
+                        color = Color(0xFFE53935)
+                    )
+                }
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        showUnlinkDialog = false
+                        onUnlinkSocial()
+                    },
+                    colors = ButtonDefaults.textButtonColors(
+                        contentColor = Color(0xFFE53935)
+                    )
+                ) {
+                    Text("연동 해제")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showUnlinkDialog = false }) {
+                    Text("취소")
+                }
+            }
+        )
     }
 }
 
@@ -114,64 +150,46 @@ fun AccountStatusCard(localUser: LocalUserData) {
                 .padding(20.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // 아이콘
-            Box(
-                modifier = Modifier
-                    .size(48.dp)
-                    .background(
-                        color = if (localUser.socialType != "NONE")  // ✅ String 비교
-                            Color(0xFF4CAF50).copy(alpha = 0.1f)
-                        else
-                            Color(0xFFFF9800).copy(alpha = 0.1f),
-                        shape = RoundedCornerShape(12.dp)
-                    ),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = if (localUser.socialType != "NONE")  // ✅ String 비교
-                        Icons.Default.CheckCircle
-                    else
-                        Icons.Default.CloudOff,
-                    contentDescription = null,
-                    tint = if (localUser.socialType != "NONE")  // ✅ String 비교
-                        Color(0xFF4CAF50)
-                    else
-                        Color(0xFFFF9800),
-                    modifier = Modifier.size(24.dp)
-                )
-            }
+            // 상태 아이콘
+            Icon(
+                imageVector = if (localUser.socialType != "NONE")
+                    Icons.Default.CheckCircle
+                else
+                    Icons.Default.CloudOff,
+                contentDescription = null,
+                tint = if (localUser.socialType != "NONE")
+                    Color(0xFF4CAF50)
+                else
+                    Color.Gray,
+                modifier = Modifier.size(48.dp)
+            )
 
             Spacer(modifier = Modifier.width(16.dp))
 
-            // 텍스트
+            // 상태 텍스트
             Column {
                 Text(
-                    text = when (localUser.socialType) {  // ✅ String 비교
-                        "GOOGLE" -> "Google 계정 연동됨"
-                        "KAKAO" -> "Kakao 계정 연동됨"
-                        else -> "계정 미연동"
-                    },
-                    fontSize = 16.sp,
+                    text = if (localUser.socialType != "NONE") "연동됨" else "미연동",
+                    fontSize = 18.sp,
                     fontWeight = FontWeight.Bold,
-                    color = Color.Black
+                    color = if (localUser.socialType != "NONE")
+                        Color.Black
+                    else
+                        Color.Gray
                 )
 
                 Spacer(modifier = Modifier.height(4.dp))
 
                 Text(
-                    text = when {
-                        localUser.socialType != "NONE" && localUser.isSynced ->  // ✅ String 비교
-                            "데이터가 안전하게 백업되었습니다"
-                        localUser.socialType != "NONE" && !localUser.isSynced ->  // ✅ String 비교
-                            "백업 진행 중..."
-                        else ->
-                            "로그인하면 데이터를 백업할 수 있습니다"
+                    text = when (localUser.socialType) {
+                        "GOOGLE" -> "Google 계정으로 로그인됨"
+                        "KAKAO" -> "Kakao 계정으로 로그인됨"
+                        else -> "소셜 계정을 연동해주세요"
                     },
                     fontSize = 13.sp,
                     color = Color.Gray
                 )
 
-                // ✅ 이메일 표시 (수정됨 - Smart Cast 문제 해결)
                 localUser.email?.let { email ->
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
@@ -214,7 +232,6 @@ fun SocialLoginSection(
             Row(
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                // TODO: Google 로고 이미지 추가
                 Text(
                     text = "G",
                     fontSize = 20.sp,
@@ -245,7 +262,6 @@ fun SocialLoginSection(
             Row(
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                // TODO: Kakao 로고 아이콘 추가
                 Text(
                     text = "K",
                     fontSize = 20.sp,
@@ -265,12 +281,13 @@ fun SocialLoginSection(
 }
 
 /**
- * 로그인된 상태 섹션
+ * 로그인된 상태 섹션 (로그아웃 + 연동 해제)
  */
 @Composable
 fun LoggedInSection(
     localUser: LocalUserData,
-    onLogout: () -> Unit
+    onLogout: () -> Unit,
+    onUnlinkSocial: () -> Unit  // ✅ 연동 해제 추가
 ) {
     Column(
         modifier = Modifier
@@ -312,7 +329,7 @@ fun LoggedInSection(
                 Spacer(modifier = Modifier.height(8.dp))
                 InfoRow(
                     label = "연동 계정",
-                    value = when (localUser.socialType) {  // ✅ String 비교
+                    value = when (localUser.socialType) {
                         "GOOGLE" -> "Google"
                         "KAKAO" -> "Kakao"
                         else -> "없음"
@@ -323,9 +340,29 @@ fun LoggedInSection(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // 로그아웃 버튼
+        // ✅ 로그아웃 버튼
         OutlinedButton(
             onClick = onLogout,
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(48.dp),
+            shape = RoundedCornerShape(12.dp),
+            colors = ButtonDefaults.outlinedButtonColors(
+                contentColor = Color(0xFF1976D2)
+            )
+        ) {
+            Text(
+                text = "로그아웃",
+                fontSize = 15.sp,
+                fontWeight = FontWeight.Medium
+            )
+        }
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        // ✅ 연동 해제 버튼 (새로 추가)
+        OutlinedButton(
+            onClick = onUnlinkSocial,
             modifier = Modifier
                 .fillMaxWidth()
                 .height(48.dp),
@@ -335,7 +372,7 @@ fun LoggedInSection(
             )
         ) {
             Text(
-                text = "로그아웃",
+                text = "소셜 연동 해제",
                 fontSize = 15.sp,
                 fontWeight = FontWeight.Medium
             )

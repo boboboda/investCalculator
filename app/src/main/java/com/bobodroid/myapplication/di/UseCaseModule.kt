@@ -35,9 +35,10 @@ object UseCaseModule {
     @Provides
     fun provideLocalExistCheckUseCase(
         userRepository: UserRepository,
-        localIdAddUseCase: LocalIdAddUseCase
+        localIdAddUseCase: LocalIdAddUseCase,
+        socialLoginManager: SocialLoginManager
     ): LocalExistCheckUseCase {
-        return LocalExistCheckUseCase(userRepository, localIdAddUseCase)
+        return LocalExistCheckUseCase(userRepository, localIdAddUseCase, socialLoginManager)
     }
 
     @Provides

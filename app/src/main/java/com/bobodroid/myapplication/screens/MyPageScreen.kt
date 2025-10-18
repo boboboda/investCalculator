@@ -123,6 +123,18 @@ fun MyPageScreen() {
                                 )
                             }
                         }
+                    },
+                    // ✅ 연동 해제 추가
+                    onUnlinkSocial = {
+                        myPageViewModel.unlinkSocial { resultMessage ->
+                            coroutineScope.launch {
+                                mainScreenSnackBarHostState.showSnackbar(
+                                    resultMessage,
+                                    actionLabel = "닫기",
+                                    duration = SnackbarDuration.Short
+                                )
+                            }
+                        }
                     }
                 )
             }

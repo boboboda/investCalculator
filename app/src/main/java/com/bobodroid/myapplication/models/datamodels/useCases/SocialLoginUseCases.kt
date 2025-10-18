@@ -127,8 +127,42 @@ class GoogleLoginUseCase @Inject constructor(
             // ⚠️ 연동 충돌 에러 체크
             if (response.code == "ALREADY_LINKED") {
                 Log.w(TAG("GoogleLoginUseCase", "syncWithServer"), "이미 다른 소셜 계정이 연동되어 있음")
+
+                // 🔍 디버깅: 서버 응답 전체 로깅
+                Log.w(TAG("GoogleLoginUseCase", "syncWithServer"), "서버 응답 전체: $response")
+                Log.w(TAG("GoogleLoginUseCase", "syncWithServer"), "response.data: ${response.data}")
+                Log.w(TAG("GoogleLoginUseCase", "syncWithServer"), "response.data is null: ${response.data == null}")
+
+                if (response.data != null) {
+                    Log.w(TAG("GoogleLoginUseCase", "syncWithServer"), "socialType 원본: ${response.data?.socialType}")
+                    Log.w(TAG("GoogleLoginUseCase", "syncWithServer"), "email: ${response.data?.email}")
+                    Log.w(TAG("GoogleLoginUseCase", "syncWithServer"), "nickname: ${response.data?.nickname}")
+                }
+
+                // ✅ 서버에서 보낸 소셜 타입을 한글로 변환
+                val rawSocialType = response.data?.socialType
+
+                Log.w(TAG("GoogleLoginUseCase", "syncWithServer"), "rawSocialType 추출 결과: '$rawSocialType'")
+
+                val socialTypeDisplay = when (rawSocialType?.uppercase()) {
+                    "GOOGLE" -> "Google"
+                    "KAKAO" -> "Kakao"
+                    "NAVER" -> "Naver"
+                    "APPLE" -> "Apple"
+                    null -> {
+                        Log.e(TAG("GoogleLoginUseCase", "syncWithServer"), "⚠️ socialType이 null입니다!")
+                        "알 수 없는 소셜"
+                    }
+                    else -> {
+                        Log.e(TAG("GoogleLoginUseCase", "syncWithServer"), "⚠️ 예상하지 못한 socialType: '$rawSocialType'")
+                        "알 수 없는 소셜($rawSocialType)"
+                    }
+                }
+
+                Log.w(TAG("GoogleLoginUseCase", "syncWithServer"), "최종 표시 타입: '$socialTypeDisplay'")
+
                 return SyncResult.AlreadyLinked(
-                    currentSocialType = response.data?.socialType ?: "UNKNOWN",
+                    currentSocialType = socialTypeDisplay,
                     currentEmail = response.data?.email,
                     currentNickname = response.data?.nickname
                 )
@@ -208,6 +242,7 @@ class KakaoLoginUseCase @Inject constructor(
         }
     }
 
+
     private suspend fun syncWithServer(user: LocalUserData): SyncResult {
         return try {
             val userRequest = UserRequest(
@@ -227,15 +262,49 @@ class KakaoLoginUseCase @Inject constructor(
 
             // ⚠️ 연동 충돌 에러 체크
             if (response.code == "ALREADY_LINKED") {
-                Log.w(TAG("KakaoLoginUseCase", "syncWithServer"), "이미 다른 소셜 계정이 연동되어 있음")
+                Log.w(TAG("GoogleLoginUseCase", "syncWithServer"), "이미 다른 소셜 계정이 연동되어 있음")
+
+                // 🔍 디버깅: 서버 응답 전체 로깅
+                Log.w(TAG("GoogleLoginUseCase", "syncWithServer"), "서버 응답 전체: $response")
+                Log.w(TAG("GoogleLoginUseCase", "syncWithServer"), "response.data: ${response.data}")
+                Log.w(TAG("GoogleLoginUseCase", "syncWithServer"), "response.data is null: ${response.data == null}")
+
+                if (response.data != null) {
+                    Log.w(TAG("GoogleLoginUseCase", "syncWithServer"), "socialType 원본: ${response.data?.socialType}")
+                    Log.w(TAG("GoogleLoginUseCase", "syncWithServer"), "email: ${response.data?.email}")
+                    Log.w(TAG("GoogleLoginUseCase", "syncWithServer"), "nickname: ${response.data?.nickname}")
+                }
+
+                // ✅ 서버에서 보낸 소셜 타입을 한글로 변환
+                val rawSocialType = response.data?.socialType
+
+                Log.w(TAG("GoogleLoginUseCase", "syncWithServer"), "rawSocialType 추출 결과: '$rawSocialType'")
+
+                val socialTypeDisplay = when (rawSocialType?.uppercase()) {
+                    "GOOGLE" -> "Google"
+                    "KAKAO" -> "Kakao"
+                    "NAVER" -> "Naver"
+                    "APPLE" -> "Apple"
+                    null -> {
+                        Log.e(TAG("GoogleLoginUseCase", "syncWithServer"), "⚠️ socialType이 null입니다!")
+                        "알 수 없는 소셜"
+                    }
+                    else -> {
+                        Log.e(TAG("GoogleLoginUseCase", "syncWithServer"), "⚠️ 예상하지 못한 socialType: '$rawSocialType'")
+                        "알 수 없는 소셜($rawSocialType)"
+                    }
+                }
+
+                Log.w(TAG("GoogleLoginUseCase", "syncWithServer"), "최종 표시 타입: '$socialTypeDisplay'")
+
                 return SyncResult.AlreadyLinked(
-                    currentSocialType = response.data?.socialType ?: "UNKNOWN",
+                    currentSocialType = socialTypeDisplay,
                     currentEmail = response.data?.email,
                     currentNickname = response.data?.nickname
                 )
             }
 
-            Log.d(TAG("KakaoLoginUseCase", "syncWithServer"), "서버 동기화 성공: ${response.message}")
+            Log.d(TAG("GoogleLoginUseCase", "syncWithServer"), "서버 동기화 성공: ${response.message}")
 
             val syncedUser = user.copy(isSynced = true)
             userRepository.localUserUpdate(syncedUser)
@@ -243,7 +312,7 @@ class KakaoLoginUseCase @Inject constructor(
             SyncResult.Success
 
         } catch (e: Exception) {
-            Log.e(TAG("KakaoLoginUseCase", "syncWithServer"), "서버 동기화 실패", e)
+            Log.e(TAG("GoogleLoginUseCase", "syncWithServer"), "서버 동기화 실패", e)
             SyncResult.Error(e)
         }
     }
@@ -251,6 +320,14 @@ class KakaoLoginUseCase @Inject constructor(
 
 /**
  * 소셜 로그아웃 UseCase
+ */
+/**
+ * 소셜 로그아웃 UseCase (수정 완료)
+ *
+ * 로그아웃: 클라이언트(앱)에서만 로그아웃 처리
+ * - SDK 로그아웃 (Kakao/Google)
+ * - 로컬 DB 소셜 정보 초기화
+ * - 서버 데이터는 유지 (목표환율 등 보존)
  */
 class SocialLogoutUseCase @Inject constructor(
     private val userRepository: UserRepository,
@@ -260,34 +337,36 @@ class SocialLogoutUseCase @Inject constructor(
         return try {
             Log.d(TAG("SocialLogoutUseCase", "invoke"), "로그아웃 시작: ${localUserData.socialType}")
 
+            // ✅ 1단계: 먼저 로컬 DB 업데이트 (소셜 정보 초기화)
+            val updatedUser = localUserData.copy(
+                socialId = "",
+                socialType = SocialType.NONE.name,
+                email = "",
+                nickname = "",
+                profileUrl = "",
+                isSynced = false
+            )
+
+            userRepository.localUserUpdate(updatedUser)
+            Log.d(TAG("SocialLogoutUseCase", "invoke"), "✅ 로컬 DB 업데이트 완료")
+
+            // ✅ 2단계: SDK 로그아웃 시도 (실패해도 계속 진행)
             val socialTypeEnum = localUserData.getSocialTypeEnum()
             val logoutResult = socialLoginManager.logout(socialTypeEnum)
 
             if (logoutResult.isFailure) {
-                val throwable = logoutResult.exceptionOrNull()
-                // ✅ Throwable을 Exception으로 변환
-                val exception = when (throwable) {
-                    is Exception -> throwable
-                    is Throwable -> Exception(throwable.message, throwable)
-                    else -> null
-                }
-
-                return if (exception != null) {
-                    Result.Error(
-                        message = "로그아웃에 실패했습니다: ${exception.message}",
-                        exception = exception
-                    )
-                } else {
-                    Result.Error(message = "로그아웃에 실패했습니다")
-                }
+                val error = logoutResult.exceptionOrNull()
+                Log.w(TAG("SocialLogoutUseCase", "invoke"), "SDK 로그아웃 실패했지만 계속 진행: ${error?.message}")
+                // ⚠️ SDK 로그아웃 실패해도 DB는 이미 업데이트되었으므로 성공 처리
+            } else {
+                Log.d(TAG("SocialLogoutUseCase", "invoke"), "✅ SDK 로그아웃 성공")
             }
 
             // ⚠️ 주의: 로그아웃은 클라이언트만 처리 (서버 데이터 변경 없음)
-            // 로컬 상태만 초기화
             Log.d(TAG("SocialLogoutUseCase", "invoke"), "로그아웃 완료 (로컬만)")
 
             Result.Success(
-                data = localUserData,  // 데이터 변경 없음
+                data = updatedUser,  // ✅ 업데이트된 사용자 데이터 반환
                 message = "로그아웃되었습니다"
             )
 

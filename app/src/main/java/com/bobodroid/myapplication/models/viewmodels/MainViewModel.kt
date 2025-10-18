@@ -1,5 +1,6 @@
 package com.bobodroid.myapplication.models.viewmodels
 
+import android.content.Intent
 import android.util.Log
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.SheetState
@@ -18,6 +19,7 @@ import com.bobodroid.myapplication.models.datamodels.roomDb.DrBuyRecord
 import com.bobodroid.myapplication.models.datamodels.roomDb.ForeignCurrencyRecord
 import com.bobodroid.myapplication.models.datamodels.roomDb.LocalUserData
 import com.bobodroid.myapplication.models.datamodels.roomDb.YenBuyRecord
+import com.bobodroid.myapplication.models.datamodels.social.SocialLoginResult
 import com.bobodroid.myapplication.models.datamodels.useCases.CurrencyRecordRequest
 import com.bobodroid.myapplication.models.datamodels.useCases.RecordUseCase
 import com.bobodroid.myapplication.models.datamodels.useCases.UserUseCases
@@ -61,7 +63,7 @@ class MainViewModel @Inject constructor(
     private val noticeRepository: NoticeRepository,
     private val adManager: AdManager,
     private val adUseCase: AdUseCase,
-    private val recordUseCase: RecordUseCase,
+    private val recordUseCase: RecordUseCase
 ) : ViewModel() {
 
     private val _mainUiState = MutableStateFlow(MainUiState())
@@ -85,6 +87,8 @@ class MainViewModel @Inject constructor(
     private val todayDate = MutableStateFlow("${LocalDate.now()}")
 
     val alarmPermissionState = MutableStateFlow(false)
+
+
 
     init {
         Log.d(TAG("MainViewModel", "init"), "MainViewModel 초기화 시작")
@@ -867,5 +871,4 @@ data class CurrencyRecordState<T: ForeignCurrencyRecord>(  // BuyRecord 인터�
     val groups: List<String> = emptyList(),
     val totalProfit: String = "",
 )
-
 

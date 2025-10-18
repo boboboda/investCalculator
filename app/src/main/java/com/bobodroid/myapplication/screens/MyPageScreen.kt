@@ -218,8 +218,7 @@ fun ProfileHeader(
     localUser: LocalUserData,
     onEditClick: () -> Unit
 ) {
-    val displayId = localUser.customId?.takeIf { it.isNotEmpty() }
-        ?: "아이디를 만들어주세요"
+    val displayId = localUser.id.toString()
 
     val gradientColors = listOf(
         Color(0xFF667EEA),

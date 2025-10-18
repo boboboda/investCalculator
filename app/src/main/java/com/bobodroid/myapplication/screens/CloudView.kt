@@ -71,11 +71,11 @@ fun CloudView(routeAction: RouteAction<MyPageRoute>,
                 Buttons(
                     onClicked = {
 
-                        if (localUser.customId.isNullOrEmpty()) {
+                        if (localUser.email.isNullOrEmpty()) {
                             coroutineScope.launch {
 
                                 cloudScreenSnackBarHostState.showSnackbar(
-                                    "아이디를 새로 만든 후 진행해 주세요",
+                                    "연동 후 진행해 주세요",
                                     actionLabel = "닫기", SnackbarDuration.Short
                                 )
                             }
@@ -133,10 +133,10 @@ fun CloudView(routeAction: RouteAction<MyPageRoute>,
                 Buttons(
                     onClicked = {
 
-                        if (localUser.customId.isNullOrEmpty()) {
+                        if (localUser.email.isNullOrEmpty()) {
                             coroutineScope.launch {
                                 cloudScreenSnackBarHostState.showSnackbar(
-                                    "아이디 찾은 후 진행해 주세요",
+                                    "연동 후 진행해 주세요",
                                     actionLabel = "닫기", SnackbarDuration.Short
                                 )
                             }

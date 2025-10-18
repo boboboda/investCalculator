@@ -13,7 +13,6 @@ import com.bobodroid.myapplication.models.datamodels.roomDb.RateDirection
 import com.bobodroid.myapplication.models.datamodels.roomDb.RateType
 import com.bobodroid.myapplication.models.datamodels.roomDb.TargetRates
 import com.bobodroid.myapplication.models.datamodels.service.UserApi.Rate
-import com.bobodroid.myapplication.models.datamodels.service.UserApi.UserData
 import com.bobodroid.myapplication.models.datamodels.useCases.TargetRateUseCases
 import com.bobodroid.myapplication.models.datamodels.useCases.UserUseCases
 import com.bobodroid.myapplication.models.datamodels.websocket.WebSocketClient

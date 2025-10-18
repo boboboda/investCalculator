@@ -64,36 +64,36 @@ class MyPageViewModel @Inject constructor(
     }
 
 
-    // ✅ Google 로그인
+    // ✅ Google 로그인 (수정됨)
     fun loginWithGoogle(activity: Activity, result: (String) -> Unit) {
         viewModelScope.launch {
             val localUser = _myPageUiState.value.localUser
 
             socialLoginUseCases.googleLogin(activity, localUser)
-                .onSuccess { updatedUser ->
+                .onSuccess { updatedUser, message ->
                     Log.d("MyPageViewModel", "Google 로그인 성공: ${updatedUser.email}")
-                    result("Google 로그인 성공!")
+                    result(message ?: "Google 로그인 성공!")
                 }
-                .onError { message, exception ->
-                    Log.e("MyPageViewModel", "Google 로그인 실패: $message", exception)
-                    result(message)
+                .onError { error ->  // ✅ Result.Error 객체로 받음
+                    Log.e("MyPageViewModel", "Google 로그인 실패: ${error.message}", error.exception)
+                    result(error.message)
                 }
         }
     }
 
-    // ✅ Kakao 로그인
+    // ✅ Kakao 로그인 (수정됨)
     fun loginWithKakao(activity: Activity, result: (String) -> Unit) {
         viewModelScope.launch {
             val localUser = _myPageUiState.value.localUser
 
             socialLoginUseCases.kakaoLogin(activity, localUser)
-                .onSuccess { updatedUser ->
+                .onSuccess { updatedUser, message ->
                     Log.d("MyPageViewModel", "Kakao 로그인 성공: ${updatedUser.email}")
-                    result("Kakao 로그인 성공!")
+                    result(message ?: "Kakao 로그인 성공!")
                 }
-                .onError { message, exception ->
-                    Log.e("MyPageViewModel", "Kakao 로그인 실패: $message", exception)
-                    result(message)
+                .onError { error ->  // ✅ Result.Error 객체로 받음
+                    Log.e("MyPageViewModel", "Kakao 로그인 실패: ${error.message}", error.exception)
+                    result(error.message)
                 }
         }
     }
@@ -104,13 +104,13 @@ class MyPageViewModel @Inject constructor(
             val localUser = _myPageUiState.value.localUser
 
             socialLoginUseCases.socialLogout(localUser)
-                .onSuccess {
+                .onSuccess { _, message ->
                     Log.d("MyPageViewModel", "로그아웃 성공")
-                    result("로그아웃되었습니다")
+                    result(message ?: "로그아웃되었습니다")
                 }
-                .onError { message, exception ->
-                    Log.e("MyPageViewModel", "로그아웃 실패: $message", exception)
-                    result(message)
+                .onError { error ->  // ✅ Result.Error 객체로 받음
+                    Log.e("MyPageViewModel", "로그아웃 실패: ${error.message}", error.exception)
+                    result(error.message)
                 }
         }
     }
@@ -121,13 +121,13 @@ class MyPageViewModel @Inject constructor(
             val localUser = _myPageUiState.value.localUser
 
             socialLoginUseCases.syncToServer(localUser)
-                .onSuccess {
+                .onSuccess { _, message ->
                     Log.d("MyPageViewModel", "백업 성공")
-                    result("데이터가 백업되었습니다")
+                    result(message ?: "데이터가 백업되었습니다")
                 }
-                .onError { message, exception ->
-                    Log.e("MyPageViewModel", "백업 실패: $message", exception)
-                    result(message)
+                .onError { error ->  // ✅ Result.Error 객체로 받음
+                    Log.e("MyPageViewModel", "백업 실패: ${error.message}", error.exception)
+                    result(error.message)
                 }
         }
     }
@@ -418,20 +418,19 @@ class MyPageViewModel @Inject constructor(
             }
 
             val totalProfit = (dollarRecords + yenRecords).sumOf {
-                it.expectProfit?.replace(",", "")?.toBigDecimalOrNull() ?: BigDecimal.ZERO
+                it.expectProfit?.replace(",", "")?.toBigDecimalOrNull()?.toLong() ?: 0L
             }
 
             val profitRate = if (totalInvestment > 0) {
-                (totalProfit.divide(BigDecimal(totalInvestment), 4, RoundingMode.HALF_UP) * BigDecimal(100))
-                    .toFloat()
-            } else 0f
+                ((totalProfit.toFloat() / totalInvestment.toFloat()) * 100).toInt()
+            } else 0
 
             listOf(
                 BadgeInfo(
                     type = BadgeType.FIRST_TRADE,
-                    icon = "🥇",
-                    title = "첫 거래 완료",
-                    description = "첫 번째 거래를 완료했습니다",
+                    icon = "🎯",
+                    title = "첫 거래",
+                    description = "첫 번째 환전을 완료했습니다",
                     isUnlocked = totalTrades >= 1,
                     progress = if (totalTrades >= 1) 100 else 0,
                     currentValue = totalTrades,
@@ -440,8 +439,8 @@ class MyPageViewModel @Inject constructor(
                 BadgeInfo(
                     type = BadgeType.TRADER_50,
                     icon = "📊",
-                    title = "거래왕",
-                    description = "총 50건의 거래를 완료했습니다",
+                    title = "활동적인 트레이더",
+                    description = "총 50회 거래를 달성했습니다",
                     isUnlocked = totalTrades >= 50,
                     progress = ((totalTrades.toFloat() / 50f) * 100).toInt().coerceIn(0, 100),
                     currentValue = totalTrades,
@@ -449,9 +448,9 @@ class MyPageViewModel @Inject constructor(
                 ),
                 BadgeInfo(
                     type = BadgeType.TRADER_100,
-                    icon = "💯",
-                    title = "백전백승",
-                    description = "총 100건의 거래를 완료했습니다",
+                    icon = "🏆",
+                    title = "거래 마스터",
+                    description = "총 100회 거래를 달성했습니다",
                     isUnlocked = totalTrades >= 100,
                     progress = ((totalTrades.toFloat() / 100f) * 100).toInt().coerceIn(0, 100),
                     currentValue = totalTrades,
@@ -461,7 +460,7 @@ class MyPageViewModel @Inject constructor(
                     type = BadgeType.FIRST_PROFIT,
                     icon = "💰",
                     title = "첫 수익",
-                    description = "첫 번째 매도 수익을 달성했습니다",
+                    description = "첫 번째 매도 수익을 얻었습니다",
                     isUnlocked = sellCount >= 1,
                     progress = if (sellCount >= 1) 100 else 0,
                     currentValue = sellCount,
@@ -469,27 +468,27 @@ class MyPageViewModel @Inject constructor(
                 ),
                 BadgeInfo(
                     type = BadgeType.PROFIT_RATE_10,
-                    icon = "🎯",
-                    title = "수익률 달인",
-                    description = "수익률 +10%를 달성했습니다",
-                    isUnlocked = profitRate >= 10f,
-                    progress = ((profitRate / 10f) * 100).toInt().coerceIn(0, 100),
-                    currentValue = profitRate.toInt(),
+                    icon = "📈",
+                    title = "10% 수익률",
+                    description = "총 수익률 10%를 달성했습니다",
+                    isUnlocked = profitRate >= 10,
+                    progress = ((profitRate.toFloat() / 10f) * 100).toInt().coerceIn(0, 100),
+                    currentValue = profitRate,
                     targetValue = 10
                 ),
                 BadgeInfo(
                     type = BadgeType.PROFIT_RATE_20,
                     icon = "🚀",
-                    title = "수익률 고수",
-                    description = "수익률 +20%를 달성했습니다",
-                    isUnlocked = profitRate >= 20f,
-                    progress = ((profitRate / 20f) * 100).toInt().coerceIn(0, 100),
-                    currentValue = profitRate.toInt(),
+                    title = "20% 수익률",
+                    description = "총 수익률 20%를 달성했습니다",
+                    isUnlocked = profitRate >= 20,
+                    progress = ((profitRate.toFloat() / 20f) * 100).toInt().coerceIn(0, 100),
+                    currentValue = profitRate,
                     targetValue = 20
                 ),
                 BadgeInfo(
                     type = BadgeType.INVESTMENT_1M,
-                    icon = "💵",
+                    icon = "💎",
                     title = "백만장자",
                     description = "총 투자금 100만원을 달성했습니다",
                     isUnlocked = totalInvestment >= 1_000_000L,
@@ -517,54 +516,7 @@ class MyPageViewModel @Inject constructor(
 
 
 
-    // ========== 기존 함수들 ==========
 
-    fun createUser(customId: String, pin: String, resultMessage: (String) -> Unit) {
-        viewModelScope.launch {
-            val currentLocalUser = _myPageUiState.value.localUser
-
-            Log.d("MyPageViewModel", "createUser - deviceId: ${currentLocalUser.id}")
-
-            userUseCases.customIdCreateUser(
-                localUserData = currentLocalUser,
-                customId = customId,
-                pin = pin
-            )
-                .onSuccess { updateData, _ ->
-                    _myPageUiState.update { it.copy(localUser = updateData) }
-                    resultMessage("성공적으로 아이디가 생성되었습니다.")
-                }
-                .onError { _ ->
-                    resultMessage("아이디 생성이 실패되었습니다.")
-                }
-        }
-    }
-
-    fun logIn(id: String, pin: String, successFind: (message: String) -> Unit) {
-        viewModelScope.launch {
-            userUseCases.logIn(_myPageUiState.value.localUser, id, pin)
-                .onSuccess { localData, msg ->
-                    _myPageUiState.update { it.copy(localUser = localData) }
-                    successFind(msg ?: "로그인 성공")
-                }
-                .onError { error ->
-                    successFind("로그인 실패")
-                }
-        }
-    }
-
-    fun logout(result: (message: String) -> Unit) {
-        viewModelScope.launch {
-            userUseCases.logout(_myPageUiState.value.localUser)
-                .onSuccess { updateData, _ ->
-                    _myPageUiState.update { it.copy(localUser = updateData) }
-                    result("로그아웃 성공")
-                }
-                .onError { _ ->
-                    result("로그아웃 실패")
-                }
-        }
-    }
 }
 
 // 통계 데이터 클래스

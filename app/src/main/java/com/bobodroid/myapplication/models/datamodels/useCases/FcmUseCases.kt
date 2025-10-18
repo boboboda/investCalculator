@@ -11,8 +11,9 @@ import com.bobodroid.myapplication.models.datamodels.roomDb.TargetRates
 import com.bobodroid.myapplication.models.datamodels.service.UserApi.Rate
 import com.bobodroid.myapplication.util.result.Result
 import com.bobodroid.myapplication.models.datamodels.service.UserApi.UserApi
-import com.bobodroid.myapplication.models.datamodels.service.UserApi.UserData
 import com.bobodroid.myapplication.models.datamodels.service.UserApi.UserRatesUpdateRequest
+import com.bobodroid.myapplication.models.datamodels.service.UserApi.UserResponse
+import com.bobodroid.myapplication.models.datamodels.service.UserApi.UserResponseData
 import com.bobodroid.myapplication.models.datamodels.websocket.WebSocketClient
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -169,7 +170,7 @@ class TargetRateUpdateUseCase @Inject constructor(
     suspend operator fun invoke(onUpdate:(TargetRates)->Unit) {
         webSocketClient.targetRateUpdateReceiveData { userDataString ->
 
-            val targetRates = UserData.fromTargetRateJson(userDataString)
+            val targetRates = UserResponseData.fromTargetRateJson(userDataString)
 
             if(targetRates != null) {
                 onUpdate(targetRates)

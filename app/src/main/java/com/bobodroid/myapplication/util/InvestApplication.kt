@@ -1,11 +1,13 @@
 package com.bobodroid.myapplication.util
 
 import android.app.Application
+import com.bobodroid.myapplication.BuildConfig
 import com.bobodroid.myapplication.billing.BillingClientLifecycle
 import com.bobodroid.myapplication.models.datamodels.repository.UserRepository
 import com.bobodroid.myapplication.models.datamodels.useCases.LocalExistCheckUseCase
 import com.bobodroid.myapplication.models.datamodels.websocket.WebSocketClient
 import com.google.android.gms.ads.MobileAds
+import com.kakao.sdk.common.KakaoSdk
 import dagger.hilt.android.HiltAndroidApp
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -34,6 +36,8 @@ class InvestApplication: Application() {
     lateinit var billingClientLifecycle: BillingClientLifecycle
         private set
     override fun onCreate() {
+
+        KakaoSdk.init(this, BuildConfig.KAKAO_APP_KEY)
 
         MobileAds.initialize(this)
 

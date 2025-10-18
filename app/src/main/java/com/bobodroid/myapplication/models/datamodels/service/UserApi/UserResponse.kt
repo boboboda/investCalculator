@@ -20,11 +20,11 @@ data class Rate(
 @JsonClass(generateAdapter = true)
 data class UserResponse(
     val message: String, // 메시지 필드 추가
-    val data: UserData? = null// 데이터를 별도로 포함하는 구조로 변경
+    val data: UserResponseData? = null// 데이터를 별도로 포함하는 구조로 변경
 )
 
 @JsonClass(generateAdapter = true)
-data class UserData(
+data class UserResponseData(
     val customId: String? = null,
     val deviceId: String? = null,
     val createAt: String,

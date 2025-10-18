@@ -112,7 +112,7 @@ class LocalExistCheckUseCase @Inject constructor(
                 val serverUser = syncWithServer(user)
                 Log.d(TAG("LocalExistCheckUseCase", "invoke"), "서버 동기화 완료: $serverUser")
 
-                val userDataType = UserDataType(
+                val userDataType = UserData(
                     localUserData = user,
                     exchangeRates = serverUser?.data?.let { serverData ->
                         TargetRates(
@@ -126,7 +126,7 @@ class LocalExistCheckUseCase @Inject constructor(
                 userRepository.updateUserData(userDataType)
             } else {
                 Log.d(TAG("LocalExistCheckUseCase", "invoke"), "로컬 전용 사용자")
-                val userDataType = UserDataType(
+                val userDataType = UserData(
                     localUserData = user,
                     exchangeRates = null
                 )
@@ -206,7 +206,7 @@ class LocalExistCheckUseCase @Inject constructor(
 /**
  * UserDataType 데이터 클래스
  */
-data class UserDataType(
+data class UserData(
     val localUserData: LocalUserData,
     val exchangeRates: TargetRates? = null
 )

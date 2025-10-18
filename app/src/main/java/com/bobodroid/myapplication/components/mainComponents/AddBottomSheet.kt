@@ -124,26 +124,21 @@ fun AddBottomSheet(
                         color = Color(0xFF374151)
                     )
 
-                    CustomCard(
-                        label = numberInput.ifEmpty { "금액을 입력하세요" },
-                        fontSize = 15,
+                    BottomSheetNumberField(
+                        title = numberInput,
+                        selectedState = numberPadPopViewIsVible,
                         modifier = Modifier
-                            .fillMaxWidth()
-                            .height(56.dp),
-                        fontColor = if (numberInput.isEmpty()) Color(0xFF9CA3AF) else Color.Black,
-                        cardColor = Color(0xFFF9FAFB),
-                        onClick = {
-                            coroutineScope.launch {
-                                if (ratePadPopViewIsVible) {
-                                    ratePadPopViewIsVible = false
-                                    delay(500)
-                                    numberPadPopViewIsVible = true
-                                } else {
-                                    numberPadPopViewIsVible = true
-                                }
+                    ) {
+                        coroutineScope.launch {
+                            if (ratePadPopViewIsVible) {
+                                ratePadPopViewIsVible = false
+                                delay(500)
+                                numberPadPopViewIsVible = true
+                            } else {
+                                numberPadPopViewIsVible = true
                             }
                         }
-                    )
+                    }
                 }
 
                 // 환율 입력
@@ -158,26 +153,22 @@ fun AddBottomSheet(
                         color = Color(0xFF374151)
                     )
 
-                    CustomCard(
-                        label = rateInput.ifEmpty { "환율을 입력하세요" },
-                        fontSize = 15,
+                    BottomSheetRateNumberField(
+                        title = rateInput,
+                        placeholder = "환율을 입력해주세요",
+                        selectedState = ratePadPopViewIsVible,
                         modifier = Modifier
-                            .fillMaxWidth()
-                            .height(56.dp),
-                        fontColor = if (rateInput.isEmpty()) Color(0xFF9CA3AF) else Color.Black,
-                        cardColor = Color(0xFFF9FAFB),
-                        onClick = {
-                            coroutineScope.launch {
-                                if (numberPadPopViewIsVible) {
-                                    numberPadPopViewIsVible = false
-                                    delay(500)
-                                    ratePadPopViewIsVible = true
-                                } else {
-                                    ratePadPopViewIsVible = true
-                                }
+                    ) {
+                        coroutineScope.launch {
+                            if (numberPadPopViewIsVible) {
+                                numberPadPopViewIsVible = false
+                                delay(500)
+                                ratePadPopViewIsVible = true
+                            } else {
+                                ratePadPopViewIsVible = true
                             }
                         }
-                    )
+                    }
                 }
 
                 // 그룹 선택

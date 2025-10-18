@@ -21,12 +21,10 @@
         android:theme="@style/Theme.App.Starting"
         tools:targetApi="35">
 
-        <!-- !!! 이 부분을 추가합니다 !!! -->
         <property
             android:name="android.adservices.AD_SERVICES_CONFIG"
             android:resource="@xml/gma_ad_services_config"
             tools:replace="android:resource" />
-        <!-- !!! 여기까지 추가합니다 !!! -->
 
         <activity
             android:name=".WebActivity"
@@ -46,6 +44,22 @@
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <!-- ✅ Kakao 로그인 처리 Activity -->
+        <activity
+            android:name="com.kakao.sdk.auth.AuthCodeHandlerActivity"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+
+                <!-- ✅ build.gradle.kts의 manifestPlaceholders에서 주입됨 -->
+                <data
+                    android:host="oauth"
+                    android:scheme="kakao${KAKAO_APP_KEY}" />
             </intent-filter>
         </activity>
 
@@ -72,11 +86,8 @@
                 android:resource="@color/purple_200"/>
         </service>
 
-        <!-- ✅ Kakao SDK 초기화를 위한 메타데이터 -->
-        <!-- TODO: Kakao Developers에서 네이티브 앱 키를 발급받아 입력 -->
-        <meta-data
-            android:name="com.kakao.sdk.AppKey"
-            android:value="YOUR_KAKAO_NATIVE_APP_KEY" />
+        <!-- ❌ 메타데이터 방식은 사용하지 않음! -->
+        <!-- BuildConfig.KAKAO_APP_KEY와 manifestPlaceholders로 이미 주입됨 -->
     </application>
 
 </manifest>

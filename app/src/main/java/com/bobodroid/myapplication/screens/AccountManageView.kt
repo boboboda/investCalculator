@@ -171,11 +171,11 @@ fun AccountStatusCard(localUser: LocalUserData) {
                     color = Color.Gray
                 )
 
-                // 이메일 표시
-                if (localUser.email != null) {
+                // ✅ 이메일 표시 (수정됨 - Smart Cast 문제 해결)
+                localUser.email?.let { email ->
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
-                        text = localUser.email,
+                        text = email,
                         fontSize = 12.sp,
                         color = Color.Gray
                     )
@@ -196,22 +196,15 @@ fun SocialLoginSection(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp)
+            .padding(horizontal = 16.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        Text(
-            text = "소셜 로그인",
-            fontSize = 14.sp,
-            fontWeight = FontWeight.Bold,
-            color = Color.Gray,
-            modifier = Modifier.padding(bottom = 12.dp)
-        )
-
         // Google 로그인 버튼
         Button(
             onClick = onGoogleLogin,
             modifier = Modifier
                 .fillMaxWidth()
-                .height(56.dp),
+                .height(52.dp),
             shape = RoundedCornerShape(12.dp),
             colors = ButtonDefaults.buttonColors(
                 containerColor = Color.White
@@ -219,10 +212,9 @@ fun SocialLoginSection(
             elevation = ButtonDefaults.buttonElevation(2.dp)
         ) {
             Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.Center
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                // TODO: Google 로고 아이콘 추가
+                // TODO: Google 로고 이미지 추가
                 Text(
                     text = "G",
                     fontSize = 20.sp,
@@ -239,23 +231,19 @@ fun SocialLoginSection(
             }
         }
 
-        Spacer(modifier = Modifier.height(12.dp))
-
         // Kakao 로그인 버튼
         Button(
             onClick = onKakaoLogin,
             modifier = Modifier
                 .fillMaxWidth()
-                .height(56.dp),
+                .height(52.dp),
             shape = RoundedCornerShape(12.dp),
             colors = ButtonDefaults.buttonColors(
                 containerColor = Color(0xFFFEE500)
-            ),
-            elevation = ButtonDefaults.buttonElevation(2.dp)
+            )
         ) {
             Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.Center
+                verticalAlignment = Alignment.CenterVertically
             ) {
                 // TODO: Kakao 로고 아이콘 추가
                 Text(

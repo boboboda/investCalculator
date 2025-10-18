@@ -61,6 +61,10 @@ android {
         buildConfigField("String", "FONT_AD_KEY", "\"${getPropertyValue(properties, "font_ad_key", "default_value")}\"")
         buildConfigField("String", "REWARD_FRONT_AD_KEY", "\"${getPropertyValue(properties, "reward_font_ad_key", "default_value")}\"")
         buildConfigField("String", "REWARD_TARGET_FONT_AD_KEY", "\"${getPropertyValue(properties, "reward_target_font_ad_key", "default_value")}\"")
+
+        buildConfigField("String", "KAKAO_APP_KEY", "\"${getPropertyValue(properties, "kakao_app_key", "")}\"")
+
+        manifestPlaceholders["KAKAO_APP_KEY"] = getPropertyValue(properties, "kakao_app_key", "")
     }
 
     buildTypes {

@@ -35,10 +35,12 @@
             android:name="com.google.android.gms.ads.APPLICATION_ID"
             android:value="@string/admob_sample_app_id" />
 
+        <!-- ✅ MainActivity에 launchMode="singleTop" 추가 -->
         <activity
             android:name=".MainActivity"
             android:exported="true"
             android:label="@string/app_name"
+            android:launchMode="singleTop"
             android:theme="@style/Theme.App.Starting"
             android:windowSoftInputMode="adjustPan">
             <intent-filter>
@@ -85,9 +87,6 @@
                 android:name="com.google.firebase.messaging.default_notification_color"
                 android:resource="@color/purple_200"/>
         </service>
-
-        <!-- ❌ 메타데이터 방식은 사용하지 않음! -->
-        <!-- BuildConfig.KAKAO_APP_KEY와 manifestPlaceholders로 이미 주입됨 -->
 
         <receiver
             android:name=".widget.ExchangeRateWidget"

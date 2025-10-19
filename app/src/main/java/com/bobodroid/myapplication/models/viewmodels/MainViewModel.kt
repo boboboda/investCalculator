@@ -96,7 +96,10 @@ class MainViewModel @Inject constructor(
 
 
     init {
-        Log.d(TAG("MainViewModel", "init"), "MainViewModel 초기화 시작")
+        Log.e(TAG("MainViewModel", "init"), "━━━━━━━━━━━━━━━━━━━━━━━━━━")
+        Log.e(TAG("MainViewModel", "init"), "🔥 MainViewModel 초기화 시작!")
+        Log.e(TAG("MainViewModel", "init"), "ViewModel 인스턴스: ${this.hashCode()}")
+        Log.e(TAG("MainViewModel", "init"), "━━━━━━━━━━━━━━━━━━━━━━━━━━")
         startInitialData()
     }
 
@@ -138,6 +141,10 @@ class MainViewModel @Inject constructor(
 
     // 초기화 매소드
     private fun startInitialData() {
+        Log.d(TAG("MainViewModel", "startInitialData"), "━━━━━━━━━━━━━━━━━━━━━━━━━━")
+        Log.d(TAG("MainViewModel", "startInitialData"), "📋 초기화 작업 시작")
+        Log.d(TAG("MainViewModel", "startInitialData"), "━━━━━━━━━━━━━━━━━━━━━━━━━━")
+
         // ✅ Flow collect는 별도 코루틴으로 분리 (무한 루프이기 때문)
         viewModelScope.launch {
             receivedLatestRate()
@@ -151,21 +158,29 @@ class MainViewModel @Inject constructor(
 
         // ✅ 초기화 작업들은 순차적으로 실행
         viewModelScope.launch {
+            Log.d(TAG("MainViewModel", "startInitialData"), "📌 Step 1: localUserExistCheck 시작")
             localUserExistCheck()
-            Log.d(TAG("MainViewModel", "init"), "로컬유저 확인완료")
+            Log.d(TAG("MainViewModel", "init"), "✅ 로컬유저 확인완료")
 
+            Log.d(TAG("MainViewModel", "startInitialData"), "📌 Step 2: noticeExistCheck 시작")
             noticeExistCheck()
-            Log.d(TAG("MainViewModel", "init"), "공지사항 확인완료")
+            Log.d(TAG("MainViewModel", "init"), "✅ 공지사항 확인완료")
 
+            Log.d(TAG("MainViewModel", "startInitialData"), "📌 Step 3: noticeDialogState 시작")
             noticeDialogState()
-            Log.d(TAG("MainViewModel", "init"), "공지사항 다이얼로그 확인완료")
+            Log.d(TAG("MainViewModel", "init"), "✅ 공지사항 다이얼로그 확인완료")
 
+            Log.d(TAG("MainViewModel", "startInitialData"), "📌 Step 4: adDialogState 시작")
             adDialogState()
-            Log.d(TAG("MainViewModel", "init"), "광고 확인완료")
+            Log.d(TAG("MainViewModel", "init"), "✅ 광고 확인완료")
 
-            // ✅ REST API로 초기 환율 데이터 fetch
+            Log.d(TAG("MainViewModel", "startInitialData"), "📌 Step 5: fetchInitialLatestRate 시작")
             latestRateRepository.fetchInitialLatestRate()
-            Log.d(TAG("MainViewModel", "init"), "초기 최신환율 확인완료")
+            Log.d(TAG("MainViewModel", "init"), "✅ 초기 최신환율 확인완료")
+
+            Log.d(TAG("MainViewModel", "startInitialData"), "━━━━━━━━━━━━━━━━━━━━━━━━━━")
+            Log.d(TAG("MainViewModel", "startInitialData"), "✨ 모든 초기화 작업 완료!")
+            Log.d(TAG("MainViewModel", "startInitialData"), "━━━━━━━━━━━━━━━━━━━━━━━━━━")
         }
     }
 
@@ -195,77 +210,110 @@ class MainViewModel @Inject constructor(
 
     // 공지사항 상태 초기화 -> 완료
     private suspend fun noticeDialogState() {
-        // 저장한 날짜와 같으면 실행
-        Log.d(
-            TAG("MainViewModel", "noticeDialogState"),
-            "공지사항 날짜: ${_noticeUiState.value.notice.date},  연기날짜: ${_mainUiState.value.localUser.userShowNoticeDate} 오늘날짜 ${
-                LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))
-            }"
-        )
+        Log.d(TAG("MainViewModel", "noticeDialogState"), "━━━━━━━━━━━━━━━━━━━━━━━━━━")
+        Log.d(TAG("MainViewModel", "noticeDialogState"), "📢 공지사항 다이얼로그 상태 체크")
+
         val noticeDate = _noticeUiState.value.notice.date
         val noticeContent = _noticeUiState.value.notice.content
         val userShowNoticeDate = _mainUiState.value.localUser.userShowNoticeDate
+        val today = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))
 
-        Log.d(
-            TAG("MainViewModel", "noticeDialogState"),
-            "공지사항 데이터: ${noticeDate}, ${noticeContent}, ${userShowNoticeDate}")
+        Log.d(TAG("MainViewModel", "noticeDialogState"), "📌 현재 상태:")
+        Log.d(TAG("MainViewModel", "noticeDialogState"), "  - 공지사항 날짜: $noticeDate")
+        Log.d(TAG("MainViewModel", "noticeDialogState"), "  - 사용자 연기 날짜: $userShowNoticeDate")
+        Log.d(TAG("MainViewModel", "noticeDialogState"), "  - 오늘 날짜: $today")
+        Log.d(TAG("MainViewModel", "noticeDialogState"), "  - 공지내용 존재: ${noticeContent != null}")
+        Log.d(TAG("MainViewModel", "noticeDialogState"), "  - noticeState: ${_noticeUiState.value.noticeState}")
 
         if(noticeContent == null) {
-            Log.d(TAG("MainViewModel", "noticeDialogState"), "공지가 없습니다.")
+            Log.d(TAG("MainViewModel", "noticeDialogState"), "❌ 공지가 없습니다 - 다이얼로그 표시 안함")
+            Log.d(TAG("MainViewModel", "noticeDialogState"), "━━━━━━━━━━━━━━━━━━━━━━━━━━")
             return
         }
 
         // 닫기 후 호출 방지
         if (_noticeUiState.value.noticeState) {
             if (userShowNoticeDate.isNullOrEmpty()) {
-                Log.d(TAG("MainViewModel", "noticeDialogState"), "날짜 값이 없습니다.")
+                Log.d(TAG("MainViewModel", "noticeDialogState"), "⚠️ 사용자 연기 날짜가 없음 → 다이얼로그 표시")
                 _noticeUiState.update {
                     _noticeUiState.value.copy(showNoticeDialog = true, noticeState = true)
                 }
             } else {
-                // 안전한 널 검사 및 비교
                 if (noticeDate != null && noticeDate > userShowNoticeDate) {
-                    Log.d(TAG("MainViewModel", "noticeDialogState"), "공지사항 날짜가 더 큽니다.")
+                    Log.d(TAG("MainViewModel", "noticeDialogState"), "✅ 공지사항 날짜 > 연기 날짜 → 다이얼로그 표시")
+                    Log.d(TAG("MainViewModel", "noticeDialogState"), "   ($noticeDate > $userShowNoticeDate)")
                     _noticeUiState.update {
                         _noticeUiState.value.copy(showNoticeDialog = true, noticeState = true)
                     }
                 } else {
-                    Log.d(TAG("MainViewModel", "noticeDialogState"), "로컬에 저장된 날짜가 더 큽니다.")
+                    Log.d(TAG("MainViewModel", "noticeDialogState"), "❌ 로컬 저장 날짜가 더 큼 → 다이얼로그 표시 안함")
+                    Log.d(TAG("MainViewModel", "noticeDialogState"), "   ($noticeDate <= $userShowNoticeDate)")
                     _noticeUiState.value.copy(showNoticeDialog = false, noticeState = false)
                 }
             }
         } else {
-            return
+            Log.d(TAG("MainViewModel", "noticeDialogState"), "❌ noticeState가 false → 다이얼로그 표시 안함")
         }
+
+        Log.d(TAG("MainViewModel", "noticeDialogState"), "최종 showNoticeDialog: ${_noticeUiState.value.showNoticeDialog}")
+        Log.d(TAG("MainViewModel", "noticeDialogState"), "━━━━━━━━━━━━━━━━━━━━━━━━━━")
     }
+
+
 
     // 로컬유저 체크 -> 완료
     private fun localUserExistCheck() {
         viewModelScope.launch {
+            Log.d(TAG("MainViewModel", "localUserExistCheck"), "━━━━━━━━━━━━━━━━━━━━━━━━━━")
+            Log.d(TAG("MainViewModel", "localUserExistCheck"), "👤 로컬 유저 체크 시작")
+
             val initUserdata = userRepository.waitForUserData()
 
-            val uiState = _mainUiState.value.copy(localUser = initUserdata.localUserData)
+            Log.d(TAG("MainViewModel", "localUserExistCheck"), "📦 가져온 유저 데이터:")
+            Log.d(TAG("MainViewModel", "localUserExistCheck"), "  - ID: ${initUserdata.localUserData.id}")
+            Log.d(TAG("MainViewModel", "localUserExistCheck"), "  - SocialType: ${initUserdata.localUserData.socialType}")
+            Log.d(TAG("MainViewModel", "localUserExistCheck"), "  - Email: ${initUserdata.localUserData.email}")
+            Log.d(TAG("MainViewModel", "localUserExistCheck"), "  - userShowNoticeDate: ${initUserdata.localUserData.userShowNoticeDate}")
+            Log.d(TAG("MainViewModel", "localUserExistCheck"), "  - rewardAdShowingDate: ${initUserdata.localUserData.rewardAdShowingDate}")
 
+            val uiState = _mainUiState.value.copy(localUser = initUserdata.localUserData)
             _mainUiState.emit(uiState)
 
+            Log.d(TAG("MainViewModel", "localUserExistCheck"), "✅ UI 상태 업데이트 완료")
+            Log.d(TAG("MainViewModel", "localUserExistCheck"), "━━━━━━━━━━━━━━━━━━━━━━━━━━")
         }
-
     }
 
     // 광고 다이얼로그 상태 -> 완료
     private suspend fun adDialogState() {
+        Log.d(TAG("MainViewModel", "adDialogState"), "━━━━━━━━━━━━━━━━━━━━━━━━━━")
+        Log.d(TAG("MainViewModel", "adDialogState"), "📺 광고 다이얼로그 상태 체크")
+
         val isReady = adManager.isRewardAdReady.first()
+        Log.d(TAG("MainViewModel", "adDialogState"), "  - 광고 준비 상태: $isReady")
 
         if(isReady) {
             val shouldShowAd = adUseCase.processRewardAdState(
                 _mainUiState.value.localUser,
                 todayDate.value
             )
+
+            Log.d(TAG("MainViewModel", "adDialogState"), "  - 광고 표시 여부: $shouldShowAd")
+            Log.d(TAG("MainViewModel", "adDialogState"), "  - 오늘 날짜: ${todayDate.value}")
+            Log.d(TAG("MainViewModel", "adDialogState"), "  - 사용자 rewardAdShowingDate: ${_mainUiState.value.localUser.rewardAdShowingDate}")
+
             if(shouldShowAd) {
+                Log.d(TAG("MainViewModel", "adDialogState"), "✅ 광고 다이얼로그 표시")
                 val uiStateUpdate = _adUiState.value.copy(rewardShowDialog = true)
                 _adUiState.emit(uiStateUpdate)
+            } else {
+                Log.d(TAG("MainViewModel", "adDialogState"), "❌ 광고 다이얼로그 표시 안함")
             }
+        } else {
+            Log.d(TAG("MainViewModel", "adDialogState"), "❌ 광고가 준비되지 않음")
         }
+
+        Log.d(TAG("MainViewModel", "adDialogState"), "━━━━━━━━━━━━━━━━━━━━━━━━━━")
     }
 
     private suspend fun noticeExistCheck() {
@@ -981,6 +1029,13 @@ class MainViewModel @Inject constructor(
         }
     }
 
+    override fun onCleared() {
+        super.onCleared()
+        Log.e(TAG("MainViewModel", "onCleared"), "━━━━━━━━━━━━━━━━━━━━━━━━━━")
+        Log.e(TAG("MainViewModel", "onCleared"), "💀 ViewModel이 소멸됩니다!")
+        Log.e(TAG("MainViewModel", "onCleared"), "ViewModel 인스턴스: ${this.hashCode()}")
+        Log.e(TAG("MainViewModel", "onCleared"), "━━━━━━━━━━━━━━━━━━━━━━━━━━")
+    }
 
 
 }
@@ -1069,3 +1124,4 @@ data class CurrencyHoldingInfo(
     val holdingAmount: String = "0", // 보유 외화량
     val hasData: Boolean = false // 데이터 존재 여부
 )
+

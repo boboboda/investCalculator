@@ -19,6 +19,7 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.launch
 import java.math.BigDecimal
+import java.math.RoundingMode
 import javax.inject.Inject
 
 @AndroidEntryPoint
@@ -58,31 +59,44 @@ class ExchangeRateWidget : AppWidgetProvider() {
     ) {
         val views = RemoteViews(context.packageName, R.layout.widget_exchange_rate)
 
-        val intent = Intent(context, MainActivity::class.java)
-        val pendingIntent = PendingIntent.getActivity(
+        // ✅ 위젯 전체 클릭 시 앱 열기 (기존 앱이 있으면 재사용)
+        val mainIntent = Intent(context, MainActivity::class.java).apply {
+            // ✅ 이 플래그들이 중요!
+            flags = Intent.FLAG_ACTIVITY_SINGLE_TOP or
+                    Intent.FLAG_ACTIVITY_CLEAR_TOP or
+                    Intent.FLAG_ACTIVITY_NEW_TASK
+        }
+        val mainPendingIntent = PendingIntent.getActivity(
             context,
             0,
-            intent,
+            mainIntent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
-        views.setOnClickPendingIntent(R.id.widget_title, pendingIntent)
+        views.setOnClickPendingIntent(R.id.widget_title, mainPendingIntent)
 
         scope.launch {
             try {
                 val latestRate = latestRateRepository.latestRateFlow.firstOrNull()
 
                 if (latestRate != null) {
-                    // 달러 환율
-                    val usdRate = latestRate.usd ?: "---"
-                    views.setTextViewText(R.id.widget_usd_rate, "${usdRate}원")
+                    // ✅ 달러 환율 - BigDecimal로 포맷팅 (소수점 2자리)
+                    val usdRate = latestRate.usd?.let {
+                        try {
+                            val rate = BigDecimal(it)
+                            val formattedRate = rate.setScale(2, RoundingMode.HALF_UP)
+                            "${formattedRate.toPlainString()}원"
+                        } catch (e: Exception) {
+                            "---"
+                        }
+                    } ?: "---"
+                    views.setTextViewText(R.id.widget_usd_rate, usdRate)
                     views.setTextViewText(R.id.widget_usd_change, "")
 
-                    // 엔화 환율 - DB에 이미 100 곱해진 값 저장됨 (946.00)
+                    // ✅ 엔화 환율 - DB에 이미 100 곱해진 값 저장됨 (946.00)
                     val jpyRate = latestRate.jpy?.let {
                         try {
-                            // DB 값이 이미 946.00 형태이므로 그대로 사용
                             val rate = BigDecimal(it)
-                            val formattedRate = rate.setScale(2, BigDecimal.ROUND_HALF_UP)
+                            val formattedRate = rate.times(BigDecimal(100)).setScale(2, RoundingMode.HALF_UP)
                             "${formattedRate.toPlainString()}원"
                         } catch (e: Exception) {
                             "---"

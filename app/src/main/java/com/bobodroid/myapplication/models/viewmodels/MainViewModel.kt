@@ -1,26 +1,18 @@
 package com.bobodroid.myapplication.models.viewmodels
 
 import android.content.Context
-import android.content.Intent
 import android.util.Log
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.SheetState
-import androidx.compose.runtime.internal.illegalDecoyCallException
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.bobodroid.myapplication.MainActivity.Companion.TAG
-import com.bobodroid.myapplication.models.datamodels.repository.InvestRepository
-import com.bobodroid.myapplication.models.datamodels.roomDb.ExchangeRate
 import com.bobodroid.myapplication.models.datamodels.repository.LatestRateRepository
 import com.bobodroid.myapplication.models.datamodels.repository.Notice
 import com.bobodroid.myapplication.models.datamodels.repository.NoticeRepository
 import com.bobodroid.myapplication.models.datamodels.repository.UserRepository
 import com.bobodroid.myapplication.models.datamodels.roomDb.CurrencyType
-import com.bobodroid.myapplication.models.datamodels.roomDb.DrBuyRecord
+import com.bobodroid.myapplication.models.datamodels.roomDb.ExchangeRate
 import com.bobodroid.myapplication.models.datamodels.roomDb.ForeignCurrencyRecord
 import com.bobodroid.myapplication.models.datamodels.roomDb.LocalUserData
-import com.bobodroid.myapplication.models.datamodels.roomDb.YenBuyRecord
-import com.bobodroid.myapplication.models.datamodels.social.SocialLoginResult
 import com.bobodroid.myapplication.models.datamodels.useCases.CurrencyRecordRequest
 import com.bobodroid.myapplication.models.datamodels.useCases.RecordUseCase
 import com.bobodroid.myapplication.models.datamodels.useCases.UserUseCases
@@ -29,8 +21,6 @@ import com.bobodroid.myapplication.screens.PopupEvent
 import com.bobodroid.myapplication.screens.RecordListEvent
 import com.bobodroid.myapplication.util.AdMob.AdManager
 import com.bobodroid.myapplication.util.AdMob.AdUseCase
-import com.bobodroid.myapplication.util.result.onError
-import com.bobodroid.myapplication.util.result.onSuccess
 import com.bobodroid.myapplication.widget.WidgetUpdateHelper
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -38,25 +28,19 @@ import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.collect
-import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
 import java.math.BigDecimal
 import java.math.RoundingMode
 import java.text.SimpleDateFormat
 import java.time.LocalDate
 import java.time.LocalDateTime
-import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 import java.util.Calendar
-import java.util.Date
-import java.util.GregorianCalendar
-import java.util.UUID
 import javax.inject.Inject
 
 @HiltViewModel
@@ -93,70 +77,43 @@ class MainViewModel @Inject constructor(
 
     val alarmPermissionState = MutableStateFlow(false)
 
-
+    private val formatTodayFlow = MutableStateFlow(
+        LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))
+    )
 
     init {
         Log.e(TAG("MainViewModel", "init"), "━━━━━━━━━━━━━━━━━━━━━━━━━━")
         Log.e(TAG("MainViewModel", "init"), "🔥 MainViewModel 초기화 시작!")
         Log.e(TAG("MainViewModel", "init"), "ViewModel 인스턴스: ${this.hashCode()}")
         Log.e(TAG("MainViewModel", "init"), "━━━━━━━━━━━━━━━━━━━━━━━━━━")
+
         startInitialData()
     }
 
-    // 리워드 다이로그 연기 설정
-   fun rewardDelayDate() {
-       viewModelScope.launch {
-           adUseCase.delayRewardAd(_mainUiState.value.localUser, todayDate.value)
-       }
-    }
-
-    fun closeRewardDialog() {
-        val uiState = _adUiState.value.copy(rewardShowDialog = false)
-        _adUiState.value = uiState
-    }
-
-
-    // 공지사항 연기 설정
-    fun selectDelayDate() {
-        viewModelScope.launch {
-
-            Log.d(TAG("MainViewModel", "selectDelayDate"), "날짜 연기 신청")
-
-            val updateUserData = _mainUiState.value.localUser.copy(
-                userShowNoticeDate = _noticeUiState.value.notice.date
-            )
-
-            userUseCases.localUserUpdate(updateUserData)
-
-            Log.d(TAG("MainViewModel", "selectDelayDate"), "날짜 수정 실행, ${_noticeUiState.value.notice.date}")
-        }
-    }
-
-    // 공지사항 닫기
-    fun closeNotice() {
-        val uiState = _noticeUiState.value.copy(showNoticeDialog = false, noticeState = false)
-
-        _noticeUiState.value = uiState
-    }
-
-    // 초기화 매소드
+    // ✅ 초기화 메서드 - Flow 수집은 여기서만 한 번 실행
     private fun startInitialData() {
         Log.d(TAG("MainViewModel", "startInitialData"), "━━━━━━━━━━━━━━━━━━━━━━━━━━")
         Log.d(TAG("MainViewModel", "startInitialData"), "📋 초기화 작업 시작")
         Log.d(TAG("MainViewModel", "startInitialData"), "━━━━━━━━━━━━━━━━━━━━━━━━━━")
 
-        // ✅ Flow collect는 별도 코루틴으로 분리 (무한 루프이기 때문)
+        // ✅ Step 1: Flow collect는 별도 코루틴으로 (무한 루프이므로 분리)
         viewModelScope.launch {
             receivedLatestRate()
         }
 
-        // ✅ 기록 수집도 별도 코루틴으로
+        // ✅ Step 2: 기록 수집도 별도 코루틴으로
         viewModelScope.launch {
             getRecords()
             Log.d(TAG("MainViewModel", "init"), "기록불러오기 확인완료")
         }
 
-        // ✅ 초기화 작업들은 순차적으로 실행
+        // ✅ Step 3: 보유 통계 계산 코루틴 추가
+        viewModelScope.launch {
+            calculateHoldingStats()
+            Log.d(TAG("MainViewModel", "init"), "보유 통계 계산 시작")
+        }
+
+        // ✅ Step 4: 순차적 초기화 작업들
         viewModelScope.launch {
             Log.d(TAG("MainViewModel", "startInitialData"), "📌 Step 1: localUserExistCheck 시작")
             localUserExistCheck()
@@ -184,10 +141,10 @@ class MainViewModel @Inject constructor(
         }
     }
 
-
-
-    // 웹소켓 실시간 데이터 구독 -> 완료
+    // ✅ 웹소켓 실시간 데이터 구독 - 여기서만 한 번 실행
     private suspend fun receivedLatestRate() {
+        Log.d(TAG("MainViewModel", "receivedLatestRate"), "🔄 환율 Flow 구독 시작")
+
         latestRateRepository.latestRateFlow.collect { latestRate ->
             Log.d(TAG("MainViewModel", "receivedLatestRate"), "실시간 데이터 수신: $latestRate")
 
@@ -201,14 +158,35 @@ class MainViewModel @Inject constructor(
             reFreshProfit()
             Log.d(TAG("MainViewModel", "receivedLatestRate"), "환율 업데이트 → 수익 자동 재계산 완료")
 
+            // 3. 위젯 업데이트
             WidgetUpdateHelper.updateAllWidgets(context)
             Log.d(TAG("MainViewModel", "receivedLatestRate"),
                 "위젯 업데이트 완료: USD=${latestRate.usd}, JPY=${latestRate.jpy}")
         }
     }
 
+    // ✅ 로컬유저 체크 - Flow 재수집 제거
+    private suspend fun localUserExistCheck() {
+        Log.d(TAG("MainViewModel", "localUserExistCheck"), "━━━━━━━━━━━━━━━━━━━━━━━━━━")
+        Log.d(TAG("MainViewModel", "localUserExistCheck"), "👤 로컬 유저 체크 시작")
 
-    // 공지사항 상태 초기화 -> 완료
+        val initUserdata = userRepository.waitForUserData()
+
+        Log.d(TAG("MainViewModel", "localUserExistCheck"), "📦 가져온 유저 데이터:")
+        Log.d(TAG("MainViewModel", "localUserExistCheck"), "  - ID: ${initUserdata.localUserData.id}")
+        Log.d(TAG("MainViewModel", "localUserExistCheck"), "  - SocialType: ${initUserdata.localUserData.socialType}")
+        Log.d(TAG("MainViewModel", "localUserExistCheck"), "  - Email: ${initUserdata.localUserData.email}")
+        Log.d(TAG("MainViewModel", "localUserExistCheck"), "  - userShowNoticeDate: ${initUserdata.localUserData.userShowNoticeDate}")
+        Log.d(TAG("MainViewModel", "localUserExistCheck"), "  - rewardAdShowingDate: ${initUserdata.localUserData.rewardAdShowingDate}")
+
+        val uiState = _mainUiState.value.copy(localUser = initUserdata.localUserData)
+        _mainUiState.emit(uiState)
+
+        Log.d(TAG("MainViewModel", "localUserExistCheck"), "✅ UI 상태 업데이트 완료")
+        Log.d(TAG("MainViewModel", "localUserExistCheck"), "━━━━━━━━━━━━━━━━━━━━━━━━━━")
+    }
+
+    // ✅ 공지사항 다이얼로그 상태 - Flow 재수집 제거
     private suspend fun noticeDialogState() {
         Log.d(TAG("MainViewModel", "noticeDialogState"), "━━━━━━━━━━━━━━━━━━━━━━━━━━")
         Log.d(TAG("MainViewModel", "noticeDialogState"), "📢 공지사항 다이얼로그 상태 체크")
@@ -227,64 +205,45 @@ class MainViewModel @Inject constructor(
 
         if(noticeContent == null) {
             Log.d(TAG("MainViewModel", "noticeDialogState"), "❌ 공지가 없습니다 - 다이얼로그 표시 안함")
+            val uiState = _noticeUiState.value.copy(showNoticeDialog = false, noticeState = false)
+            _noticeUiState.emit(uiState)
+            Log.d(TAG("MainViewModel", "noticeDialogState"), "최종 showNoticeDialog: ${_noticeUiState.value.showNoticeDialog}")
             Log.d(TAG("MainViewModel", "noticeDialogState"), "━━━━━━━━━━━━━━━━━━━━━━━━━━")
             return
         }
 
-        // 닫기 후 호출 방지
-        if (_noticeUiState.value.noticeState) {
-            if (userShowNoticeDate.isNullOrEmpty()) {
-                Log.d(TAG("MainViewModel", "noticeDialogState"), "⚠️ 사용자 연기 날짜가 없음 → 다이얼로그 표시")
-                _noticeUiState.update {
-                    _noticeUiState.value.copy(showNoticeDialog = true, noticeState = true)
-                }
-            } else {
-                if (noticeDate != null && noticeDate > userShowNoticeDate) {
-                    Log.d(TAG("MainViewModel", "noticeDialogState"), "✅ 공지사항 날짜 > 연기 날짜 → 다이얼로그 표시")
-                    Log.d(TAG("MainViewModel", "noticeDialogState"), "   ($noticeDate > $userShowNoticeDate)")
-                    _noticeUiState.update {
-                        _noticeUiState.value.copy(showNoticeDialog = true, noticeState = true)
-                    }
-                } else {
-                    Log.d(TAG("MainViewModel", "noticeDialogState"), "❌ 로컬 저장 날짜가 더 큼 → 다이얼로그 표시 안함")
-                    Log.d(TAG("MainViewModel", "noticeDialogState"), "   ($noticeDate <= $userShowNoticeDate)")
-                    _noticeUiState.value.copy(showNoticeDialog = false, noticeState = false)
-                }
-            }
-        } else {
-            Log.d(TAG("MainViewModel", "noticeDialogState"), "❌ noticeState가 false → 다이얼로그 표시 안함")
+        if(userShowNoticeDate == null) {
+            Log.d(TAG("MainViewModel", "noticeDialogState"), "⚠️ 사용자 연기 날짜가 없음 → 다이얼로그 표시")
+            val uiState = _noticeUiState.value.copy(showNoticeDialog = true)
+            _noticeUiState.emit(uiState)
+            Log.d(TAG("MainViewModel", "noticeDialogState"), "최종 showNoticeDialog: ${_noticeUiState.value.showNoticeDialog}")
+            Log.d(TAG("MainViewModel", "noticeDialogState"), "━━━━━━━━━━━━━━━━━━━━━━━━━━")
+            return
         }
+
+        val dateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")
+
+        val noticeDateFormat = LocalDateTime.parse(noticeDate, dateTimeFormatter)
+        val userShowNoticeDateFormat = LocalDateTime.parse(userShowNoticeDate, dateTimeFormatter)
+
+        val showDialog = if(noticeDateFormat <= userShowNoticeDateFormat) {
+            Log.d(TAG("MainViewModel", "noticeDialogState"), "❌ 로컬 저장 날짜가 더 큼 → 다이얼로그 표시 안함")
+            Log.d(TAG("MainViewModel", "noticeDialogState"), "   ($noticeDate <= $userShowNoticeDate)")
+            false
+        } else {
+            Log.d(TAG("MainViewModel", "noticeDialogState"), "✅ 공지 날짜가 더 최신 → 다이얼로그 표시")
+            Log.d(TAG("MainViewModel", "noticeDialogState"), "   ($noticeDate > $userShowNoticeDate)")
+            true
+        }
+
+        val uiState = _noticeUiState.value.copy(showNoticeDialog = showDialog)
+        _noticeUiState.emit(uiState)
 
         Log.d(TAG("MainViewModel", "noticeDialogState"), "최종 showNoticeDialog: ${_noticeUiState.value.showNoticeDialog}")
         Log.d(TAG("MainViewModel", "noticeDialogState"), "━━━━━━━━━━━━━━━━━━━━━━━━━━")
     }
 
-
-
-    // 로컬유저 체크 -> 완료
-    private fun localUserExistCheck() {
-        viewModelScope.launch {
-            Log.d(TAG("MainViewModel", "localUserExistCheck"), "━━━━━━━━━━━━━━━━━━━━━━━━━━")
-            Log.d(TAG("MainViewModel", "localUserExistCheck"), "👤 로컬 유저 체크 시작")
-
-            val initUserdata = userRepository.waitForUserData()
-
-            Log.d(TAG("MainViewModel", "localUserExistCheck"), "📦 가져온 유저 데이터:")
-            Log.d(TAG("MainViewModel", "localUserExistCheck"), "  - ID: ${initUserdata.localUserData.id}")
-            Log.d(TAG("MainViewModel", "localUserExistCheck"), "  - SocialType: ${initUserdata.localUserData.socialType}")
-            Log.d(TAG("MainViewModel", "localUserExistCheck"), "  - Email: ${initUserdata.localUserData.email}")
-            Log.d(TAG("MainViewModel", "localUserExistCheck"), "  - userShowNoticeDate: ${initUserdata.localUserData.userShowNoticeDate}")
-            Log.d(TAG("MainViewModel", "localUserExistCheck"), "  - rewardAdShowingDate: ${initUserdata.localUserData.rewardAdShowingDate}")
-
-            val uiState = _mainUiState.value.copy(localUser = initUserdata.localUserData)
-            _mainUiState.emit(uiState)
-
-            Log.d(TAG("MainViewModel", "localUserExistCheck"), "✅ UI 상태 업데이트 완료")
-            Log.d(TAG("MainViewModel", "localUserExistCheck"), "━━━━━━━━━━━━━━━━━━━━━━━━━━")
-        }
-    }
-
-    // 광고 다이얼로그 상태 -> 완료
+    // ✅ 광고 다이얼로그 상태 - Flow 재수집 제거
     private suspend fun adDialogState() {
         Log.d(TAG("MainViewModel", "adDialogState"), "━━━━━━━━━━━━━━━━━━━━━━━━━━")
         Log.d(TAG("MainViewModel", "adDialogState"), "📺 광고 다이얼로그 상태 체크")
@@ -316,6 +275,7 @@ class MainViewModel @Inject constructor(
         Log.d(TAG("MainViewModel", "adDialogState"), "━━━━━━━━━━━━━━━━━━━━━━━━━━")
     }
 
+    // ✅ 공지사항 존재 확인
     private suspend fun noticeExistCheck() {
         val noticeData = noticeRepository.waitForNoticeData()
 
@@ -325,72 +285,16 @@ class MainViewModel @Inject constructor(
         }
 
         val uiState = _noticeUiState.value.copy(notice = noticeData)
-
         _noticeUiState.emit(uiState)
     }
 
-
-
-
-
-
-
-    // -> 완료
-    suspend fun reFreshProfit() {
+    // ✅ 수익 재계산
+    private suspend fun reFreshProfit() {
         val resentRate = _mainUiState.value.recentRate
-
         recordUseCase.reFreshProfit(resentRate, _recordListUiState.value.foreignCurrencyRecord)
     }
 
-
-    private val formatTodayFlow = MutableStateFlow(
-        LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))
-    )
-
-
-//    fun cloudSave(
-//        drBuyRecord: List<DrBuyRecord>,
-//        drSellRecord: List<DrSellRecord>,
-//        yenBuyRecord: List<YenBuyRecord>,
-//        yenSellRecord: List<YenSellRecord>,
-//        wonBuyRecord: List<WonBuyRecord>,
-//        wonSellRecord: List<WonSellRecord>
-//    ) {
-//        val localUser = _localUser.value
-//
-//        val uploadCloudData = CloudUserData(
-//            id = localUser.id.toString(),
-//            customId = localUser.customId,
-//            createAt = formatTodayFlow.value,
-//            drBuyRecord = drBuyRecord,
-//            drSellRecord = drSellRecord,
-//            yenBuyRecord = yenBuyRecord,
-//            yenSellRecord = yenSellRecord,
-//            wonBuyRecord = wonBuyRecord,
-//            wonSellRecord = wonSellRecord
-//
-//        )
-//
-//        db.collection("userCloud").document(localUser.customId!!)
-//            .set(uploadCloudData.asHasMap())
-//    }
-//
-//
-//    fun cloudLoad(cloudId: String, cloudData: (CloudUserData, resultMessage: String) -> Unit) {
-//
-//        db.collection("userCloud")
-//            .whereEqualTo("customId", cloudId)
-//            .get()
-//            .addOnSuccessListener { querySnapShot ->
-//                val data = CloudUserData(querySnapShot)
-//
-//                cloudData.invoke(data, "클라우드 불러오기가 성공하였습니다.")
-//            }
-//    }
-
-
-    // 기록 부분
-
+    // ✅ 기록 불러오기
     private fun getRecords() {
         viewModelScope.launch {
             recordUseCase.getRecord().collect { record ->
@@ -400,7 +304,149 @@ class MainViewModel @Inject constructor(
         }
     }
 
+    // ✅ 보유중인 외화 통계 계산 및 업데이트
+    private suspend fun calculateHoldingStats() {
+        combine(
+            recordListUiState,
+            mainUiState
+        ) { recordState, mainState ->
+            val dollarRecords = recordState.foreignCurrencyRecord.dollarState.records
+                .filter { it.recordColor == false } // 보유중인 것만
 
+            val yenRecords = recordState.foreignCurrencyRecord.yenState.records
+                .filter { it.recordColor == false } // 보유중인 것만
+
+            val currentUsdRate = mainState.recentRate.usd ?: "0"
+            val currentJpyRate = mainState.recentRate.jpy ?: "0"
+
+            HoldingStats(
+                dollarStats = calculateCurrencyHolding(
+                    records = dollarRecords,
+                    currentRate = currentUsdRate,
+                    currencyType = CurrencyType.USD
+                ),
+                yenStats = calculateCurrencyHolding(
+                    records = yenRecords,
+                    currentRate = currentJpyRate,
+                    currencyType = CurrencyType.JPY
+                )
+            )
+        }.collect { stats ->
+            _mainUiState.update { it.copy(holdingStats = stats) }
+        }
+    }
+
+    // ✅ 개별 통화의 보유 통계 계산
+    private fun calculateCurrencyHolding(
+        records: List<ForeignCurrencyRecord>,
+        currentRate: String,
+        currencyType: CurrencyType
+    ): CurrencyHoldingInfo {
+        if (records.isEmpty() || currentRate == "0" || currentRate.isEmpty()) {
+            return CurrencyHoldingInfo(hasData = false)
+        }
+
+        try {
+            // 1. 총 투자금 계산
+            val totalInvestment = records.sumOf {
+                it.money?.replace(",", "")?.toBigDecimalOrNull() ?: BigDecimal.ZERO
+            }
+
+            // 2. 총 보유 외화량 계산
+            val totalHoldingAmount = records.sumOf {
+                it.exchangeMoney?.replace(",", "")?.toBigDecimalOrNull() ?: BigDecimal.ZERO
+            }
+
+            // 3. 가중 평균 매수가 계산
+            var totalWeightedRate = BigDecimal.ZERO
+            var totalWeight = BigDecimal.ZERO
+
+            records.forEach { record ->
+                val exchangeMoney = record.exchangeMoney?.replace(",", "")?.toBigDecimalOrNull() ?: BigDecimal.ZERO
+                val buyRate = record.buyRate?.replace(",", "")?.toBigDecimalOrNull() ?: BigDecimal.ZERO
+
+                if (exchangeMoney > BigDecimal.ZERO && buyRate > BigDecimal.ZERO) {
+                    totalWeightedRate += buyRate.multiply(exchangeMoney)
+                    totalWeight += exchangeMoney
+                }
+            }
+
+            val averageRate = if (totalWeight > BigDecimal.ZERO) {
+                totalWeightedRate.divide(totalWeight, 2, RoundingMode.HALF_UP)
+            } else {
+                BigDecimal.ZERO
+            }
+
+            // 4. 현재 환율로 예상 수익 계산
+            val currentRateBD = currentRate.replace(",", "").toBigDecimalOrNull() ?: BigDecimal.ZERO
+
+            val expectedProfit = when (currencyType) {
+                CurrencyType.USD -> {
+                    // (보유달러 × 현재환율) - 투자금
+                    (totalHoldingAmount.multiply(currentRateBD)).minus(totalInvestment)
+                }
+                CurrencyType.JPY -> {
+                    // (보유엔화 × 현재환율 ÷ 100) - 투자금
+                    (totalHoldingAmount.multiply(currentRateBD).divide(BigDecimal(100), 2, RoundingMode.HALF_UP)).minus(totalInvestment)
+                }
+            }
+
+            // 5. 수익률 계산
+            val profitRate = if (totalInvestment > BigDecimal.ZERO) {
+                (expectedProfit.divide(totalInvestment, 4, RoundingMode.HALF_UP).multiply(BigDecimal(100)))
+                    .setScale(1, RoundingMode.HALF_UP)
+            } else {
+                BigDecimal.ZERO
+            }
+
+            return CurrencyHoldingInfo(
+                averageRate = formatRate(averageRate),
+                currentRate = formatRate(currentRateBD),
+                totalInvestment = formatCurrency(totalInvestment),
+                expectedProfit = formatCurrency(expectedProfit),
+                profitRate = formatProfitRate(profitRate),
+                holdingAmount = formatAmount(totalHoldingAmount, currencyType),
+                hasData = true
+            )
+
+        } catch (e: Exception) {
+            Log.e("MainViewModel", "보유 통계 계산 오류: ${e.message}", e)
+            return CurrencyHoldingInfo(hasData = false)
+        }
+    }
+
+    // ✅ 포맷팅 헬퍼 함수들
+    private fun formatRate(rate: BigDecimal): String {
+        return "%,.2f".format(rate)
+    }
+
+    private fun formatCurrency(amount: BigDecimal): String {
+        val absAmount = amount.abs()
+        val formatted = "%,.0f".format(absAmount)
+        return when {
+            amount > BigDecimal.ZERO -> "+₩$formatted"
+            amount < BigDecimal.ZERO -> "-₩$formatted"
+            else -> "₩$formatted"
+        }
+    }
+
+    private fun formatProfitRate(rate: BigDecimal): String {
+        return when {
+            rate > BigDecimal.ZERO -> "+${rate}%"
+            rate < BigDecimal.ZERO -> "${rate}%"
+            else -> "0.0%"
+        }
+    }
+
+    private fun formatAmount(amount: BigDecimal, type: CurrencyType): String {
+        val formatted = "%,.2f".format(amount)
+        return when (type) {
+            CurrencyType.USD -> "$$formatted"
+            CurrencyType.JPY -> "¥$formatted"
+        }
+    }
+
+    // ✅ 현재 통화 타입별 기록 가져오기
     fun getCurrentRecordsFlow(): Flow<CurrencyRecordState<ForeignCurrencyRecord>> =
         recordListUiState.map { recordState ->
             when(_mainUiState.value.selectedCurrencyType) {
@@ -409,31 +455,35 @@ class MainViewModel @Inject constructor(
             }
         }
 
-
-
+    // ✅ 통화 타입 변경
     fun updateCurrentForeignCurrency(currencyType: CurrencyType) {
         val updateUiState = _mainUiState.value.copy(selectedCurrencyType = currencyType)
-
         _mainUiState.value = updateUiState
     }
 
+    // ✅ 매도 계산
+    private suspend fun sellCalculate(sellRate: String) {
+        val exchangeMoney = _recordListUiState.value.selectedRecord?.exchangeMoney ?: return
+        val krMoney = _recordListUiState.value.selectedRecord?.money ?: return
 
-   private suspend fun sellCalculate(
-        sellRate: String) {
+        val sellProfit = recordUseCase.sellProfit(
+            exchangeMoney,
+            sellRate,
+            krMoney,
+            _mainUiState.value.selectedCurrencyType
+        ).toString()
 
-       val exchangeMoney = _recordListUiState.value.selectedRecord?.exchangeMoney ?: return
+        val sellPercent = recordUseCase.sellPercent(sellProfit, krMoney).toString()
 
-       val krMoney = _recordListUiState.value.selectedRecord?.money ?: return
+        val recordUiUpdateState = _recordListUiState.value.copy(
+            sellProfit = sellProfit,
+            sellPercent = sellPercent
+        )
 
-       val sellProfit = recordUseCase.sellProfit(exchangeMoney, sellRate, krMoney, _mainUiState.value.selectedCurrencyType).toString()
-       val sellPercent = recordUseCase.sellPercent(sellProfit, krMoney).toString()
-
-       val recordUiUpdateState = _recordListUiState.value.copy(sellProfit = sellProfit, sellPercent = sellPercent)
-
-       _recordListUiState.emit(recordUiUpdateState)
-
+        _recordListUiState.emit(recordUiUpdateState)
     }
 
+    // ✅ 메인 이벤트 처리
     fun handleMainEvent(event: MainEvent) {
         when(event) {
             is MainEvent.GroupAdd -> {
@@ -733,65 +783,73 @@ class MainViewModel @Inject constructor(
         }
     }
 
+    // ✅ 기록 이벤트 처리
     fun handleRecordEvent(event: RecordListEvent) {
         val uiState = _recordListUiState.value
         viewModelScope.launch {
             when (event) {
                 is RecordListEvent.MemoUpdate -> {
-                    recordUseCase.updateRecordMemo(event.record, event.updateMemo, _mainUiState.value.selectedCurrencyType)
+                    recordUseCase.updateRecordMemo(
+                        event.record,
+                        event.updateMemo,
+                        _mainUiState.value.selectedCurrencyType
+                    )
                     _mainSnackBarState.send("메모가 저장되었습니다.")
                 }
-                    is RecordListEvent.RemoveRecord -> {
-                        recordUseCase.removeRecord(event.data, _mainUiState.value.selectedCurrencyType)
-                    }
+
+                is RecordListEvent.RemoveRecord -> {
+                    recordUseCase.removeRecord(
+                        event.data,
+                        _mainUiState.value.selectedCurrencyType
+                    )
+                }
+
                 is RecordListEvent.CancelSellRecord -> {
-                    recordUseCase.cancelSellRecord(event.id, _mainUiState.value.selectedCurrencyType)
+                    recordUseCase.cancelSellRecord(
+                        event.id,
+                        _mainUiState.value.selectedCurrencyType
+                    )
                     _mainSnackBarState.send("매도가 취소되었습니다.")
                 }
+
                 is RecordListEvent.UpdateRecordCategory -> {
-                    recordUseCase.updateRecordCategory(event.record, event.groupName, _mainUiState.value.selectedCurrencyType)
+                    recordUseCase.updateRecordCategory(
+                        event.record,
+                        event.groupName,
+                        _mainUiState.value.selectedCurrencyType
+                    )
+                    _mainUiState.update {
+                        it.copy(showGroupChangeBottomSheet = false)
+                    }
                 }
+
                 is RecordListEvent.AddGroup -> {
-                   recordUseCase.groupAdd(uiState, event.groupName, _mainUiState.value.selectedCurrencyType) { updatedState ->
-                       viewModelScope.launch {
-                           _recordListUiState.emit(updatedState)
-                       }
-                   }
+                    recordUseCase.groupAdd(
+                        uiState,
+                        event.groupName,
+                        _mainUiState.value.selectedCurrencyType
+                    ) { updatedState ->
+                        viewModelScope.launch {
+                            _recordListUiState.emit(updatedState)
+                        }
+                    }
                 }
 
                 is RecordListEvent.ShowGroupChangeBottomSheet -> {
-                    viewModelScope.launch {
-                        _recordListUiState.update {
-                            it.copy(selectedRecord = event.data)
-                        }
-                        _mainUiState.update {
-                            it.copy(showGroupChangeBottomSheet = true)
-                        }
+                    _recordListUiState.update {
+                        it.copy(selectedRecord = event.data)
                     }
-                }
-
-                is RecordListEvent.UpdateRecordCategory -> {
-                    viewModelScope.launch {
-                        // 기록 업데이트 로직 (기존에 있을 것으로 예상)
-                        recordUseCase.updateRecordCategory(event.record, event.groupName, _mainUiState.value.selectedCurrencyType)
-
-                        // 바텀시트 닫기
-                        _mainUiState.update {
-                            it.copy(showGroupChangeBottomSheet = false)
-                        }
+                    _mainUiState.update {
+                        it.copy(showGroupChangeBottomSheet = true)
                     }
                 }
 
                 is RecordListEvent.ShowEditBottomSheet -> {
                     _mainUiState.update {
-                        it.copy(
-                            showEditBottomSheet = true
-                        )
+                        it.copy(showEditBottomSheet = true)
                     }
                     _recordListUiState.update {
-                        it.copy(
-                            selectedRecord = event.data
-                        )
+                        it.copy(selectedRecord = event.data)
                     }
                 }
 
@@ -800,7 +858,6 @@ class MainViewModel @Inject constructor(
                 }
 
                 is RecordListEvent.TotalSumProfit -> {
-
                     _recordListUiState.update {
                         it.copy(
                             totalProfitRangeDate = TotalProfitRangeDate(
@@ -812,48 +869,43 @@ class MainViewModel @Inject constructor(
 
                     if(event.startDate.isEmpty() || event.endDate.isEmpty()) return@launch
 
-                    Log.d(TAG("MainViewModel", "handleRecordEvent"), "startDate: ${event.startDate}, endDate: ${event.endDate}")
+                    Log.d(TAG("MainViewModel", "handleRecordEvent"),
+                        "startDate: ${event.startDate}, endDate: ${event.endDate}")
 
-                    viewModelScope.launch {
-                        when(_mainUiState.value.selectedCurrencyType) {
-                            CurrencyType.USD -> {
-                                val dateRangeFilterRecord = _recordListUiState.value.foreignCurrencyRecord.dollarState.records.filter { it.date!! in event.startDate..event.endDate  }
+                    when(_mainUiState.value.selectedCurrencyType) {
+                        CurrencyType.USD -> {
+                            val dateRangeFilterRecord = _recordListUiState.value
+                                .foreignCurrencyRecord.dollarState.records
+                                .filter { it.date!! in event.startDate..event.endDate }
 
-                                Log.d(TAG("MainViewModel", "handleRecordEvent"), "USD: $dateRangeFilterRecord")
+                            val totalProfit = recordUseCase.sumProfit(record = dateRangeFilterRecord)
 
-                                val totalProfit = recordUseCase.sumProfit(
-                                    record = dateRangeFilterRecord,
-                                )
-
-                                Log.d(TAG("MainViewModel", "handleRecordEvent"), "USD: $totalProfit")
-
-                                _recordListUiState.update { currentState ->
-                                    currentState.copy(
-                                        foreignCurrencyRecord = currentState.foreignCurrencyRecord.copy(
-                                            dollarState = currentState.foreignCurrencyRecord.dollarState.copy(
-                                                totalProfit = totalProfit
-                                            )
+                            _recordListUiState.update { currentState ->
+                                currentState.copy(
+                                    foreignCurrencyRecord = currentState.foreignCurrencyRecord.copy(
+                                        dollarState = currentState.foreignCurrencyRecord.dollarState.copy(
+                                            totalProfit = totalProfit
                                         )
                                     )
-                                }
+                                )
                             }
-                            CurrencyType.JPY -> {
+                        }
 
-                                val dateRangeFilterRecord = _recordListUiState.value.foreignCurrencyRecord.yenState.records.filter { it.date!! in event.startDate..event.endDate  }
+                        CurrencyType.JPY -> {
+                            val dateRangeFilterRecord = _recordListUiState.value
+                                .foreignCurrencyRecord.yenState.records
+                                .filter { it.date!! in event.startDate..event.endDate }
 
-                                val totalProfit = recordUseCase.sumProfit(
-                                    record = dateRangeFilterRecord,
-                                )
+                            val totalProfit = recordUseCase.sumProfit(record = dateRangeFilterRecord)
 
-                                _recordListUiState.update { currentState ->
-                                    currentState.copy(
-                                        foreignCurrencyRecord = currentState.foreignCurrencyRecord.copy(
-                                            dollarState = currentState.foreignCurrencyRecord.yenState.copy(
-                                                totalProfit = totalProfit
-                                            )
+                            _recordListUiState.update { currentState ->
+                                currentState.copy(
+                                    foreignCurrencyRecord = currentState.foreignCurrencyRecord.copy(
+                                        yenState = currentState.foreignCurrencyRecord.yenState.copy(
+                                            totalProfit = totalProfit
                                         )
                                     )
-                                }
+                                )
                             }
                         }
                     }
@@ -864,169 +916,38 @@ class MainViewModel @Inject constructor(
         }
     }
 
-
-    // MainViewModel.kt의 init 블록 내부에 추가 (getRecords() 호출 후)
-
-    init {
+    // ✅ 리워드 광고 연기
+    fun rewardDelayDate() {
         viewModelScope.launch {
-            launch { receivedLatestRate() }
-            launch { getRecords() }
-            launch { calculateHoldingStats() } // ✅ 추가
-
-            localUserExistCheck()
-            noticeExistCheck()
-            noticeDialogState()
-            adDialogState()
-            latestRateRepository.fetchInitialLatestRate()
+            adUseCase.delayRewardAd(_mainUiState.value.localUser, todayDate.value)
         }
     }
 
-// MainViewModel.kt 클래스 내부에 추가할 함수들
-
-    /**
-     * 보유중인 외화 통계 계산 및 업데이트
-     */
-    private suspend fun calculateHoldingStats() {
-        combine(
-            recordListUiState,
-            mainUiState
-        ) { recordState, mainState ->
-            val dollarRecords = recordState.foreignCurrencyRecord.dollarState.records
-                .filter { it.recordColor == false } // 보유중인 것만
-
-            val yenRecords = recordState.foreignCurrencyRecord.yenState.records
-                .filter { it.recordColor == false } // 보유중인 것만
-
-            val currentUsdRate = mainState.recentRate.usd ?: "0"
-            val currentJpyRate = mainState.recentRate.jpy ?: "0"
-
-            HoldingStats(
-                dollarStats = calculateCurrencyHolding(
-                    records = dollarRecords,
-                    currentRate = currentUsdRate,
-                    currencyType = CurrencyType.USD
-                ),
-                yenStats = calculateCurrencyHolding(
-                    records = yenRecords,
-                    currentRate = currentJpyRate,
-                    currencyType = CurrencyType.JPY
-                )
-            )
-        }.collect { stats ->
-            _mainUiState.update { it.copy(holdingStats = stats) }
-        }
+    fun closeRewardDialog() {
+        val uiState = _adUiState.value.copy(rewardShowDialog = false)
+        _adUiState.value = uiState
     }
 
-    /**
-     * 개별 통화의 보유 통계 계산
-     */
-    private fun calculateCurrencyHolding(
-        records: List<ForeignCurrencyRecord>,
-        currentRate: String,
-        currencyType: CurrencyType
-    ): CurrencyHoldingInfo {
-        if (records.isEmpty() || currentRate == "0" || currentRate.isEmpty()) {
-            return CurrencyHoldingInfo(hasData = false)
-        }
+    // ✅ 공지사항 연기
+    fun selectDelayDate() {
+        viewModelScope.launch {
+            Log.d(TAG("MainViewModel", "selectDelayDate"), "날짜 연기 신청")
 
-        try {
-            // 1. 총 투자금 계산
-            val totalInvestment = records.sumOf {
-                it.money?.replace(",", "")?.toBigDecimalOrNull() ?: BigDecimal.ZERO
-            }
-
-            // 2. 총 보유 외화량 계산
-            val totalHoldingAmount = records.sumOf {
-                it.exchangeMoney?.replace(",", "")?.toBigDecimalOrNull() ?: BigDecimal.ZERO
-            }
-
-            // 3. 가중 평균 매수가 계산
-            var totalWeightedRate = BigDecimal.ZERO
-            var totalWeight = BigDecimal.ZERO
-
-            records.forEach { record ->
-                val exchangeMoney = record.exchangeMoney?.replace(",", "")?.toBigDecimalOrNull() ?: BigDecimal.ZERO
-                val buyRate = record.buyRate?.replace(",", "")?.toBigDecimalOrNull() ?: BigDecimal.ZERO
-
-                if (exchangeMoney > BigDecimal.ZERO && buyRate > BigDecimal.ZERO) {
-                    totalWeightedRate += buyRate.multiply(exchangeMoney)
-                    totalWeight += exchangeMoney
-                }
-            }
-
-            val averageRate = if (totalWeight > BigDecimal.ZERO) {
-                totalWeightedRate.divide(totalWeight, 2, RoundingMode.HALF_UP)
-            } else {
-                BigDecimal.ZERO
-            }
-
-            // 4. 현재 환율로 예상 수익 계산
-            val currentRateBD = currentRate.replace(",", "").toBigDecimalOrNull() ?: BigDecimal.ZERO
-
-            val expectedProfit = when (currencyType) {
-                CurrencyType.USD -> {
-                    // (보유달러 × 현재환율) - 투자금
-                    (totalHoldingAmount.multiply(currentRateBD)).minus(totalInvestment)
-                }
-                CurrencyType.JPY -> {
-                    // (보유엔화 × 현재환율 ÷ 100) - 투자금
-                    (totalHoldingAmount.multiply(currentRateBD).divide(BigDecimal(100), 2, RoundingMode.HALF_UP)).minus(totalInvestment)
-                }
-            }
-
-            // 5. 수익률 계산
-            val profitRate = if (totalInvestment > BigDecimal.ZERO) {
-                (expectedProfit.divide(totalInvestment, 4, RoundingMode.HALF_UP).multiply(BigDecimal(100)))
-                    .setScale(1, RoundingMode.HALF_UP)
-            } else {
-                BigDecimal.ZERO
-            }
-
-            return CurrencyHoldingInfo(
-                averageRate = formatRate(averageRate),
-                currentRate = formatRate(currentRateBD),
-                totalInvestment = formatCurrency(totalInvestment),
-                expectedProfit = formatCurrency(expectedProfit),
-                profitRate = formatProfitRate(profitRate),
-                holdingAmount = formatAmount(totalHoldingAmount, currencyType),
-                hasData = true
+            val updateUserData = _mainUiState.value.localUser.copy(
+                userShowNoticeDate = _noticeUiState.value.notice.date
             )
 
-        } catch (e: Exception) {
-            Log.e("MainViewModel", "보유 통계 계산 오류: ${e.message}", e)
-            return CurrencyHoldingInfo(hasData = false)
+            userUseCases.localUserUpdate(updateUserData)
+
+            Log.d(TAG("MainViewModel", "selectDelayDate"),
+                "날짜 수정 실행, ${_noticeUiState.value.notice.date}")
         }
     }
 
-    // 포맷팅 헬퍼 함수들
-    private fun formatRate(rate: BigDecimal): String {
-        return "%,.2f".format(rate)
-    }
-
-    private fun formatCurrency(amount: BigDecimal): String {
-        val absAmount = amount.abs()
-        val formatted = "%,.0f".format(absAmount)
-        return when {
-            amount > BigDecimal.ZERO -> "+₩$formatted"
-            amount < BigDecimal.ZERO -> "-₩$formatted"
-            else -> "₩$formatted"
-        }
-    }
-
-    private fun formatProfitRate(rate: BigDecimal): String {
-        return when {
-            rate > BigDecimal.ZERO -> "+${rate}%"
-            rate < BigDecimal.ZERO -> "${rate}%"
-            else -> "0.0%"
-        }
-    }
-
-    private fun formatAmount(amount: BigDecimal, type: CurrencyType): String {
-        val formatted = "%,.2f".format(amount)
-        return when (type) {
-            CurrencyType.USD -> "$$formatted"
-            CurrencyType.JPY -> "¥$formatted"
-        }
+    // ✅ 공지사항 닫기
+    fun closeNotice() {
+        val uiState = _noticeUiState.value.copy(showNoticeDialog = false, noticeState = false)
+        _noticeUiState.value = uiState
     }
 
     override fun onCleared() {
@@ -1036,9 +957,11 @@ class MainViewModel @Inject constructor(
         Log.e(TAG("MainViewModel", "onCleared"), "ViewModel 인스턴스: ${this.hashCode()}")
         Log.e(TAG("MainViewModel", "onCleared"), "━━━━━━━━━━━━━━━━━━━━━━━━━━")
     }
-
-
 }
+
+// ============================================================================
+// Data Classes
+// ============================================================================
 
 val time = Calendar.getInstance().time
 
@@ -1047,21 +970,21 @@ val formatter = SimpleDateFormat("yyyy-MM-dd")
 val today = formatter.format(time)
 
 
-    // 메인 화면의 핵심 상태
+// 메인 화면의 핵심 상태
 data class MainUiState (
-        val selectedCurrencyType: CurrencyType = CurrencyType.USD,
-        val selectedDate: String = today,
-        val recentRate: ExchangeRate = ExchangeRate(),
-        val localUser: LocalUserData = LocalUserData(),
-        val showRateBottomSheet: Boolean = false,
-        val showEditBottomSheet: Boolean = false,
-        val showSellResultDialog: Boolean = false,
-        val showAddBottomSheet: Boolean = false,
-        val showGroupAddDialog: Boolean = false,
-        val showDatePickerDialog: Boolean = false,
-        val showDateRangeDialog: Boolean = false,
-        val showGroupChangeBottomSheet: Boolean = false,
-        val holdingStats: HoldingStats = HoldingStats()
+    val selectedCurrencyType: CurrencyType = CurrencyType.USD,
+    val selectedDate: String = today,
+    val recentRate: ExchangeRate = ExchangeRate(),
+    val localUser: LocalUserData = LocalUserData(),
+    val showRateBottomSheet: Boolean = false,
+    val showEditBottomSheet: Boolean = false,
+    val showSellResultDialog: Boolean = false,
+    val showAddBottomSheet: Boolean = false,
+    val showGroupAddDialog: Boolean = false,
+    val showDatePickerDialog: Boolean = false,
+    val showDateRangeDialog: Boolean = false,
+    val showGroupChangeBottomSheet: Boolean = false,
+    val holdingStats: HoldingStats = HoldingStats()
 )
 
 
@@ -1100,7 +1023,7 @@ data class ForeignCurrencyRecordList(
     val yenState: CurrencyRecordState<ForeignCurrencyRecord> = CurrencyRecordState()
 )
 
-data class CurrencyRecordState<T: ForeignCurrencyRecord>(  // BuyRecord 인터페이스로 제한
+data class CurrencyRecordState<T: ForeignCurrencyRecord>(
     val records: List<T> = emptyList(),
     val groupedRecords: Map<String, List<T>> = emptyMap(),
     val groups: List<String> = emptyList(),
@@ -1124,4 +1047,3 @@ data class CurrencyHoldingInfo(
     val holdingAmount: String = "0", // 보유 외화량
     val hasData: Boolean = false // 데이터 존재 여부
 )
-

@@ -84,25 +84,16 @@ fun MainScreen(
     // ✅ 수정: 헤더 확대/축소 상태 관리 (초기값 false = 확대 상태)
     var isCollapsedState by remember { mutableStateOf(false) }
 
-    // ❌ 제거: 스크롤 추적 변수들 삭제
-    // var previousFirstVisibleItemIndex by remember { mutableStateOf(0) }
-    // var previousScrollOffset by remember { mutableStateOf(0) }
 
-    // ❌ 제거: 스크롤 감지 LaunchedEffect 전체 삭제
-    /*
-    LaunchedEffect(
-        listScrollState.firstVisibleItemIndex,
-        listScrollState.firstVisibleItemScrollOffset,
-        listScrollState.canScrollBackward
-    ) {
-        // 모든 스크롤 로직 및 Log.d 제거됨
-    }
-    */
+    var isInitialLaunch by remember { mutableStateOf(true) }
 
-    // ✅ 추가: 앱 시작 시 2.5초 후 자동 축소
+// ✅ 앱 처음 실행 시에만 자동 축소
     LaunchedEffect(key1 = Unit) {
-        delay(2500)  // 2.5초 대기
-        isCollapsedState = true  // 자동으로 축소
+        if (isInitialLaunch) {
+            delay(2500)
+            isCollapsedState = true
+            isInitialLaunch = false  // 최초 실행 플래그 해제
+        }
     }
 
     // 리스트

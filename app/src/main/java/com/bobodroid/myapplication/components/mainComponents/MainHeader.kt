@@ -40,16 +40,6 @@ fun MainHeader(
 ) {
     var dropdownExpanded by remember { mutableStateOf(false) }
 
-    val totalProfit = when(mainUiState.selectedCurrencyType) {
-        CurrencyType.USD -> recordUiState.foreignCurrencyRecord.dollarState.totalProfit
-        CurrencyType.JPY -> recordUiState.foreignCurrencyRecord.yenState.totalProfit
-    }
-
-    val profitValue = totalProfit.replace(",", "").toDoubleOrNull() ?: 0.0
-    val isProfit = profitValue >= 0
-    val displayProfit = if (totalProfit.isEmpty() || totalProfit == "0") "기록 없음" else "₩$totalProfit"
-    val hasData = totalProfit.isNotEmpty() && totalProfit != "0"
-
     Column(
         modifier = Modifier.fillMaxWidth()
     ) {
@@ -112,7 +102,7 @@ fun MainHeader(
                                 Text(
                                     text = when(mainUiState.selectedCurrencyType) {
                                         CurrencyType.USD -> "${mainUiState.recentRate.usd}원"
-                                        CurrencyType.JPY -> "${BigDecimal(mainUiState.recentRate.jpy).times(BigDecimal("100"))}원"
+                                        CurrencyType.JPY -> "${mainUiState.recentRate.jpy}원"
                                     },
                                     fontSize = 18.sp,
                                     fontWeight = FontWeight.Bold,
@@ -155,7 +145,8 @@ fun MainHeader(
                             elevation = CardDefaults.cardElevation(4.dp),
                             shape = RoundedCornerShape(20.dp),
                             colors = CardDefaults.cardColors(containerColor = Color(0xFF6366F1))
-                        ) {
+                        )
+                        {
                             Column(
                                 modifier = Modifier
                                     .fillMaxWidth()
@@ -363,7 +354,7 @@ fun MainHeader(
                             }
                         }
 
-                        // ✅ 추가: 보유 통화 상세 통계
+                        // 보유 통화 상세 통계
                         Spacer(modifier = Modifier.height(16.dp))
 
                         val currentStats = when(mainUiState.selectedCurrencyType) {
@@ -378,8 +369,6 @@ fun MainHeader(
                             )
                         }
                     }
-
-                    // 컨트롤 섹션 삭제 (AnimatedContent 밖으로 이동)
                 }
             }
         }
@@ -447,74 +436,6 @@ fun MainHeader(
             ) {
                 BannerAd()
             }
-        }
-    }
-}
-
-/**
- * 축소 뷰 통화 카드
- */
-@Composable
-private fun CompactCurrencyCard(
-    symbol: String,
-    stats: CurrencyHoldingInfo,
-    color: Color
-) {
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(8.dp)
-    ) {
-        Surface(
-            shape = RoundedCornerShape(8.dp),
-            color = color.copy(alpha = 0.1f)
-        ) {
-            Text(
-                text = symbol,
-                fontSize = 16.sp,
-                fontWeight = FontWeight.Bold,
-                color = color,
-                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
-            )
-        }
-
-        if (stats.hasData) {
-            Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                Text(
-                    text = stats.currentRate,
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color(0xFF1F2937)
-                )
-
-                val profitValue = stats.expectedProfit
-                    .replace("+₩", "").replace("-₩", "").replace("₩", "").replace(",", "")
-                    .toDoubleOrNull() ?: 0.0
-                val isProfit = profitValue >= 0
-
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(4.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Icon(
-                        imageVector = if (isProfit) Icons.Rounded.TrendingUp else Icons.Rounded.TrendingDown,
-                        contentDescription = null,
-                        tint = if (isProfit) Color(0xFF10B981) else Color(0xFFEF4444),
-                        modifier = Modifier.size(12.dp)
-                    )
-                    Text(
-                        text = stats.profitRate,
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = if (isProfit) Color(0xFF10B981) else Color(0xFFEF4444)
-                    )
-                }
-            }
-        } else {
-            Text(
-                text = "보유 없음",
-                fontSize = 12.sp,
-                color = Color.Gray
-            )
         }
     }
 }

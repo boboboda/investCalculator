@@ -150,6 +150,7 @@ class MainActivity : ComponentActivity() {
         Log.e(TAG("메인", "onNewIntent"), "━━━━━━━━━━━━━━━━━━━━━━━━━━")
 
         handleIntent(intent)
+
     }
 
     // ✅ Intent 처리 (네비게이션)

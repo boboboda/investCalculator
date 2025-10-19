@@ -251,7 +251,7 @@ fun FcmAlarmScreen() {
                     CurrencyType.JPY -> {
                         RateView(
                             title = "JPY",
-                            recentRate = "${BigDecimal(fcmUiState.value.recentRate.jpy).times(BigDecimal("100"))}",
+                            recentRate = "${BigDecimal(fcmUiState.value.recentRate.jpy)}",
                             createAt = fcmUiState.value.recentRate.createAt
                         )
                     }

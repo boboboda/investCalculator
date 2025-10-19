@@ -24,7 +24,6 @@ class AppStarter @Inject constructor(
     fun startApp(context: Context) {
         CoroutineScope(Dispatchers.IO).launch {
             localExistCheckUseCase.invoke()
-            rateRepository.subscribeToExchangeRateUpdates()
             noticeRepository.loadNotice()
 
             withContext(Dispatchers.Main) {

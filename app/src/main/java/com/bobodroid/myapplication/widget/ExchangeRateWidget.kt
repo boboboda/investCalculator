@@ -5,6 +5,7 @@ import android.appwidget.AppWidgetManager
 import android.appwidget.AppWidgetProvider
 import android.content.Context
 import android.content.Intent
+import android.os.Bundle
 import android.util.Log
 import android.widget.RemoteViews
 import com.bobodroid.myapplication.R
@@ -16,6 +17,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.launch
 import java.math.BigDecimal
@@ -52,6 +54,24 @@ class ExchangeRateWidget : AppWidgetProvider() {
         scope.cancel()
     }
 
+    // ✅ 위젯이 화면에 보일 때마다 호출 (삼성 런처 대응)
+    override fun onAppWidgetOptionsChanged(
+        context: Context,
+        appWidgetManager: AppWidgetManager,
+        appWidgetId: Int,
+        newOptions: Bundle?
+    ) {
+        super.onAppWidgetOptionsChanged(context, appWidgetManager, appWidgetId, newOptions)
+
+        Log.d("ExchangeRateWidget", "옵션 변경됨 - 위젯 리셋")
+
+        // 위젯 강제 리프레시
+        scope.launch {
+            delay(100) // 짧은 딜레이 후 리프레시
+            updateAppWidget(context, appWidgetManager, appWidgetId)
+        }
+    }
+
     private fun updateAppWidget(
         context: Context,
         appWidgetManager: AppWidgetManager,
@@ -59,27 +79,29 @@ class ExchangeRateWidget : AppWidgetProvider() {
     ) {
         val views = RemoteViews(context.packageName, R.layout.widget_exchange_rate)
 
-        // ✅ 위젯 전체 클릭 시 앱 열기 (기존 앱이 있으면 재사용)
+        // ✅ 위젯 클릭 시 앱 열기
         val mainIntent = Intent(context, MainActivity::class.java).apply {
-            // ✅ 이 플래그들이 중요!
             flags = Intent.FLAG_ACTIVITY_SINGLE_TOP or
                     Intent.FLAG_ACTIVITY_CLEAR_TOP or
                     Intent.FLAG_ACTIVITY_NEW_TASK
         }
+
         val mainPendingIntent = PendingIntent.getActivity(
             context,
-            0,
+            appWidgetId,
             mainIntent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
-        views.setOnClickPendingIntent(R.id.widget_title, mainPendingIntent)
+
+        // ✅ 버튼에 클릭 리스너 설정 (TextView 대신)
+        views.setOnClickPendingIntent(R.id.widget_button, mainPendingIntent)
 
         scope.launch {
             try {
                 val latestRate = latestRateRepository.latestRateFlow.firstOrNull()
 
                 if (latestRate != null) {
-                    // ✅ 달러 환율 - BigDecimal로 포맷팅 (소수점 2자리)
+                    // ✅ 달러 환율
                     val usdRate = latestRate.usd?.let {
                         try {
                             val rate = BigDecimal(it)
@@ -92,11 +114,11 @@ class ExchangeRateWidget : AppWidgetProvider() {
                     views.setTextViewText(R.id.widget_usd_rate, usdRate)
                     views.setTextViewText(R.id.widget_usd_change, "")
 
-                    // ✅ 엔화 환율 - DB에 이미 100 곱해진 값 저장됨 (946.00)
+                    // ✅ 엔화 환율
                     val jpyRate = latestRate.jpy?.let {
                         try {
                             val rate = BigDecimal(it)
-                            val formattedRate = rate.times(BigDecimal(100)).setScale(2, RoundingMode.HALF_UP)
+                            val formattedRate = rate.setScale(2, RoundingMode.HALF_UP)
                             "${formattedRate.toPlainString()}원"
                         } catch (e: Exception) {
                             "---"
@@ -161,6 +183,11 @@ class ExchangeRateWidget : AppWidgetProvider() {
                 views.setTextViewText(R.id.widget_total_profit, "오류")
             }
 
+            // ✅ 위젯 업데이트 적용
+            appWidgetManager.updateAppWidget(appWidgetId, views)
+
+            // ✅ 삼성 런처 대응: 즉시 다시 한 번 업데이트하여 스케일 리셋
+            delay(50)
             appWidgetManager.updateAppWidget(appWidgetId, views)
         }
     }

@@ -19,7 +19,7 @@ sealed class MainRoute(
     override val iconResId: Int? = null,
     override val subRoutes: List<String> = emptyList()
 ): Route {
-    data object Main: MainRoute("Main", "홈", 1, iconResId = R.drawable.edit_06)
+    data object Main: MainRoute("Main", "기록", 1, iconResId = R.drawable.edit_06)
     data object Alert: MainRoute("Alert", "알람", 2, iconResId = R.drawable.alarm)
     data object AnalysisScreen: MainRoute("Analysis", "분석", 3, iconResId = R.drawable.baseline_bar_chart_24)
     data object MyPage: MainRoute("MyPage", "마이페이지", 4, iconResId = R.drawable.user, subRoutes = listOf("CreateUser", "CustomerServiceCenter", "CloudService"))

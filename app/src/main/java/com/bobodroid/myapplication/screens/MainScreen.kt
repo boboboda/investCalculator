@@ -371,17 +371,10 @@ fun MainScreen(
 
         // 플로팅 버튼
         ContentIcon(
-            buyButtonClicked = {
+            addRecordClicked = {
                 mainViewModel.handleMainEvent(MainEvent.ShowAddBottomSheet)
-            },
-            totalMoneyCheckClicked = {
-                mainViewModel.handleMainEvent(MainEvent.ShowDateRangeDialog)
-            },
-            refreshClicked = {
-                coroutineScope.launch {
-                    mainViewModel.reFreshProfit()
-                }
             }
+
         )
 
         Box {

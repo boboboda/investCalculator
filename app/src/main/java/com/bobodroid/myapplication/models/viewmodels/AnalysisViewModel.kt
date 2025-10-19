@@ -19,6 +19,8 @@ import kotlinx.coroutines.withContext
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import javax.inject.Inject
+import kotlin.math.pow
+import kotlin.math.sqrt
 
 @HiltViewModel
 class AnalysisViewModel @Inject constructor(): ViewModel() {
@@ -32,13 +34,11 @@ class AnalysisViewModel @Inject constructor(): ViewModel() {
     val analysisUiState = _analysisUiState.asStateFlow()
 
     init {
-        // ✅ 초기 데이터 로드는 IO 스레드에서
         viewModelScope.launch(Dispatchers.IO) {
             loadAllRangeData()
             loadDailyRates()
             loadDailyCharge()
 
-            // ✅ UI 업데이트는 Main 스레드로 전환
             withContext(Dispatchers.Main) {
                 _analysisUiState.update { currentUiState ->
                     currentUiState.copy(
@@ -51,7 +51,6 @@ class AnalysisViewModel @Inject constructor(): ViewModel() {
             Log.d(TAG("AnalysisViewModel", "init"), "Initial selectedRates data set: ${_analysisUiState.value.selectedRates}")
         }
 
-        // ✅ collect는 별도 코루틴으로
         viewModelScope.launch {
             _analysisUiState.collect { uiState ->
                 Log.d(TAG("AnalysisViewModel", "collectTabIndex"),
@@ -74,7 +73,6 @@ class AnalysisViewModel @Inject constructor(): ViewModel() {
         }
     }
 
-    // ✅ 모든 네트워크 작업은 IO 스레드에서 실행
     private suspend fun loadAllRangeData() = withContext(Dispatchers.IO) {
         try {
             loadDailyRates()
@@ -159,7 +157,6 @@ class AnalysisViewModel @Inject constructor(): ViewModel() {
     }
 
     fun refreshData() {
-        // ✅ IO 스레드에서 실행
         viewModelScope.launch(Dispatchers.IO) {
             loadAllRangeData()
         }
@@ -173,7 +170,6 @@ class AnalysisViewModel @Inject constructor(): ViewModel() {
             val (jpyIcon, jpyColor) = getChangeIndicator(changeAndLatestRate.change.jpy)
             val (usdIcon, usdColor) = getChangeIndicator(changeAndLatestRate.change.usd)
 
-            // ✅ UI 업데이트는 Main 스레드로
             withContext(Dispatchers.Main) {
                 _analysisUiState.update { uiState ->
                     uiState.copy(
@@ -206,6 +202,128 @@ class AnalysisViewModel @Inject constructor(): ViewModel() {
                 "NumberFormatException for changeValue: $changeValue, Error: $e")
             Pair('-', Color.Gray)
         }
+    }
+
+    // ✨ 통계 계산 - 선택된 탭의 데이터 기준
+    fun calculateStatistics(currencyType: com.bobodroid.myapplication.models.datamodels.roomDb.CurrencyType): RateStatistics {
+        val rates = _analysisUiState.value.selectedRates
+        if (rates.isEmpty()) return RateStatistics()
+
+        val values = rates.map {
+            when(currencyType) {
+                com.bobodroid.myapplication.models.datamodels.roomDb.CurrencyType.USD ->
+                    it.usd.toFloatOrNull() ?: 0f
+                com.bobodroid.myapplication.models.datamodels.roomDb.CurrencyType.JPY ->
+                    (it.jpy.toFloatOrNull() ?: 0f) * 100f  // ✅ JPY는 100배
+            }
+        }
+
+        val max = values.maxOrNull() ?: 0f
+        val min = values.minOrNull() ?: 0f
+        val average = if (values.isNotEmpty()) values.average().toFloat() else 0f
+        val volatility = calculateVolatility(values)
+        val range = max - min
+
+        return RateStatistics(
+            max = max,
+            min = min,
+            average = average,
+            volatility = volatility,
+            range = range
+        )
+    }
+
+    private fun calculateVolatility(values: List<Float>): Float {
+        if (values.size < 2) return 0f
+
+        val mean = values.average()
+        val variance = values.map { (it - mean).pow(2) }.average()
+        return sqrt(variance).toFloat()
+    }
+
+    // ✅ 추세 분석 - 항상 전체 데이터(1년) 기준
+    fun calculateTrendAnalysis(currencyType: com.bobodroid.myapplication.models.datamodels.roomDb.CurrencyType): TrendAnalysis {
+        // ✅ 항상 1년 데이터 사용 (탭과 무관)
+        val rates = _yearlyRates.value
+        if (rates.size < 2) return TrendAnalysis()
+
+        val values = rates.map {
+            when(currencyType) {
+                com.bobodroid.myapplication.models.datamodels.roomDb.CurrencyType.USD ->
+                    it.usd.toFloatOrNull() ?: 0f
+                com.bobodroid.myapplication.models.datamodels.roomDb.CurrencyType.JPY ->
+                    (it.jpy.toFloatOrNull() ?: 0f) * 100f  // ✅ JPY는 100배
+            }
+        }
+
+        var upDays = 0
+        var downDays = 0
+
+        for (i in 1 until values.size) {
+            when {
+                values[i] > values[i-1] -> upDays++
+                values[i] < values[i-1] -> downDays++
+            }
+        }
+
+        val trend = when {
+            upDays > downDays -> "상승"
+            downDays > upDays -> "하락"
+            else -> "횡보"
+        }
+
+        val trendStrength = if (values.size > 1) {
+            val maxChange = (upDays + downDays).toFloat()
+            if (maxChange > 0) ((kotlin.math.abs(upDays - downDays) / maxChange) * 100).toInt() else 0
+        } else 0
+
+        return TrendAnalysis(
+            trend = trend,
+            upDays = upDays,
+            downDays = downDays,
+            trendStrength = trendStrength
+        )
+    }
+
+    // ✅ 기간별 비교 - 항상 최신 환율 기준 (탭과 무관)
+    fun calculatePeriodComparison(currencyType: com.bobodroid.myapplication.models.datamodels.roomDb.CurrencyType): PeriodComparison {
+        // ✅ 최신 환율 사용
+        val currentRate = when(currencyType) {
+            com.bobodroid.myapplication.models.datamodels.roomDb.CurrencyType.USD ->
+                _analysisUiState.value.latestRate.usd.toFloatOrNull() ?: 0f
+            com.bobodroid.myapplication.models.datamodels.roomDb.CurrencyType.JPY ->
+                (_analysisUiState.value.latestRate.jpy.toFloatOrNull() ?: 0f)
+        }
+
+        // ✅ 항상 전체 데이터(1년)에서 비교
+        val allRates = _yearlyRates.value
+        if (allRates.isEmpty()) return PeriodComparison()
+
+        val values = allRates.map {
+            when(currencyType) {
+                com.bobodroid.myapplication.models.datamodels.roomDb.CurrencyType.USD ->
+                    it.usd.toFloatOrNull() ?: 0f
+                com.bobodroid.myapplication.models.datamodels.roomDb.CurrencyType.JPY ->
+                    (it.jpy.toFloatOrNull() ?: 0f) * 100f  // ✅ JPY는 100배
+            }
+        }
+
+        fun calculateChange(oldValue: Float): String {
+            if (oldValue == 0f) return "0.00%"
+            val change = ((currentRate - oldValue) / oldValue) * 100
+            return String.format("%.2f%%", change)
+        }
+
+        // ✅ 항상 고정된 기간으로 비교
+        val previousDay = if (values.size > 1) values[values.size - 2] else currentRate
+        val weekAgo = if (values.size >= 7) values[values.size - 7] else currentRate
+        val monthAgo = if (values.size >= 30) values[values.size - 30] else currentRate
+
+        return PeriodComparison(
+            previousDay = calculateChange(previousDay),
+            weekAgo = calculateChange(weekAgo),
+            monthAgo = calculateChange(monthAgo)
+        )
     }
 }
 
@@ -261,4 +379,26 @@ data class AnalysisUiState(
     val jpyChangeColor: Color = Color.Gray,
     val usdChangeIcon: Char = '-',
     val usdChangeColor: Color = Color.Gray
+)
+
+// ✨ 데이터 클래스들
+data class RateStatistics(
+    val max: Float = 0f,
+    val min: Float = 0f,
+    val average: Float = 0f,
+    val volatility: Float = 0f,
+    val range: Float = 0f
+)
+
+data class TrendAnalysis(
+    val trend: String = "횡보",
+    val upDays: Int = 0,
+    val downDays: Int = 0,
+    val trendStrength: Int = 0
+)
+
+data class PeriodComparison(
+    val previousDay: String = "0.00%",
+    val weekAgo: String = "0.00%",
+    val monthAgo: String = "0.00%"
 )

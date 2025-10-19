@@ -385,10 +385,15 @@ fun RecordListRowView(
                                                 onEvent(RecordListEvent.ShowEditBottomSheet(data))
                                             },
                                             modifier = Modifier.weight(1f),
+                                            enabled = !sellState,  // ← 매도 완료면 비활성화
                                             colors = ButtonDefaults.outlinedButtonColors(
-                                                contentColor = Color(0xFF6366F1)
+                                                contentColor = Color(0xFF6366F1),
+                                                disabledContentColor = Color(0xFF9CA3AF)  // ← 비활성화 색상
                                             ),
-                                            border = BorderStroke(1.dp, Color(0xFF6366F1)),
+                                            border = BorderStroke(
+                                                1.dp,
+                                                if (sellState) Color(0xFFE5E7EB) else Color(0xFF6366F1)  // ← 비활성화 테두리
+                                            ),
                                             shape = RoundedCornerShape(8.dp)
                                         ) {
                                             Icon(

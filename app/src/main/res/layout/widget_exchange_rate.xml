@@ -1,0 +1,150 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="16dp"
+    android:background="@drawable/widget_background">
+
+    <!-- 헤더 -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:paddingBottom="8dp">
+
+        <ImageView
+            android:id="@+id/widget_icon"
+            android:layout_width="24dp"
+            android:layout_height="24dp"
+            android:src="@drawable/ic_icon"
+            android:layout_marginEnd="8dp" />
+
+        <TextView
+            android:id="@+id/widget_title"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="실시간 환율 정보"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            android:textColor="#1F2937" />
+    </LinearLayout>
+
+    <!-- 구분선 -->
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:background="#E5E7EB"
+        android:layout_marginBottom="12dp" />
+
+    <!-- 달러 환율 -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:paddingTop="4dp"
+        android:paddingBottom="4dp">
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="USD"
+            android:textSize="14sp"
+            android:textColor="#6B7280" />
+
+        <TextView
+            android:id="@+id/widget_usd_rate"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="1,330원"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            android:textColor="#1F2937"
+            android:layout_marginEnd="8dp" />
+
+        <TextView
+            android:id="@+id/widget_usd_change"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="+0.5%"
+            android:textSize="11sp"
+            android:textColor="#10B981" />
+    </LinearLayout>
+
+    <!-- 엔화 환율 -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:paddingTop="4dp"
+        android:paddingBottom="4dp">
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="JPY (100엔)"
+            android:textSize="14sp"
+            android:textColor="#6B7280" />
+
+        <TextView
+            android:id="@+id/widget_jpy_rate"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="946.00원"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            android:textColor="#1F2937"
+            android:layout_marginEnd="8dp" />
+
+        <TextView
+            android:id="@+id/widget_jpy_change"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="-0.3%"
+            android:textSize="11sp"
+            android:textColor="#EF4444" />
+    </LinearLayout>
+
+    <!-- 업데이트 시간 -->
+    <TextView
+        android:id="@+id/widget_update_time"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="업데이트: 10:23"
+        android:textSize="11sp"
+        android:textColor="#9CA3AF"
+        android:gravity="end"
+        android:paddingTop="8dp" />
+
+    <!-- 추가 정보: 총 수익 -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:paddingTop="8dp"
+        android:background="#F9FAFB"
+        android:padding="8dp">
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="총 예상 수익"
+            android:textSize="13sp"
+            android:textColor="#6B7280"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/widget_total_profit"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="+₩1,234,567"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            android:textColor="#10B981" />
+    </LinearLayout>
+
+</LinearLayout>

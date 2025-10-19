@@ -88,6 +88,17 @@
 
         <!-- ❌ 메타데이터 방식은 사용하지 않음! -->
         <!-- BuildConfig.KAKAO_APP_KEY와 manifestPlaceholders로 이미 주입됨 -->
+
+        <receiver
+            android:name=".widget.ExchangeRateWidget"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_exchange_rate_info" />
+        </receiver>
     </application>
 
 </manifest>

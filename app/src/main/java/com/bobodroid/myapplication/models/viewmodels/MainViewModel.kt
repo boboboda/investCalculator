@@ -1,5 +1,6 @@
 package com.bobodroid.myapplication.models.viewmodels
 
+import android.content.Context
 import android.content.Intent
 import android.util.Log
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -30,13 +31,16 @@ import com.bobodroid.myapplication.util.AdMob.AdManager
 import com.bobodroid.myapplication.util.AdMob.AdUseCase
 import com.bobodroid.myapplication.util.result.onError
 import com.bobodroid.myapplication.util.result.onSuccess
+import com.bobodroid.myapplication.widget.WidgetUpdateHelper
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.receiveAsFlow
@@ -63,7 +67,8 @@ class MainViewModel @Inject constructor(
     private val noticeRepository: NoticeRepository,
     private val adManager: AdManager,
     private val adUseCase: AdUseCase,
-    private val recordUseCase: RecordUseCase
+    private val recordUseCase: RecordUseCase,
+    @ApplicationContext private val context: Context
 ) : ViewModel() {
 
     private val _mainUiState = MutableStateFlow(MainUiState())
@@ -170,10 +175,20 @@ class MainViewModel @Inject constructor(
     private suspend fun receivedLatestRate() {
         latestRateRepository.latestRateFlow.collect { latestRate ->
             Log.d(TAG("MainViewModel", "receivedLatestRate"), "실시간 데이터 수신: $latestRate")
+
+            // 1. UI 상태 업데이트
             val uiState = _mainUiState.value.copy(
                 recentRate = latestRate
             )
             _mainUiState.emit(uiState)
+
+            // 2. ✅ 자동으로 수익 재계산
+            reFreshProfit()
+            Log.d(TAG("MainViewModel", "receivedLatestRate"), "환율 업데이트 → 수익 자동 재계산 완료")
+
+            WidgetUpdateHelper.updateAllWidgets(context)
+            Log.d(TAG("MainViewModel", "receivedLatestRate"),
+                "위젯 업데이트 완료: USD=${latestRate.usd}, JPY=${latestRate.jpy}")
         }
     }
 
@@ -802,6 +817,170 @@ class MainViewModel @Inject constructor(
     }
 
 
+    // MainViewModel.kt의 init 블록 내부에 추가 (getRecords() 호출 후)
+
+    init {
+        viewModelScope.launch {
+            launch { receivedLatestRate() }
+            launch { getRecords() }
+            launch { calculateHoldingStats() } // ✅ 추가
+
+            localUserExistCheck()
+            noticeExistCheck()
+            noticeDialogState()
+            adDialogState()
+            latestRateRepository.fetchInitialLatestRate()
+        }
+    }
+
+// MainViewModel.kt 클래스 내부에 추가할 함수들
+
+    /**
+     * 보유중인 외화 통계 계산 및 업데이트
+     */
+    private suspend fun calculateHoldingStats() {
+        combine(
+            recordListUiState,
+            mainUiState
+        ) { recordState, mainState ->
+            val dollarRecords = recordState.foreignCurrencyRecord.dollarState.records
+                .filter { it.recordColor == false } // 보유중인 것만
+
+            val yenRecords = recordState.foreignCurrencyRecord.yenState.records
+                .filter { it.recordColor == false } // 보유중인 것만
+
+            val currentUsdRate = mainState.recentRate.usd ?: "0"
+            val currentJpyRate = mainState.recentRate.jpy ?: "0"
+
+            HoldingStats(
+                dollarStats = calculateCurrencyHolding(
+                    records = dollarRecords,
+                    currentRate = currentUsdRate,
+                    currencyType = CurrencyType.USD
+                ),
+                yenStats = calculateCurrencyHolding(
+                    records = yenRecords,
+                    currentRate = currentJpyRate,
+                    currencyType = CurrencyType.JPY
+                )
+            )
+        }.collect { stats ->
+            _mainUiState.update { it.copy(holdingStats = stats) }
+        }
+    }
+
+    /**
+     * 개별 통화의 보유 통계 계산
+     */
+    private fun calculateCurrencyHolding(
+        records: List<ForeignCurrencyRecord>,
+        currentRate: String,
+        currencyType: CurrencyType
+    ): CurrencyHoldingInfo {
+        if (records.isEmpty() || currentRate == "0" || currentRate.isEmpty()) {
+            return CurrencyHoldingInfo(hasData = false)
+        }
+
+        try {
+            // 1. 총 투자금 계산
+            val totalInvestment = records.sumOf {
+                it.money?.replace(",", "")?.toBigDecimalOrNull() ?: BigDecimal.ZERO
+            }
+
+            // 2. 총 보유 외화량 계산
+            val totalHoldingAmount = records.sumOf {
+                it.exchangeMoney?.replace(",", "")?.toBigDecimalOrNull() ?: BigDecimal.ZERO
+            }
+
+            // 3. 가중 평균 매수가 계산
+            var totalWeightedRate = BigDecimal.ZERO
+            var totalWeight = BigDecimal.ZERO
+
+            records.forEach { record ->
+                val exchangeMoney = record.exchangeMoney?.replace(",", "")?.toBigDecimalOrNull() ?: BigDecimal.ZERO
+                val buyRate = record.buyRate?.replace(",", "")?.toBigDecimalOrNull() ?: BigDecimal.ZERO
+
+                if (exchangeMoney > BigDecimal.ZERO && buyRate > BigDecimal.ZERO) {
+                    totalWeightedRate += buyRate.multiply(exchangeMoney)
+                    totalWeight += exchangeMoney
+                }
+            }
+
+            val averageRate = if (totalWeight > BigDecimal.ZERO) {
+                totalWeightedRate.divide(totalWeight, 2, RoundingMode.HALF_UP)
+            } else {
+                BigDecimal.ZERO
+            }
+
+            // 4. 현재 환율로 예상 수익 계산
+            val currentRateBD = currentRate.replace(",", "").toBigDecimalOrNull() ?: BigDecimal.ZERO
+
+            val expectedProfit = when (currencyType) {
+                CurrencyType.USD -> {
+                    // (보유달러 × 현재환율) - 투자금
+                    (totalHoldingAmount.multiply(currentRateBD)).minus(totalInvestment)
+                }
+                CurrencyType.JPY -> {
+                    // (보유엔화 × 현재환율 ÷ 100) - 투자금
+                    (totalHoldingAmount.multiply(currentRateBD).divide(BigDecimal(100), 2, RoundingMode.HALF_UP)).minus(totalInvestment)
+                }
+            }
+
+            // 5. 수익률 계산
+            val profitRate = if (totalInvestment > BigDecimal.ZERO) {
+                (expectedProfit.divide(totalInvestment, 4, RoundingMode.HALF_UP).multiply(BigDecimal(100)))
+                    .setScale(1, RoundingMode.HALF_UP)
+            } else {
+                BigDecimal.ZERO
+            }
+
+            return CurrencyHoldingInfo(
+                averageRate = formatRate(averageRate),
+                currentRate = formatRate(currentRateBD),
+                totalInvestment = formatCurrency(totalInvestment),
+                expectedProfit = formatCurrency(expectedProfit),
+                profitRate = formatProfitRate(profitRate),
+                holdingAmount = formatAmount(totalHoldingAmount, currencyType),
+                hasData = true
+            )
+
+        } catch (e: Exception) {
+            Log.e("MainViewModel", "보유 통계 계산 오류: ${e.message}", e)
+            return CurrencyHoldingInfo(hasData = false)
+        }
+    }
+
+    // 포맷팅 헬퍼 함수들
+    private fun formatRate(rate: BigDecimal): String {
+        return "%,.2f".format(rate)
+    }
+
+    private fun formatCurrency(amount: BigDecimal): String {
+        val absAmount = amount.abs()
+        val formatted = "%,.0f".format(absAmount)
+        return when {
+            amount > BigDecimal.ZERO -> "+₩$formatted"
+            amount < BigDecimal.ZERO -> "-₩$formatted"
+            else -> "₩$formatted"
+        }
+    }
+
+    private fun formatProfitRate(rate: BigDecimal): String {
+        return when {
+            rate > BigDecimal.ZERO -> "+${rate}%"
+            rate < BigDecimal.ZERO -> "${rate}%"
+            else -> "0.0%"
+        }
+    }
+
+    private fun formatAmount(amount: BigDecimal, type: CurrencyType): String {
+        val formatted = "%,.2f".format(amount)
+        return when (type) {
+            CurrencyType.USD -> "$$formatted"
+            CurrencyType.JPY -> "¥$formatted"
+        }
+    }
+
 
 
 }
@@ -827,6 +1006,7 @@ data class MainUiState (
         val showDatePickerDialog: Boolean = false,
         val showDateRangeDialog: Boolean = false,
         val showGroupChangeBottomSheet: Boolean = false,
+        val holdingStats: HoldingStats = HoldingStats()
 )
 
 
@@ -872,3 +1052,20 @@ data class CurrencyRecordState<T: ForeignCurrencyRecord>(  // BuyRecord 인터�
     val totalProfit: String = "",
 )
 
+data class HoldingStats(
+    val dollarStats: CurrencyHoldingInfo = CurrencyHoldingInfo(),
+    val yenStats: CurrencyHoldingInfo = CurrencyHoldingInfo()
+)
+
+/**
+ * 통화별 보유 정보
+ */
+data class CurrencyHoldingInfo(
+    val averageRate: String = "0", // 평균 매수가
+    val currentRate: String = "0", // 현재 환율
+    val totalInvestment: String = "₩0", // 총 투자금
+    val expectedProfit: String = "₩0", // 예상 수익
+    val profitRate: String = "0.0%", // 수익률
+    val holdingAmount: String = "0", // 보유 외화량
+    val hasData: Boolean = false // 데이터 존재 여부
+)

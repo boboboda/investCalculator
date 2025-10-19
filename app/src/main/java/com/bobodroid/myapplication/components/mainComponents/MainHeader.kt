@@ -23,6 +23,7 @@ import com.bobodroid.myapplication.models.datamodels.roomDb.CurrencyType
 import com.bobodroid.myapplication.models.viewmodels.AdUiState
 import com.bobodroid.myapplication.models.viewmodels.MainUiState
 import com.bobodroid.myapplication.models.viewmodels.RecordListUiState
+import com.bobodroid.myapplication.models.viewmodels.CurrencyHoldingInfo
 import java.math.BigDecimal
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -35,7 +36,7 @@ fun MainHeader(
     hideSellRecordState: Boolean,
     onHide:(Boolean) -> Unit,
     isCollapsed: Boolean = false,
-    onToggleClick: () -> Unit  // ✅ 추가: 토글 버튼 클릭 핸들러
+    onToggleClick: () -> Unit
 ) {
     var dropdownExpanded by remember { mutableStateOf(false) }
 
@@ -48,16 +49,6 @@ fun MainHeader(
     val isProfit = profitValue >= 0
     val displayProfit = if (totalProfit.isEmpty() || totalProfit == "0") "기록 없음" else "₩$totalProfit"
     val hasData = totalProfit.isNotEmpty() && totalProfit != "0"
-
-    // 🎨 애니메이션
-    val animatedProgress by animateFloatAsState(
-        targetValue = if (isCollapsed) 1f else 0f,
-        animationSpec = spring(
-            dampingRatio = Spring.DampingRatioMediumBouncy,
-            stiffness = Spring.StiffnessLow
-        ),
-        label = "header_collapse"
-    )
 
     Column(
         modifier = Modifier.fillMaxWidth()
@@ -79,7 +70,7 @@ fun MainHeader(
             label = "header_animation"
         ) { collapsed ->
             if (collapsed) {
-                // 🎯 축소 뷰 - 프리미엄 디자인
+                // 🎯 축소 뷰 - 현재 환율만 표시
                 Surface(
                     modifier = Modifier.fillMaxWidth(),
                     color = Color.White,
@@ -135,43 +126,7 @@ fun MainHeader(
                             }
                         }
 
-                        // 중앙: 수익
-                        if (hasData) {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(6.dp)
-                            ) {
-                                Surface(
-                                    shape = RoundedCornerShape(8.dp),
-                                    color = if (isProfit)
-                                        Color(0xFF10B981).copy(alpha = 0.1f)
-                                    else
-                                        Color(0xFFEF4444).copy(alpha = 0.1f),
-                                    modifier = Modifier.clip(RoundedCornerShape(8.dp))
-                                ) {
-                                    Row(
-                                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
-                                        verticalAlignment = Alignment.CenterVertically,
-                                        horizontalArrangement = Arrangement.spacedBy(4.dp)
-                                    ) {
-                                        Icon(
-                                            imageVector = if (isProfit) Icons.Rounded.TrendingUp else Icons.Rounded.TrendingDown,
-                                            contentDescription = null,
-                                            tint = if (isProfit) Color(0xFF10B981) else Color(0xFFEF4444),
-                                            modifier = Modifier.size(14.dp)
-                                        )
-                                        Text(
-                                            text = displayProfit,
-                                            fontSize = 14.sp,
-                                            fontWeight = FontWeight.Bold,
-                                            color = if (isProfit) Color(0xFF10B981) else Color(0xFFEF4444)
-                                        )
-                                    }
-                                }
-                            }
-                        }
-
-                        // ✅ 추가: 우측 토글 버튼 (확대)
+                        // 우측 토글 버튼
                         IconButton(
                             onClick = onToggleClick,
                             modifier = Modifier.size(32.dp)
@@ -185,7 +140,7 @@ fun MainHeader(
                     }
                 }
             } else {
-                // 🎨 확장 뷰 - 원래 디자인
+                // 🎨 확장 뷰 - 기존 대시보드 + 선택된 통화 상세
                 Column(modifier = Modifier.fillMaxWidth()) {
                     Column(
                         modifier = Modifier
@@ -194,7 +149,7 @@ fun MainHeader(
                             .padding(horizontal = 16.dp)
                             .padding(top = 16.dp, bottom = 16.dp)
                     ) {
-                        // 대시보드 카드
+                        // 기존 대시보드 카드
                         Card(
                             modifier = Modifier.fillMaxWidth(),
                             elevation = CardDefaults.cardElevation(4.dp),
@@ -206,7 +161,7 @@ fun MainHeader(
                                     .fillMaxWidth()
                                     .padding(24.dp)
                             ) {
-                                // ✅ 수정: 카드 헤더에 토글 버튼 추가
+                                // 헤더
                                 Row(
                                     modifier = Modifier.fillMaxWidth(),
                                     horizontalArrangement = Arrangement.SpaceBetween,
@@ -223,6 +178,7 @@ fun MainHeader(
                                         horizontalArrangement = Arrangement.spacedBy(8.dp),
                                         verticalAlignment = Alignment.CenterVertically
                                     ) {
+                                        // 통화 선택 드롭다운
                                         Box {
                                             Surface(
                                                 shape = RoundedCornerShape(12.dp),
@@ -273,7 +229,7 @@ fun MainHeader(
                                             }
                                         }
 
-                                        // ✅ 추가: 토글 버튼 (축소)
+                                        // 축소 버튼
                                         IconButton(
                                             onClick = onToggleClick,
                                             modifier = Modifier.size(32.dp)
@@ -289,7 +245,7 @@ fun MainHeader(
 
                                 Spacer(modifier = Modifier.height(20.dp))
 
-                                // 카드 컨텐츠
+                                // 현재 환율 & 총 예상수익
                                 Row(
                                     modifier = Modifier.fillMaxWidth(),
                                     horizontalArrangement = Arrangement.SpaceBetween
@@ -303,7 +259,7 @@ fun MainHeader(
                                         )
                                         Spacer(modifier = Modifier.height(6.dp))
 
-                                        if(mainUiState.recentRate.usd === null || mainUiState.recentRate.jpy === null) {
+                                        if(mainUiState.recentRate.usd == null || mainUiState.recentRate.jpy == null) {
                                             Text(
                                                 text = "불러오는 중",
                                                 color = Color.White,
@@ -347,101 +303,135 @@ fun MainHeader(
                                     )
                                     Spacer(modifier = Modifier.width(24.dp))
 
-                                    // 총 수익
+                                    // 보유 통화 통계
+                                    val currentStats = when(mainUiState.selectedCurrencyType) {
+                                        CurrencyType.USD -> mainUiState.holdingStats.dollarStats
+                                        CurrencyType.JPY -> mainUiState.holdingStats.yenStats
+                                    }
+
                                     Column(
                                         modifier = Modifier.weight(1f),
                                         horizontalAlignment = Alignment.End
                                     ) {
-                                        Row(
-                                            verticalAlignment = Alignment.CenterVertically,
-                                            horizontalArrangement = Arrangement.End
-                                        ) {
-                                            if (hasData) {
-                                                Icon(
-                                                    imageVector = Icons.Rounded.TrendingUp,
-                                                    contentDescription = null,
-                                                    tint = Color.White,
-                                                    modifier = Modifier.size(16.dp)
-                                                )
-                                                Spacer(modifier = Modifier.width(4.dp))
-                                            }
+                                        if (currentStats.hasData) {
                                             Text(
-                                                text = "총 예상수익",
+                                                text = "평균 매수가",
                                                 color = Color.White.copy(alpha = 0.8f),
                                                 fontSize = 13.sp
                                             )
-                                        }
-                                        Spacer(modifier = Modifier.height(6.dp))
-                                        Text(
-                                            text = displayProfit,
-                                            color = Color.White,
-                                            fontSize = if (hasData) 24.sp else 18.sp,
-                                            fontWeight = FontWeight.Bold,
-                                            textAlign = TextAlign.End
-                                        )
-                                        Spacer(modifier = Modifier.height(4.dp))
-                                        if (hasData &&
-                                            recordUiState.totalProfitRangeDate.startDate.isNotEmpty() &&
-                                            recordUiState.totalProfitRangeDate.endDate.isNotEmpty()) {
+                                            Spacer(modifier = Modifier.height(6.dp))
                                             Text(
-                                                text = "${recordUiState.totalProfitRangeDate.startDate} ~ ${recordUiState.totalProfitRangeDate.endDate}",
-                                                color = Color.White.copy(alpha = 0.7f),
-                                                fontSize = 11.sp,
+                                                text = "₩${currentStats.averageRate}",
+                                                color = Color.White,
+                                                fontSize = 24.sp,
+                                                fontWeight = FontWeight.Bold,
                                                 textAlign = TextAlign.End
+                                            )
+                                            Spacer(modifier = Modifier.height(4.dp))
+                                            Row(
+                                                horizontalArrangement = Arrangement.spacedBy(4.dp),
+                                                verticalAlignment = Alignment.CenterVertically
+                                            ) {
+                                                val profitValue = currentStats.expectedProfit
+                                                    .replace("+₩", "").replace("-₩", "").replace("₩", "").replace(",", "")
+                                                    .toDoubleOrNull() ?: 0.0
+                                                val isProfit = profitValue >= 0
+
+                                                Icon(
+                                                    imageVector = if (isProfit) Icons.Rounded.TrendingUp else Icons.Rounded.TrendingDown,
+                                                    contentDescription = null,
+                                                    tint = Color.White,
+                                                    modifier = Modifier.size(14.dp)
+                                                )
+                                                Text(
+                                                    text = currentStats.profitRate,
+                                                    color = Color.White.copy(alpha = 0.9f),
+                                                    fontSize = 14.sp,
+                                                    fontWeight = FontWeight.SemiBold
+                                                )
+                                            }
+                                        } else {
+                                            Text(
+                                                text = "보유 없음",
+                                                color = Color.White.copy(alpha = 0.8f),
+                                                fontSize = 18.sp,
+                                                fontWeight = FontWeight.Medium
                                             )
                                         }
                                     }
                                 }
                             }
                         }
-                    }
 
-                    // 컨트롤 섹션
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .background(Color.White)
-                            .padding(horizontal = 16.dp)
-                            .padding(bottom = 12.dp)
-                    ) {
-                        Surface(
-                            modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(12.dp),
-                            color = Color(0xFFF5F5F5),
-                            shadowElevation = 2.dp,
-                            onClick = { onHide(!hideSellRecordState) }
-                        ) {
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(horizontal = 16.dp, vertical = 12.dp),
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.Center
-                            ) {
-                                Icon(
-                                    imageVector = if (hideSellRecordState)
-                                        Icons.Rounded.VisibilityOff
-                                    else
-                                        Icons.Rounded.Visibility,
-                                    contentDescription = null,
-                                    tint = Color(0xFF6366F1),
-                                    modifier = Modifier.size(20.dp)
-                                )
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Text(
-                                    text = if (hideSellRecordState) "매도기록 숨김" else "매도기록 보기",
-                                    color = Color(0xFF1F2937),
-                                    fontSize = 14.sp,
-                                    fontWeight = FontWeight.Medium
-                                )
-                            }
+                        // ✅ 추가: 보유 통화 상세 통계
+                        Spacer(modifier = Modifier.height(16.dp))
+
+                        val currentStats = when(mainUiState.selectedCurrencyType) {
+                            CurrencyType.USD -> mainUiState.holdingStats.dollarStats
+                            CurrencyType.JPY -> mainUiState.holdingStats.yenStats
+                        }
+
+                        if (currentStats.hasData) {
+                            HoldingStatsCard(
+                                stats = currentStats,
+                                currencyType = mainUiState.selectedCurrencyType
+                            )
                         }
                     }
+
+                    // 컨트롤 섹션 삭제 (AnimatedContent 밖으로 이동)
                 }
             }
         }
 
-        // 광고 (항상 표시, 애니메이션 적용)
+        // 매도기록 보기/숨김 버튼 (항상 표시)
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(Color.White)
+                .padding(horizontal = 16.dp)
+                .padding(bottom = 12.dp)
+        ) {
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp),
+                color = Color(0xFFF5F5F5),
+                shadowElevation = 2.dp,
+                onClick = { onHide(!hideSellRecordState) }
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 12.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.Center
+                ) {
+                    Icon(
+                        imageVector = if (hideSellRecordState)
+                            Icons.Rounded.VisibilityOff
+                        else
+                            Icons.Rounded.Visibility,
+                        contentDescription = null,
+                        tint = Color(0xFF6366F1),
+                        modifier = Modifier.size(20.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = if (hideSellRecordState) "매도기록 숨김" else "매도기록 보기",
+                        color = Color(0xFF1F2937),
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
+            }
+        }
+
+        HorizontalDivider(
+            thickness = 1.dp,
+            color = Color(0xFFE5E7EB)
+        )
+
+        // 광고
         AnimatedVisibility(
             visible = !adUiState.bannerAdState,
             enter = fadeIn() + expandVertically(),
@@ -458,5 +448,203 @@ fun MainHeader(
                 BannerAd()
             }
         }
+    }
+}
+
+/**
+ * 축소 뷰 통화 카드
+ */
+@Composable
+private fun CompactCurrencyCard(
+    symbol: String,
+    stats: CurrencyHoldingInfo,
+    color: Color
+) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        Surface(
+            shape = RoundedCornerShape(8.dp),
+            color = color.copy(alpha = 0.1f)
+        ) {
+            Text(
+                text = symbol,
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Bold,
+                color = color,
+                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+            )
+        }
+
+        if (stats.hasData) {
+            Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                Text(
+                    text = stats.currentRate,
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFF1F2937)
+                )
+
+                val profitValue = stats.expectedProfit
+                    .replace("+₩", "").replace("-₩", "").replace("₩", "").replace(",", "")
+                    .toDoubleOrNull() ?: 0.0
+                val isProfit = profitValue >= 0
+
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        imageVector = if (isProfit) Icons.Rounded.TrendingUp else Icons.Rounded.TrendingDown,
+                        contentDescription = null,
+                        tint = if (isProfit) Color(0xFF10B981) else Color(0xFFEF4444),
+                        modifier = Modifier.size(12.dp)
+                    )
+                    Text(
+                        text = stats.profitRate,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = if (isProfit) Color(0xFF10B981) else Color(0xFFEF4444)
+                    )
+                }
+            }
+        } else {
+            Text(
+                text = "보유 없음",
+                fontSize = 12.sp,
+                color = Color.Gray
+            )
+        }
+    }
+}
+
+/**
+ * 보유 통화 상세 통계 카드
+ */
+@Composable
+private fun HoldingStatsCard(
+    stats: CurrencyHoldingInfo,
+    currencyType: CurrencyType
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        elevation = CardDefaults.cardElevation(2.dp),
+        colors = CardDefaults.cardColors(containerColor = Color(0xFFF8F9FA)),
+        shape = RoundedCornerShape(16.dp)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp)
+        ) {
+            // 타이틀
+            val currencyName = when(currencyType) {
+                CurrencyType.USD -> "달러"
+                CurrencyType.JPY -> "엔화"
+            }
+
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Rounded.AccountBalance,
+                    contentDescription = null,
+                    tint = Color(0xFF6366F1),
+                    modifier = Modifier.size(20.dp)
+                )
+                Text(
+                    text = "보유 중인 $currencyName",
+                    fontSize = 15.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFF1F2937)
+                )
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // 평균 매수가 vs 현재 환율
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                StatItem(label = "평균 매수가", value = "₩${stats.averageRate}", color = Color(0xFF6B7280))
+                StatItem(label = "현재 환율", value = "₩${stats.currentRate}", color = Color(0xFF1F2937))
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+            HorizontalDivider(color = Color(0xFFE5E7EB))
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // 보유량 & 투자금
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                StatItem(label = "보유량", value = stats.holdingAmount, color = Color(0xFF6B7280))
+                StatItem(label = "투자금", value = stats.totalInvestment, color = Color(0xFF6B7280))
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+            HorizontalDivider(color = Color(0xFFE5E7EB))
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // 예상 수익 (강조)
+            val profitValue = stats.expectedProfit
+                .replace("+₩", "").replace("-₩", "").replace("₩", "").replace(",", "")
+                .toDoubleOrNull() ?: 0.0
+            val isProfit = profitValue >= 0
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "현재 환율 기준 수익",
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Medium,
+                    color = Color(0xFF6B7280)
+                )
+
+                Column(horizontalAlignment = Alignment.End) {
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(4.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            imageVector = if (isProfit) Icons.Rounded.TrendingUp else Icons.Rounded.TrendingDown,
+                            contentDescription = null,
+                            tint = if (isProfit) Color(0xFF10B981) else Color(0xFFEF4444),
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Text(
+                            text = stats.expectedProfit,
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = if (isProfit) Color(0xFF10B981) else Color(0xFFEF4444)
+                        )
+                    }
+                    Text(
+                        text = stats.profitRate,
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = if (isProfit) Color(0xFF10B981) else Color(0xFFEF4444)
+                    )
+                }
+            }
+        }
+    }
+}
+
+/**
+ * 통계 항목
+ */
+@Composable
+private fun StatItem(label: String, value: String, color: Color) {
+    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        Text(text = label, fontSize = 12.sp, color = Color(0xFF9CA3AF))
+        Text(text = value, fontSize = 15.sp, fontWeight = FontWeight.SemiBold, color = color)
     }
 }

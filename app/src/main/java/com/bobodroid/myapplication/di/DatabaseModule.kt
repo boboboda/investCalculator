@@ -27,7 +27,13 @@ object DatabaseModule {
             InvestDatabase::class.java,
             "Invests_database"
         )
-            .fallbackToDestructiveMigration()
+            .addMigrations(
+                InvestDatabase.MIGRATION_21_22,
+                InvestDatabase.MIGRATION_22_26,
+                InvestDatabase.MIGRATION_23_26,
+                InvestDatabase.MIGRATION_24_26,
+                InvestDatabase.MIGRATION_25_26
+            )
             .build()
     }
 

@@ -40,6 +40,7 @@ import com.bobodroid.myapplication.models.viewmodels.InvestmentStats
 import com.bobodroid.myapplication.models.viewmodels.MonthlyGoal
 import com.bobodroid.myapplication.models.viewmodels.MyPageViewModel
 import com.bobodroid.myapplication.models.viewmodels.RecentActivity
+import com.bobodroid.myapplication.premium.PremiumManager
 import com.bobodroid.myapplication.routes.MyPageRoute
 import com.bobodroid.myapplication.routes.RouteAction
 import kotlinx.coroutines.launch
@@ -55,6 +56,7 @@ fun MyPageScreen() {
     val uiState by myPageViewModel.myPageUiState.collectAsState()
     val mainScreenSnackBarHostState = remember { SnackbarHostState() }
     val navController = rememberNavController()
+
 
     val myPageRouteAction = remember {
         RouteAction<MyPageRoute>(navController, MyPageRoute.SelectView.routeName)
@@ -139,6 +141,12 @@ fun MyPageScreen() {
                 )
             }
 
+            composable(MyPageRoute.PremiumSettings.routeName!!) {
+                PremiumSettingsScreen(
+                    onBackClick = { myPageRouteAction.goBack() }
+                )
+            }
+
             composable(MyPageRoute.CustomerServiceCenter.routeName!!) {
                 CustomerView(myPageRouteAction)
             }
@@ -213,19 +221,20 @@ fun ImprovedMyPageView(
             BadgeSection(badges = badges)
         }
 
-        // 설정 메뉴
-        item {
-            SettingsSection(
-                onCustomerServiceClick = { /* 고객센터 */ },
-                onShowOnboardingClick = {
-                    showOnboarding()
-                     }
-            )
-        }
-
         item {
             Spacer(modifier = Modifier.height(32.dp))
         }
+        // 설정 메뉴
+        item {
+            SettingSection(
+                onAccountManageClick = { myPageRouteAction.navTo(MyPageRoute.CreateUser) },
+                onCloudServiceClick = { myPageRouteAction.navTo(MyPageRoute.CloudService) },
+                onCustomerServiceClick = { myPageRouteAction.navTo(MyPageRoute.CustomerServiceCenter) },
+                onPremiumSettingsClick = { myPageRouteAction.navTo(MyPageRoute.PremiumSettings) } // ✅ 추가
+            )
+        }
+
+
     }
 }
 
@@ -1280,71 +1289,59 @@ fun BadgeItemNew(badge: BadgeInfo) {
 }
 
 @Composable
-fun SettingsSection(
+fun SettingSection(
+    onAccountManageClick: () -> Unit,
+    onCloudServiceClick: () -> Unit,
     onCustomerServiceClick: () -> Unit,
-    onShowOnboardingClick: () -> Unit  // 🎯 새로 추가
+    onPremiumSettingsClick: () -> Unit // ✅ 파라미터 추가
 ) {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp)
-            .padding(top = 24.dp)
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        Column(
+            modifier = Modifier.fillMaxWidth()
         ) {
-            Icon(
-                imageVector = Icons.Rounded.Settings,
-                contentDescription = "Settings",
-                tint = Color(0xFF6366F1),
-                modifier = Modifier.size(24.dp)
+            // ✅ 프리미엄 설정 항목 추가 (맨 위에)
+            SettingItem(
+                icon = Icons.Rounded.Star,
+                title = "위젯 설정",
+                subtitle = "실시간 업데이트 설정",
+                onClick = onPremiumSettingsClick
             )
-            Text(
-                text = "설정",
-                fontSize = 18.sp,
-                fontWeight = FontWeight.Bold,
-                color = Color(0xFF1F2937)
+
+            HorizontalDivider(color = Color(0xFFE5E7EB))
+
+            SettingItem(
+                icon = Icons.Rounded.Person,
+                title = "계정 관리",
+                subtitle = "소셜 로그인 연동",
+                onClick = onAccountManageClick
             )
-        }
 
-        Spacer(modifier = Modifier.height(12.dp))
+            HorizontalDivider(color = Color(0xFFE5E7EB))
 
-        Card(
-            shape = RoundedCornerShape(16.dp),
-            colors = CardDefaults.cardColors(containerColor = Color.White),
-            elevation = CardDefaults.cardElevation(4.dp)
-        ) {
-            Column {
-                // 🎯 사용법 다시보기 추가
-                SettingItem(
-                    icon = Icons.Rounded.Help,
-                    title = "사용법 다시보기",
-                    subtitle = "스와이프 기능 안내",
-                    onClick = onShowOnboardingClick
-                )
+            SettingItem(
+                icon = Icons.Rounded.Cloud,
+                title = "클라우드 백업",
+                subtitle = "데이터 동기화",
+                onClick = onCloudServiceClick
+            )
 
-                HorizontalDivider(color = Color(0xFFE5E7EB))
+            HorizontalDivider(color = Color(0xFFE5E7EB))
 
-                SettingItem(
-                    icon = Icons.Rounded.Palette,
-                    title = "테마 변경",
-                    subtitle = "라이트 / 다크",
-                    onClick = { /* TODO */ }
-                )
-
-                HorizontalDivider(color = Color(0xFFE5E7EB))
-
-                SettingItem(
-                    icon = Icons.Rounded.Help,
-                    title = "고객센터",
-                    subtitle = "문의하기",
-                    onClick = onCustomerServiceClick
-                )
-            }
+            SettingItem(
+                icon = Icons.Rounded.Help,
+                title = "고객센터",
+                subtitle = "문의하기",
+                onClick = onCustomerServiceClick
+            )
         }
     }
 }
+
 
 @Composable
 fun SettingItem(

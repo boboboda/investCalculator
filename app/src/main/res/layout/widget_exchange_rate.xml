@@ -1,48 +1,77 @@
 <?xml version="1.0" encoding="utf-8"?>
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/widget_container"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="match_parent"
+    android:clickable="true"
+    android:focusable="true"
+    android:background="@android:color/transparent">
 
-    <!-- 실제 위젯 컨텐츠 -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:orientation="vertical"
         android:padding="16dp"
-        android:background="@drawable/widget_background">
+        android:background="@drawable/widget_background"
+        android:clickable="false"
+        android:focusable="false"
+        android:duplicateParentState="false">
 
-        <!-- 헤더 -->
-        <LinearLayout
+        <!-- 헤더 + 새로고침 -->
+        <RelativeLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:gravity="center_vertical"
+            android:minHeight="40dp"
             android:paddingBottom="8dp">
 
-            <ImageView
-                android:id="@+id/widget_icon"
-                android:layout_width="24dp"
-                android:layout_height="24dp"
-                android:src="@drawable/ic_icon"
-                android:layout_marginEnd="8dp" />
-
-            <TextView
+            <LinearLayout
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="실시간 환율 정보"
-                android:textSize="16sp"
-                android:textStyle="bold"
-                android:textColor="#1F2937" />
-        </LinearLayout>
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:layout_alignParentStart="true"
+                android:layout_centerVertical="true"
+                android:paddingVertical="4dp">
 
-        <!-- 구분선 -->
+                <ImageView
+                    android:layout_width="24dp"
+                    android:layout_height="24dp"
+                    android:src="@drawable/ic_icon"
+                    android:layout_marginEnd="8dp"
+                    android:scaleType="fitCenter"
+                    android:adjustViewBounds="true" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="실시간 환율 정보"
+                    android:textSize="15sp"
+                    android:textStyle="bold"
+                    android:textColor="#1F2937"
+                    android:maxLines="1"
+                    android:ellipsize="end" />
+            </LinearLayout>
+
+            <ImageButton
+                android:id="@+id/widget_refresh_button"
+                android:layout_width="36dp"
+                android:layout_height="36dp"
+                android:layout_alignParentEnd="true"
+                android:layout_centerVertical="true"
+                android:background="?android:attr/selectableItemBackgroundBorderless"
+                android:contentDescription="새로고침"
+                android:src="@android:drawable/ic_popup_sync"
+                android:scaleType="fitCenter"
+                android:padding="6dp" />
+        </RelativeLayout>
+
         <TextView
             android:layout_width="match_parent"
             android:layout_height="1dp"
             android:background="#E5E7EB"
             android:layout_marginBottom="12dp" />
 
-        <!-- 달러 환율 -->
+        <!-- 달러 -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -77,7 +106,7 @@
                 android:textColor="#10B981" />
         </LinearLayout>
 
-        <!-- 엔화 환율 -->
+        <!-- 엔화 -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -112,7 +141,6 @@
                 android:textColor="#EF4444" />
         </LinearLayout>
 
-        <!-- 업데이트 시간 -->
         <TextView
             android:id="@+id/widget_update_time"
             android:layout_width="match_parent"
@@ -123,7 +151,7 @@
             android:gravity="end"
             android:paddingTop="8dp" />
 
-        <!-- 추가 정보: 총 수익 -->
+        <!-- 총 수익 -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -152,16 +180,5 @@
         </LinearLayout>
 
     </LinearLayout>
-
-    <!-- 투명한 클릭 버튼 (최상단) -->
-    <Button
-        android:id="@+id/widget_button"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:background="@android:color/transparent"
-        android:text=""
-        android:clickable="true"
-        android:focusable="true"
-        style="?android:attr/borderlessButtonStyle" />
 
 </FrameLayout>

@@ -11,9 +11,11 @@ import com.android.billingclient.api.BillingResult
 import com.android.billingclient.api.PendingPurchasesParams
 import com.android.billingclient.api.ProductDetails
 import com.android.billingclient.api.ProductDetailsResponseListener
+import com.android.billingclient.api.Purchase
 import com.android.billingclient.api.PurchasesUpdatedListener
 import com.android.billingclient.api.QueryProductDetailsParams
 import com.android.billingclient.api.QueryProductDetailsResult
+import com.android.billingclient.api.QueryPurchasesParams
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -169,6 +171,46 @@ class BillingClientLifecycle private constructor(
         val debugMessage = billingResult.debugMessage
         Log.d(TAG, "launchBillingFlow: BillingResponse $responseCode $debugMessage")
         return responseCode
+    }
+
+
+    /**
+     * 활성 구독 확인 (프리미엄 체크용)
+     */
+    fun queryActivePurchases(
+        productId: String,
+        onResult: (Boolean) -> Unit
+    ) {
+        val params = QueryPurchasesParams.newBuilder()
+            .setProductType(BillingClient.ProductType.SUBS)
+            .build()
+
+        billingClient.queryPurchasesAsync(params) { billingResult, purchases ->
+            Log.d(TAG, "queryActivePurchases: 결과=${billingResult.responseCode}, 구매수=${purchases.size}")
+
+            if (billingResult.responseCode == BillingClient.BillingResponseCode.OK) {
+                val hasPremium = purchases.any { purchase ->
+                    purchase.products.contains(productId) &&
+                            purchase.purchaseState == Purchase.PurchaseState.PURCHASED
+                }
+
+                purchases.forEach { purchase ->
+                    Log.d(TAG, "구매 항목: ${purchase.products}, 상태: ${purchase.purchaseState}")
+                }
+
+                onResult(hasPremium)
+            } else {
+                Log.e(TAG, "구매 조회 실패: ${billingResult.debugMessage}")
+                onResult(false)
+            }
+        }
+    }
+
+    /**
+     * BillingClient 준비 상태 확인
+     */
+    fun isClientReady(): Boolean {
+        return billingClient.isReady
     }
 
 }

@@ -70,7 +70,10 @@ data class LocalUserData(
     var monthlyProfitGoal: Long = 0L,
 
     @ColumnInfo(name = "goal_set_month", defaultValue = "")
-    var goalSetMonth: String? = null
+    var goalSetMonth: String? = null,
+
+    @ColumnInfo(name = "is_premium", defaultValue = "0")
+    var isPremium: Boolean = false
 
 ) {
     constructor(data: DocumentSnapshot) : this() {

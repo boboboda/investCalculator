@@ -35,6 +35,7 @@ import com.bobodroid.myapplication.models.viewmodels.MainViewModel
 import com.bobodroid.myapplication.routes.*
 import com.bobodroid.myapplication.screens.*
 import com.bobodroid.myapplication.ui.theme.InverstCalculatorTheme
+import com.bobodroid.myapplication.widget.WidgetUpdateHelper
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 
@@ -106,6 +107,20 @@ class MainActivity : ComponentActivity() {
         Log.w(TAG("메인", "onResume"), "━━━━━━━━━━━━━━━━━━━━━━━━━━")
         Log.w(TAG("메인", "onResume"), "▶️ onResume 실행 - 사용자와 상호작용 가능")
         Log.w(TAG("메인", "onResume"), "━━━━━━━━━━━━━━━━━━━━━━━━━━")
+
+        // ✅ 위젯 즉시 업데이트하여 눌림 상태 해제
+        WidgetUpdateHelper.updateAllWidgets(this)
+    }
+
+    // ✅ onStop()에도 위젯 업데이트 추가
+    override fun onStop() {
+        super.onStop()
+        Log.w(TAG("메인", "onStop"), "━━━━━━━━━━━━━━━━━━━━━━━━━━")
+        Log.w(TAG("메인", "onStop"), "⏹️ onStop 실행 - 앱이 백그라운드로 이동")
+        Log.w(TAG("메인", "onStop"), "━━━━━━━━━━━━━━━━━━━━━━━━━━")
+
+        // ✅ 앱 종료 시 위젯 정상화
+        WidgetUpdateHelper.updateAllWidgets(this)
     }
 
     override fun onPause() {
@@ -115,12 +130,6 @@ class MainActivity : ComponentActivity() {
         Log.w(TAG("메인", "onPause"), "━━━━━━━━━━━━━━━━━━━━━━━━━━")
     }
 
-    override fun onStop() {
-        super.onStop()
-        Log.w(TAG("메인", "onStop"), "━━━━━━━━━━━━━━━━━━━━━━━━━━")
-        Log.w(TAG("메인", "onStop"), "⏹️ onStop 실행 - 앱이 백그라운드로 이동")
-        Log.w(TAG("메인", "onStop"), "━━━━━━━━━━━━━━━━━━━━━━━━━━")
-    }
 
     override fun onRestart() {
         super.onRestart()

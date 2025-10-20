@@ -4,6 +4,7 @@ import android.annotation.SuppressLint
 import android.app.Activity
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.database.sqlite.SQLiteDatabase
 import android.os.Build
 import android.os.Bundle
 import android.util.Log
@@ -44,6 +45,8 @@ import com.bobodroid.myapplication.widget.WidgetUpdateHelper
 import com.bobodroid.myapplication.widget.WidgetUpdateService
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
+import java.util.UUID
 import javax.inject.Inject
 
 
@@ -69,6 +72,8 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
+
+
         super.onCreate(savedInstanceState)
 
         Log.w(TAG("메인","onCreate"), "━━━━━━━━━━━━━━━━━━━━━━━━━━")
@@ -118,6 +123,8 @@ class MainActivity : ComponentActivity() {
             Log.e(TAG("메인","onCreate"), "❌ setupWidgetAutoUpdate() 실패", e)
         }
     }
+
+
 
     // ✅ 수정된 메서드 - 앱 시작 시에는 서비스 시작하지 않음 (앱 실행 중이므로)
     private fun setupWidgetAutoUpdate() {
@@ -257,9 +264,6 @@ class MainActivity : ComponentActivity() {
             Log.e(TAG("메인", "checkAndStartService"), "서비스 체크 중 오류", e)
         }
     }
-
-    // ✅ 삭제: 앱 시작 시에는 서비스 시작하지 않음 (배터리 절약)
-    // checkAndStartServiceIfNeeded() 메서드 제거
 
     // ✅ 새로 추가: 서비스 실행 상태 확인
     private fun isWidgetUpdateServiceRunning(): Boolean {

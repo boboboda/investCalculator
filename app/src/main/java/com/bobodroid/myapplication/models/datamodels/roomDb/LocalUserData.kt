@@ -6,19 +6,19 @@ import androidx.room.PrimaryKey
 import com.google.firebase.firestore.DocumentSnapshot
 import java.util.*
 
+
+// LocalUserData.kt
 @Entity(tableName = "LocalUserData_table")
 data class LocalUserData(
-
     @PrimaryKey
     @ColumnInfo(name = "id")
     var id: UUID = UUID.randomUUID(),
 
-    // ✅ 소셜 로그인 필드 추가 (customId, pin 대체)
     @ColumnInfo(name = "social_id", defaultValue = "")
     var socialId: String? = null,
 
     @ColumnInfo(name = "social_type", defaultValue = "NONE")
-    var socialType: String = "NONE",  // "GOOGLE", "KAKAO", "NONE"
+    var socialType: String = "NONE",
 
     @ColumnInfo(name = "email", defaultValue = "")
     var email: String? = null,
@@ -32,17 +32,16 @@ data class LocalUserData(
     @ColumnInfo(name = "is_synced", defaultValue = "0")
     var isSynced: Boolean = false,
 
-    // 기존 필드들 유지
     @ColumnInfo(name = "fcm_Token", defaultValue = "")
     var fcmToken: String? = null,
 
-    @ColumnInfo(name = "rate_Reset_Count", defaultValue = "")
+    @ColumnInfo(name = "rate_Reset_Count")
     var rateResetCount: Int? = null,
 
     @ColumnInfo(name = "reFresh_CreateAt", defaultValue = "")
     var reFreshCreateAt: String? = null,
 
-    @ColumnInfo(name = "rate_Ad_Count", defaultValue = "")
+    @ColumnInfo(name = "rate_Ad_Count")
     var rateAdCount: Int? = null,
 
     @ColumnInfo(name = "reward_ad_Showing_date", defaultValue = "")
@@ -54,16 +53,16 @@ data class LocalUserData(
     @ColumnInfo(name = "user_Show_Notice_Date", defaultValue = "")
     var userShowNoticeDate: String? = null,
 
-    @ColumnInfo(name = "dr_Buy_Spread", defaultValue = "")
+    @ColumnInfo(name = "dr_Buy_Spread")
     var drBuySpread: Int? = null,
 
-    @ColumnInfo(name = "dr_Sell_Spread", defaultValue = "")
+    @ColumnInfo(name = "dr_Sell_Spread")
     var drSellSpread: Int? = null,
 
-    @ColumnInfo(name = "yen_Buy_Spread", defaultValue = "")
+    @ColumnInfo(name = "yen_Buy_Spread")
     var yenBuySpread: Int? = null,
 
-    @ColumnInfo(name = "yen_Sell_Spread", defaultValue = "")
+    @ColumnInfo(name = "yen_Sell_Spread")
     var yenSellSpread: Int? = null,
 
     @ColumnInfo(name = "monthly_profit_goal", defaultValue = "0")
@@ -74,7 +73,6 @@ data class LocalUserData(
 
     @ColumnInfo(name = "is_premium", defaultValue = "0")
     var isPremium: Boolean = false
-
 ) {
     constructor(data: DocumentSnapshot) : this() {
         this.socialId = data["socialId"] as String? ?: ""

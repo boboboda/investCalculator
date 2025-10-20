@@ -16,11 +16,14 @@ import com.bobodroid.myapplication.models.datamodels.service.UserApi.Rate
 import com.bobodroid.myapplication.models.datamodels.useCases.TargetRateUseCases
 import com.bobodroid.myapplication.models.datamodels.useCases.UserUseCases
 import com.bobodroid.myapplication.models.datamodels.websocket.WebSocketClient
+import com.bobodroid.myapplication.models.repository.SettingsRepository
 import com.bobodroid.myapplication.util.result.onError
 import com.bobodroid.myapplication.util.result.onSuccess
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -28,8 +31,19 @@ import javax.inject.Inject
 class FcmAlarmViewModel@Inject constructor(
    private val userRepository: UserRepository,
    private val fcmUseCases: TargetRateUseCases,
-    private val latestRateRepository: LatestRateRepository
+    private val latestRateRepository: LatestRateRepository,
+   private val settingsRepository: SettingsRepository
 ): ViewModel()  {
+
+    val selectedCurrency = settingsRepository.selectedCurrency.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = CurrencyType.USD
+    )
+
+    fun updateSelectedCurrency(currency: CurrencyType) {
+        settingsRepository.setSelectedCurrency(currency)
+    }
 
     private val _alarmUiState = MutableStateFlow(AlarmUiState())
     val alarmUiState = _alarmUiState.asStateFlow()

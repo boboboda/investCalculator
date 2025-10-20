@@ -137,7 +137,6 @@ fun MainScreen(
                 updateCurrentForeignCurrency = {
                     mainViewModel.updateCurrentForeignCurrency(it)
                 },
-                recordUiState = recordListUiState,
                 hideSellRecordState = hideSellRecordState,
                 onHide = {
                     hideSellRecordState = it

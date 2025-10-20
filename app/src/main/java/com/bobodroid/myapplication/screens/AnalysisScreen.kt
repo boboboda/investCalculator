@@ -24,7 +24,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.bobodroid.myapplication.MainActivity.Companion.TAG
 import com.bobodroid.myapplication.components.chart.ExchangeRateChart
+import com.bobodroid.myapplication.models.datamodels.roomDb.Currencies
 import com.bobodroid.myapplication.models.datamodels.roomDb.CurrencyType
+import com.bobodroid.myapplication.models.datamodels.roomDb.emoji
 import com.bobodroid.myapplication.models.viewmodels.AnalysisViewModel
 import com.bobodroid.myapplication.models.viewmodels.RateRangeCurrency
 
@@ -46,7 +48,8 @@ fun PremiumChartScreen(
     analysisViewModel: AnalysisViewModel
 ) {
     val analysisUiState by analysisViewModel.analysisUiState.collectAsState()
-    var targetCurrency by remember { mutableStateOf(CurrencyType.USD) }
+    // ✅ ViewModel에서 통화 상태 가져오기 (remember 제거)
+    val targetCurrency by analysisViewModel.selectedCurrency.collectAsState()
     val scrollState = rememberScrollState()
 
     // 데이터 계산
@@ -62,44 +65,45 @@ fun PremiumChartScreen(
         analysisViewModel.calculatePeriodComparison(targetCurrency)
     }
 
-    val rangeRateMapCurrencyType = analysisUiState.selectedRates.map {
-        when (targetCurrency) {
-            CurrencyType.USD -> RateRangeCurrency(it.usd.toFloat(), it.createAt)
-            CurrencyType.JPY -> {
-                val jpyValue = it.jpy.toFloat() * 100f
-                val truncated = kotlin.math.floor(jpyValue * 100) / 100f  // ✅ 소수점 2자리 버림
-                RateRangeCurrency(truncated, it.createAt)
-            }
-        }
+    val rangeRateMapCurrencyType = analysisUiState.selectedRates.mapNotNull { rate ->
+        val rawValue = rate.getRate(targetCurrency.code).toFloatOrNull() ?: return@mapNotNull null
+        // ✅ ExchangeRate에 이미 needsMultiply 처리됨 - 추가 처리 불필요
+        val truncated = kotlin.math.floor(rawValue * 100) / 100f  // 소수점 2자리 버림
+        RateRangeCurrency(truncated, rate.createAt)
     }
 
-    val latestRate = when(targetCurrency) {
-        CurrencyType.USD -> {
-            val usdValue = analysisUiState.latestRate.usd.toFloatOrNull() ?: 0f
-            String.format("%.2f", usdValue)  // ✅ USD도 소수점 2자리
-        }
-        CurrencyType.JPY -> {
-            val jpyValue = analysisUiState.latestRate.jpy.toFloatOrNull() ?: 0f
-            String.format("%.2f", jpyValue)  // ✅ 100배 제거, 소수점 2자리만
-        }
+    val latestRate = run {
+        val rawValue = when(targetCurrency) {
+            CurrencyType.USD -> analysisUiState.latestRate.usd
+            CurrencyType.JPY -> analysisUiState.latestRate.jpy
+            else -> "0"
+        }.toFloatOrNull() ?: 0f
+
+        // ✅ ExchangeRate에 이미 needsMultiply 처리됨 - 추가 처리 불필요
+        String.format("%.2f", rawValue)
     }
 
-    val changeRate = when(targetCurrency) {
-        CurrencyType.USD -> analysisUiState.change.usd
-        CurrencyType.JPY -> {
-            val jpyChange = analysisUiState.change.jpy.toFloatOrNull() ?: 0f
-            String.format("%.2f", jpyChange)  // ✅ 100배 제거, 소수점 2자리만
-        }
+    val changeRate = run {
+        val rawValue = when(targetCurrency) {
+            CurrencyType.USD -> analysisUiState.change.usd
+            CurrencyType.JPY -> analysisUiState.change.jpy
+            else -> "0"
+        }.toFloatOrNull() ?: 0f
+
+        // ✅ ExchangeRate에 이미 needsMultiply 처리됨 - 추가 처리 불필요
+        String.format("%.2f", rawValue)
     }
 
     val changeIcon = when(targetCurrency) {
         CurrencyType.USD -> analysisUiState.usdChangeIcon
         CurrencyType.JPY -> analysisUiState.jpyChangeIcon
+        else -> '-'
     }
 
     val changeColor = when(targetCurrency) {
         CurrencyType.USD -> analysisUiState.usdChangeColor
         CurrencyType.JPY -> analysisUiState.jpyChangeColor
+        else -> Color.Gray
     }
 
     Column(
@@ -115,7 +119,7 @@ fun PremiumChartScreen(
             changeRate = changeRate,
             changeIcon = changeIcon,
             changeColor = changeColor,
-            onCurrencyChange = { targetCurrency = it }
+            onCurrencyChange = { analysisViewModel.updateSelectedCurrency(it) }
         )
 
         Spacer(modifier = Modifier.height(16.dp))
@@ -166,6 +170,8 @@ fun CurrentRateHeader(
 ) {
     var expanded by remember { mutableStateOf(false) }
 
+
+
     Box(
         modifier = Modifier
             .fillMaxWidth()
@@ -190,10 +196,7 @@ fun CurrentRateHeader(
                     border = null
                 ) {
                     Text(
-                        text = when(currency) {
-                            CurrencyType.USD -> "🇺🇸 USD"
-                            CurrencyType.JPY -> "🇯🇵 JPY"
-                        },
+                        text = "${currency.emoji} ${currency.code}",
                         color = Color.White,
                         fontWeight = FontWeight.Bold
                     )
@@ -208,20 +211,17 @@ fun CurrentRateHeader(
                     expanded = expanded,
                     onDismissRequest = { expanded = false }
                 ) {
-                    DropdownMenuItem(
-                        text = { Text("🇺🇸 미국 달러 (USD)") },
-                        onClick = {
-                            onCurrencyChange(CurrencyType.USD)
-                            expanded = false
-                        }
-                    )
-                    DropdownMenuItem(
-                        text = { Text("🇯🇵 일본 엔화 (JPY)") },
-                        onClick = {
-                            onCurrencyChange(CurrencyType.JPY)
-                            expanded = false
-                        }
-                    )
+                    CurrencyType.values().forEach { currencyType ->
+                        DropdownMenuItem(
+                            text = {
+                                Text("${currencyType.emoji} ${currencyType.koreanName} (${currencyType.code})")
+                            },
+                            onClick = {
+                                onCurrencyChange(currencyType)
+                                expanded = false
+                            }
+                        )
+                    }
                 }
             }
 

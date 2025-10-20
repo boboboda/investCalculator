@@ -108,9 +108,11 @@ import com.bobodroid.myapplication.components.Dialogs.TextFieldDialog
 import com.bobodroid.myapplication.components.RateView
 import com.bobodroid.myapplication.components.addFocusCleaner
 import com.bobodroid.myapplication.components.shadowCustom
+import com.bobodroid.myapplication.models.datamodels.roomDb.Currencies
 import com.bobodroid.myapplication.models.datamodels.roomDb.CurrencyType
 import com.bobodroid.myapplication.models.datamodels.roomDb.RateDirection
 import com.bobodroid.myapplication.models.datamodels.roomDb.RateType
+import com.bobodroid.myapplication.models.datamodels.roomDb.emoji
 import com.bobodroid.myapplication.models.datamodels.service.UserApi.Rate
 import com.bobodroid.myapplication.models.viewmodels.AnalysisViewModel
 import com.bobodroid.myapplication.models.viewmodels.FcmAlarmViewModel
@@ -144,24 +146,29 @@ fun FcmAlarmScreen() {
     var currencyExpanded by remember { mutableStateOf(false) }
     var addTargetDialog by remember { mutableStateOf(false) }
 
-    var targetRateMoneyType by remember {
-        mutableStateOf(CurrencyType.USD)
-    }
+
 
     var targetRateState by remember {
         mutableStateOf(RateDirection.HIGH)
     }
 
 
+    val targetRateMoneyType by fcmAlarmViewModel.selectedCurrency.collectAsState()
+
+    val currency = remember(targetRateMoneyType) {
+        Currencies.fromCurrencyType(targetRateMoneyType)
+    }
 
     val rates = when(selectedTabIndex) {
         0 -> when(targetRateMoneyType) {
             CurrencyType.USD -> targetRateData.value.dollarHighRates
             CurrencyType.JPY -> targetRateData.value.yenHighRates
+            else -> null
         }
         else -> when(targetRateMoneyType) {
             CurrencyType.USD -> targetRateData.value.dollarLowRates
             CurrencyType.JPY -> targetRateData.value.yenLowRates
+            else -> null
         }
     }
 
@@ -204,12 +211,7 @@ fun FcmAlarmScreen() {
                             contentColor = primaryColor
                         )
                     ) {
-                        Text(
-                            when(targetRateMoneyType) {
-                                CurrencyType.USD -> "달러(USD)"
-                                CurrencyType.JPY -> "엔화(JPY)"
-                            }
-                        )
+                        Text("${currency.emoji} ${currency.koreanName}(${targetRateMoneyType.code})")
                         Icon(Icons.Filled.ArrowDropDown, null)
                     }
 
@@ -217,20 +219,18 @@ fun FcmAlarmScreen() {
                         expanded = currencyExpanded,
                         onDismissRequest = { currencyExpanded = false }
                     ) {
-                        DropdownMenuItem(
-                            onClick = {
-                                targetRateMoneyType = CurrencyType.USD
-                                currencyExpanded = false
-                            },
-                            text = { Text("달러(USD)") }
-                        )
-                        DropdownMenuItem(
-                            onClick = {
-                                targetRateMoneyType = CurrencyType.JPY
-                                currencyExpanded = false
-                            },
-                            text = { Text("엔화(JPY)") }
-                        )
+                        CurrencyType.values().forEach { currencyType ->
+                            val currencyObj = Currencies.fromCurrencyType(currencyType)
+                            DropdownMenuItem(
+                                onClick = {
+                                    fcmAlarmViewModel.updateSelectedCurrency(currencyType)
+                                    currencyExpanded = false
+                                },
+                                text = {
+                                    Text("${currencyType.emoji} ${currencyObj.koreanName}(${currencyType.code})")
+                                }
+                            )
+                        }
                     }
                 }
             }
@@ -240,26 +240,16 @@ fun FcmAlarmScreen() {
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.Center
             ) {
-                when(targetRateMoneyType) {
-                    CurrencyType.USD -> {
-                        RateView(
-                            title = "USD",
-                            recentRate = "${fcmUiState.value.recentRate.usd}",
-                            createAt = fcmUiState.value.recentRate.createAt
-                        )
-                    }
-                    CurrencyType.JPY -> {
-                        RateView(
-                            title = "JPY",
-                            recentRate = "${BigDecimal(fcmUiState.value.recentRate.jpy)}",
-                            createAt = fcmUiState.value.recentRate.createAt
-                        )
-                    }
-                }
+                // ExchangeRate의 getRateByCode()로 가져오기
+                val recentRateValue = fcmUiState.value.recentRate.getRateByCode(targetRateMoneyType.code) ?: "0"
+
+                // RateView에 그대로 전달 (ExchangeRate.fromDocumentSnapshot에서 이미 needsMultiply 처리됨)
+                RateView(
+                    title = targetRateMoneyType.code,
+                    recentRate = recentRateValue,
+                    createAt = fcmUiState.value.recentRate.createAt
+                )
             }
-
-
-
 
             // 탭과 리스트
             Card(
@@ -287,8 +277,6 @@ fun FcmAlarmScreen() {
                                         color = when (selectedTabIndex) {
                                             0 -> Color(0xFFD32F2F)
                                             else -> Color(0xFF1976D2)
-
-
                                         },
                                         shape = RoundedCornerShape(topStart = 3.dp, topEnd = 3.dp)
                                     )
@@ -319,9 +307,6 @@ fun FcmAlarmScreen() {
                         )
                     }
 
-
-
-
                     Log.d(TAG("FcmAlarmScreen", "ListItem"), rates.toString())
                     LazyColumn(
                         modifier = Modifier
@@ -330,31 +315,27 @@ fun FcmAlarmScreen() {
                             .padding(16.dp),
                         verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        if(rates?.isEmpty() == true) {
+                        if(rates?.isEmpty() != false) {
                             item {
                                 Row {
                                     Text("목표환율이 없습니다. 추가해주세요")
                                 }
                             }
                         } else {
-                            items(rates ?: emptyList()) { rate ->
-
+                            items(rates) { rate ->
                                 RateItem(
                                     rate = rate,
                                     backgroundColor = if(selectedTabIndex == 0) HighRateColor else LowRateColor,
                                     onDelete = { deleteRate ->
-
                                         val rateType = RateType.from(targetRateMoneyType, targetRateState)
-
                                         fcmAlarmViewModel.deleteTargetRate(
                                             deleteRate = deleteRate,
                                             type = rateType
                                         )
-                                    })
-
+                                    }
+                                )
                             }
                         }
-
                     }
                 }
             }
@@ -362,8 +343,19 @@ fun FcmAlarmScreen() {
             // Add FAB
             FloatingActionButton(
                 onClick = {
-                    // ⭐ 올바른 조건: 리스트 크기가 5개 미만
-                    if(rates == null || rates.size < 5) {
+                    // USD, JPY가 아닌 경우 경고
+                    if(targetRateMoneyType != CurrencyType.USD && targetRateMoneyType != CurrencyType.JPY) {
+                        coroutineScope.launch {
+                            fcmAlarmScreenSnackBarHostState.showSnackbar(
+                                "현재 USD와 JPY만 지원됩니다.",
+                                actionLabel = "닫기",
+                                SnackbarDuration.Short
+                            )
+                        }
+                        return@FloatingActionButton
+                    }
+
+                    if((rates?.size ?: 0) < 5) {
                         targetRateState = if(selectedTabIndex == 0) RateDirection.HIGH else RateDirection.LOW
                         addTargetDialog = true
                     } else {
@@ -397,9 +389,9 @@ fun FcmAlarmScreen() {
                 .wrapContentHeight()
         ) {
             SnackbarHost(
-                hostState = fcmAlarmScreenSnackBarHostState, modifier = Modifier,
+                hostState = fcmAlarmScreenSnackBarHostState,
+                modifier = Modifier,
                 snackbar = { snackBarData ->
-
                     Card(
                         shape = RoundedCornerShape(8.dp),
                         border = BorderStroke(1.5.dp, Color.Black),
@@ -415,7 +407,6 @@ fun FcmAlarmScreen() {
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.Start
                         ) {
-
                             Text(
                                 text = snackBarData.message,
                                 fontSize = 15.sp,
@@ -436,15 +427,13 @@ fun FcmAlarmScreen() {
                             )
                         }
                     }
-                })
+                }
+            )
         }
     }
 
-
-
     if(addTargetDialog) {
-
-        val lastRate = rates?.lastOrNull()  // ⭐ 한 줄로 해결!
+        val lastRate = rates?.lastOrNull()
 
         TargetRateDialog(
             onDismissRequest = {
@@ -452,14 +441,11 @@ fun FcmAlarmScreen() {
             },
             lastRate = lastRate,
             selected = { addTargetRate ->
-
                 val rateType = RateType.from(targetRateMoneyType, targetRateState)
-
                 fcmAlarmViewModel.addTargetRate(
                     addRate = addTargetRate,
                     type = rateType
                 )
-
                 addTargetDialog = false
             }
         )
@@ -478,7 +464,7 @@ fun RateItem(
     val buttonWidthPx = with(LocalDensity.current) { buttonWidth.toPx() }
 
     val offsetXAnimated by animateFloatAsState(
-        targetValue = offsetX.coerceIn(-buttonWidthPx, buttonWidthPx),  // 버튼 너비만큼만 애니메이션
+        targetValue = offsetX.coerceIn(-buttonWidthPx, buttonWidthPx),
         animationSpec = spring(
             dampingRatio = Spring.DampingRatioMediumBouncy,
             stiffness = Spring.StiffnessLow
@@ -498,26 +484,6 @@ fun RateItem(
                 .fillMaxSize()
                 .background(Color.White)
         ) {
-            // 수정 버튼 (왼쪽)
-//            Box(
-//                modifier = Modifier
-//                    .align(Alignment.CenterStart)
-//                    .fillMaxHeight()
-//                    .width(buttonWidth)
-//                    .background(Color(0xFFFF9800))
-//                    .clickable {
-//                        onEdit()
-//                        offsetX = 0f
-//                    },
-//                contentAlignment = Alignment.Center
-//            ) {
-//                Icon(
-//                    imageVector = Icons.Default.Edit,
-//                    contentDescription = "Edit",
-//                    tint = Color.White
-//                )
-//            }
-
             // 삭제 버튼 (오른쪽)
             Box(
                 modifier = Modifier
@@ -604,4 +570,3 @@ enum class TargetRateState {
     High,
     Low
 }
-

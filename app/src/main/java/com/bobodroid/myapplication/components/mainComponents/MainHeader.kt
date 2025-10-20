@@ -20,6 +20,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.bobodroid.myapplication.components.admobs.BannerAd
 import com.bobodroid.myapplication.models.datamodels.roomDb.CurrencyType
+import com.bobodroid.myapplication.models.datamodels.roomDb.emoji
 import com.bobodroid.myapplication.models.viewmodels.AdUiState
 import com.bobodroid.myapplication.models.viewmodels.MainUiState
 import com.bobodroid.myapplication.models.viewmodels.RecordListUiState
@@ -31,7 +32,6 @@ import java.math.BigDecimal
 fun MainHeader(
     mainUiState: MainUiState,
     adUiState: AdUiState,
-    recordUiState: RecordListUiState,
     updateCurrentForeignCurrency: (CurrencyType) -> Unit,
     hideSellRecordState: Boolean,
     onHide:(Boolean) -> Unit,
@@ -39,6 +39,8 @@ fun MainHeader(
     onToggleClick: () -> Unit
 ) {
     var dropdownExpanded by remember { mutableStateOf(false) }
+
+    val rate = mainUiState.recentRate.getRateByCode(mainUiState.selectedCurrencyType.name) ?: "0"
 
     Column(
         modifier = Modifier.fillMaxWidth()
@@ -101,10 +103,7 @@ fun MainHeader(
                                 modifier = Modifier.clip(RoundedCornerShape(8.dp))
                             ) {
                                 Text(
-                                    text = when(mainUiState.selectedCurrencyType) {
-                                        CurrencyType.USD -> "USD"
-                                        CurrencyType.JPY -> "JPY"
-                                    },
+                                    text = mainUiState.selectedCurrencyType.name,
                                     modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
                                     fontSize = 13.sp,
                                     fontWeight = FontWeight.Bold,
@@ -115,10 +114,7 @@ fun MainHeader(
                             // 환율
                             Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
                                 Text(
-                                    text = when(mainUiState.selectedCurrencyType) {
-                                        CurrencyType.USD -> "${mainUiState.recentRate.usd}원"
-                                        CurrencyType.JPY -> "${mainUiState.recentRate.jpy}원"
-                                    },
+                                    text = rate,
                                     fontSize = 18.sp,
                                     fontWeight = FontWeight.Bold,
                                     color = Color(0xFF1F2937)
@@ -197,10 +193,7 @@ fun MainHeader(
                                                     horizontalArrangement = Arrangement.spacedBy(4.dp)
                                                 ) {
                                                     Text(
-                                                        text = when(mainUiState.selectedCurrencyType) {
-                                                            CurrencyType.USD -> "USD"
-                                                            CurrencyType.JPY -> "JPY"
-                                                        },
+                                                        text = "${mainUiState.selectedCurrencyType.emoji} ${mainUiState.selectedCurrencyType.code}",
                                                         color = Color.White,
                                                         fontSize = 14.sp,
                                                         fontWeight = FontWeight.Bold
@@ -218,20 +211,17 @@ fun MainHeader(
                                                 expanded = dropdownExpanded,
                                                 onDismissRequest = { dropdownExpanded = false }
                                             ) {
-                                                DropdownMenuItem(
-                                                    text = { Text("USD") },
-                                                    onClick = {
-                                                        updateCurrentForeignCurrency(CurrencyType.USD)
-                                                        dropdownExpanded = false
-                                                    }
-                                                )
-                                                DropdownMenuItem(
-                                                    text = { Text("JPY") },
-                                                    onClick = {
-                                                        updateCurrentForeignCurrency(CurrencyType.JPY)
-                                                        dropdownExpanded = false
-                                                    }
-                                                )
+                                                CurrencyType.values().forEach { currencyType ->
+                                                    DropdownMenuItem(
+                                                        text = {
+                                                            Text("${currencyType.emoji} ${currencyType.koreanName} (${currencyType.code})")
+                                                        },
+                                                        onClick = {
+                                                            updateCurrentForeignCurrency(currencyType)
+                                                            dropdownExpanded = false
+                                                        }
+                                                    )
+                                                }
                                             }
                                         }
 
@@ -273,24 +263,12 @@ fun MainHeader(
                                                 fontWeight = FontWeight.Medium
                                             )
                                         } else {
-                                            when(mainUiState.selectedCurrencyType) {
-                                                CurrencyType.USD -> {
-                                                    Text(
-                                                        text = "${mainUiState.recentRate.usd}원",
-                                                        color = Color.White,
-                                                        fontSize = 24.sp,
-                                                        fontWeight = FontWeight.Bold
-                                                    )
-                                                }
-                                                CurrencyType.JPY -> {
-                                                    Text(
-                                                        text = "${BigDecimal(mainUiState.recentRate.jpy)}원",
-                                                        color = Color.White,
-                                                        fontSize = 24.sp,
-                                                        fontWeight = FontWeight.Bold
-                                                    )
-                                                }
-                                            }
+                                            Text(
+                                                text = "${rate}원",
+                                                color = Color.White,
+                                                fontSize = 24.sp,
+                                                fontWeight = FontWeight.Bold
+                                            )
                                             Spacer(modifier = Modifier.height(4.dp))
                                             Text(
                                                 text = mainUiState.recentRate.createAt,
@@ -310,10 +288,9 @@ fun MainHeader(
                                     Spacer(modifier = Modifier.width(24.dp))
 
                                     // 보유 통화 통계
-                                    val currentStats = when(mainUiState.selectedCurrencyType) {
-                                        CurrencyType.USD -> mainUiState.holdingStats.dollarStats
-                                        CurrencyType.JPY -> mainUiState.holdingStats.yenStats
-                                    }
+                                    val currentStats = mainUiState.holdingStats.getStatsByCode(mainUiState.selectedCurrencyType.code)
+
+
 
                                     Column(
                                         modifier = Modifier.weight(1f),
@@ -372,10 +349,8 @@ fun MainHeader(
                         // 보유 통화 상세 통계
                         Spacer(modifier = Modifier.height(16.dp))
 
-                        val currentStats = when(mainUiState.selectedCurrencyType) {
-                            CurrencyType.USD -> mainUiState.holdingStats.dollarStats
-                            CurrencyType.JPY -> mainUiState.holdingStats.yenStats
-                        }
+                        val currentStats = mainUiState.holdingStats.getStatsByCode(mainUiState.selectedCurrencyType.code)
+
 
                         if (currentStats.hasData) {
                             HoldingStatsCard(
@@ -475,10 +450,7 @@ private fun HoldingStatsCard(
                 .padding(16.dp)
         ) {
             // 타이틀
-            val currencyName = when(currencyType) {
-                CurrencyType.USD -> "달러"
-                CurrencyType.JPY -> "엔화"
-            }
+
 
             Row(
                 verticalAlignment = Alignment.CenterVertically,
@@ -491,7 +463,7 @@ private fun HoldingStatsCard(
                     modifier = Modifier.size(20.dp)
                 )
                 Text(
-                    text = "보유 중인 $currencyName",
+                    text = "보유 중인 ${currencyType.name}",
                     fontSize = 15.sp,
                     fontWeight = FontWeight.Bold,
                     color = Color(0xFF1F2937)

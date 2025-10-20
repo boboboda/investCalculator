@@ -188,8 +188,17 @@ object Currencies {
         isPremium = true
     )
 
+    val TWD = Currency(
+        code = "TWD",
+        koreanName = "대만달러",
+        symbol = "NT$",
+        scale = 2,
+        needsMultiply = false,
+        isPremium = true
+    )
+
     // ✅ 전체 통화 리스트 (순서대로 표시됨)
-    val all = listOf(USD, JPY, EUR, GBP, CNY, AUD, CAD, CHF, HKD, SGD, NZD, THB)
+    val all = listOf(USD, JPY, EUR, GBP, CNY, AUD, CAD, CHF, HKD, SGD, NZD, THB, TWD)
 
     // 무료 통화만
     val free = all.filter { !it.isPremium }
@@ -209,6 +218,66 @@ object Currencies {
         return when (type) {
             CurrencyType.USD -> USD
             CurrencyType.JPY -> JPY
+            CurrencyType.EUR -> EUR
+            CurrencyType.GBP -> GBP
+            CurrencyType.CHF -> CHF
+            CurrencyType.CAD -> CAD
+            CurrencyType.AUD -> AUD
+            CurrencyType.NZD -> NZD
+            CurrencyType.CNY -> CNY
+            CurrencyType.HKD -> HKD
+            CurrencyType.TWD -> TWD
+            CurrencyType.SGD -> SGD
         }
     }
 }
+
+
+object CurrencyEmojiMapper {
+    private val emojiMap = mapOf(
+        CurrencyType.USD to "🇺🇸",
+        CurrencyType.JPY to "🇯🇵",
+        CurrencyType.EUR to "🇪🇺",
+        CurrencyType.GBP to "🇬🇧",
+        CurrencyType.CHF to "🇨🇭",
+        CurrencyType.CAD to "🇨🇦",
+        CurrencyType.AUD to "🇦🇺",
+        CurrencyType.NZD to "🇳🇿",
+        CurrencyType.CNY to "🇨🇳",
+        CurrencyType.HKD to "🇭🇰",
+        CurrencyType.TWD to "🇹🇼",
+        CurrencyType.SGD to "🇸🇬"
+    )
+
+    /**
+     * 통화 코드에 해당하는 이모지 반환
+     */
+    fun getEmoji(currencyType: CurrencyType): String {
+        return emojiMap[currencyType] ?: "🌐"
+    }
+
+    /**
+     * 모든 이모지 맵 반환 (필요 시)
+     */
+    fun getAllEmojis(): Map<CurrencyType, String> = emojiMap
+}
+
+/**
+ * Extension 함수로도 사용 가능
+ *
+ * 사용 예시:
+ * CurrencyType.USD.emoji → "🇺🇸"
+ */
+val CurrencyType.emoji: String
+    get() = CurrencyEmojiMapper.getEmoji(this)
+
+/**
+ * Currency 객체에서도 이모지 접근 가능
+ *
+ * 사용 예시:
+ * Currencies.USD.emoji → "🇺🇸"
+ */
+val Currency.emoji: String
+    get() = CurrencyEmojiMapper.getEmoji(
+        CurrencyType.valueOf(this.code)
+    )

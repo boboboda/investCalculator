@@ -7,6 +7,7 @@ import com.bobodroid.myapplication.models.datamodels.service.exchangeRateApi.Rat
 import com.bobodroid.myapplication.models.datamodels.websocket.WebSocketClient
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import org.json.JSONObject
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -21,8 +22,7 @@ class LatestRateRepository @Inject constructor(
     private var isWebSocketSubscribed = false
 
     /**
-     * ✅ REST API로 초기 환율 데이터 가져오기
-     * - 서버에서 받은 JSON을 ExchangeRate.fromCustomJson으로 변환 (JPY * 100 자동 처리됨)
+     * ✅ REST API로 초기 환율 데이터 가져오기 (12개 통화)
      */
     suspend fun fetchInitialLatestRate() {
         try {
@@ -32,25 +32,36 @@ class LatestRateRepository @Inject constructor(
 
             if (response.isSuccessful) {
                 response.body()?.let { data ->
-                    // ✅ 서버 응답을 JSON 문자열로 변환
-                    val jsonString = """
-                        {
-                            "id": "${data.id}",
-                            "createAt": "${data.createAt}",
-                            "exchangeRates": {
-                                "USD": "${data.exchangeRates.usd}",
-                                "JPY": "${data.exchangeRates.jpy}"
-                            }
-                        }
-                    """.trimIndent()
+                    // ✅ 12개 통화 전체를 JSON으로 변환
+                    val exchangeRatesJson = JSONObject().apply {
+                        put("USD", data.exchangeRates.usd)
+                        put("JPY", data.exchangeRates.jpy)
+//                        put("EUR", data.exchangeRates.eur)
+//                        put("GBP", data.exchangeRates.gbp)
+//                        put("CNY", data.exchangeRates.cny)
+//                        put("AUD", data.exchangeRates.aud)
+//                        put("CAD", data.exchangeRates.cad)
+//                        put("CHF", data.exchangeRates.chf)
+//                        put("HKD", data.exchangeRates.hkd)
+//                        put("SGD", data.exchangeRates.sgd)
+//                        put("NZD", data.exchangeRates.nzd)
+//                        put("THB", data.exchangeRates.thb)
+//                        put("TWD", data.exchangeRates.twd)
+                    }
 
-                    // ✅ fromCustomJson이 JPY * 100 처리를 자동으로 수행
+                    val jsonString = JSONObject().apply {
+                        put("id", data.id)
+                        put("createAt", data.createAt)
+                        put("exchangeRates", exchangeRatesJson)
+                    }.toString()
+
+                    // ✅ fromCustomJson이 needsMultiply 처리 (JPY, THB 100배)
                     val exchangeRate = ExchangeRate.fromCustomJson(jsonString)
 
                     if (exchangeRate != null) {
                         _latestRate.emit(exchangeRate)
                         Log.d(TAG("LatestRateRepository", "fetchInitialLatestRate"),
-                            "초기 최신 환율 로드 성공: USD=${exchangeRate.usd}, JPY=${exchangeRate.jpy}")
+                            "초기 최신 환율 로드 성공 (12개 통화): $exchangeRate")
                     }
                 }
             } else {
@@ -63,32 +74,35 @@ class LatestRateRepository @Inject constructor(
         }
     }
 
+    /**
+     * ✅ 웹소켓으로 실시간 환율 업데이트 구독
+     */
     suspend fun subscribeToExchangeRateUpdates() {
         webSocketClient.recentRateWebReceiveData(
             onInsert = { latestRate ->
                 Log.d(TAG("LatestRateRepository", "subscribeToExchangeRateUpdates"),
-                    "웹소켓 환율 최신 데이터: $latestRate")
+                    "웹소켓 환율 최신 데이터 수신")
                 onRateUpdate(latestRate)
             },
             onInitialData = { initialRate ->
                 Log.d(TAG("LatestRateRepository", "subscribeToExchangeRateUpdates"),
-                    "웹소켓 환율 초기화 데이터: $initialRate")
+                    "웹소켓 환율 초기화 데이터 수신")
                 onRateUpdate(initialRate)
             }
         )
     }
 
+    /**
+     * ✅ 환율 업데이트 처리
+     */
     private suspend fun onRateUpdate(rateString: String) {
         try {
-            // ✅ fromCustomJson이 JPY * 100 처리 포함
             val exchangeRate = ExchangeRate.fromCustomJson(rateString) ?: return
 
             _latestRate.emit(exchangeRate)
 
             Log.d(TAG("LatestRateRepository", "onRateUpdate"),
                 "환율 업데이트 파싱 완료: $exchangeRate")
-            Log.d(TAG("LatestRateRepository", "onRateUpdate"),
-                "USD 환율: ${exchangeRate.usd}, JPY 환율: ${exchangeRate.jpy}")
 
         } catch (e: Exception) {
             Log.e(TAG("LatestRateRepository", "onRateUpdate"),

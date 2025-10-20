@@ -43,9 +43,11 @@ import androidx.compose.ui.unit.sp
 import com.bobodroid.myapplication.MainActivity.Companion.TAG
 import com.bobodroid.myapplication.components.Dialogs.AskTriggerDialog
 import com.bobodroid.myapplication.components.Dialogs.TextFieldDialog
+import com.bobodroid.myapplication.extensions.formatWithCurrencyType
 import com.bobodroid.myapplication.extensions.toBigDecimalUs
 import com.bobodroid.myapplication.extensions.toBigDecimalWon
 import com.bobodroid.myapplication.extensions.toBigDecimalYen
+import com.bobodroid.myapplication.models.datamodels.roomDb.CurrencyRecord
 import com.bobodroid.myapplication.models.datamodels.roomDb.CurrencyType
 import com.bobodroid.myapplication.models.datamodels.roomDb.ForeignCurrencyRecord
 import com.bobodroid.myapplication.screens.RecordListEvent
@@ -60,7 +62,7 @@ import java.math.RoundingMode
 @Composable
 fun RecordListRowView(
     currencyType: CurrencyType,
-    data: ForeignCurrencyRecord,
+    data: CurrencyRecord,
     sellState: Boolean = data.recordColor!!,
     groupList: List<String>,
     onEvent: (RecordListEvent) -> Unit,
@@ -80,18 +82,7 @@ fun RecordListRowView(
     val focusRequester by remember { mutableStateOf(FocusRequester()) }
 
     // 통화 금액 포맷팅
-    val foreignCurrencyMoney = when(currencyType) {
-        CurrencyType.USD -> {
-            BigDecimal(data.exchangeMoney, mathContext)
-                .setScale(0, RoundingMode.DOWN)
-                .toBigDecimalUs()
-        }
-        CurrencyType.JPY -> {
-            BigDecimal(data.exchangeMoney, mathContext)
-                .setScale(0, RoundingMode.DOWN)
-                .toBigDecimalYen()
-        }
-    }
+    val foreignCurrencyMoney = data.exchangeMoney ?: "0"
 
     // ✅ 원화 금액 포맷팅 추가
     val wonMoney = BigDecimal(data.money, mathContext)
@@ -303,7 +294,7 @@ fun RecordListRowView(
                                 Spacer(modifier = Modifier.height(2.dp))
                                 // ✅ 달러/엔화 금액 (보조)
                                 Text(
-                                    text = foreignCurrencyMoney,
+                                    text = foreignCurrencyMoney.formatWithCurrencyType(currencyType),
                                     fontSize = 12.sp,
                                     color = Color(0xFF9CA3AF),
                                     fontWeight = FontWeight.Normal

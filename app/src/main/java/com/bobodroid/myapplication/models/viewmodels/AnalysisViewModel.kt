@@ -5,14 +5,20 @@ import androidx.compose.ui.graphics.Color
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.bobodroid.myapplication.MainActivity.Companion.TAG
+import com.bobodroid.myapplication.models.datamodels.roomDb.Currencies
+import com.bobodroid.myapplication.models.datamodels.roomDb.Currency
+import com.bobodroid.myapplication.models.datamodels.roomDb.CurrencyType
 import com.bobodroid.myapplication.models.datamodels.service.exchangeRateApi.CurrencyChange
 import com.bobodroid.myapplication.models.datamodels.service.exchangeRateApi.ExchangeRateResponse
 import com.bobodroid.myapplication.models.datamodels.service.exchangeRateApi.ExchangeRates
 import com.bobodroid.myapplication.models.datamodels.service.exchangeRateApi.RateApi
+import com.bobodroid.myapplication.models.repository.SettingsRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -23,7 +29,23 @@ import kotlin.math.pow
 import kotlin.math.sqrt
 
 @HiltViewModel
-class AnalysisViewModel @Inject constructor(): ViewModel() {
+class AnalysisViewModel @Inject constructor(
+    private val settingsRepository: SettingsRepository  // ✅ 추가
+): ViewModel() {
+
+    // ✅ SettingsRepository에서 통화 상태 가져오기
+    val selectedCurrency = settingsRepository.selectedCurrency.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = CurrencyType.USD
+    )
+
+    /**
+     * 통화 변경
+     */
+    fun updateSelectedCurrency(currency: CurrencyType) {
+        settingsRepository.setSelectedCurrency(currency)
+    }
 
     private val _dailyRates = MutableStateFlow<List<RateRange>>(emptyList())
     private val _weeklyRates = MutableStateFlow<List<RateRange>>(emptyList())
@@ -35,8 +57,8 @@ class AnalysisViewModel @Inject constructor(): ViewModel() {
 
     init {
         viewModelScope.launch(Dispatchers.IO) {
+            // ✅ 모든 기간 데이터 로드
             loadAllRangeData()
-            loadDailyRates()
             loadDailyCharge()
 
             withContext(Dispatchers.Main) {
@@ -47,15 +69,15 @@ class AnalysisViewModel @Inject constructor(): ViewModel() {
                 }
             }
 
-            Log.d(TAG("AnalysisViewModel", "init"), "Initial daily data set: ${_dailyRates.value}")
-            Log.d(TAG("AnalysisViewModel", "init"), "Initial selectedRates data set: ${_analysisUiState.value.selectedRates}")
+            Log.d(TAG("AnalysisViewModel", "init"), "데이터 로드 완료")
+            Log.d(TAG("AnalysisViewModel", "init"), "Daily: ${_dailyRates.value.size}개")
+            Log.d(TAG("AnalysisViewModel", "init"), "Weekly: ${_weeklyRates.value.size}개")
+            Log.d(TAG("AnalysisViewModel", "init"), "Monthly: ${_monthlyRates.value.size}개")
+            Log.d(TAG("AnalysisViewModel", "init"), "Yearly: ${_yearlyRates.value.size}개")
         }
 
         viewModelScope.launch {
             _analysisUiState.collect { uiState ->
-                Log.d(TAG("AnalysisViewModel", "collectTabIndex"),
-                    "Selected tab index: ${uiState.selectedTabIndex}, Current selectedRates: ${uiState.selectedRates}")
-
                 val newSelectedRates = when(uiState.selectedTabIndex) {
                     0 -> _dailyRates.value
                     1 -> _weeklyRates.value
@@ -63,6 +85,9 @@ class AnalysisViewModel @Inject constructor(): ViewModel() {
                     3 -> _yearlyRates.value
                     else -> emptyList()
                 }
+
+                Log.d(TAG("AnalysisViewModel", "collectTabIndex"),
+                    "탭 변경: ${uiState.selectedTabIndex}, 새 데이터: ${newSelectedRates.size}개")
 
                 if (newSelectedRates != uiState.selectedRates) {
                     _analysisUiState.update { current ->
@@ -141,10 +166,15 @@ class AnalysisViewModel @Inject constructor(): ViewModel() {
             acc
         }
 
-        return rates.map {
+        return filteredRates.map {
+            // ExchangeRates를 Map으로 변환
+            val ratesMap = mapOf(
+                "USD" to it.exchangeRates.usd,
+                "JPY" to it.exchangeRates.jpy
+            )
+
             RateRange(
-                jpy = it.exchangeRates.jpy,
-                usd = it.exchangeRates.usd,
+                rates = ratesMap,
                 createAt = it.createAt
             )
         }
@@ -205,22 +235,20 @@ class AnalysisViewModel @Inject constructor(): ViewModel() {
     }
 
     // ✨ 통계 계산 - 선택된 탭의 데이터 기준
-    fun calculateStatistics(currencyType: com.bobodroid.myapplication.models.datamodels.roomDb.CurrencyType): RateStatistics {
+    fun calculateStatistics(currencyType: CurrencyType): RateStatistics {
         val rates = _analysisUiState.value.selectedRates
         if (rates.isEmpty()) return RateStatistics()
 
-        val values = rates.map {
-            when(currencyType) {
-                com.bobodroid.myapplication.models.datamodels.roomDb.CurrencyType.USD ->
-                    it.usd.toFloatOrNull() ?: 0f
-                com.bobodroid.myapplication.models.datamodels.roomDb.CurrencyType.JPY ->
-                    (it.jpy.toFloatOrNull() ?: 0f) * 100f  // ✅ JPY는 100배
-            }
+        // ✅ ExchangeRate에 이미 needsMultiply 처리된 값이 저장되어 있음
+        val values = rates.mapNotNull { rate ->
+            rate.getRate(currencyType.code).toFloatOrNull()
         }
+
+        if (values.isEmpty()) return RateStatistics()
 
         val max = values.maxOrNull() ?: 0f
         val min = values.minOrNull() ?: 0f
-        val average = if (values.isNotEmpty()) values.average().toFloat() else 0f
+        val average = values.average().toFloat()
         val volatility = calculateVolatility(values)
         val range = max - min
 
@@ -242,19 +270,16 @@ class AnalysisViewModel @Inject constructor(): ViewModel() {
     }
 
     // ✅ 추세 분석 - 항상 전체 데이터(1년) 기준
-    fun calculateTrendAnalysis(currencyType: com.bobodroid.myapplication.models.datamodels.roomDb.CurrencyType): TrendAnalysis {
-        // ✅ 항상 1년 데이터 사용 (탭과 무관)
+    fun calculateTrendAnalysis(currencyType: CurrencyType): TrendAnalysis {
         val rates = _yearlyRates.value
         if (rates.size < 2) return TrendAnalysis()
 
-        val values = rates.map {
-            when(currencyType) {
-                com.bobodroid.myapplication.models.datamodels.roomDb.CurrencyType.USD ->
-                    it.usd.toFloatOrNull() ?: 0f
-                com.bobodroid.myapplication.models.datamodels.roomDb.CurrencyType.JPY ->
-                    (it.jpy.toFloatOrNull() ?: 0f) * 100f  // ✅ JPY는 100배
-            }
+        // ✅ ExchangeRate에 이미 needsMultiply 처리된 값이 저장되어 있음
+        val values = rates.mapNotNull { rate ->
+            rate.getRate(currencyType.code).toFloatOrNull()
         }
+
+        if (values.size < 2) return TrendAnalysis()
 
         var upDays = 0
         var downDays = 0
@@ -286,27 +311,25 @@ class AnalysisViewModel @Inject constructor(): ViewModel() {
     }
 
     // ✅ 기간별 비교 - 항상 최신 환율 기준 (탭과 무관)
-    fun calculatePeriodComparison(currencyType: com.bobodroid.myapplication.models.datamodels.roomDb.CurrencyType): PeriodComparison {
-        // ✅ 최신 환율 사용
-        val currentRate = when(currencyType) {
-            com.bobodroid.myapplication.models.datamodels.roomDb.CurrencyType.USD ->
-                _analysisUiState.value.latestRate.usd.toFloatOrNull() ?: 0f
-            com.bobodroid.myapplication.models.datamodels.roomDb.CurrencyType.JPY ->
-                (_analysisUiState.value.latestRate.jpy.toFloatOrNull() ?: 0f)
+    fun calculatePeriodComparison(currencyType: CurrencyType): PeriodComparison {
+        // ✅ 최신 환율 사용 (ExchangeRate에 이미 needsMultiply 처리됨)
+        val currentRateStr = when(currencyType) {
+            CurrencyType.USD -> _analysisUiState.value.latestRate.usd
+            CurrencyType.JPY -> _analysisUiState.value.latestRate.jpy
+            else -> "0"
         }
+
+        val currentRate = currentRateStr.toFloatOrNull() ?: 0f
 
         // ✅ 항상 전체 데이터(1년)에서 비교
         val allRates = _yearlyRates.value
         if (allRates.isEmpty()) return PeriodComparison()
 
-        val values = allRates.map {
-            when(currencyType) {
-                com.bobodroid.myapplication.models.datamodels.roomDb.CurrencyType.USD ->
-                    it.usd.toFloatOrNull() ?: 0f
-                com.bobodroid.myapplication.models.datamodels.roomDb.CurrencyType.JPY ->
-                    (it.jpy.toFloatOrNull() ?: 0f) * 100f  // ✅ JPY는 100배
-            }
+        val values = allRates.mapNotNull { rate ->
+            rate.getRate(currencyType.code).toFloatOrNull()
         }
+
+        if (values.isEmpty()) return PeriodComparison()
 
         fun calculateChange(oldValue: Float): String {
             if (oldValue == 0f) return "0.00%"
@@ -354,10 +377,16 @@ private fun rangeDateFromTab(tabIndex: Int): Pair<String, String> {
 }
 
 data class RateRange(
-    val jpy: String = "",
-    val usd: String = "",
+    val rates: Map<String, String> = emptyMap(),
     val createAt: String = ""
-)
+) {
+    fun getRate(currencyCode: String): String = rates[currencyCode] ?: ""
+    fun getRate(currency: Currency): String = getRate(currency.code)
+
+    // 레거시 호환
+    val usd: String get() = getRate("USD")
+    val jpy: String get() = getRate("JPY")
+}
 
 data class RateRangeCurrency(
     val rate: Float,
@@ -369,11 +398,22 @@ data class AnalysisUiState(
     val selectedTabIndex: Int = 0,
     val latestRate: ExchangeRates = ExchangeRates(
         usd = "0",
-        jpy = "0"
+        jpy = "0",
+//        eur = "0",
+//        gbp = "0",
+//        cny = "0",
+//        aud = "0",
+//        cad = "0",
+//        chf = "0",
+//        hkd = "0",
+//        sgd = "0",
+//        nzd = "0",
+//        thb = "0",
+//        twd = "0"
     ),
     val change: CurrencyChange = CurrencyChange(
         usd = "0",
-        jpy = "0"
+        jpy = "0",
     ),
     val jpyChangeIcon: Char = '-',
     val jpyChangeColor: Color = Color.Gray,
@@ -381,7 +421,6 @@ data class AnalysisUiState(
     val usdChangeColor: Color = Color.Gray
 )
 
-// ✨ 데이터 클래스들
 data class RateStatistics(
     val max: Float = 0f,
     val min: Float = 0f,

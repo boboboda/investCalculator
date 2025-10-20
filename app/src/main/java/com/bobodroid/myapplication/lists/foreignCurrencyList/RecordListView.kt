@@ -14,6 +14,7 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.unit.dp
 import com.bobodroid.myapplication.components.EmptyRecordView
 import com.bobodroid.myapplication.components.RecordHeader
+import com.bobodroid.myapplication.models.datamodels.roomDb.CurrencyRecord
 import com.bobodroid.myapplication.models.datamodels.roomDb.CurrencyType
 import com.bobodroid.myapplication.models.viewmodels.CurrencyRecordState
 import com.bobodroid.myapplication.models.datamodels.roomDb.ForeignCurrencyRecord
@@ -26,7 +27,7 @@ import kotlinx.coroutines.launch
 @Composable
 fun RecordListView(
     currencyType: CurrencyType,
-    currencyRecordState: CurrencyRecordState<ForeignCurrencyRecord>,
+    currencyRecordState: CurrencyRecordState<CurrencyRecord>,
     hideSellRecordState: Boolean,
     scrollState: LazyListState = rememberLazyListState(),
     onEvent: (RecordListEvent) -> Unit
@@ -50,18 +51,13 @@ fun RecordListView(
 
     // 🎯 기록이 없는지 확인
     val isEmpty = filterRecord.values.all { it.isEmpty() }
-    val currencyName = when(currencyType) {
-        CurrencyType.USD -> "달러"
-        CurrencyType.JPY -> "엔화"
-    }
-
 
     Column {
 
         if (isEmpty) {
             // 🎯 빈 화면 표시
             EmptyRecordView(
-                currencyName = currencyName,
+                currencyName = currencyType.name,
                 onAddClick = {
                     // 추가 버튼 클릭 이벤트
                     onEvent(RecordListEvent.ShowAddBottomSheet)

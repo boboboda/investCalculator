@@ -76,10 +76,7 @@ fun AddBottomSheet(
 
     var groupDropdownExpanded by remember { mutableStateOf(false) }
 
-    val groupList = when(mainUiState.selectedCurrencyType) {
-        CurrencyType.USD-> { recordListUiState.foreignCurrencyRecord.dollarState.groups }
-        CurrencyType.JPY-> { recordListUiState.foreignCurrencyRecord.yenState.groups }
-    }
+    val groupList = recordListUiState.getRecordsByType(mainUiState.selectedCurrencyType).groups
 
     var numberPadPopViewIsVible by remember { mutableStateOf(false) }
 

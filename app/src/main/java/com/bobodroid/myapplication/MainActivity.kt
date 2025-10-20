@@ -21,6 +21,7 @@ import androidx.compose.ui.Modifier
 import androidx.core.content.ContextCompat
 import androidx.core.splashscreen.SplashScreen
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
+import androidx.lifecycle.lifecycleScope
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -35,8 +36,11 @@ import com.bobodroid.myapplication.models.viewmodels.MainViewModel
 import com.bobodroid.myapplication.routes.*
 import com.bobodroid.myapplication.screens.*
 import com.bobodroid.myapplication.ui.theme.InverstCalculatorTheme
+import com.bobodroid.myapplication.widget.WidgetAlarmManager
 import com.bobodroid.myapplication.widget.WidgetUpdateHelper
+import com.bobodroid.myapplication.widget.WidgetUpdateService
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 
@@ -80,7 +84,6 @@ class MainActivity : ComponentActivity() {
             }
         )
 
-        // ✅ onCreate에서도 Intent 처리
         handleIntent(intent)
 
         setContent {
@@ -91,6 +94,38 @@ class MainActivity : ComponentActivity() {
                     activity = this
                 )
             }
+        }
+
+        // ✅ 위젯 자동 업데이트 시작
+        Log.d(TAG("메인","onCreate"), "🔧 setupWidgetAutoUpdate() 호출 시도...")
+        try {
+            setupWidgetAutoUpdate()
+            Log.d(TAG("메인","onCreate"), "✅ setupWidgetAutoUpdate() 완료")
+        } catch (e: Exception) {
+            Log.e(TAG("메인","onCreate"), "❌ setupWidgetAutoUpdate() 실패", e)
+        }
+    }
+
+    // ✅ 새로운 메서드 추가
+    private fun setupWidgetAutoUpdate() {
+        lifecycleScope.launch {
+            // User DB에서 프리미엄 상태 확인
+            val isPremium = mainViewModel.checkPremiumStatus()
+
+            Log.d(TAG("메인", "setupWidgetAutoUpdate"), "━━━━━━━━━━━━━━━━━━━━━━━━━━")
+            Log.d(TAG("메인", "setupWidgetAutoUpdate"), "프리미엄 상태: $isPremium")
+
+            if (isPremium) {
+                // 프리미엄: WorkManager 중지, Foreground Service는 설정 화면에서 제어
+                WidgetAlarmManager.stopPeriodicUpdate(this@MainActivity)
+                Log.d(TAG("메인", "setupWidgetAutoUpdate"), "✅ 프리미엄 사용자 - WorkManager 중지")
+            } else {
+                // 일반 사용자: WorkManager 시작 (5분 주기)
+                WidgetAlarmManager.startPeriodicUpdate(this@MainActivity)
+                Log.d(TAG("메인", "setupWidgetAutoUpdate"), "✅ 일반 사용자 - WorkManager 시작 (5분 주기)")
+            }
+
+            Log.d(TAG("메인", "setupWidgetAutoUpdate"), "━━━━━━━━━━━━━━━━━━━━━━━━━━")
         }
     }
 

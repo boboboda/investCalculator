@@ -46,16 +46,31 @@ fun MainHeader(
         AnimatedContent(
             targetState = isCollapsed,
             transitionSpec = {
-                fadeIn(animationSpec = tween(300)) +
-                        slideInVertically(
-                            animationSpec = tween(300),
-                            initialOffsetY = { -it / 2 }
-                        ) togetherWith
-                        fadeOut(animationSpec = tween(300)) +
-                        slideOutVertically(
-                            animationSpec = tween(300),
-                            targetOffsetY = { -it / 2 }
-                        )
+                // ✅ 수정: 애니메이션 시간을 1200ms(1.2초)로 변경하고 부드러운 easing 적용
+                fadeIn(
+                    animationSpec = tween(
+                        durationMillis = 900,
+                        easing = FastOutSlowInEasing
+                    )
+                ) + slideInVertically(
+                    animationSpec = tween(
+                        durationMillis = 900,
+                        easing = FastOutSlowInEasing
+                    ),
+                    initialOffsetY = { -it / 2 }
+                ) togetherWith
+                        fadeOut(
+                            animationSpec = tween(
+                                durationMillis = 900,
+                                easing = FastOutSlowInEasing
+                            )
+                        ) + slideOutVertically(
+                    animationSpec = tween(
+                        durationMillis = 900,
+                        easing = FastOutSlowInEasing
+                    ),
+                    targetOffsetY = { -it / 2 }
+                )
             },
             label = "header_animation"
         ) { collapsed ->

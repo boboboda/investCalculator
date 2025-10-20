@@ -43,6 +43,7 @@ import com.bobodroid.myapplication.models.viewmodels.CurrencyRecordState
 import com.bobodroid.myapplication.models.viewmodels.MainViewModel
 import com.bobodroid.myapplication.screens.MainEvent.BottomSheetEvent
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.runtime.saveable.rememberSaveable
 import com.bobodroid.myapplication.components.Dialogs.OnboardingTooltipDialog
 import com.bobodroid.myapplication.components.mainComponents.GroupChangeBottomSheet
 import com.bobodroid.myapplication.util.PreferenceUtil
@@ -81,19 +82,28 @@ fun MainScreen(
         mutableStateOf(preferenceUtil.getData("onboarding_completed", "false") == "false")
     }
 
-    // ✅ 수정: 헤더 확대/축소 상태 관리 (초기값 false = 확대 상태)
-    var isCollapsedState by remember { mutableStateOf(false) }
+    var isCollapsedState by rememberSaveable { mutableStateOf(false) }
 
+    // ✅ 수정: 앱 실행 시마다 항상 2.5초 대기 후 자동 축소
+    DisposableEffect(Unit) {
+        val hasShownAnimation = preferenceUtil.getData("header_initial_animation_shown", "false") == "true"
 
-    var isInitialLaunch by remember { mutableStateOf(true) }
+        // 최초 실행이든 재실행이든 항상 확대 상태에서 시작
+        isCollapsedState = false
 
-// ✅ 앱 처음 실행 시에만 자동 축소
-    LaunchedEffect(key1 = Unit) {
-        if (isInitialLaunch) {
+        coroutineScope.launch {
+            // 2.5초 동안 대시보드를 보여줌
             delay(2500)
+            // 그 후 자동으로 축소
             isCollapsedState = true
-            isInitialLaunch = false  // 최초 실행 플래그 해제
+
+            // 최초 실행이었다면 기록
+            if (!hasShownAnimation) {
+                preferenceUtil.setData("header_initial_animation_shown", "true")
+            }
         }
+
+        onDispose { }
     }
 
     // 리스트

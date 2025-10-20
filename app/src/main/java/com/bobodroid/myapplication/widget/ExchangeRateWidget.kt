@@ -6,7 +6,6 @@ import android.appwidget.AppWidgetProvider
 import android.content.Context
 import android.content.Intent
 import android.util.Log
-import android.view.View
 import android.widget.RemoteViews
 import com.bobodroid.myapplication.R
 import com.bobodroid.myapplication.MainActivity
@@ -66,7 +65,9 @@ class ExchangeRateWidget : AppWidgetProvider() {
 
         // ✅ 위젯 전체 클릭 시 앱 열기
         val mainIntent = Intent(context, MainActivity::class.java).apply {
-            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or
+                    Intent.FLAG_ACTIVITY_CLEAR_TOP or
+                    Intent.FLAG_ACTIVITY_SINGLE_TOP
             action = Intent.ACTION_MAIN
             addCategory(Intent.CATEGORY_LAUNCHER)
         }
@@ -78,18 +79,6 @@ class ExchangeRateWidget : AppWidgetProvider() {
         )
         views.setOnClickPendingIntent(R.id.widget_container, mainPendingIntent)
 
-        // ✅ 새로고침 버튼 클릭 이벤트
-        val refreshIntent = Intent(context, WidgetRefreshReceiver::class.java).apply {
-            action = WidgetRefreshReceiver.ACTION_REFRESH
-        }
-        val refreshPendingIntent = PendingIntent.getBroadcast(
-            context,
-            0,
-            refreshIntent,
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-        )
-        views.setOnClickPendingIntent(R.id.widget_refresh_button, refreshPendingIntent)
-
         // ✅ 비동기 작업 후 단 한 번만 업데이트
         scope.launch {
             try {
@@ -97,11 +86,14 @@ class ExchangeRateWidget : AppWidgetProvider() {
                 val user = userRepository.userData.firstOrNull()?.localUserData
                 val isPremium = user?.isPremium ?: false
 
-                // 프리미엄 사용자면 새로고침 버튼 숨김
-                views.setViewVisibility(
-                    R.id.widget_refresh_button,
-                    if (isPremium) View.GONE else View.VISIBLE
-                )
+                // ✅ 업데이트 주기 표시
+                if (isPremium) {
+                    views.setTextViewText(R.id.widget_update_cycle, "⚡ 실시간")
+                    views.setTextColor(R.id.widget_update_cycle, android.graphics.Color.parseColor("#6366F1"))
+                } else {
+                    views.setTextViewText(R.id.widget_update_cycle, "🔄 5분 주기")
+                    views.setTextColor(R.id.widget_update_cycle, android.graphics.Color.parseColor("#10B981"))
+                }
 
                 val latestRate = latestRateRepository.latestRateFlow.firstOrNull()
 

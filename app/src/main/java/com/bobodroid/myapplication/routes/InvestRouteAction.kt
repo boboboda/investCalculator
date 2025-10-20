@@ -40,7 +40,8 @@ sealed class MyPageRoute(
     data object CreateUser: MyPageRoute("CreateUser", "유저생성")
     data object CustomerServiceCenter: MyPageRoute("CustomerServiceCenter", "고객센터")
     data object CloudService: MyPageRoute("CloudService", "클라우드")
-    data object PremiumSettings: MyPageRoute("PremiumSettings", "프리미엄 설정")
+    data object WidgetSettings: MyPageRoute("WidgetSettings", "위젯 설정") // ✅ 추가
+    data object Premium: MyPageRoute("Premium", "프리미엄") // ✅ 추가
 }
 
 

@@ -6,11 +6,21 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
 
-    <!-- ✅ POST_NOTIFICATIONS는 한 번만! -->
+    <!-- ✅ POST_NOTIFICATIONS -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
-    <!-- ✅ BILLING 권한 추가 (빠졌었음) -->
+    <!-- ✅ BILLING 권한 -->
     <uses-permission android:name="com.android.vending.BILLING" />
+
+    <!-- ✅ AlarmManager 권한 (Android 12+) -->
+    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
+    <uses-permission android:name="android.permission.USE_EXACT_ALARM" />
+
+    <!-- 🆕 백그라운드 실행을 위한 추가 권한 -->
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+    <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
 
     <application
         android:name=".util.InvestApplication"
@@ -90,11 +100,26 @@
         </service>
 
         <!-- ✅ 위젯 실시간 업데이트 서비스 (프리미엄 전용) -->
+        <!-- 🆕 stopWithTask="false" 추가: 앱이 종료되어도 서비스 유지 -->
         <service
             android:name=".widget.WidgetUpdateService"
             android:enabled="true"
             android:exported="false"
+            android:stopWithTask="false"
             android:foregroundServiceType="dataSync" />
+
+        <!-- 🆕 부팅 완료 리시버 (선택사항: 재부팅 후 자동 시작) -->
+        <receiver
+            android:name=".widget.BootCompletedReceiver"
+            android:enabled="true"
+            android:exported="true"
+            android:permission="android.permission.RECEIVE_BOOT_COMPLETED">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.QUICKBOOT_POWERON" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </receiver>
 
         <!-- ✅ 위젯 새로고침 리시버 (일반 사용자용) -->
         <receiver

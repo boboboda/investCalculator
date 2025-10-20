@@ -17,7 +17,7 @@
         android:focusable="false"
         android:duplicateParentState="false">
 
-        <!-- 헤더 + 새로고침 -->
+        <!-- 헤더 -->
         <RelativeLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -51,18 +51,6 @@
                     android:maxLines="1"
                     android:ellipsize="end" />
             </LinearLayout>
-
-            <ImageButton
-                android:id="@+id/widget_refresh_button"
-                android:layout_width="36dp"
-                android:layout_height="36dp"
-                android:layout_alignParentEnd="true"
-                android:layout_centerVertical="true"
-                android:background="?android:attr/selectableItemBackgroundBorderless"
-                android:contentDescription="새로고침"
-                android:src="@android:drawable/ic_popup_sync"
-                android:scaleType="fitCenter"
-                android:padding="6dp" />
         </RelativeLayout>
 
         <TextView
@@ -141,15 +129,35 @@
                 android:textColor="#EF4444" />
         </LinearLayout>
 
-        <TextView
-            android:id="@+id/widget_update_time"
+        <!-- 업데이트 정보 -->
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="업데이트: 10:23"
-            android:textSize="11sp"
-            android:textColor="#9CA3AF"
+            android:orientation="horizontal"
             android:gravity="end"
-            android:paddingTop="8dp" />
+            android:paddingTop="8dp">
+
+            <TextView
+                android:id="@+id/widget_update_cycle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="🔄 5분 주기"
+                android:textSize="10sp"
+                android:textColor="#10B981"
+                android:textStyle="bold"
+                android:layout_marginEnd="8dp"
+                android:paddingHorizontal="6dp"
+                android:paddingVertical="2dp"
+                android:background="@drawable/widget_badge_background" />
+
+            <TextView
+                android:id="@+id/widget_update_time"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="업데이트: 10:23"
+                android:textSize="11sp"
+                android:textColor="#9CA3AF" />
+        </LinearLayout>
 
         <!-- 총 수익 -->
         <LinearLayout

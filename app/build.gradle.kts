@@ -227,4 +227,8 @@ dependencies {
 
     implementation(libs.play.services.auth)    // Google 로그인
     implementation(libs.kakao.sdk.user)
+
+    implementation(libs.androidx.work.runtime.ktx)
+    implementation(libs.androidx.hilt.work)
+    kapt(libs.androidx.hilt.compiler)
 }

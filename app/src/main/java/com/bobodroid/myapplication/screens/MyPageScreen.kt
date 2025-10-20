@@ -5,12 +5,8 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.SnackbarDuration
-import androidx.compose.material3.SnackbarHost
-import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.rounded.*
@@ -22,10 +18,10 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
@@ -33,21 +29,15 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.bobodroid.myapplication.billing.BillingClientLifecycle
 import com.bobodroid.myapplication.components.Dialogs.OnboardingTooltipDialog
 import com.bobodroid.myapplication.models.datamodels.roomDb.LocalUserData
-import com.bobodroid.myapplication.models.viewmodels.BadgeInfo
-import com.bobodroid.myapplication.models.viewmodels.InvestmentStats
-import com.bobodroid.myapplication.models.viewmodels.MonthlyGoal
-import com.bobodroid.myapplication.models.viewmodels.MyPageViewModel
-import com.bobodroid.myapplication.models.viewmodels.RecentActivity
-import com.bobodroid.myapplication.premium.PremiumManager
+import com.bobodroid.myapplication.models.viewmodels.*
 import com.bobodroid.myapplication.routes.MyPageRoute
 import com.bobodroid.myapplication.routes.RouteAction
 import kotlinx.coroutines.launch
-import java.text.NumberFormat
 import java.time.LocalDate
 import java.time.temporal.ChronoUnit
-import java.util.*
 
 @Composable
 fun MyPageScreen() {
@@ -57,14 +47,11 @@ fun MyPageScreen() {
     val mainScreenSnackBarHostState = remember { SnackbarHostState() }
     val navController = rememberNavController()
 
-
     val myPageRouteAction = remember {
         RouteAction<MyPageRoute>(navController, MyPageRoute.SelectView.routeName)
     }
 
     var showOnboarding by remember { mutableStateOf(false) }
-
-
 
     Box(
         modifier = Modifier.fillMaxSize(),
@@ -78,14 +65,13 @@ fun MyPageScreen() {
                 ImprovedMyPageView(
                     myPageRouteAction = myPageRouteAction,
                     localUser = uiState.localUser,
-                    investmentStats = uiState.investmentStats,  // ⭐ 통계 전달
-                    recentActivities = uiState.recentActivities, // ⭐ 활동 전달
-                    monthlyGoal = uiState.monthlyGoal,          // ⭐ 목표 전달
-                    onSetGoal = { amount -> myPageViewModel.setMonthlyGoal(amount) },  // ⭐ 목표 설정
-                    showOnboarding = {
-                        showOnboarding = true
-                    },
-                    badges = uiState.badges
+                    investmentStats = uiState.investmentStats,
+                    recentActivities = uiState.recentActivities,
+                    monthlyGoal = uiState.monthlyGoal,
+                    onSetGoal = { amount -> myPageViewModel.setMonthlyGoal(amount) },
+                    showOnboarding = { showOnboarding = true },
+                    badges = uiState.badges,
+                    isPremium = uiState.localUser.isPremium
                 )
             }
 
@@ -126,7 +112,6 @@ fun MyPageScreen() {
                             }
                         }
                     },
-                    // ✅ 연동 해제 추가
                     onUnlinkSocial = {
                         myPageViewModel.unlinkSocial { resultMessage ->
                             coroutineScope.launch {
@@ -141,8 +126,22 @@ fun MyPageScreen() {
                 )
             }
 
-            composable(MyPageRoute.PremiumSettings.routeName!!) {
-                PremiumSettingsScreen(
+            composable(MyPageRoute.CloudService.routeName!!) {
+                CloudView(
+                    routeAction = myPageRouteAction,
+                    localUser = uiState.localUser
+                )
+            }
+
+            composable(MyPageRoute.WidgetSettings.routeName!!) {
+                WidgetSettingsScreen(
+                    onBackClick = { myPageRouteAction.goBack() },
+                    onPremiumClick = { myPageRouteAction.navTo(MyPageRoute.Premium) }
+                )
+            }
+
+            composable(MyPageRoute.Premium.routeName!!) {
+                PremiumScreen(
                     onBackClick = { myPageRouteAction.goBack() }
                 )
             }
@@ -157,7 +156,6 @@ fun MyPageScreen() {
             modifier = Modifier.padding(bottom = 20.dp)
         )
 
-        // 온보딩 다이얼로그
         if (showOnboarding) {
             OnboardingTooltipDialog(
                 onDismiss = { showOnboarding = false }
@@ -170,20 +168,15 @@ fun MyPageScreen() {
 fun ImprovedMyPageView(
     myPageRouteAction: RouteAction<MyPageRoute>,
     localUser: LocalUserData,
-    investmentStats: InvestmentStats = InvestmentStats(),  // ⭐ 통계 데이터 추가
-    recentActivities: List<RecentActivity> = emptyList(),   // ⭐ 활동 데이터 추가
-    monthlyGoal: MonthlyGoal = MonthlyGoal(),              // ⭐ 목표 데이터 추가
-    onSetGoal: (Long) -> Unit = {}, // ⭐ 목표 설정 콜백
+    investmentStats: InvestmentStats = InvestmentStats(),
+    recentActivities: List<RecentActivity> = emptyList(),
+    monthlyGoal: MonthlyGoal = MonthlyGoal(),
+    onSetGoal: (Long) -> Unit = {},
     showOnboarding: () -> Unit,
     badges: List<BadgeInfo>,
-    ) {
-
-
-
-    val gradientColors = listOf(
-        Color(0xFF667EEA),
-        Color(0xFF764BA2)
-    )
+    isPremium: Boolean = false
+) {
+    val context = LocalContext.current
 
     LazyColumn(
         modifier = Modifier
@@ -194,13 +187,26 @@ fun ImprovedMyPageView(
         item {
             ProfileHeader(
                 localUser = localUser,
-                onProfileClick = {myPageRouteAction.navTo(MyPageRoute.CreateUser)}
+                onProfileClick = { myPageRouteAction.navTo(MyPageRoute.CreateUser) }
+            )
+        }
+
+        // 프리미엄 구매/상태 카드
+        item {
+            PremiumPurchaseCard(
+                isPremium = isPremium,
+                onPurchaseClick = {
+                    myPageRouteAction.navTo(MyPageRoute.Premium)
+                },
+                onSettingsClick = {
+                    myPageRouteAction.navTo(MyPageRoute.Premium)
+                }
             )
         }
 
         // 투자 현황 대시보드
         item {
-            InvestmentDashboard(stats = investmentStats)  // ⭐ 통계 전달
+            InvestmentDashboard(stats = investmentStats)
         }
 
         // 이번 달 목표
@@ -213,7 +219,7 @@ fun ImprovedMyPageView(
 
         // 최근 활동
         item {
-            RecentActivitySection(activities = recentActivities)  // ⭐ 활동 전달
+            RecentActivitySection(activities = recentActivities)
         }
 
         // 나의 뱃지
@@ -224,48 +230,381 @@ fun ImprovedMyPageView(
         item {
             Spacer(modifier = Modifier.height(32.dp))
         }
+
         // 설정 메뉴
         item {
             SettingSection(
                 onAccountManageClick = { myPageRouteAction.navTo(MyPageRoute.CreateUser) },
                 onCloudServiceClick = { myPageRouteAction.navTo(MyPageRoute.CloudService) },
                 onCustomerServiceClick = { myPageRouteAction.navTo(MyPageRoute.CustomerServiceCenter) },
-                onPremiumSettingsClick = { myPageRouteAction.navTo(MyPageRoute.PremiumSettings) } // ✅ 추가
+                onWidgetSettingsClick = { myPageRouteAction.navTo(MyPageRoute.WidgetSettings) }
             )
         }
 
+        // 일반 사용자에게만 프리미엄 혜택 상세 표시
+        if (!isPremium) {
+            item {
+                PremiumBenefitsDetailCard()
+            }
+        }
 
+        item {
+            Spacer(modifier = Modifier.height(32.dp))
+        }
+    }
+}
+
+/**
+ * 프리미엄 구매/상태 카드
+ */
+@Composable
+fun PremiumPurchaseCard(
+    isPremium: Boolean,
+    onPurchaseClick: () -> Unit,
+    onSettingsClick: () -> Unit
+) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(16.dp),
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = if (isPremium) Color(0xFFFEF3C7) else Color(0xFF6366F1)
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
+    ) {
+        if (isPremium) {
+            PremiumActiveContent(onSettingsClick = onSettingsClick)
+        } else {
+            PremiumPromotionContent(onPurchaseClick = onPurchaseClick)
+        }
+    }
+}
+
+/**
+ * 프리미엄 활성 상태
+ */
+@Composable
+fun PremiumActiveContent(onSettingsClick: () -> Unit) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(24.dp)
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Rounded.Star,
+                    contentDescription = null,
+                    modifier = Modifier.size(32.dp),
+                    tint = Color(0xFFF59E0B)
+                )
+
+                Column {
+                    Text(
+                        text = "프리미엄 사용 중",
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFF92400E)
+                    )
+
+                    Text(
+                        text = "모든 기능 이용 가능",
+                        fontSize = 13.sp,
+                        color = Color(0xFFB45309)
+                    )
+                }
+            }
+
+            IconButton(
+                onClick = onSettingsClick,
+                modifier = Modifier.size(40.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Rounded.Settings,
+                    contentDescription = "설정",
+                    tint = Color(0xFF92400E)
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(20.dp))
+
+        PremiumBenefitsSummary(isCompact = true, textColor = Color(0xFF92400E))
+    }
+}
+
+/**
+ * 프리미엄 구매 프로모션
+ */
+@Composable
+fun PremiumPromotionContent(onPurchaseClick: () -> Unit) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(24.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Icon(
+            imageVector = Icons.Rounded.Star,
+            contentDescription = null,
+            modifier = Modifier.size(56.dp),
+            tint = Color(0xFFFBBF24)
+        )
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        Text(
+            text = "프리미엄으로 업그레이드",
+            fontSize = 22.sp,
+            fontWeight = FontWeight.Bold,
+            color = Color.White,
+            textAlign = TextAlign.Center
+        )
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        Text(
+            text = "광고 없이 모든 기능을 사용하세요",
+            fontSize = 14.sp,
+            color = Color.White.copy(alpha = 0.9f),
+            textAlign = TextAlign.Center
+        )
+
+        Spacer(modifier = Modifier.height(20.dp))
+
+        PremiumBenefitsSummary(isCompact = true, textColor = Color.White)
+
+        Spacer(modifier = Modifier.height(20.dp))
+
+        Button(
+            onClick = onPurchaseClick,
+            modifier = Modifier.fillMaxWidth(),
+            colors = ButtonDefaults.buttonColors(
+                containerColor = Color.White,
+                contentColor = Color(0xFF6366F1)
+            ),
+            shape = RoundedCornerShape(12.dp)
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Center,
+                modifier = Modifier.padding(vertical = 4.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Rounded.Star,
+                    contentDescription = null,
+                    modifier = Modifier.size(20.dp)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = "지금 시작하기",
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 16.sp
+                )
+            }
+        }
+    }
+}
+
+/**
+ * 프리미엄 혜택 요약
+ */
+@Composable
+fun PremiumBenefitsSummary(
+    isCompact: Boolean = true,
+    textColor: Color = Color.White
+) {
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(if (isCompact) 8.dp else 12.dp)
+    ) {
+        PremiumBenefitItem(
+            icon = Icons.Rounded.Block,
+            text = "모든 광고 제거",
+            textColor = textColor
+        )
+        PremiumBenefitItem(
+            icon = Icons.Rounded.Language,
+            text = "12개 모든 통화 기록 사용",
+            textColor = textColor
+        )
+        PremiumBenefitItem(
+            icon = Icons.Rounded.FlashOn,
+            text = "위젯 실시간 업데이트",
+            textColor = textColor
+        )
+        PremiumBenefitItem(
+            icon = Icons.Rounded.CloudDone,
+            text = "클라우드 자동 백업",
+            textColor = textColor
+        )
+    }
+}
+
+/**
+ * 프리미엄 혜택 항목
+ */
+@Composable
+fun PremiumBenefitItem(
+    icon: ImageVector,
+    text: String,
+    textColor: Color
+) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(10.dp)
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            modifier = Modifier.size(20.dp),
+            tint = textColor.copy(alpha = 0.9f)
+        )
+
+        Text(
+            text = text,
+            fontSize = 14.sp,
+            color = textColor.copy(alpha = 0.9f),
+            fontWeight = FontWeight.Medium
+        )
+    }
+}
+
+/**
+ * 프리미엄 혜택 상세 카드
+ */
+@Composable
+fun PremiumBenefitsDetailCard() {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(20.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            Text(
+                text = "프리미엄 혜택",
+                fontSize = 18.sp,
+                fontWeight = FontWeight.Bold,
+                color = Color(0xFF1F2937)
+            )
+
+            PremiumBenefitDetailItem(
+                icon = Icons.Rounded.Block,
+                title = "모든 광고 제거",
+                description = "분석 화면, 목표 환율 설정, 배너 광고 완전 제거"
+            )
+
+            HorizontalDivider(color = Color(0xFFE5E7EB))
+
+            PremiumBenefitDetailItem(
+                icon = Icons.Rounded.Language,
+                title = "12개 모든 통화 사용",
+                description = "USD, JPY 외 10개 추가 통화 기록 가능"
+            )
+
+            HorizontalDivider(color = Color(0xFFE5E7EB))
+
+            PremiumBenefitDetailItem(
+                icon = Icons.Rounded.FlashOn,
+                title = "위젯 실시간 업데이트",
+                description = "WebSocket 실시간 연결로 즉시 환율 반영"
+            )
+
+            HorizontalDivider(color = Color(0xFFE5E7EB))
+
+            PremiumBenefitDetailItem(
+                icon = Icons.Rounded.CloudDone,
+                title = "클라우드 자동 백업",
+                description = "수동 백업 → 실시간 자동 백업으로 데이터 안전 보장"
+            )
+        }
+    }
+}
+
+/**
+ * 프리미엄 혜택 상세 항목
+ */
+@Composable
+fun PremiumBenefitDetailItem(
+    icon: ImageVector,
+    title: String,
+    description: String
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        Surface(
+            shape = RoundedCornerShape(12.dp),
+            color = Color(0xFFEEF2FF)
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                modifier = Modifier
+                    .padding(12.dp)
+                    .size(24.dp),
+                tint = Color(0xFF6366F1)
+            )
+        }
+
+        Column(
+            modifier = Modifier.weight(1f)
+        ) {
+            Text(
+                text = title,
+                fontSize = 15.sp,
+                fontWeight = FontWeight.Bold,
+                color = Color(0xFF1F2937)
+            )
+
+            Spacer(modifier = Modifier.height(4.dp))
+
+            Text(
+                text = description,
+                fontSize = 13.sp,
+                color = Color(0xFF6B7280),
+                lineHeight = 18.sp
+            )
+        }
     }
 }
 
 @Composable
 fun ProfileHeader(
     localUser: LocalUserData,
-    onProfileClick: () -> Unit  // AccountManageView로 이동하는 콜백
+    onProfileClick: () -> Unit
 ) {
-    // 소셜 연동 여부 확인
     val isSocialLinked = localUser.socialType != "NONE" && localUser.socialId != null
-
-    // 표시할 이름 결정
     val displayName = when {
         !localUser.nickname.isNullOrEmpty() -> localUser.nickname!!
         isSocialLinked -> localUser.email?.substringBefore("@") ?: "사용자"
         else -> "게스트 사용자"
     }
-
-    // UUID 축약 (첫 8자리)
     val shortId = localUser.id.toString().take(8)
-
-    val gradientColors = listOf(
-        Color(0xFF667EEA),
-        Color(0xFF764BA2)
-    )
+    val gradientColors = listOf(Color(0xFF667EEA), Color(0xFF764BA2))
 
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .padding(16.dp)
-            .clickable { onProfileClick() },  // 카드 전체 클릭 가능
+            .clickable { onProfileClick() },
         shape = RoundedCornerShape(20.dp),
         elevation = CardDefaults.cardElevation(8.dp)
     ) {
@@ -280,13 +619,11 @@ fun ProfileHeader(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                // 왼쪽: 프로필 정보
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(16.dp),
                     modifier = Modifier.weight(1f)
                 ) {
-                    // 프로필 아이콘
                     Box(
                         modifier = Modifier
                             .size(56.dp)
@@ -304,7 +641,6 @@ fun ProfileHeader(
                         )
                     }
 
-                    // 사용자 정보
                     Column {
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
@@ -317,7 +653,6 @@ fun ProfileHeader(
                                 color = Color.White
                             )
 
-                            // 게스트 뱃지
                             if (!isSocialLinked) {
                                 Surface(
                                     shape = RoundedCornerShape(12.dp),
@@ -334,7 +669,6 @@ fun ProfileHeader(
                             }
                         }
 
-                        // ID 표시 (축약)
                         Text(
                             text = "ID: $shortId...",
                             fontSize = 13.sp,
@@ -343,12 +677,11 @@ fun ProfileHeader(
                     }
                 }
 
-                // 오른쪽: 화살표 아이콘
                 Icon(
                     imageVector = Icons.Rounded.ChevronRight,
-                    contentDescription = "자세히 보기",
+                    contentDescription = "Navigate",
                     tint = Color.White,
-                    modifier = Modifier.size(28.dp)
+                    modifier = Modifier.size(24.dp)
                 )
             }
         }
@@ -356,7 +689,7 @@ fun ProfileHeader(
 }
 
 @Composable
-fun InvestmentDashboard(stats: InvestmentStats) {  // ⭐ 파라미터 추가
+fun InvestmentDashboard(stats: InvestmentStats) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -377,7 +710,7 @@ fun InvestmentDashboard(stats: InvestmentStats) {  // ⭐ 파라미터 추가
             StatCard(
                 modifier = Modifier.weight(1f),
                 title = "총 투자금",
-                value = stats.totalInvestment,  // ⭐ 실제 데이터
+                value = stats.totalInvestment,
                 icon = Icons.Rounded.AccountBalance,
                 color = Color(0xFF6366F1)
             )
@@ -385,8 +718,8 @@ fun InvestmentDashboard(stats: InvestmentStats) {  // ⭐ 파라미터 추가
             StatCard(
                 modifier = Modifier.weight(1f),
                 title = "예상 수익",
-                value = stats.expectedProfit,  // ⭐ 실제 데이터
-                subtitle = stats.profitRate,   // ⭐ 실제 데이터
+                value = stats.expectedProfit,
+                subtitle = stats.profitRate,
                 icon = Icons.Rounded.TrendingUp,
                 color = if (stats.expectedProfit.contains("-")) Color(0xFFEF4444) else Color(0xFF10B981)
             )
@@ -395,9 +728,9 @@ fun InvestmentDashboard(stats: InvestmentStats) {  // ⭐ 파라미터 추가
         Spacer(modifier = Modifier.height(12.dp))
 
         TradeSummaryCard(
-            totalTrades = stats.totalTrades,  // ⭐ 실제 데이터
-            buyCount = stats.buyCount,        // ⭐ 실제 데이터
-            sellCount = stats.sellCount       // ⭐ 실제 데이터
+            totalTrades = stats.totalTrades,
+            buyCount = stats.buyCount,
+            sellCount = stats.sellCount
         )
     }
 }
@@ -575,7 +908,6 @@ fun MonthlyGoalSection(
             Spacer(modifier = Modifier.height(16.dp))
 
             if (!goal.isSet || goal.goalAmount == 0L) {
-                // 목표 미설정 상태
                 Column(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalAlignment = Alignment.CenterHorizontally
@@ -598,7 +930,6 @@ fun MonthlyGoalSection(
                     }
                 }
             } else {
-                // 목표 설정됨
                 Text(
                     text = "₩%,d".format(goal.goalAmount),
                     fontSize = 28.sp,
@@ -608,7 +939,6 @@ fun MonthlyGoalSection(
 
                 Spacer(modifier = Modifier.height(12.dp))
 
-                // 진행률 바
                 Column {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
@@ -651,7 +981,6 @@ fun MonthlyGoalSection(
         }
     }
 
-    // 목표 설정 다이얼로그
     if (showGoalDialog) {
         GoalSettingDialog(
             currentGoal = goal.goalAmount,
@@ -684,7 +1013,6 @@ fun GoalSettingDialog(
             Column(
                 modifier = Modifier.padding(24.dp)
             ) {
-                // 헤더
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
@@ -719,7 +1047,6 @@ fun GoalSettingDialog(
 
                 Spacer(modifier = Modifier.height(24.dp))
 
-                // 빠른 선택 버튼들
                 Text(
                     text = "빠른 선택",
                     fontSize = 14.sp,
@@ -808,7 +1135,6 @@ fun GoalSettingDialog(
 
                 Spacer(modifier = Modifier.height(20.dp))
 
-                // 구분선
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically
@@ -825,7 +1151,6 @@ fun GoalSettingDialog(
 
                 Spacer(modifier = Modifier.height(20.dp))
 
-                // 직접 입력
                 Text(
                     text = "직접 입력",
                     fontSize = 14.sp,
@@ -877,7 +1202,6 @@ fun GoalSettingDialog(
                     )
                 )
 
-                // 미리보기
                 if (goalText.isNotEmpty() && goalText.toLongOrNull() != null) {
                     val amount = goalText.toLong()
                     Spacer(modifier = Modifier.height(12.dp))
@@ -912,7 +1236,6 @@ fun GoalSettingDialog(
 
                 Spacer(modifier = Modifier.height(24.dp))
 
-                // 버튼
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
@@ -964,7 +1287,7 @@ fun GoalSettingDialog(
 }
 
 @Composable
-fun RecentActivitySection(activities: List<RecentActivity>) {  // ⭐ 파라미터 추가
+fun RecentActivitySection(activities: List<RecentActivity>) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -1007,7 +1330,6 @@ fun RecentActivitySection(activities: List<RecentActivity>) {  // ⭐ 파라미�
             elevation = CardDefaults.cardElevation(4.dp)
         ) {
             if (activities.isEmpty()) {
-                // 활동이 없을 때
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -1038,14 +1360,9 @@ fun RecentActivitySection(activities: List<RecentActivity>) {  // ⭐ 파라미�
 }
 
 @Composable
-fun ActivityTimelineItem(activity: RecentActivity) {  // ⭐ RecentActivity 사용
-    // 날짜 포맷팅 (yyyy-MM-dd → 며칠 전)
+fun ActivityTimelineItem(activity: RecentActivity) {
     val displayDate = formatActivityDate(activity.date)
-
-    // 통화 아이콘
     val currencyIcon = if (activity.currencyType == "USD") "💵" else "💴"
-
-    // 거래 타입 텍스트
     val typeText = "${activity.currencyType} ${if (activity.isBuy) "매수" else "매도"}"
 
     Row(
@@ -1094,7 +1411,6 @@ fun ActivityTimelineItem(activity: RecentActivity) {  // ⭐ RecentActivity 사�
                     fontSize = 12.sp,
                     color = Color.Gray
                 )
-                // 매도인 경우 수익 표시
                 activity.profit?.let { profit ->
                     Text(
                         text = "수익: $profit",
@@ -1121,7 +1437,6 @@ fun ActivityTimelineItem(activity: RecentActivity) {  // ⭐ RecentActivity 사�
     }
 }
 
-// 날짜를 "오늘", "어제", "3일 전" 형식으로 변환
 private fun formatActivityDate(dateString: String): String {
     return try {
         val today = LocalDate.now()
@@ -1139,10 +1454,8 @@ private fun formatActivityDate(dateString: String): String {
     }
 }
 
-// BadgeSection 함수 전체를 이것으로 교체:
-
 @Composable
-fun BadgeSection(badges: List<BadgeInfo>) {  // ⭐ 파라미터 추가
+fun BadgeSection(badges: List<BadgeInfo>) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -1172,7 +1485,6 @@ fun BadgeSection(badges: List<BadgeInfo>) {  // ⭐ 파라미터 추가
                 )
             }
 
-            // ⭐ 달성 개수
             val unlockedCount = badges.count { it.isUnlocked }
             Text(
                 text = "$unlockedCount/${badges.size}",
@@ -1207,7 +1519,7 @@ fun BadgeSection(badges: List<BadgeInfo>) {  // ⭐ 파라미터 추가
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     badges.forEach { badge ->
-                        BadgeItemNew(badge)  // ⭐ 새 함수 사용
+                        BadgeItemNew(badge)
                     }
                 }
             }
@@ -1215,7 +1527,6 @@ fun BadgeSection(badges: List<BadgeInfo>) {  // ⭐ 파라미터 추가
     }
 }
 
-// ⭐ 새로운 BadgeItem
 @Composable
 fun BadgeItemNew(badge: BadgeInfo) {
     Row(
@@ -1293,45 +1604,38 @@ fun SettingSection(
     onAccountManageClick: () -> Unit,
     onCloudServiceClick: () -> Unit,
     onCustomerServiceClick: () -> Unit,
-    onPremiumSettingsClick: () -> Unit // ✅ 파라미터 추가
+    onWidgetSettingsClick: () -> Unit
 ) {
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp),
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
-        Column(
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            // ✅ 프리미엄 설정 항목 추가 (맨 위에)
+        Column(modifier = Modifier.fillMaxWidth()) {
             SettingItem(
-                icon = Icons.Rounded.Star,
+                icon = Icons.Rounded.Widgets,
                 title = "위젯 설정",
                 subtitle = "실시간 업데이트 설정",
-                onClick = onPremiumSettingsClick
+                onClick = onWidgetSettingsClick
             )
-
             HorizontalDivider(color = Color(0xFFE5E7EB))
-
             SettingItem(
                 icon = Icons.Rounded.Person,
                 title = "계정 관리",
                 subtitle = "소셜 로그인 연동",
                 onClick = onAccountManageClick
             )
-
             HorizontalDivider(color = Color(0xFFE5E7EB))
-
             SettingItem(
                 icon = Icons.Rounded.Cloud,
                 title = "클라우드 백업",
                 subtitle = "데이터 동기화",
                 onClick = onCloudServiceClick
             )
-
             HorizontalDivider(color = Color(0xFFE5E7EB))
-
             SettingItem(
                 icon = Icons.Rounded.Help,
                 title = "고객센터",
@@ -1341,7 +1645,6 @@ fun SettingSection(
         }
     }
 }
-
 
 @Composable
 fun SettingItem(

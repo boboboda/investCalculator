@@ -90,11 +90,23 @@ class MainViewModel @Inject constructor(
         startInitialData()
     }
 
+    suspend fun checkPremiumStatus(): Boolean {
+        val user = userRepository.userData.value?.localUserData
+        return user?.isPremium ?: false
+    }
+
     // ✅ 초기화 메서드 - Flow 수집은 여기서만 한 번 실행
     private fun startInitialData() {
         Log.d(TAG("MainViewModel", "startInitialData"), "━━━━━━━━━━━━━━━━━━━━━━━━━━")
         Log.d(TAG("MainViewModel", "startInitialData"), "📋 초기화 작업 시작")
         Log.d(TAG("MainViewModel", "startInitialData"), "━━━━━━━━━━━━━━━━━━━━━━━━━━")
+
+
+        // ✅ Step 0: WebSocket 구독 시작 (가장 먼저!)
+        viewModelScope.launch {
+            Log.d(TAG("MainViewModel", "startInitialData"), "🌐 WebSocket 구독 시작")
+            latestRateRepository.subscribeToExchangeRateUpdates()
+        }
 
         // ✅ Step 1: Flow collect는 별도 코루틴으로 (무한 루프이므로 분리)
         viewModelScope.launch {

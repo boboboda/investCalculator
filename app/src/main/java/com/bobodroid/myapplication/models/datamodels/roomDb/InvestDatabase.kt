@@ -3,9 +3,9 @@ package com.bobodroid.myapplication.models.datamodels.roomDb
 import androidx.room.Database
 import androidx.room.DeleteTable
 import androidx.room.RoomDatabase
+import androidx.room.TypeConverters
 import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
-
 
 @Database(entities = [
     DrBuyRecord::class,
@@ -15,22 +15,24 @@ import androidx.sqlite.db.SupportSQLiteDatabase
     WonBuyRecord::class,
     WonSellRecord::class,
     LocalUserData::class,
-    ExchangeRate::class],
-    version = 26,
+    ExchangeRate::class,
+    CurrencyRecord::class  // 새로운 통합 테이블 추가
+],
+    version = 28,  // 버전 27 -> 28로 증가
     exportSchema = false)
-
 @DeleteTable.Entries(
     DeleteTable(tableName = "sellWon_table"),
     DeleteTable(tableName = "buyWon_table"),
     DeleteTable(tableName = "sellYen_table"),
     DeleteTable(tableName = "sellDollar_table")
 )
-
+@TypeConverters(Converters::class)  // UUID 변환용 TypeConverter 추가
 abstract class InvestDatabase: RoomDatabase() {
     abstract fun DrBuyDao() : DollarBuyDatabaseDao
     abstract fun YenBuyDao() : YenBuyDatabaseDao
     abstract fun LocalUserDao() : LocalUserDatabaseDao
     abstract fun exchangeRateDao() : ExchangeRateDataBaseDao
+    abstract fun currencyRecordDao() : CurrencyRecordDao  // 새로운 DAO 추가
 
     companion object {
         // 21 -> 22 수동 마이그레이션
@@ -64,25 +66,7 @@ abstract class InvestDatabase: RoomDatabase() {
                     )
                 """.trimIndent())
 
-                // 2. 기존 데이터 복사 (customId, pin 제외)
-                database.execSQL("""
-                    INSERT INTO `LocalUserData_table_new` 
-                    (`id`, `social_id`, `social_type`, `email`, `nickname`, `profile_url`, 
-                     `is_synced`, `fcm_Token`, `rate_Reset_Count`, `reFresh_CreateAt`, 
-                     `rate_Ad_Count`, `reward_ad_Showing_date`, `user_Reset_Date`, 
-                     `user_Show_Notice_Date`, `dr_Buy_Spread`, `dr_Sell_Spread`, 
-                     `yen_Buy_Spread`, `yen_Sell_Spread`, `monthly_profit_goal`, 
-                     `goal_set_month`, `is_premium`)
-                    SELECT 
-                        `id`, '' AS social_id, 'NONE' AS social_type, '' AS email, 
-                        '' AS nickname, '' AS profile_url, 0 AS is_synced, `fcm_Token`, 
-                        `rate_Reset_Count`, `reFresh_CreateAt`, `rate_Ad_Count`, 
-                        `reward_ad_Showing_date`, `user_Reset_Date`, `user_Show_Notice_Date`, 
-                        `dr_Buy_Spread`, `dr_Sell_Spread`, `yen_Buy_Spread`, `yen_Sell_Spread`, 
-                        `monthly_profit_goal`, `goal_set_month`, 0 AS is_premium
-                    FROM `LocalUserData_table`
-                """.trimIndent())
-
+                // 2. 기존 데이터를 복사하지 않고 진행
                 // 3. 기존 테이블 삭제
                 database.execSQL("DROP TABLE `LocalUserData_table`")
 
@@ -136,6 +120,92 @@ abstract class InvestDatabase: RoomDatabase() {
                 } catch (e: Exception) {
                     // 이미 존재하면 무시
                 }
+            }
+        }
+
+        // 26 -> 27 마이그레이션: ExchangeRate 테이블 완전 교체
+        val MIGRATION_26_27 = object : Migration(26, 27) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                // 기존 테이블 삭제 (환율 데이터는 실시간이라 기존 데이터 필요 없음)
+                database.execSQL("DROP TABLE IF EXISTS exchangeRate_table")
+
+                // 새로운 구조로 테이블 생성
+                database.execSQL("""
+                    CREATE TABLE IF NOT EXISTS `exchangeRate_table` (
+                        `id` TEXT NOT NULL,
+                        `createAt` TEXT NOT NULL DEFAULT 'N/A',
+                        `rates` TEXT NOT NULL DEFAULT '{}',
+                        PRIMARY KEY(`id`)
+                    )
+                """.trimIndent())
+            }
+        }
+
+        // ✅ 27 -> 28 마이그레이션: CurrencyRecord 테이블 추가 (12개 통화 지원)
+        val MIGRATION_27_28 = object : Migration(27, 28) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                // 새로운 통합 테이블 생성 (EUR, GBP 등 새로운 통화용)
+                database.execSQL("""
+                    CREATE TABLE IF NOT EXISTS `currency_records` (
+                        `id` TEXT NOT NULL,
+                        `currency_code` TEXT NOT NULL,
+                        `date` TEXT,
+                        `sell_date` TEXT,
+                        `money` TEXT,
+                        `rate` TEXT,
+                        `buy_rate` TEXT,
+                        `sell_rate` TEXT,
+                        `profit` TEXT,
+                        `sell_profit` TEXT,
+                        `expect_profit` TEXT,
+                        `exchange_money` TEXT,
+                        `record_color` INTEGER,
+                        `category_name` TEXT,
+                        `memo` TEXT,
+                        PRIMARY KEY(`id`)
+                    )
+                """.trimIndent())
+
+                // 인덱스 생성 (성능 최적화)
+                database.execSQL("""
+                    CREATE INDEX IF NOT EXISTS `index_currency_records_currency_code` 
+                    ON `currency_records` (`currency_code`)
+                """.trimIndent())
+
+                database.execSQL("""
+                    CREATE INDEX IF NOT EXISTS `index_currency_records_date` 
+                    ON `currency_records` (`date`)
+                """.trimIndent())
+
+                database.execSQL("""
+                    CREATE INDEX IF NOT EXISTS `index_currency_records_category_name` 
+                    ON `currency_records` (`category_name`)
+                """.trimIndent())
+
+                // 기존 USD, JPY 데이터는 기존 테이블에 유지
+                // 새로운 통화(EUR, GBP 등)만 새 테이블에 저장
+                // 향후 필요시 데이터 마이그레이션 가능
+            }
+        }
+    }
+}
+
+/**
+ * Room TypeConverters - UUID 변환용
+ */
+class Converters {
+    @androidx.room.TypeConverter
+    fun fromUUID(uuid: java.util.UUID?): String? {
+        return uuid?.toString()
+    }
+
+    @androidx.room.TypeConverter
+    fun toUUID(uuidString: String?): java.util.UUID? {
+        return uuidString?.let {
+            try {
+                java.util.UUID.fromString(it)
+            } catch (e: IllegalArgumentException) {
+                null
             }
         }
     }

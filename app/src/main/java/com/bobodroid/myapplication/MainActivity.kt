@@ -35,7 +35,10 @@ import com.bobodroid.myapplication.models.viewmodels.AnalysisViewModel
 import com.bobodroid.myapplication.models.viewmodels.MainViewModel
 import com.bobodroid.myapplication.routes.*
 import com.bobodroid.myapplication.screens.*
+import com.bobodroid.myapplication.test.CurrencyTestRunner
+import com.bobodroid.myapplication.test.Phase2TestRunner
 import com.bobodroid.myapplication.ui.theme.InverstCalculatorTheme
+import com.bobodroid.myapplication.util.PreferenceUtil
 import com.bobodroid.myapplication.widget.WidgetAlarmManager
 import com.bobodroid.myapplication.widget.WidgetUpdateHelper
 import com.bobodroid.myapplication.widget.WidgetUpdateService
@@ -61,6 +64,9 @@ class MainActivity : ComponentActivity() {
 
     private lateinit var splashScreen: SplashScreen
 
+    // ✅ PreferenceUtil 추가
+    private lateinit var preferenceUtil: PreferenceUtil
+
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
@@ -70,6 +76,9 @@ class MainActivity : ComponentActivity() {
         Log.w(TAG("메인","onCreate"), "savedInstanceState: ${if (savedInstanceState == null) "NULL (새로 생성)" else "존재 (복원)"}")
         Log.w(TAG("메인","onCreate"), "Intent: ${intent?.extras}")
         Log.w(TAG("메인","onCreate"), "━━━━━━━━━━━━━━━━━━━━━━━━━━")
+
+        // ✅ PreferenceUtil 초기화
+        preferenceUtil = PreferenceUtil(this)
 
         splashScreen = installSplashScreen()
 
@@ -86,6 +95,10 @@ class MainActivity : ComponentActivity() {
 
         handleIntent(intent)
 
+//        CurrencyTestRunner.runPhase1Test()
+
+        Phase2TestRunner.runPhase2Test()
+
         setContent {
             InverstCalculatorTheme {
                 AppScreen(
@@ -96,7 +109,7 @@ class MainActivity : ComponentActivity() {
             }
         }
 
-        // ✅ 위젯 자동 업데이트 시작
+        // ✅ 위젯 자동 업데이트 시작 (수정)
         Log.d(TAG("메인","onCreate"), "🔧 setupWidgetAutoUpdate() 호출 시도...")
         try {
             setupWidgetAutoUpdate()
@@ -106,7 +119,7 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    // ✅ 새로운 메서드 추가
+    // ✅ 수정된 메서드 - 앱 시작 시에는 서비스 시작하지 않음 (앱 실행 중이므로)
     private fun setupWidgetAutoUpdate() {
         lifecycleScope.launch {
             // User DB에서 프리미엄 상태 확인
@@ -116,9 +129,13 @@ class MainActivity : ComponentActivity() {
             Log.d(TAG("메인", "setupWidgetAutoUpdate"), "프리미엄 상태: $isPremium")
 
             if (isPremium) {
-                // 프리미엄: WorkManager 중지, Foreground Service는 설정 화면에서 제어
+                // 프리미엄: WorkManager 중지
                 WidgetAlarmManager.stopPeriodicUpdate(this@MainActivity)
                 Log.d(TAG("메인", "setupWidgetAutoUpdate"), "✅ 프리미엄 사용자 - WorkManager 중지")
+
+                // ✅ 앱 실행 중에는 서비스 시작하지 않음 (배터리 절약)
+                // 백그라운드로 갈 때만 서비스 시작
+                Log.d(TAG("메인", "setupWidgetAutoUpdate"), "💡 앱 실행 중 - 서비스 시작 안 함 (배터리 절약)")
             } else {
                 // 일반 사용자: WorkManager 시작 (5분 주기)
                 WidgetAlarmManager.startPeriodicUpdate(this@MainActivity)
@@ -143,19 +160,116 @@ class MainActivity : ComponentActivity() {
         Log.w(TAG("메인", "onResume"), "▶️ onResume 실행 - 사용자와 상호작용 가능")
         Log.w(TAG("메인", "onResume"), "━━━━━━━━━━━━━━━━━━━━━━━━━━")
 
-        // ✅ 위젯 즉시 업데이트하여 눌림 상태 해제
+        // 위젯 즉시 업데이트하여 눌림 상태 해제
         WidgetUpdateHelper.updateAllWidgets(this)
+
+        // ✅ 앱이 포그라운드로 돌아왔을 때 서비스 종료 (배터리 절약)
+        lifecycleScope.launch {
+            stopServiceIfRunning()
+        }
     }
 
-    // ✅ onStop()에도 위젯 업데이트 추가
+    // ✅ 수정된 onStop - 백그라운드 전환 시 서비스 자동 시작
     override fun onStop() {
         super.onStop()
         Log.w(TAG("메인", "onStop"), "━━━━━━━━━━━━━━━━━━━━━━━━━━")
         Log.w(TAG("메인", "onStop"), "⏹️ onStop 실행 - 앱이 백그라운드로 이동")
         Log.w(TAG("메인", "onStop"), "━━━━━━━━━━━━━━━━━━━━━━━━━━")
 
-        // ✅ 앱 종료 시 위젯 정상화
+        // 앱 종료 시 위젯 정상화
         WidgetUpdateHelper.updateAllWidgets(this)
+
+        // ✅ 백그라운드 전환 시 프리미엄 서비스 체크 및 시작
+        lifecycleScope.launch {
+            checkAndStartServiceForBackground()
+        }
+    }
+
+    // ✅ 새로 추가: 앱이 포그라운드로 돌아올 때 서비스 종료 (배터리 절약)
+    private suspend fun stopServiceIfRunning() {
+        try {
+            // 서비스 실행 중인지 확인
+            if (isWidgetUpdateServiceRunning()) {
+                Log.d(TAG("메인", "stopServiceIfRunning"), "━━━━━━━━━━━━━━━━━━━━━━━━━━")
+                Log.d(TAG("메인", "stopServiceIfRunning"), "🛑 앱이 포그라운드로 복귀 - 서비스 종료")
+                Log.d(TAG("메인", "stopServiceIfRunning"), "💡 이유: 앱 실행 중에는 서비스 불필요 (배터리 절약)")
+
+                // 서비스 종료
+                WidgetUpdateService.stopService(this)
+
+                // 서비스 상태는 유지 (백그라운드 진입 시 다시 시작하기 위해)
+                // preferenceUtil.setData("widget_service_running", "true") 는 그대로 유지
+
+                Log.d(TAG("메인", "stopServiceIfRunning"), "✅ 서비스 종료 완료")
+                Log.d(TAG("메인", "stopServiceIfRunning"), "━━━━━━━━━━━━━━━━━━━━━━━━━━")
+            } else {
+                Log.d(TAG("메인", "stopServiceIfRunning"), "서비스가 실행 중이지 않음")
+            }
+        } catch (e: Exception) {
+            Log.e(TAG("메인", "stopServiceIfRunning"), "서비스 종료 중 오류", e)
+        }
+    }
+
+    // ✅ 새로 추가: 백그라운드 전환 시 서비스 체크 및 시작
+    private suspend fun checkAndStartServiceForBackground() {
+        try {
+            Log.d(TAG("메인", "checkAndStartService"), "━━━━━━━━━━━━━━━━━━━━━━━━━━")
+            Log.d(TAG("메인", "checkAndStartService"), "🔍 백그라운드 서비스 체크 시작")
+
+            // 1. 프리미엄 상태 확인
+            val isPremium = mainViewModel.checkPremiumStatus()
+            Log.d(TAG("메인", "checkAndStartService"), "프리미엄 상태: $isPremium")
+
+            if (!isPremium) {
+                Log.d(TAG("메인", "checkAndStartService"), "일반 사용자 - 서비스 시작 안 함")
+                return
+            }
+
+            // 2. 실시간 업데이트 설정 확인
+            val isRealtimeEnabled = preferenceUtil.getData("widget_service_running", "false") == "true"
+            Log.d(TAG("메인", "checkAndStartService"), "실시간 업데이트 설정: $isRealtimeEnabled")
+
+            if (!isRealtimeEnabled) {
+                Log.d(TAG("메인", "checkAndStartService"), "실시간 업데이트 비활성화 - 서비스 시작 안 함")
+                return
+            }
+
+            // 3. 서비스 실행 중인지 확인
+            val isServiceRunning = isWidgetUpdateServiceRunning()
+            Log.d(TAG("메인", "checkAndStartService"), "서비스 실행 상태: $isServiceRunning")
+
+            if (isServiceRunning) {
+                Log.d(TAG("메인", "checkAndStartService"), "이미 서비스 실행 중")
+                return
+            }
+
+            // 4. 모든 조건 충족 시 서비스 시작
+            Log.d(TAG("메인", "checkAndStartService"), "✅ 모든 조건 충족 - 백그라운드 서비스 시작!")
+            Log.d(TAG("메인", "checkAndStartService"), "💡 백그라운드에서만 서비스 실행 (배터리 최적화)")
+            WidgetUpdateService.startService(this)
+
+            // 수동으로 끈 상태 해제
+            preferenceUtil.setData("service_manually_disabled", "false")
+
+            Log.d(TAG("메인", "checkAndStartService"), "━━━━━━━━━━━━━━━━━━━━━━━━━━")
+
+        } catch (e: Exception) {
+            Log.e(TAG("메인", "checkAndStartService"), "서비스 체크 중 오류", e)
+        }
+    }
+
+    // ✅ 삭제: 앱 시작 시에는 서비스 시작하지 않음 (배터리 절약)
+    // checkAndStartServiceIfNeeded() 메서드 제거
+
+    // ✅ 새로 추가: 서비스 실행 상태 확인
+    private fun isWidgetUpdateServiceRunning(): Boolean {
+        val manager = getSystemService(ACTIVITY_SERVICE) as android.app.ActivityManager
+        for (service in manager.getRunningServices(Integer.MAX_VALUE)) {
+            if (WidgetUpdateService::class.java.name == service.service.className) {
+                return true
+            }
+        }
+        return false
     }
 
     override fun onPause() {
@@ -164,7 +278,6 @@ class MainActivity : ComponentActivity() {
         Log.w(TAG("메인", "onPause"), "⏸️ onPause 실행 - 앱이 일시정지")
         Log.w(TAG("메인", "onPause"), "━━━━━━━━━━━━━━━━━━━━━━━━━━")
     }
-
 
     override fun onRestart() {
         super.onRestart()
@@ -182,7 +295,7 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    // ✅ 위젯에서 클릭 시 호출됨 (앱이 이미 실행 중일 때)
+    // 위젯에서 클릭 시 호출됨 (앱이 이미 실행 중일 때)
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         setIntent(intent)
@@ -194,10 +307,9 @@ class MainActivity : ComponentActivity() {
         Log.e(TAG("메인", "onNewIntent"), "━━━━━━━━━━━━━━━━━━━━━━━━━━")
 
         handleIntent(intent)
-
     }
 
-    // ✅ Intent 처리 (네비게이션)
+    // Intent 처리 (네비게이션)
     private fun handleIntent(intent: Intent?) {
         val navigateTo = intent?.getStringExtra("NAVIGATE_TO")
 

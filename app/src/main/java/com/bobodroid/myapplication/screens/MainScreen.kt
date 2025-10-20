@@ -82,29 +82,9 @@ fun MainScreen(
         mutableStateOf(preferenceUtil.getData("onboarding_completed", "false") == "false")
     }
 
-    var isCollapsedState by rememberSaveable { mutableStateOf(false) }
+    var isCollapsedState by rememberSaveable { mutableStateOf(true) }
 
-    // ✅ 수정: 앱 실행 시마다 항상 2.5초 대기 후 자동 축소
-    DisposableEffect(Unit) {
-        val hasShownAnimation = preferenceUtil.getData("header_initial_animation_shown", "false") == "true"
 
-        // 최초 실행이든 재실행이든 항상 확대 상태에서 시작
-        isCollapsedState = false
-
-        coroutineScope.launch {
-            // 2.5초 동안 대시보드를 보여줌
-            delay(2500)
-            // 그 후 자동으로 축소
-            isCollapsedState = true
-
-            // 최초 실행이었다면 기록
-            if (!hasShownAnimation) {
-                preferenceUtil.setData("header_initial_animation_shown", "true")
-            }
-        }
-
-        onDispose { }
-    }
 
     // 리스트
     var hideSellRecordState by remember { mutableStateOf(false) }

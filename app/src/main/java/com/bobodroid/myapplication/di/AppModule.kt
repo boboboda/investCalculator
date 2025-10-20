@@ -1,15 +1,7 @@
 package com.bobodroid.myapplication.di
 
-import com.bobodroid.myapplication.models.datamodels.repository.DollarRepository
-import com.bobodroid.myapplication.models.datamodels.repository.ExchangeRateRepository
-import com.bobodroid.myapplication.models.datamodels.repository.InvestRepository
-import com.bobodroid.myapplication.models.datamodels.repository.LatestRateRepository
-import com.bobodroid.myapplication.models.datamodels.repository.UserRepository
-import com.bobodroid.myapplication.models.datamodels.repository.YenRepository
-import com.bobodroid.myapplication.models.datamodels.roomDb.DollarBuyDatabaseDao
-import com.bobodroid.myapplication.models.datamodels.roomDb.ExchangeRateDataBaseDao
-import com.bobodroid.myapplication.models.datamodels.roomDb.LocalUserDatabaseDao
-import com.bobodroid.myapplication.models.datamodels.roomDb.YenBuyDatabaseDao
+import com.bobodroid.myapplication.models.datamodels.repository.*
+import com.bobodroid.myapplication.models.datamodels.roomDb.*
 import com.bobodroid.myapplication.models.datamodels.websocket.WebSocketClient
 import dagger.Module
 import dagger.Provides
@@ -26,8 +18,25 @@ object AppModule {
     fun provideInvestRepository(
         dollarRepository: DollarRepository,
         yenRepository: YenRepository,
+        currencyRecordDao: CurrencyRecordDao  // 새로운 DAO 추가
     ): InvestRepository {
-        return InvestRepository(dollarRepository, yenRepository)
+        return InvestRepository(dollarRepository, yenRepository, currencyRecordDao)
+    }
+
+    @Singleton
+    @Provides
+    fun provideDollarRepository(
+        dollarBuyDatabaseDao: DollarBuyDatabaseDao
+    ): DollarRepository {
+        return DollarRepository(dollarBuyDatabaseDao)
+    }
+
+    @Singleton
+    @Provides
+    fun provideYenRepository(
+        yenBuyDatabaseDao: YenBuyDatabaseDao
+    ): YenRepository {
+        return YenRepository(yenBuyDatabaseDao)
     }
 
     @Singleton

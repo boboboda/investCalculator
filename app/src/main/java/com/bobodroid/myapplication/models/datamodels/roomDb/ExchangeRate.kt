@@ -22,95 +22,147 @@ data class ExchangeRate(
     @Nonnull
     var id: String = UUID.randomUUID().toString(),
 
-    @ColumnInfo(name = "createAt", defaultValue = "N/A")  // 기본값으로 "N/A" 설정
+    @ColumnInfo(name = "createAt", defaultValue = "N/A")
     var createAt: String = "N/A",
 
-    @ColumnInfo(name = "usd")
-    var usd: String? = null,
-
-    @ColumnInfo(name = "jpy")
-    var jpy: String? = null
+    @ColumnInfo(name = "rates")
+    var rates: String = "{}"
 ) {
+    // ✅ 하위 호환성: 기존 코드에서 .usd, .jpy 접근 가능
+    val usd: String?
+        get() = getRateByCode("USD")
+
+    val jpy: String?
+        get() = getRateByCode("JPY")
+
+    fun getRateByCode(code: String): String? {
+        return try {
+            val json = JSONObject(rates)
+            json.optString(code).takeIf { it.isNotEmpty() }
+        } catch (e: Exception) {
+            null
+        }
+    }
+
+    fun getRate(currency: Currency): String {
+        return getRateByCode(currency.code) ?: "0"
+    }
+
+    fun getAllRates(): Map<String, String> {
+        return try {
+            val json = JSONObject(rates)
+            val map = mutableMapOf<String, String>()
+            val keys = json.keys()
+            while (keys.hasNext()) {
+                val key = keys.next() as String
+                map[key] = json.getString(key)
+            }
+            map
+        } catch (e: Exception) {
+            emptyMap()
+        }
+    }
+
     companion object {
-        fun fromQuerySnapshot(data: QuerySnapshot): ExchangeRate? {
-            val document = data.documents.firstOrNull() ?: return null
-            return ExchangeRate(
-                id = document.id,
-                createAt = document.getString("createAt") ?: "",
-                usd = (document["exchangeRates"] as? Map<String, String>)?.get("USD"),
-                jpy = (document["exchangeRates"] as? Map<String, String>)?.get("JPY")
-            )
-        }
-
-        fun fromDocumentSnapshot(data: DocumentSnapshot): ExchangeRate {
-            return ExchangeRate(
-                id = data.id,
-                createAt = data.getString("createAt") ?: "",
-                usd = (data["exchangeRates"] as? Map<String, String>)?.get("USD"),
-                jpy = (data["exchangeRates"] as? Map<String, String>)?.get("JPY")
-            )
-        }
-
-        fun fromQueryDocumentSnapshot(data: QueryDocumentSnapshot): ExchangeRate {
-            return ExchangeRate(
-                id = data.id,
-                createAt = data.getString("createAt") ?: "",
-                usd = (data["exchangeRates"] as? Map<String, String>)?.get("USD"),
-                jpy = (data["exchangeRates"] as? Map<String, String>)?.get("JPY")
-            )
-        }
-
         fun fromCustomJson(jsonString: String): ExchangeRate? {
             return try {
                 if (jsonString.isBlank()) {
-                    Log.e(TAG("ExchangeRate","Type"), "fromCustomJson: 빈 문자열을 수신했습니다.")
+                    Log.e(TAG("ExchangeRate", "Type"), "fromCustomJson: 빈 문자열을 수신했습니다.")
                     return null
                 }
 
-                // JSON 객체로 변환 시도
                 val jsonObject = JSONObject(jsonString)
-
-                // 'exchangeRates' 필드가 있는지 확인
                 val exchangeRates = jsonObject.optJSONObject("exchangeRates")
+
                 if (exchangeRates == null) {
-                    Log.e(TAG("ExchangeRate","Type"), "fromCustomJson: 'exchangeRates' 필드가 없습니다.")
+                    Log.e(TAG("ExchangeRate", "Type"), "fromCustomJson: 'exchangeRates' 필드가 없습니다.")
                     return null
                 }
 
-                // 'USD' 및 'JPY' 필드가 있는지 확인 후 가져오기
-                val usdRate = if (exchangeRates.has("USD")) exchangeRates.optDouble("USD").toString() else null
-                val jpyRate = if (exchangeRates.has("JPY")) {
-                    // JPY 값을 100 곱하고 소수점 2자리로 처리
-                    val originalValue = exchangeRates.optDouble("JPY")
-                    if (originalValue != 0.0) {
-                        BigDecimal(originalValue)
-                            .multiply(BigDecimal("100"))
-                            .setScale(2, RoundingMode.DOWN)
-                            .toString()
-                    } else null
-                } else null
+                val ratesMap = mutableMapOf<String, String>()
 
-                // ExchangeRate 객체 생성
+                Currencies.all.forEach { currency ->
+                    if (exchangeRates.has(currency.code)) {
+                        val rawValue = exchangeRates.optDouble(currency.code)
+
+                        val processedValue = if (currency.needsMultiply) {
+                            BigDecimal(rawValue)
+                                .multiply(BigDecimal("100"))
+                                .setScale(2, RoundingMode.DOWN)
+                        } else {
+                            BigDecimal(rawValue)
+                                .setScale(2, RoundingMode.DOWN)
+                        }
+
+                        ratesMap[currency.code] = processedValue.toString()
+                    }
+                }
+
+                val ratesJson = JSONObject().apply {
+                    ratesMap.forEach { (key, value) ->
+                        put(key, value)
+                    }
+                }.toString()
+
                 ExchangeRate(
                     id = jsonObject.optString("id"),
                     createAt = jsonObject.optString("createAt", "N/A"),
-                    usd = usdRate,
-                    jpy = jpyRate
+                    rates = ratesJson
                 )
             } catch (e: JSONException) {
-                Log.e(TAG("ExchangeRate","Type"), "fromCustomJson: JSON 파싱 오류 발생", e)
+                Log.e(TAG("ExchangeRate", "Type"), "fromCustomJson: JSON 파싱 오류 발생", e)
                 null
             }
         }
 
+        fun fromQuerySnapshot(data: QuerySnapshot): ExchangeRate? {
+            val document = data.documents.firstOrNull() ?: return null
+            return fromDocumentSnapshot(document)
+        }
+
+        fun fromDocumentSnapshot(data: DocumentSnapshot): ExchangeRate {
+            val ratesMap = data["exchangeRates"] as? Map<*, *> ?: emptyMap<String, Any>()
+
+            val processedRates = mutableMapOf<String, String>()
+            Currencies.all.forEach { currency ->
+                val rawValue = when (val value = ratesMap[currency.code]) {
+                    is Number -> value.toDouble()
+                    is String -> value.toDoubleOrNull() ?: 0.0
+                    else -> 0.0
+                }
+
+                val processedValue = if (currency.needsMultiply) {
+                    BigDecimal(rawValue).multiply(BigDecimal("100"))
+                } else {
+                    BigDecimal(rawValue)
+                }.setScale(2, RoundingMode.HALF_UP)  // ✅ DOWN → HALF_UP
+
+                processedRates[currency.code] = processedValue.toString()
+            }
+
+            val ratesJson = JSONObject().apply {
+                processedRates.forEach { (key, value) ->
+                    put(key, value)
+                }
+            }.toString()
+
+            return ExchangeRate(
+                id = data.id,
+                createAt = data.getString("createAt") ?: "",
+                rates = ratesJson
+            )
+        }
+
+        fun fromQueryDocumentSnapshot(data: QueryDocumentSnapshot): ExchangeRate {
+            return fromDocumentSnapshot(data)
+        }
     }
 
     fun asHashMap(): HashMap<String, Any?> {
         return hashMapOf(
             "id" to id,
             "createAt" to createAt,
-            "usd" to usd,
-            "jpy" to jpy
+            "exchangeRates" to getAllRates()
         )
     }
 }

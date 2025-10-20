@@ -1,26 +1,17 @@
 package com.bobodroid.myapplication.models.datamodels.useCases
 
 import android.util.Log
-import androidx.lifecycle.viewModelScope
-import androidx.room.util.copy
 import com.bobodroid.myapplication.MainActivity.Companion.TAG
 import com.bobodroid.myapplication.extensions.toBigDecimalWon
 import com.bobodroid.myapplication.models.datamodels.repository.InvestRepository
-import com.bobodroid.myapplication.models.datamodels.roomDb.CurrencyType
-import com.bobodroid.myapplication.models.datamodels.roomDb.DrBuyRecord
-import com.bobodroid.myapplication.models.datamodels.roomDb.ExchangeRate
-import com.bobodroid.myapplication.models.datamodels.roomDb.ForeignCurrencyRecord
-import com.bobodroid.myapplication.models.datamodels.roomDb.YenBuyRecord
+import com.bobodroid.myapplication.models.datamodels.roomDb.*
 import com.bobodroid.myapplication.models.viewmodels.CurrencyRecordState
 import com.bobodroid.myapplication.models.viewmodels.ForeignCurrencyRecordList
 import com.bobodroid.myapplication.models.viewmodels.RecordListUiState
-import kotlinx.coroutines.async
-import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.map
 import java.math.BigDecimal
 import java.math.RoundingMode
 import java.util.UUID
@@ -29,6 +20,87 @@ import javax.inject.Inject
 class RecordUseCase @Inject constructor(
     private val investRepository: InvestRepository
 ) {
+
+    // ===== 새로운 통합 메서드 (12개 통화 지원) =====
+
+    /**
+     * 모든 통화의 기록을 가져옴
+     */
+    fun getAllCurrencyRecords(): Flow<Map<String, CurrencyRecordState<CurrencyRecord>>> {
+        return investRepository.getAllCurrencyRecords()
+            .distinctUntilChanged()
+            .map { records ->
+                // 통화별로 그룹화
+                val groupedByCurrency = records.groupBy { it.currencyCode }
+
+                // 각 통화별로 CurrencyRecordState 생성
+                groupedByCurrency.mapValues { (_, currencyRecords) ->
+                    CurrencyRecordState<CurrencyRecord>(
+                        records = currencyRecords,
+                        groupedRecords = setGroup(currencyRecords) { it.categoryName },
+                        groups = currencyRecords.map { it.categoryName ?: "미지정" }.distinct()
+                    )
+                }
+            }
+    }
+
+    /**
+     * 특정 통화의 기록만 가져옴
+     */
+    fun getRecordsByCurrency(currencyCode: String): Flow<CurrencyRecordState<CurrencyRecord>> {
+        return investRepository.getRecordsByCurrency(currencyCode)
+            .distinctUntilChanged()
+            .map { records ->
+                CurrencyRecordState<CurrencyRecord>(
+                    records = records,
+                    groupedRecords = setGroup(records) { it.categoryName },
+                    groups = records.map { it.categoryName ?: "미지정" }.distinct()
+                )
+            }
+    }
+
+    /**
+     * 통합 기록 추가 (Currency 객체 사용)
+     */
+    suspend fun addCurrencyRecord(
+        currencyCode: String,
+        money: String,
+        inputRate: String,
+        latestRate: String,
+        groupName: String,
+        date: String
+    ) {
+        val currency = Currencies.findByCode(currencyCode)
+            ?: throw IllegalArgumentException("Unknown currency: $currencyCode")
+
+        val exchangeMoney = currency.calculateExchangeMoney(money, inputRate).toString()
+        val expectedProfit = currency.calculateExpectedProfit(exchangeMoney, money, latestRate)
+
+        val record = CurrencyRecord(
+            currencyCode = currencyCode,
+            date = date,
+            money = money,
+            rate = inputRate,
+            buyRate = inputRate,
+            exchangeMoney = exchangeMoney,
+            profit = expectedProfit,
+            expectProfit = expectedProfit,
+            categoryName = groupName,
+            memo = "",
+            sellRate = null,
+            sellProfit = null,
+            sellDate = null,
+            recordColor = false
+        )
+
+        investRepository.addCurrencyRecord(record)
+    }
+
+    // ===== 기존 메서드 (하위 호환성) - Currency 객체로 개선 =====
+
+    /**
+     * USD/JPY만 가져옴 (레거시)
+     */
     fun getRecord(): Flow<ForeignCurrencyRecordList> = combine(
         investRepository.getAllDollarBuyRecords().distinctUntilChanged(),
         investRepository.getAllYenBuyRecords().distinctUntilChanged()
@@ -37,21 +109,25 @@ class RecordUseCase @Inject constructor(
         Log.d(TAG("RecordUseCase", "getRecord"), "yenRecords: $yenRecords")
         ForeignCurrencyRecordList(
             dollarState = CurrencyRecordState(
-                records = dollarRecords,
+                records = dollarRecords as List<ForeignCurrencyRecord>,
                 groupedRecords = setGroup(dollarRecords) { it.categoryName},
                 groups = dollarRecords.map { it.categoryName ?: "미지정" }.distinct()
             ),
             yenState = CurrencyRecordState(
-                records = yenRecords,
+                records = yenRecords as List<ForeignCurrencyRecord>,
                 groupedRecords = setGroup(yenRecords) { it.categoryName },
                 groups = yenRecords.map { it.categoryName ?: "미지정" }.distinct()
             )
         )
     }
 
+    /**
+     * 레거시 기록 추가 (Currency 객체 사용으로 개선)
+     */
     suspend fun addCurrencyRecord(request: CurrencyRecordRequest) {
-        val exchangeMoney = calculateExchangeMoney(request.type, request.money, request.inputRate)
-        val expectedProfit = calculateExpectedProfit(request.type,exchangeMoney, request.money, request.latestRate)
+        val currency = Currencies.fromCurrencyType(request.type)
+        val exchangeMoney = currency.calculateExchangeMoney(request.money, request.inputRate).toString()
+        val expectedProfit = currency.calculateExpectedProfit(exchangeMoney, request.money, request.latestRate)
 
         when (request.type) {
             CurrencyType.USD -> {
@@ -66,7 +142,6 @@ class RecordUseCase @Inject constructor(
                         expectProfit = expectedProfit,
                         categoryName = request.groupName,
                         memo = "",
-                        // 기본값 설정
                         sellRate = "",
                         sellProfit = "",
                         recordColor = false
@@ -85,7 +160,6 @@ class RecordUseCase @Inject constructor(
                         expectProfit = expectedProfit,
                         categoryName = request.groupName,
                         memo = "",
-                        // 기본값 설정
                         sellRate = "",
                         sellProfit = "",
                         recordColor = false
@@ -93,21 +167,24 @@ class RecordUseCase @Inject constructor(
                 )
             }
         }
-
     }
 
-    suspend fun editRecord(record: ForeignCurrencyRecord,
-                           editDate: String,
-                           editMoney: String,
-                           editRate: String,
-                           type: CurrencyType) {
+    /**
+     * 기록 수정 (Currency 객체 사용으로 개선)
+     */
+    suspend fun editRecord(
+        record: ForeignCurrencyRecord,
+        editDate: String,
+        editMoney: String,
+        editRate: String,
+        type: CurrencyType
+    ) {
+        val currency = Currencies.fromCurrencyType(type)
+        val exchangeMoney = currency.calculateExchangeMoney(editMoney, editRate).toString()
 
         when(type) {
             CurrencyType.USD -> {
-
                 val drBuyRecord = record as DrBuyRecord
-
-                val exchangeMoney = calculateExchangeMoney(type, editMoney, editRate)
                 val editData = drBuyRecord.copy(
                     date = editDate,
                     money = editMoney,
@@ -115,43 +192,44 @@ class RecordUseCase @Inject constructor(
                     buyRate = editRate,
                     profit = "0",
                     expectProfit = "0",
-                    exchangeMoney = exchangeMoney)
-
+                    exchangeMoney = exchangeMoney
+                )
                 investRepository.updateDollarBuyRecord(editData)
             }
             CurrencyType.JPY -> {
-                val drBuyRecord = record as YenBuyRecord
-
-                val exchangeMoney = calculateExchangeMoney(type, editMoney, editRate)
-                val editData = drBuyRecord.copy(
+                val yenBuyRecord = record as YenBuyRecord
+                val editData = yenBuyRecord.copy(
                     date = editDate,
                     money = editMoney,
                     rate = editRate,
                     buyRate = editRate,
                     profit = "0",
                     expectProfit = "0",
-                    exchangeMoney = exchangeMoney)
-
+                    exchangeMoney = exchangeMoney
+                )
                 investRepository.updateYenBuyRecord(editData)
             }
         }
     }
 
-    suspend fun onSellRecord(record: ForeignCurrencyRecord,
-                           sellDate: String,
-                           sellRate: String,
-                           type: CurrencyType) {
+    /**
+     * 매도 처리 (Currency 객체 사용으로 개선)
+     */
+    suspend fun onSellRecord(
+        record: ForeignCurrencyRecord,
+        sellDate: String,
+        sellRate: String,
+        type: CurrencyType
+    ) {
+        val currency = Currencies.fromCurrencyType(type)
 
         when(type) {
             CurrencyType.USD -> {
-
                 val drBuyRecord = record as DrBuyRecord
-
                 val exchangeMoney = drBuyRecord.exchangeMoney ?: return
-
                 val money = drBuyRecord.money ?: return
 
-                val sellProfit = sellProfit(exchangeMoney, sellRate, money, type)
+                val sellProfit = currency.calculateSellProfit(exchangeMoney, sellRate, money)
 
                 val editData = drBuyRecord.copy(
                     sellProfit = sellProfit.toString(),
@@ -165,26 +243,27 @@ class RecordUseCase @Inject constructor(
             }
             CurrencyType.JPY -> {
                 val yenBuyRecord = record as YenBuyRecord
-
                 val exchangeMoney = yenBuyRecord.exchangeMoney ?: return
-
                 val money = yenBuyRecord.money ?: return
 
-                val sellProfit = sellProfit(exchangeMoney, sellRate, money, type)
+                val sellProfit = currency.calculateSellProfit(exchangeMoney, sellRate, money)
 
                 val editData = yenBuyRecord.copy(
                     sellProfit = sellProfit.toString(),
                     sellDate = sellDate,
                     sellRate = sellRate,
                     expectProfit = sellProfit.toString(),
-                    recordColor = true)
+                    recordColor = true
+                )
 
                 investRepository.updateYenBuyRecord(editData)
             }
         }
-
     }
 
+    /**
+     * 메모 업데이트
+     */
     suspend fun updateRecordMemo(record: ForeignCurrencyRecord, memo: String, type: CurrencyType) {
         when(type) {
             CurrencyType.USD -> {
@@ -200,6 +279,9 @@ class RecordUseCase @Inject constructor(
         }
     }
 
+    /**
+     * 기록 삭제
+     */
     suspend fun removeRecord(record: ForeignCurrencyRecord, type: CurrencyType) {
         when(type) {
             CurrencyType.USD -> {
@@ -213,41 +295,53 @@ class RecordUseCase @Inject constructor(
         }
     }
 
+    /**
+     * 수익 갱신 (Currency 객체 사용으로 개선)
+     */
     suspend fun reFreshProfit(
         latestRate: ExchangeRate,
         records: ForeignCurrencyRecordList
     ) {
-        fun calculate(record: ForeignCurrencyRecord, rate: String?): String? {
-            return rate?.let { r ->
-                record.money?.let { m ->
+        // USD 처리
+        records.dollarState.records
+            .filter { it.recordColor == true }
+            .forEach { record ->
+                val profit = record.money?.let { m ->
                     record.exchangeMoney?.let { e ->
-                        calculateExpectedProfit(record.toType(), e, m, r)
+                        latestRate.usd?.let { r ->
+                            Currencies.USD.calculateExpectedProfit(e, m, r)
+                        }
                     }
                 }
-            }
-        }
-
-        records.dollarState.records
-            .filter { it.recordColor == true }  // true인 것만 필터링
-            .forEach { record ->
-                val profit = calculate(record, latestRate.usd)
-                investRepository.updateDollarBuyRecord(
-                    record.copyWithProfitAndExpectProfit(profit) as DrBuyRecord
-                )
+                profit?.let {
+                    investRepository.updateDollarBuyRecord(
+                        record.copyWithProfitAndExpectProfit(it) as DrBuyRecord
+                    )
+                }
             }
 
+        // JPY 처리
         records.yenState.records
             .filter { it.recordColor == true }
             .forEach { record ->
-
-            val profit = calculate(record, latestRate.jpy)
-            investRepository.updateYenBuyRecord(
-                record.copyWithProfitAndExpectProfit(profit)  as YenBuyRecord
-            )
-        }
+                val profit = record.money?.let { m ->
+                    record.exchangeMoney?.let { e ->
+                        latestRate.jpy?.let { r ->
+                            Currencies.JPY.calculateExpectedProfit(e, m, r)
+                        }
+                    }
+                }
+                profit?.let {
+                    investRepository.updateYenBuyRecord(
+                        record.copyWithProfitAndExpectProfit(it) as YenBuyRecord
+                    )
+                }
+            }
     }
 
-
+    /**
+     * 매도 취소
+     */
     suspend fun cancelSellRecord(id: UUID, currencyType: CurrencyType): Boolean {
         val searchBuyRecord = when(currencyType) {
             CurrencyType.USD -> investRepository.getDollarBuyRecordById(id)
@@ -274,7 +368,9 @@ class RecordUseCase @Inject constructor(
         return true
     }
 
-
+    /**
+     * 카테고리 업데이트
+     */
     suspend fun updateRecordCategory(record: ForeignCurrencyRecord, groupName: String, type: CurrencyType) {
         when(type) {
             CurrencyType.USD -> {
@@ -290,7 +386,10 @@ class RecordUseCase @Inject constructor(
         }
     }
 
-    suspend fun groupAdd(uiState:RecordListUiState, groupName: String, type: CurrencyType, result:(RecordListUiState)->Unit){
+    /**
+     * 그룹 추가
+     */
+    suspend fun groupAdd(uiState: RecordListUiState, groupName: String, type: CurrencyType, result: (RecordListUiState) -> Unit) {
         when(type) {
             CurrencyType.USD -> {
                 val updatedState = uiState.copy(
@@ -300,7 +399,6 @@ class RecordUseCase @Inject constructor(
                         )
                     )
                 )
-
                 result(updatedState)
             }
             CurrencyType.JPY -> {
@@ -316,58 +414,15 @@ class RecordUseCase @Inject constructor(
         }
     }
 
+    // ===== 헬퍼 메서드 =====
 
-   private fun calculateExpectedProfit(type: CurrencyType, exchangeMoney: String, inputMoney: String, latestRate: String): String {
-
-        val profit = when(type) {
-            CurrencyType.USD -> {
-                ((BigDecimal(exchangeMoney).times(BigDecimal(latestRate)))
-                    .setScale(20, RoundingMode.HALF_UP)
-                        ).minus(BigDecimal(inputMoney))
-
-            }
-
-            CurrencyType.JPY -> {
-
-                Log.d(TAG("RecordUseCase", "expectSellValue"), "산 원화: ${inputMoney}")
-
-                ((BigDecimal(exchangeMoney).times(BigDecimal(latestRate))).divide(BigDecimal(100))
-                    .setScale(20, RoundingMode.HALF_UP)
-                        ).minus(BigDecimal(inputMoney))
-
-            }
-        }
-
-       Log.d(TAG("RecordUseCase", "expectSellValue"), "개별 profit 결과 값 ${profit}")
-        return profit.toString()
-    }
-
-    private fun calculateExchangeMoney(type:CurrencyType, money: String, rate: String) =
-
-        when(type) {
-            CurrencyType.USD -> {
-                BigDecimal(money).divide(
-                    BigDecimal(rate),
-                    20,
-                    RoundingMode.HALF_UP
-                ).toString()
-            }
-            CurrencyType.JPY -> {
-                BigDecimal(money).multiply(BigDecimal(100)).divide(
-                    BigDecimal(rate),
-                    20,
-                    RoundingMode.HALF_UP
-                ).toString()
-            }
-        }
-
-
-
-
-
+    /**
+     * 그룹 설정
+     */
     private fun <T> setGroup(recordList: List<T>, categorySelector: (T) -> String?): Map<String, List<T>> {
         return recordList.sortedBy {
             when(it) {
+                is CurrencyRecord -> it.date
                 is DrBuyRecord -> it.date
                 is YenBuyRecord -> it.date
                 else -> null
@@ -377,53 +432,66 @@ class RecordUseCase @Inject constructor(
         }
     }
 
-    fun sellProfit(
-        exchangeMoney: String,
-        sellRate: String,
-        krMoney: String,
-        type:CurrencyType
-    ): BigDecimal {
-        return when(type) {
-            CurrencyType.USD -> {
-                ((BigDecimal(exchangeMoney).times(BigDecimal(sellRate))).setScale(20, RoundingMode.HALF_UP)) - BigDecimal(krMoney)
-            }
-            CurrencyType.JPY -> {
-                ((BigDecimal(exchangeMoney).times(BigDecimal(sellRate))).setScale(20, RoundingMode.HALF_UP))/ BigDecimal("100") - BigDecimal(krMoney)
-            }
-        }
-    }
-
-    fun sellPercent(
-        profit: String,
-        krMoney: String
-    ): Float =
+    /**
+     * 매도 퍼센트 계산
+     */
+    fun sellPercent(profit: String, krMoney: String): Float =
         (profit.toFloat() / krMoney.toFloat()) * 100f
 
-    fun sumProfit(
-        record: List<ForeignCurrencyRecord>,
-    ): String {
+    /**
+     * 총 수익 계산
+     */
+    fun sumProfit(record: List<ForeignCurrencyRecord>): String {
         val mapProfitDecimal = record.filter { it.profit != "" }.map { BigDecimal(it.profit) }
 
-        if(mapProfitDecimal.isNotEmpty()) {
+        return if(mapProfitDecimal.isNotEmpty()) {
             if(mapProfitDecimal.size > 1) {
-                return mapProfitDecimal.reduce {first, end ->
-                    first + end }.toBigDecimalWon()
+                mapProfitDecimal.reduce { first, end ->
+                    first + end
+                }.toBigDecimalWon()
             } else {
-                return mapProfitDecimal.first().toBigDecimalWon()
+                mapProfitDecimal.first().toBigDecimalWon()
             }
         } else {
-            return ""
+            ""
         }
     }
 
+    // ===== 이전 계산 메서드들 (Currency 객체로 대체됨) =====
 
+    /**
+     * @deprecated Currency 객체의 calculateExpectedProfit 사용
+     */
+    private fun calculateExpectedProfit(type: CurrencyType, exchangeMoney: String, inputMoney: String, latestRate: String): String {
+        val currency = Currencies.fromCurrencyType(type)
+        return currency.calculateExpectedProfit(exchangeMoney, inputMoney, latestRate)
+    }
+
+    /**
+     * @deprecated Currency 객체의 calculateExchangeMoney 사용
+     */
+    private fun calculateExchangeMoney(type: CurrencyType, money: String, rate: String): String {
+        val currency = Currencies.fromCurrencyType(type)
+        return currency.calculateExchangeMoney(money, rate).toString()
+    }
+
+    /**
+     * @deprecated Currency 객체의 calculateSellProfit 사용
+     */
+    fun sellProfit(exchangeMoney: String, sellRate: String, krMoney: String, type: CurrencyType): BigDecimal {
+        val currency = Currencies.fromCurrencyType(type)
+        return currency.calculateSellProfit(exchangeMoney, sellRate, krMoney)
+    }
 }
 
+/**
+ * 기록 요청 데이터 클래스
+ */
 data class CurrencyRecordRequest(
     val latestRate: String,
     val money: String,
     val inputRate: String,
     val groupName: String,
     val date: String,
-    val type: CurrencyType  // USD, JPY 등
+    val type: CurrencyType  // USD, JPY
 )

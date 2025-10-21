@@ -456,13 +456,16 @@ fun InvestNavHost(
                 activity = activity,
                 onNavigateToPremium = {
                     investNavController.navigate(MainRoute.MyPage.routeName!!)
-                    // 마이페이지 열리면 자동으로 프리미엄 화면 표시 가능
                 }
             )
         }
 
         composable(MainRoute.Alert.routeName!!) {
-            FcmAlarmScreen()
+            FcmAlarmScreen(
+                onNavigateToSettings = {
+                    investNavController.navigate(MainRoute.NotificationSettings.routeName!!)
+                }
+            )
         }
 
         composable(MainRoute.MyPage.routeName!!) {
@@ -471,6 +474,17 @@ fun InvestNavHost(
 
         composable(MainRoute.AnalysisScreen.routeName!!) {
             AnalysisScreen(analysisViewModel)
+        }
+
+        composable(MainRoute.NotificationSettings.routeName!!) {
+            NotificationSettingsScreen(
+                onBackClick = {
+                    investNavController.navigateUp()
+                },
+                onPremiumClick = {
+                    investNavController.navigate(MyPageRoute.Premium.routeName!!)
+                }
+            )
         }
     }
 }

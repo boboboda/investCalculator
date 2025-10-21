@@ -44,7 +44,6 @@ import com.bobodroid.myapplication.components.admobs.showTargetRewardedAdvertise
 import com.bobodroid.myapplication.models.datamodels.roomDb.RateType
 import com.bobodroid.myapplication.models.datamodels.roomDb.TargetRates
 import com.bobodroid.myapplication.models.datamodels.service.UserApi.Rate
-import com.bobodroid.myapplication.screens.TargetRateState
 import com.bobodroid.myapplication.ui.theme.DialogBackgroundColor
 import com.bobodroid.myapplication.ui.theme.TitleCardColor
 import com.bobodroid.myapplication.ui.theme.WelcomeScreenBackgroundColor

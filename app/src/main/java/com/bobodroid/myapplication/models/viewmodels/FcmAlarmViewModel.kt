@@ -32,6 +32,9 @@ class FcmAlarmViewModel @Inject constructor(
 
     private val deviceId = MutableStateFlow("")
 
+    // ✅ 초기화 완료 여부 플래그 (중복 실행 방지)
+    private var isAlarmDataInitialized = false
+
     val isPremium = userRepository.userData
         .map { it?.localUserData?.isPremium ?: false }
         .stateIn(
@@ -87,40 +90,47 @@ class FcmAlarmViewModel @Inject constructor(
     // ==================== 초기화 ====================
 
     init {
+        // ✅ 최신 환율 구독
         viewModelScope.launch {
             receivedLatestRate()
         }
 
+        // ✅ userData Flow 구독 (자동 초기화)
         viewModelScope.launch {
-            initAlarmData()
-        }
-    }
+            userRepository.userData
+                .filterNotNull()
+                .collect { userData ->
+                    Log.d(TAG("FcmAlarmViewModel", "init"), "UserData 수신: ${userData.localUserData.id}")
 
-    fun initAlarmData() {
-        viewModelScope.launch {
-            // 유저 데이터가 준비될 때까지 대기
-            val userData = userRepository.waitForUserData()
+                    // deviceId 설정
+                    deviceId.emit(userData.localUserData.id.toString())
 
-            if (userData.exchangeRates != null) {
-                initTarRates(userData.exchangeRates)
-                deviceId.emit(userData.localUserData.id.toString())
-            }
+                    // 목표환율 초기화
+                    userData.exchangeRates?.let {
+                        initTarRates(it)
+                    }
 
-            Log.d(TAG("FcmAlarmViewModel", "init"), "${userData}")
+                    // ✅ 한 번만 실행 (중복 방지)
+                    if (!isAlarmDataInitialized && deviceId.value.isNotEmpty()) {
+                        isAlarmDataInitialized = true
 
-            // 목표환율 실시간 업데이트
-            fcmUseCases.targetRateUpdateUseCase(
-                onUpdate = {
-                    viewModelScope.launch {
-                        _targetRate.emit(it)
+                        Log.d(TAG("FcmAlarmViewModel", "init"), "알림 데이터 초기화 시작 (deviceId: ${deviceId.value})")
+
+                        // 알림 설정/히스토리/통계 로드
+                        loadNotificationSettings()
+                        loadNotificationHistory()
+                        loadNotificationStats()
+
+                        // 목표환율 실시간 업데이트 구독
+                        fcmUseCases.targetRateUpdateUseCase(
+                            onUpdate = {
+                                viewModelScope.launch {
+                                    _targetRate.emit(it)
+                                }
+                            }
+                        )
                     }
                 }
-            )
-
-            // 알림 설정/히스토리/통계 로드
-            loadNotificationSettings()
-            loadNotificationHistory()
-            loadNotificationStats()
         }
     }
 

@@ -3,20 +3,26 @@ package com.bobodroid.myapplication.di
 import com.bobodroid.myapplication.models.datamodels.repository.UserRepository
 import com.bobodroid.myapplication.models.datamodels.social.SocialLoginManager
 import com.bobodroid.myapplication.models.datamodels.useCases.DeleteUserUseCase
+import com.bobodroid.myapplication.models.datamodels.useCases.FcmUseCases
+import com.bobodroid.myapplication.models.datamodels.useCases.GetNotificationHistoryUseCase
+import com.bobodroid.myapplication.models.datamodels.useCases.GetNotificationSettingsUseCase
+import com.bobodroid.myapplication.models.datamodels.useCases.GetNotificationStatsUseCase
 import com.bobodroid.myapplication.models.datamodels.useCases.GoogleLoginUseCase
 import com.bobodroid.myapplication.models.datamodels.useCases.KakaoLoginUseCase
 import com.bobodroid.myapplication.models.datamodels.useCases.LocalExistCheckUseCase
 import com.bobodroid.myapplication.models.datamodels.useCases.LocalIdAddUseCase
 import com.bobodroid.myapplication.models.datamodels.useCases.LocalUserUpdate
+import com.bobodroid.myapplication.models.datamodels.useCases.MarkNotificationAsReadUseCase
 import com.bobodroid.myapplication.models.datamodels.useCases.RestoreFromServerUseCase
+import com.bobodroid.myapplication.models.datamodels.useCases.SendTestNotificationUseCase
 import com.bobodroid.myapplication.models.datamodels.useCases.SocialLoginUseCases
 import com.bobodroid.myapplication.models.datamodels.useCases.SocialLogoutUseCase
 import com.bobodroid.myapplication.models.datamodels.useCases.SyncToServerUseCase
 import com.bobodroid.myapplication.models.datamodels.useCases.TargetRateAddUseCase
 import com.bobodroid.myapplication.models.datamodels.useCases.TargetRateDeleteUseCase
 import com.bobodroid.myapplication.models.datamodels.useCases.TargetRateUpdateUseCase
-import com.bobodroid.myapplication.models.datamodels.useCases.TargetRateUseCases
 import com.bobodroid.myapplication.models.datamodels.useCases.UnlinkSocialUseCase
+import com.bobodroid.myapplication.models.datamodels.useCases.UpdateNotificationSettingsUseCase
 import com.bobodroid.myapplication.models.datamodels.useCases.UserUseCases
 import com.bobodroid.myapplication.models.datamodels.websocket.WebSocketClient
 import com.bobodroid.myapplication.util.AdMob.AdUseCase
@@ -83,16 +89,62 @@ object UseCaseModule {
         )
     }
 
-    // 환율 di
+    // ==================== FCM UseCases ====================
+
     @Provides
-    fun provideTargetRateUseCases(
-        webSocketClient: WebSocketClient
-    ): TargetRateUseCases {
-        return TargetRateUseCases(
-            targetRateAddUseCase = TargetRateAddUseCase(),
-            targetRateUpdateUseCase = TargetRateUpdateUseCase(webSocketClient),
-            targetRateDeleteUseCase = TargetRateDeleteUseCase()
+    @Singleton
+    fun provideFcmUseCases(
+        targetRateAddUseCase: TargetRateAddUseCase,
+        targetRateUpdateUseCase: TargetRateUpdateUseCase,
+        targetRateDeleteUseCase: TargetRateDeleteUseCase,
+        getNotificationSettingsUseCase: GetNotificationSettingsUseCase,
+        updateNotificationSettingsUseCase: UpdateNotificationSettingsUseCase,
+        getNotificationHistoryUseCase: GetNotificationHistoryUseCase,
+        markAsReadUseCase: MarkNotificationAsReadUseCase,
+        getNotificationStatsUseCase: GetNotificationStatsUseCase,
+        sendTestNotificationUseCase: SendTestNotificationUseCase
+    ): FcmUseCases {
+        return FcmUseCases(
+            targetRateAddUseCase = targetRateAddUseCase,
+            targetRateUpdateUseCase = targetRateUpdateUseCase,
+            targetRateDeleteUseCase = targetRateDeleteUseCase,
+            getNotificationSettingsUseCase = getNotificationSettingsUseCase,
+            updateNotificationSettingsUseCase = updateNotificationSettingsUseCase,
+            getNotificationHistoryUseCase = getNotificationHistoryUseCase,
+            markAsReadUseCase = markAsReadUseCase,
+            getNotificationStatsUseCase = getNotificationStatsUseCase,
+            sendTestNotificationUseCase = sendTestNotificationUseCase
         )
+    }
+
+    @Provides
+    fun provideGetNotificationSettingsUseCase(): GetNotificationSettingsUseCase {
+        return GetNotificationSettingsUseCase()
+    }
+
+    @Provides
+    fun provideUpdateNotificationSettingsUseCase(): UpdateNotificationSettingsUseCase {
+        return UpdateNotificationSettingsUseCase()
+    }
+
+    @Provides
+    fun provideGetNotificationHistoryUseCase(): GetNotificationHistoryUseCase {
+        return GetNotificationHistoryUseCase()
+    }
+
+    @Provides
+    fun provideMarkNotificationAsReadUseCase(): MarkNotificationAsReadUseCase {
+        return MarkNotificationAsReadUseCase()
+    }
+
+    @Provides
+    fun provideGetNotificationStatsUseCase(): GetNotificationStatsUseCase {
+        return GetNotificationStatsUseCase()
+    }
+
+    @Provides
+    fun provideSendTestNotificationUseCase(): SendTestNotificationUseCase {
+        return SendTestNotificationUseCase()
     }
 
 

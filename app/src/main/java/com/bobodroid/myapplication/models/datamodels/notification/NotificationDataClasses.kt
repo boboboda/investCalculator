@@ -113,7 +113,7 @@ data class NotificationHistoryItem(
     val priority: String,
     val title: String,
     val body: String,
-    val data: Map<String, String>?,
+    val data: Map<String, String>? = null,
     val status: String,
     val sentAt: String,
     val readAt: String? = null,
@@ -125,7 +125,8 @@ data class NotificationHistoryItem(
 @JsonClass(generateAdapter = true)
 data class NotificationStatsResponse(
     val success: Boolean,
-    val data: NotificationStats
+    val data: NotificationStats,
+    val message: String? = null
 )
 
 @JsonClass(generateAdapter = true)

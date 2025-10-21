@@ -281,3 +281,18 @@ val Currency.emoji: String
     get() = CurrencyEmojiMapper.getEmoji(
         CurrencyType.valueOf(this.code)
     )
+
+enum class CurrencyType(val code: String, val koreanName: String) {
+    USD("USD", "달러"),
+    JPY("JPY", "엔화"),
+    EUR("EUR", "유로"),
+    GBP("GBP", "파운드"),
+    CHF("CHF", "프랑"),
+    CAD("CAD", "캐나다 달러"),
+    AUD("AUD", "호주 달러"),
+    NZD("NZD", "뉴질랜드 달러"),
+    CNY("CNY", "위안"),
+    HKD("HKD", "홍콩 달러"),
+    TWD("TWD", "대만 달러"),
+    SGD("SGD", "싱가포르 달러")
+}

@@ -1,12 +1,14 @@
+// app/src/main/java/com/bobodroid/myapplication/models/datamodels/service/UserApi/UserResponse.kt
+
 package com.bobodroid.myapplication.models.datamodels.service.UserApi
 
 import android.util.Log
 import com.bobodroid.myapplication.MainActivity.Companion.TAG
-import com.bobodroid.myapplication.models.datamodels.roomDb.ExchangeRate
+import com.bobodroid.myapplication.models.datamodels.roomDb.CurrencyTargetRates
+import com.bobodroid.myapplication.models.datamodels.roomDb.CurrencyType
 import com.bobodroid.myapplication.models.datamodels.roomDb.TargetRates
 import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
-import org.json.JSONArray
 import org.json.JSONException
 import org.json.JSONObject
 
@@ -16,95 +18,149 @@ data class Rate(
     val rate: Int
 )
 
-// ✅ 전체 응답 클래스 (소셜 로그인 지원)
+// ✅ 전체 응답 클래스
 @JsonClass(generateAdapter = true)
 data class UserResponse(
-    val success: Boolean,           // ✅ 추가: 성공 여부
+    val success: Boolean,
     val message: String,
-    val code: String? = null,       // ✅ 추가: 에러 코드 (ALREADY_LINKED 등)
+    val code: String? = null,
     val data: UserResponseData? = null,
-    val error: String? = null       // ✅ 추가: 에러 메시지
+    val error: String? = null
 )
 
-// ✅ 사용자 데이터 (소셜 로그인 필드 추가)
+// ✅ 사용자 데이터 (12개 통화 지원)
 @JsonClass(generateAdapter = true)
 data class UserResponseData(
-    // 기본 필드
     val deviceId: String? = null,
     val createAt: String? = null,
     val fcmToken: String? = null,
 
-    // ✅ 소셜 로그인 필드
+    // 소셜 로그인 필드
     val socialId: String? = null,
-    val socialType: String? = null,  // "GOOGLE", "KAKAO", "NONE"
+    val socialType: String? = null,
     val email: String? = null,
     val nickname: String? = null,
     val profileUrl: String? = null,
 
-    // ✅ 동기화 관련
+    // 동기화 관련
     val isSynced: Boolean? = null,
     val updatedAt: String? = null,
 
-    // 목표 환율
-    val usdHighRates: List<Rate>? = emptyList(),
-    val usdLowRates: List<Rate>? = emptyList(),
-    val jpyHighRates: List<Rate>? = emptyList(),
-    val jpyLowRates: List<Rate>? = emptyList(),
+    // ✅ 새로운 목표환율 구조 (12개 통화)
+    val targetRates: Map<String, CurrencyRatesJson>? = null
 ) {
-
     companion object {
         fun fromTargetRateJson(jsonString: String): TargetRates? {
             return try {
                 if (jsonString.isBlank()) {
-                    Log.e(TAG("TargetRates",""), "fromCustomJson: 빈 문자열을 수신했습니다.")
+                    Log.e(TAG("TargetRates", ""), "fromJson: 빈 문자열")
                     return null
                 }
 
-                // JSON 객체로 변환 시도
                 val jsonObject = JSONObject(jsonString)
+                val targetRatesJson = jsonObject.optJSONObject("targetRates")
 
-                // JSON 배열을 Rate 리스트로 변환하는 함수
-                fun JSONArray.toRateList(): List<Rate> {
-                    val rateList = mutableListOf<Rate>()
-                    for (i in 0 until length()) {
-                        val rateObj = getJSONObject(i)
-                        rateList.add(
-                            Rate(
-                                number = rateObj.getInt("number"),
-                                rate = rateObj.getInt("rate")
-                            )
-                        )
-                    }
-                    return rateList
+                if (targetRatesJson == null) {
+                    Log.e(TAG("TargetRates", ""), "targetRates 필드 없음")
+                    return null
                 }
 
-                // 'exchangeRates' 필드가 있는지 확인
-                val usdHighRates = jsonObject.optJSONArray("usdHighRates")?.toRateList() ?: emptyList()
-                val usdLowRates = jsonObject.optJSONArray("usdLowRates")?.toRateList() ?: emptyList()
-                val jpyHighRates = jsonObject.optJSONArray("jpyHighRates")?.toRateList() ?: emptyList()
-                val jpyLowRates = jsonObject.optJSONArray("jpyLowRates")?.toRateList() ?: emptyList()
+                val ratesMap = mutableMapOf<CurrencyType, CurrencyTargetRates>()
 
-                TargetRates(
-                    dollarHighRates = usdHighRates,
-                    dollarLowRates = usdLowRates,
-                    yenHighRates = jpyHighRates,
-                    yenLowRates = jpyLowRates
-                )
+                // 모든 통화 순회
+                CurrencyType.values().forEach { currencyType ->
+                    val currencyCode = currencyType.code
+                    val currencyJson = targetRatesJson.optJSONObject(currencyCode)
+
+                    if (currencyJson != null) {
+                        val highArray = currencyJson.optJSONArray("high")
+                        val lowArray = currencyJson.optJSONArray("low")
+
+                        val highRates = mutableListOf<Rate>()
+                        val lowRates = mutableListOf<Rate>()
+
+                        // High rates 파싱
+                        if (highArray != null) {
+                            for (i in 0 until highArray.length()) {
+                                val rateObj = highArray.getJSONObject(i)
+                                highRates.add(
+                                    Rate(
+                                        number = rateObj.getInt("number"),
+                                        rate = rateObj.getInt("rate")
+                                    )
+                                )
+                            }
+                        }
+
+                        // Low rates 파싱
+                        if (lowArray != null) {
+                            for (i in 0 until lowArray.length()) {
+                                val rateObj = lowArray.getJSONObject(i)
+                                lowRates.add(
+                                    Rate(
+                                        number = rateObj.getInt("number"),
+                                        rate = rateObj.getInt("rate")
+                                    )
+                                )
+                            }
+                        }
+
+                        if (highRates.isNotEmpty() || lowRates.isNotEmpty()) {
+                            ratesMap[currencyType] = CurrencyTargetRates(
+                                high = highRates,
+                                low = lowRates
+                            )
+                        }
+                    }
+                }
+
+                TargetRates(rates = ratesMap)
+
             } catch (e: JSONException) {
-                Log.e(TAG("ExchangeRate","Type"), "fromCustomJson: JSON 파싱 오류 발생", e)
+                Log.e(TAG("TargetRates", "fromJson"), "JSON 파싱 오류", e)
                 null
             }
         }
     }
 }
 
+// ✅ JSON 파싱용 데이터 클래스
+@JsonClass(generateAdapter = true)
+data class CurrencyRatesJson(
+    val high: List<Rate>? = null,
+    val low: List<Rate>? = null
+)
 
-
-// ✅ 목표환율만 업데이트 (기존 호환성 유지)
+// ✅ 목표환율 업데이트 요청 (12개 통화 지원)
 @JsonClass(generateAdapter = true)
 data class UserRatesUpdateRequest(
-    val usdHighRates: List<Rate>? = null,
-    val usdLowRates: List<Rate>? = null,
-    val jpyHighRates: List<Rate>? = null,
-    val jpyLowRates: List<Rate>? = null
-)
+    val targetRates: Map<String, CurrencyRatesJson>? = null
+) {
+    companion object {
+        // ✅ TargetRates → 서버 요청 형식 변환
+        fun fromTargetRates(targetRates: TargetRates): UserRatesUpdateRequest {
+            val targetRatesMap = mutableMapOf<String, CurrencyRatesJson>()
+
+            targetRates.rates.forEach { (currencyType, currencyRates) ->
+                targetRatesMap[currencyType.code] = CurrencyRatesJson(
+                    high = currencyRates.high,
+                    low = currencyRates.low
+                )
+            }
+
+            return UserRatesUpdateRequest(targetRates = targetRatesMap)
+        }
+
+        // ✅ 특정 통화만 업데이트
+        fun forCurrency(
+            currency: CurrencyType,
+            high: List<Rate>? = null,
+            low: List<Rate>? = null
+        ): UserRatesUpdateRequest {
+            val targetRatesMap = mapOf(
+                currency.code to CurrencyRatesJson(high = high, low = low)
+            )
+            return UserRatesUpdateRequest(targetRates = targetRatesMap)
+        }
+    }
+}

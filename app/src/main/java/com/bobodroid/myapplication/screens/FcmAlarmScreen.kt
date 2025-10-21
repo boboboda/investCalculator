@@ -103,10 +103,12 @@ import com.bobodroid.myapplication.MainActivity.Companion.TAG
 import com.bobodroid.myapplication.R
 import com.bobodroid.myapplication.components.AutoSizeText
 import com.bobodroid.myapplication.components.Dialogs.GuideDialog
+import com.bobodroid.myapplication.components.Dialogs.PremiumRequiredDialog
 import com.bobodroid.myapplication.components.Dialogs.TargetRateDialog
 import com.bobodroid.myapplication.components.Dialogs.TextFieldDialog
 import com.bobodroid.myapplication.components.RateView
 import com.bobodroid.myapplication.components.addFocusCleaner
+import com.bobodroid.myapplication.components.common.CurrencyDropdown
 import com.bobodroid.myapplication.components.shadowCustom
 import com.bobodroid.myapplication.models.datamodels.roomDb.Currencies
 import com.bobodroid.myapplication.models.datamodels.roomDb.CurrencyType
@@ -174,6 +176,14 @@ fun FcmAlarmScreen() {
 
     val fcmAlarmScreenSnackBarHostState = remember { SnackbarHostState() }
 
+
+    // 프리미엄
+
+    var showPremiumDialog by remember { mutableStateOf(false) }
+
+    val isPremium by fcmAlarmViewModel.isPremium.collectAsState()
+
+
     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.BottomCenter)
     {
         Column(
@@ -203,36 +213,18 @@ fun FcmAlarmScreen() {
                     )
                 }
 
-                // 통화 선택 드롭다운
-                Box {
-                    TextButton(
-                        onClick = { currencyExpanded = true },
-                        colors = ButtonDefaults.textButtonColors(
-                            contentColor = primaryColor
-                        )
-                    ) {
-                        Text("${currency.emoji} ${currency.koreanName}(${targetRateMoneyType.code})")
-                        Icon(Icons.Filled.ArrowDropDown, null)
-                    }
-
-                    DropdownMenu(
-                        expanded = currencyExpanded,
-                        onDismissRequest = { currencyExpanded = false }
-                    ) {
-                        CurrencyType.values().forEach { currencyType ->
-                            val currencyObj = Currencies.fromCurrencyType(currencyType)
-                            DropdownMenuItem(
-                                onClick = {
-                                    fcmAlarmViewModel.updateSelectedCurrency(currencyType)
-                                    currencyExpanded = false
-                                },
-                                text = {
-                                    Text("${currencyType.emoji} ${currencyObj.koreanName}(${currencyType.code})")
-                                }
-                            )
-                        }
-                    }
-                }
+                CurrencyDropdown(
+                    selectedCurrency = targetRateMoneyType,
+                    updateCurrentForeignCurrency = { currency ->
+                        fcmAlarmViewModel.updateCurrentForeignCurrency(currency)
+                    },
+                    isPremium = isPremium,
+                    onPremiumRequired = {
+                        showPremiumDialog = true
+                    },
+                    backgroundColor = Color(0xFFF5F5F5),
+                    contentColor = primaryColor
+                )
             }
 
             // 현재 환율 표시
@@ -430,6 +422,16 @@ fun FcmAlarmScreen() {
                 }
             )
         }
+    }
+
+    if (showPremiumDialog) {
+        PremiumRequiredDialog(
+            onDismiss = { showPremiumDialog = false },
+            onPurchaseClick = {
+                showPremiumDialog = false
+                // 프리미엄 화면으로 이동 (구현 필요)
+            }
+        )
     }
 
     if(addTargetDialog) {

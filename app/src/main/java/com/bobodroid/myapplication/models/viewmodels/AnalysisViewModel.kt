@@ -5,6 +5,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.bobodroid.myapplication.MainActivity.Companion.TAG
+import com.bobodroid.myapplication.models.datamodels.repository.UserRepository
 import com.bobodroid.myapplication.models.datamodels.roomDb.Currencies
 import com.bobodroid.myapplication.models.datamodels.roomDb.Currency
 import com.bobodroid.myapplication.models.datamodels.roomDb.CurrencyType
@@ -18,6 +19,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -30,8 +32,23 @@ import kotlin.math.sqrt
 
 @HiltViewModel
 class AnalysisViewModel @Inject constructor(
-    private val settingsRepository: SettingsRepository  // ✅ 추가
+    private val userRepository: UserRepository,
+    private val settingsRepository: SettingsRepository, // ✅ 추가
 ): ViewModel() {
+
+
+    val isPremium = userRepository.userData
+        .map { it?.localUserData?.isPremium ?: false }
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = false
+        )
+
+
+    fun updateSelectedCurrency(currency: CurrencyType): Boolean {
+        return settingsRepository.setSelectedCurrency(currency)
+    }
 
     // ✅ SettingsRepository에서 통화 상태 가져오기
     val selectedCurrency = settingsRepository.selectedCurrency.stateIn(
@@ -39,13 +56,6 @@ class AnalysisViewModel @Inject constructor(
         started = SharingStarted.WhileSubscribed(5000),
         initialValue = CurrencyType.USD
     )
-
-    /**
-     * 통화 변경
-     */
-    fun updateSelectedCurrency(currency: CurrencyType) {
-        settingsRepository.setSelectedCurrency(currency)
-    }
 
     private val _dailyRates = MutableStateFlow<List<RateRange>>(emptyList())
     private val _weeklyRates = MutableStateFlow<List<RateRange>>(emptyList())

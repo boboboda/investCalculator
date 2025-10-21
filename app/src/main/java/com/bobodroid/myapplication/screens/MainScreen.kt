@@ -2,6 +2,7 @@ package com.bobodroid.myapplication.screens
 
 import android.app.Activity
 import android.util.Log
+import android.widget.Toast
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -45,6 +46,7 @@ import com.bobodroid.myapplication.screens.MainEvent.BottomSheetEvent
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.saveable.rememberSaveable
 import com.bobodroid.myapplication.components.Dialogs.OnboardingTooltipDialog
+import com.bobodroid.myapplication.components.Dialogs.PremiumRequiredDialog
 import com.bobodroid.myapplication.components.mainComponents.GroupChangeBottomSheet
 import com.bobodroid.myapplication.util.PreferenceUtil
 import kotlinx.coroutines.Job
@@ -54,7 +56,8 @@ import kotlinx.coroutines.Job
 @Composable
 fun MainScreen(
     mainViewModel: MainViewModel,
-    activity: Activity
+    activity: Activity,
+    onNavigateToPremium: () -> Unit
 ) {
     val mainUiState by mainViewModel.mainUiState.collectAsState()
     val adUiState by mainViewModel.adUiState.collectAsState()
@@ -82,8 +85,13 @@ fun MainScreen(
         mutableStateOf(preferenceUtil.getData("onboarding_completed", "false") == "false")
     }
 
-    var isCollapsedState by rememberSaveable { mutableStateOf(true) }
+    var isHeaderCollapsed by rememberSaveable { mutableStateOf(true) }
 
+    //프리미엄
+
+    val isPremium by mainViewModel.isPremium.collectAsState()
+
+    var showPremiumDialog by remember { mutableStateOf(false) }
 
 
     // 리스트
@@ -134,17 +142,17 @@ fun MainScreen(
             MainHeader(
                 mainUiState = mainUiState,
                 adUiState = adUiState,
-                updateCurrentForeignCurrency = {
-                    mainViewModel.updateCurrentForeignCurrency(it)
+                updateCurrentForeignCurrency = { currency ->
+                    mainViewModel.updateCurrentForeignCurrency(currency)
+                },
+                isPremium = isPremium,
+                onPremiumRequired = {
+                    showPremiumDialog = true  // ✅ 토스트 대신 다이얼로그 표시
                 },
                 hideSellRecordState = hideSellRecordState,
-                onHide = {
-                    hideSellRecordState = it
-                },
-                isCollapsed = isCollapsedState,  // ✅ 토글 상태 전달
-                onToggleClick = {  // ✅ 토글 버튼 클릭 핸들러 추가
-                    isCollapsedState = !isCollapsedState
-                }
+                onHide = { hideSellRecordState = it },
+                isCollapsed = isHeaderCollapsed,
+                onToggleClick = { isHeaderCollapsed = !isHeaderCollapsed }
             )
 
             Column(
@@ -313,21 +321,7 @@ fun MainScreen(
                 )
             }
 
-            if (adUiState.rewardShowDialog) {
-                RewardShowAskDialog(
-                    onDismissRequest = {
-                        mainViewModel.rewardDelayDate()
-                        mainViewModel.closeRewardDialog()
-                    },
-                    onClicked = {
-                        showTargetRewardedAdvertisement(activity, onAdDismissed = {
-                            mainViewModel.rewardDelayDate()
-                            mainViewModel.closeRewardDialog()
-                            thankShowingDialog = true
-                        })
-                    }
-                )
-            }
+
 
             if (mainUiState.showSellResultDialog) {
                 SellResultDialog(
@@ -346,6 +340,16 @@ fun MainScreen(
                 ThanksDialog(onDismissRequest = { value ->
                     thankShowingDialog = value
                 })
+            }
+
+            if (showPremiumDialog) {
+                PremiumRequiredDialog(
+                    onDismiss = { showPremiumDialog = false },
+                    onPurchaseClick = {
+                        // 프리미엄 화면으로 이동
+                        onNavigateToPremium()
+                    }
+                )
             }
         }
 

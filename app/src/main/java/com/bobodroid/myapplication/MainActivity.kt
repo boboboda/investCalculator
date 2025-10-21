@@ -453,7 +453,11 @@ fun InvestNavHost(
         composable(MainRoute.Main.routeName!!) {
             MainScreen(
                 mainViewModel = mainViewModel,
-                activity = activity
+                activity = activity,
+                onNavigateToPremium = {
+                    investNavController.navigate(MainRoute.MyPage.routeName!!)
+                    // 마이페이지 열리면 자동으로 프리미엄 화면 표시 가능
+                }
             )
         }
 

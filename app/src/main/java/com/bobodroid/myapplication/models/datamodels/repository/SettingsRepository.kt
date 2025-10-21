@@ -2,6 +2,8 @@ package com.bobodroid.myapplication.models.repository
 
 import android.content.Context
 import android.content.SharedPreferences
+import com.bobodroid.myapplication.models.datamodels.repository.UserRepository
+import com.bobodroid.myapplication.models.datamodels.roomDb.Currencies
 import com.bobodroid.myapplication.models.datamodels.roomDb.CurrencyType
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -17,7 +19,8 @@ import javax.inject.Singleton
  */
 @Singleton
 class SettingsRepository @Inject constructor(
-    @ApplicationContext private val context: Context
+    @ApplicationContext private val context: Context,
+    private val userRepository: UserRepository
 ) {
     companion object {
         private const val PREFS_NAME = "app_settings"
@@ -44,15 +47,28 @@ class SettingsRepository @Inject constructor(
         }
     }
 
+
+
     /**
      * 통화 선택 변경
      */
-    fun setSelectedCurrency(currency: CurrencyType) {
+    fun setSelectedCurrency(currency: CurrencyType): Boolean {
+        val currencyObj = Currencies.fromCurrencyType(currency)
+
+        // ✅ 프리미엄 통화인데 프리미엄 유저가 아니면
+        if (currencyObj.isPremium) {
+            val isPremium = userRepository.userData.value?.localUserData?.isPremium ?: false
+            if (!isPremium) {
+                return false // 변경 실패
+            }
+        }
+
+        // 변경 가능
         prefs.edit()
             .putString(KEY_SELECTED_CURRENCY, currency.name)
             .apply()
-
         _selectedCurrency.value = currency
+        return true // 변경 성공
     }
 
     /**

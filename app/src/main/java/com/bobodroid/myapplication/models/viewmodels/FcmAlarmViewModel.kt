@@ -23,6 +23,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -41,9 +42,22 @@ class FcmAlarmViewModel@Inject constructor(
         initialValue = CurrencyType.USD
     )
 
-    fun updateSelectedCurrency(currency: CurrencyType) {
-        settingsRepository.setSelectedCurrency(currency)
+
+    val isPremium = userRepository.userData
+        .map { it?.localUserData?.isPremium ?: false }
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = false
+        )
+
+
+    fun updateCurrentForeignCurrency(currency: CurrencyType): Boolean {
+        return settingsRepository.setSelectedCurrency(currency)
     }
+
+
+
 
     private val _alarmUiState = MutableStateFlow(AlarmUiState())
     val alarmUiState = _alarmUiState.asStateFlow()

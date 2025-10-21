@@ -6,7 +6,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.rounded.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -19,11 +18,10 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.bobodroid.myapplication.components.admobs.BannerAd
+import com.bobodroid.myapplication.components.common.CurrencyDropdown
 import com.bobodroid.myapplication.models.datamodels.roomDb.CurrencyType
-import com.bobodroid.myapplication.models.datamodels.roomDb.emoji
 import com.bobodroid.myapplication.models.viewmodels.AdUiState
 import com.bobodroid.myapplication.models.viewmodels.MainUiState
-import com.bobodroid.myapplication.models.viewmodels.RecordListUiState
 import com.bobodroid.myapplication.models.viewmodels.CurrencyHoldingInfo
 import java.math.BigDecimal
 
@@ -32,14 +30,14 @@ import java.math.BigDecimal
 fun MainHeader(
     mainUiState: MainUiState,
     adUiState: AdUiState,
-    updateCurrentForeignCurrency: (CurrencyType) -> Unit,
+    updateCurrentForeignCurrency: (CurrencyType) -> Boolean,  // ✅ Boolean 반환으로 변경
+    isPremium: Boolean,  // ✅ 추가
+    onPremiumRequired: () -> Unit,  // ✅ 추가
     hideSellRecordState: Boolean,
     onHide:(Boolean) -> Unit,
     isCollapsed: Boolean = false,
     onToggleClick: () -> Unit
 ) {
-    var dropdownExpanded by remember { mutableStateOf(false) }
-
     val rate = mainUiState.recentRate.getRateByCode(mainUiState.selectedCurrencyType.name) ?: "0"
 
     Column(
@@ -48,7 +46,6 @@ fun MainHeader(
         AnimatedContent(
             targetState = isCollapsed,
             transitionSpec = {
-                // ✅ 수정: 애니메이션 시간을 1200ms(1.2초)로 변경하고 부드러운 easing 적용
                 fadeIn(
                     animationSpec = tween(
                         durationMillis = 900,
@@ -77,7 +74,7 @@ fun MainHeader(
             label = "header_animation"
         ) { collapsed ->
             if (collapsed) {
-                // 🎯 축소 뷰 - 현재 환율만 표시
+                // 축소 뷰
                 Surface(
                     modifier = Modifier.fillMaxWidth(),
                     color = Color.White,
@@ -91,12 +88,10 @@ fun MainHeader(
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        // 왼쪽: 통화 + 환율
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(12.dp)
                         ) {
-                            // 통화 뱃지
                             Surface(
                                 shape = RoundedCornerShape(8.dp),
                                 color = Color(0xFF6366F1).copy(alpha = 0.1f),
@@ -111,7 +106,6 @@ fun MainHeader(
                                 )
                             }
 
-                            // 환율
                             Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
                                 Text(
                                     text = rate,
@@ -127,7 +121,6 @@ fun MainHeader(
                             }
                         }
 
-                        // 우측 토글 버튼
                         IconButton(
                             onClick = onToggleClick,
                             modifier = Modifier.size(32.dp)
@@ -141,7 +134,7 @@ fun MainHeader(
                     }
                 }
             } else {
-                // 🎨 확장 뷰 - 기존 대시보드 + 선택된 통화 상세
+                // 확장 뷰
                 Column(modifier = Modifier.fillMaxWidth()) {
                     Column(
                         modifier = Modifier
@@ -150,20 +143,17 @@ fun MainHeader(
                             .padding(horizontal = 16.dp)
                             .padding(top = 16.dp, bottom = 16.dp)
                     ) {
-                        // 기존 대시보드 카드
                         Card(
                             modifier = Modifier.fillMaxWidth(),
                             elevation = CardDefaults.cardElevation(4.dp),
                             shape = RoundedCornerShape(20.dp),
                             colors = CardDefaults.cardColors(containerColor = Color(0xFF6366F1))
-                        )
-                        {
+                        ) {
                             Column(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .padding(24.dp)
                             ) {
-                                // 헤더
                                 Row(
                                     modifier = Modifier.fillMaxWidth(),
                                     horizontalArrangement = Arrangement.SpaceBetween,
@@ -180,52 +170,16 @@ fun MainHeader(
                                         horizontalArrangement = Arrangement.spacedBy(8.dp),
                                         verticalAlignment = Alignment.CenterVertically
                                     ) {
-                                        // 통화 선택 드롭다운
-                                        Box {
-                                            Surface(
-                                                shape = RoundedCornerShape(12.dp),
-                                                color = Color.White.copy(alpha = 0.2f),
-                                                onClick = { dropdownExpanded = true }
-                                            ) {
-                                                Row(
-                                                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
-                                                    verticalAlignment = Alignment.CenterVertically,
-                                                    horizontalArrangement = Arrangement.spacedBy(4.dp)
-                                                ) {
-                                                    Text(
-                                                        text = "${mainUiState.selectedCurrencyType.emoji} ${mainUiState.selectedCurrencyType.code}",
-                                                        color = Color.White,
-                                                        fontSize = 14.sp,
-                                                        fontWeight = FontWeight.Bold
-                                                    )
-                                                    Icon(
-                                                        imageVector = Icons.Default.ArrowDropDown,
-                                                        contentDescription = null,
-                                                        tint = Color.White,
-                                                        modifier = Modifier.size(20.dp)
-                                                    )
-                                                }
-                                            }
+                                        // ✅ CurrencyDropdown 사용
+                                        CurrencyDropdown(
+                                            selectedCurrency = mainUiState.selectedCurrencyType,
+                                            updateCurrentForeignCurrency = updateCurrentForeignCurrency,
+                                            isPremium = isPremium,
+                                            onPremiumRequired = onPremiumRequired,
+                                            backgroundColor = Color.White.copy(alpha = 0.2f),
+                                            contentColor = Color.White
+                                        )
 
-                                            DropdownMenu(
-                                                expanded = dropdownExpanded,
-                                                onDismissRequest = { dropdownExpanded = false }
-                                            ) {
-                                                CurrencyType.values().forEach { currencyType ->
-                                                    DropdownMenuItem(
-                                                        text = {
-                                                            Text("${currencyType.emoji} ${currencyType.koreanName} (${currencyType.code})")
-                                                        },
-                                                        onClick = {
-                                                            updateCurrentForeignCurrency(currencyType)
-                                                            dropdownExpanded = false
-                                                        }
-                                                    )
-                                                }
-                                            }
-                                        }
-
-                                        // 축소 버튼
                                         IconButton(
                                             onClick = onToggleClick,
                                             modifier = Modifier.size(32.dp)
@@ -241,12 +195,10 @@ fun MainHeader(
 
                                 Spacer(modifier = Modifier.height(20.dp))
 
-                                // 현재 환율 & 총 예상수익
                                 Row(
                                     modifier = Modifier.fillMaxWidth(),
                                     horizontalArrangement = Arrangement.SpaceBetween
                                 ) {
-                                    // 현재 환율
                                     Column(modifier = Modifier.weight(1f)) {
                                         Text(
                                             text = "현재 환율",
@@ -287,10 +239,7 @@ fun MainHeader(
                                     )
                                     Spacer(modifier = Modifier.width(24.dp))
 
-                                    // 보유 통화 통계
                                     val currentStats = mainUiState.holdingStats.getStatsByCode(mainUiState.selectedCurrencyType.code)
-
-
 
                                     Column(
                                         modifier = Modifier.weight(1f),
@@ -346,11 +295,9 @@ fun MainHeader(
                             }
                         }
 
-                        // 보유 통화 상세 통계
                         Spacer(modifier = Modifier.height(16.dp))
 
                         val currentStats = mainUiState.holdingStats.getStatsByCode(mainUiState.selectedCurrencyType.code)
-
 
                         if (currentStats.hasData) {
                             HoldingStatsCard(
@@ -363,7 +310,7 @@ fun MainHeader(
             }
         }
 
-        // 매도기록 보기/숨김 버튼 (항상 표시)
+        // 매도기록 보기/숨김 버튼
         Column(
             modifier = Modifier
                 .fillMaxWidth()
@@ -449,9 +396,6 @@ private fun HoldingStatsCard(
                 .fillMaxWidth()
                 .padding(16.dp)
         ) {
-            // 타이틀
-
-
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -472,7 +416,6 @@ private fun HoldingStatsCard(
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            // 평균 매수가 vs 현재 환율
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween
@@ -485,7 +428,6 @@ private fun HoldingStatsCard(
             HorizontalDivider(color = Color(0xFFE5E7EB))
             Spacer(modifier = Modifier.height(12.dp))
 
-            // 보유량 & 투자금
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween
@@ -498,7 +440,6 @@ private fun HoldingStatsCard(
             HorizontalDivider(color = Color(0xFFE5E7EB))
             Spacer(modifier = Modifier.height(12.dp))
 
-            // 예상 수익 (강조)
             val profitValue = stats.expectedProfit
                 .replace("+₩", "").replace("-₩", "").replace("₩", "").replace(",", "")
                 .toDoubleOrNull() ?: 0.0

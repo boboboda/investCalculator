@@ -420,9 +420,17 @@ class MainViewModel @Inject constructor(
             recordState.getCurrentRecords(mainState.selectedCurrencyType)
         }
 
-    fun updateCurrentForeignCurrency(currency: CurrencyType) {
-        settingsRepository.setSelectedCurrency(currency)
-        // MainUiState는 자동으로 업데이트됨 (init에서 collect 중)
+    // 프리미엄 상태
+    val isPremium = userRepository.userData
+        .map { it?.localUserData?.isPremium ?: false }
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = false
+        )
+
+    fun updateCurrentForeignCurrency(currency: CurrencyType): Boolean {
+        return settingsRepository.setSelectedCurrency(currency)
     }
 
     // ✅ 매도 계산 - 새로운 구조

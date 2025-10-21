@@ -6,6 +6,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.bobodroid.myapplication.models.datamodels.repository.InvestRepository
 import com.bobodroid.myapplication.models.datamodels.repository.UserRepository
+import com.bobodroid.myapplication.models.datamodels.roomDb.CurrencyRecord
 import com.bobodroid.myapplication.models.datamodels.roomDb.LocalUserData
 import com.bobodroid.myapplication.models.datamodels.useCases.SocialLoginUseCases
 import com.bobodroid.myapplication.models.datamodels.useCases.UserUseCases
@@ -320,9 +321,8 @@ class MyPageViewModel @Inject constructor(
     private suspend fun calculateGoalProgress() {
         combine(
             userRepository.userData,
-            investRepository.getAllDollarBuyRecords(),
-            investRepository.getAllYenBuyRecords()
-        ) { userData, dollarRecords, yenRecords ->
+            investRepository.getAllCurrencyRecords()  // ✅ 통합 메서드 사용
+        ) { userData, allRecords ->
 
             val localUser = userData?.localUserData
             val goalAmount = localUser?.monthlyProfitGoal ?: 0L
@@ -352,8 +352,8 @@ class MyPageViewModel @Inject constructor(
                 )
             }
 
-            // 이번 달 매도 수익 계산
-            val monthlyProfit = calculateMonthlyProfit(dollarRecords, yenRecords, currentMonth)
+            // 이번 달 매도 수익 계산 (모든 통화)
+            val monthlyProfit = calculateMonthlyProfit(allRecords, currentMonth)
 
             // 달성률 계산
             val progress = if (goalAmount > 0) {
@@ -374,22 +374,25 @@ class MyPageViewModel @Inject constructor(
         }
     }
 
-    // 이번 달 매도 수익 계산
+    /**
+     * 이번 달 매도 수익 계산 (통합 버전)
+     */
     private fun calculateMonthlyProfit(
-        dollarRecords: List<com.bobodroid.myapplication.models.datamodels.roomDb.DrBuyRecord>,
-        yenRecords: List<com.bobodroid.myapplication.models.datamodels.roomDb.YenBuyRecord>,
+        records: List<CurrencyRecord>,
         targetMonth: String
     ): Long {
-        val dollarProfit = dollarRecords
-            .filter { it.recordColor == true && it.sellDate?.startsWith(targetMonth) == true }
-            .sumOf { it.sellProfit?.replace(",", "")?.toBigDecimalOrNull() ?: BigDecimal.ZERO }
+        val totalProfit = records
+            .filter {
+                it.recordColor == true &&
+                        it.sellDate?.startsWith(targetMonth) == true
+            }
+            .sumOf {
+                it.sellProfit?.replace(",", "")?.toBigDecimalOrNull() ?: BigDecimal.ZERO
+            }
 
-        val yenProfit = yenRecords
-            .filter { it.recordColor == true && it.sellDate?.startsWith(targetMonth) == true }
-            .sumOf { it.sellProfit?.replace(",", "")?.toBigDecimalOrNull() ?: BigDecimal.ZERO }
-
-        return (dollarProfit + yenProfit).setScale(0, RoundingMode.HALF_UP).toLong()
+        return totalProfit.setScale(0, RoundingMode.HALF_UP).toLong()
     }
+
 
     // 현재 년-월 (yyyy-MM 형식)
     private fun getCurrentYearMonth(): String {

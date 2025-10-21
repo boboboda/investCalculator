@@ -1,5 +1,6 @@
 package com.bobodroid.myapplication.screens
 
+import android.util.Log
 import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -145,11 +146,12 @@ fun WidgetSettingsScreen(
             if (BuildConfig.DEBUG) {
                 TestControlCard(
                     isPremium = isPremium,
-                    onTogglePremium = {
-                        val newStatus = !isPremium
+                    onTogglePremium = { newStatus ->  // ✅ 파라미터로 받기
+
+                        Log.d("Premium","프리미엄 상태: ${isPremium}, ${newStatus}")
+
                         viewModel.setTestPremiumStatus(newStatus)
 
-                        // ✅ 프리미엄 활성화 시 서비스도 자동 시작
                         if (newStatus) {
                             viewModel.toggleRealtimeUpdate(true)
                         } else {
@@ -646,7 +648,7 @@ fun WidgetPremiumPromotionCard(onUpgradeClick: () -> Unit) {
 @Composable
 fun TestControlCard(
     isPremium: Boolean,
-    onTogglePremium: () -> Unit,
+    onTogglePremium: (Boolean) -> Unit,  // ✅ Boolean 파라미터
     onRefreshStatus: () -> Unit
 ) {
     Card(
@@ -692,7 +694,9 @@ fun TestControlCard(
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 Button(
-                    onClick = onTogglePremium,
+                    onClick = {
+                        onTogglePremium(!isPremium)  // ✅ 계산된 값 전달!
+                    },
                     modifier = Modifier.weight(1f),
                     colors = ButtonDefaults.buttonColors(
                         containerColor = if (isPremium) Color(0xFFEF4444) else Color(0xFF10B981)

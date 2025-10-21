@@ -1,65 +1,14 @@
 package com.bobodroid.myapplication.models.datamodels.roomDb
 
+import android.util.Log
 import androidx.room.*
+import com.bobodroid.myapplication.MainActivity.Companion.TAG
 import kotlinx.coroutines.flow.Flow
 import java.util.UUID
 
-
-@Dao
-interface DollarBuyDatabaseDao {
-
-    @Query("SELECT * from buyDollar_table")
-    fun getRecords(): Flow<List<DrBuyRecord>>
-
-    @Query("SELECT * from buyDollar_table where id=:id")
-    suspend fun getRecordById(id: UUID): DrBuyRecord
-
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insert(drBuyRecord: DrBuyRecord)
-
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertAll(drBuyRecord: List<DrBuyRecord>)
-
-    @Update(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun update(drBuyRecord: DrBuyRecord) : Int
-
-    @Query("DELETE from buyDollar_table")
-    suspend fun deleteAll()
-
-    @Delete
-    suspend fun deleteNote(drbuyrecord: DrBuyRecord)
-
-}
-
-
-
-
-@Dao
-interface YenBuyDatabaseDao {
-
-    @Query("SELECT * from buyYen_table")
-    fun getRecords(): Flow<List<YenBuyRecord>>
-
-    @Query("SELECT * from buyYen_table where id=:id")
-    suspend fun getRecordById(id: UUID): YenBuyRecord
-
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insert(yenBuyRecord: YenBuyRecord)
-
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertAll(yenBuyRecord: List<YenBuyRecord>)
-
-    @Update(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun update(yenBuyRecord: YenBuyRecord): Int
-
-    @Query("DELETE from buyYen_table")
-    suspend fun deleteAll()
-
-    @Delete
-    suspend fun deleteNote(yenBuyRecord: YenBuyRecord)
-
-}
-
+/**
+ * 사용자 데이터 DAO (UUID)
+ */
 @Dao
 interface LocalUserDatabaseDao {
 
@@ -69,28 +18,37 @@ interface LocalUserDatabaseDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(localUserData: LocalUserData)
 
-    @Transaction
-    suspend fun updateAndGetUser(user: LocalUserData): LocalUserData? {
-        val updateCount = update(user)
-        return if (updateCount > 0) {
-            getUserById(user.id)
-        } else null
-    }
-
     @Update(onConflict = OnConflictStrategy.REPLACE)
     suspend fun update(localUserData: LocalUserData): Int
 
-    @Query("SELECT * from LocalUserData_table where id=:id")
-    suspend fun getUserById(id: UUID): LocalUserData
+    @Transaction
+    suspend fun updateAndGetUser(user: LocalUserData): LocalUserData? {
+        val updateCount = update(user)
+
+        Log.d(TAG("LocalUserDao", "updateAndGetUser"), "업데이트 결과: $updateCount")
+
+        return if (updateCount > 0) {
+            getUserById(user.id)
+        } else {
+            null
+        }
+    }
+
+    @Query("SELECT * from LocalUserData_table WHERE id = :id")
+    suspend fun getUserById(id: UUID): LocalUserData?
 
     @Query("DELETE from LocalUserData_table")
     suspend fun deleteAll()
+
     @Delete
     suspend fun deleteNote(localUserData: LocalUserData)
 }
 
+/**
+ * 환율 데이터 DAO (UUID)
+ */
 @Dao
-interface  ExchangeRateDataBaseDao {
+interface ExchangeRateDataBaseDao {
 
     @Query("SELECT * from exchangeRate_table")
     fun getRateData(): Flow<List<ExchangeRate>>
@@ -106,16 +64,18 @@ interface  ExchangeRateDataBaseDao {
 
     @Query("DELETE from exchangeRate_table")
     suspend fun deleteAll()
+
     @Delete
     suspend fun deleteRate(rateData: ExchangeRate)
-
 }
 
+/**
+ * 통합 외화 기록 DAO (UUID)
+ */
 @Dao
 interface CurrencyRecordDao {
 
-    // ===== 조회 =====
-
+    // 조회
     @Query("SELECT * FROM currency_records WHERE currency_code = :currencyCode ORDER BY date DESC")
     fun getRecordsByCurrency(currencyCode: String): Flow<List<CurrencyRecord>>
 
@@ -137,16 +97,14 @@ interface CurrencyRecordDao {
     @Query("SELECT DISTINCT category_name FROM currency_records WHERE currency_code = :currencyCode")
     suspend fun getCategoriesByCurrency(currencyCode: String): List<String>
 
-    // ===== 추가 =====
-
+    // 추가
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertRecord(record: CurrencyRecord)
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertRecords(records: List<CurrencyRecord>)
 
-    // ===== 수정 =====
-
+    // 수정
     @Update
     suspend fun updateRecord(record: CurrencyRecord)
 
@@ -178,8 +136,7 @@ interface CurrencyRecordDao {
     @Query("UPDATE currency_records SET record_color = 0, sell_date = NULL, sell_rate = NULL, sell_profit = NULL WHERE id = :id")
     suspend fun cancelSell(id: UUID)
 
-    // ===== 삭제 =====
-
+    // 삭제
     @Delete
     suspend fun deleteRecord(record: CurrencyRecord)
 
@@ -192,8 +149,7 @@ interface CurrencyRecordDao {
     @Query("DELETE FROM currency_records")
     suspend fun deleteAllRecords()
 
-    // ===== 통계 =====
-
+    // 통계
     @Query("SELECT COUNT(*) FROM currency_records WHERE currency_code = :currencyCode")
     suspend fun getRecordCount(currencyCode: String): Int
 
@@ -203,5 +159,3 @@ interface CurrencyRecordDao {
     @Query("SELECT SUM(CAST(sell_profit AS REAL)) FROM currency_records WHERE currency_code = :currencyCode AND record_color = 1")
     suspend fun getTotalProfit(currencyCode: String): Float?
 }
-
-

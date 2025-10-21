@@ -241,6 +241,10 @@ fun ImprovedMyPageView(
             )
         }
 
+        item {
+            Spacer(modifier = Modifier.height(32.dp))
+        }
+
         // 일반 사용자에게만 프리미엄 혜택 상세 표시
         if (!isPremium) {
             item {
@@ -405,7 +409,7 @@ fun PremiumPromotionContent(onPurchaseClick: () -> Unit) {
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
-                    text = "지금 시작하기",
+                    text = "자세히 보기",
                     fontWeight = FontWeight.Bold,
                     fontSize = 16.sp
                 )

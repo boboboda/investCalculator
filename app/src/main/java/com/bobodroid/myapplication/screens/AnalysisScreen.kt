@@ -23,29 +23,51 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.bobodroid.myapplication.MainActivity.Companion.TAG
+import com.bobodroid.myapplication.components.Dialogs.PremiumRequiredDialog
 import com.bobodroid.myapplication.components.chart.ExchangeRateChart
+import com.bobodroid.myapplication.components.common.CurrencyDropdown
 import com.bobodroid.myapplication.models.datamodels.roomDb.Currencies
 import com.bobodroid.myapplication.models.datamodels.roomDb.CurrencyType
 import com.bobodroid.myapplication.models.datamodels.roomDb.emoji
 import com.bobodroid.myapplication.models.viewmodels.AnalysisViewModel
 import com.bobodroid.myapplication.models.viewmodels.RateRangeCurrency
+import com.bobodroid.myapplication.ui.theme.primaryColor
 
 @Composable
 fun AnalysisScreen(
     analysisViewModel: AnalysisViewModel
 ) {
+    // ✅ 프리미엄 다이얼로그 상태 추가
+    var showPremiumDialog by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
         analysisViewModel.refreshData()
     }
 
-    PremiumChartScreen(analysisViewModel = analysisViewModel)
+    Box(modifier = Modifier.fillMaxSize()) {
+        PremiumChartScreen(
+            analysisViewModel = analysisViewModel,
+            onPremiumRequired = { showPremiumDialog = true }
+        )
+
+        // ✅ 프리미엄 다이얼로그
+        if (showPremiumDialog) {
+            PremiumRequiredDialog(
+                onDismiss = { showPremiumDialog = false },
+                onPurchaseClick = {
+                    showPremiumDialog = false
+                    // 프리미엄 화면으로 이동 (구현 필요)
+                }
+            )
+        }
+    }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PremiumChartScreen(
-    analysisViewModel: AnalysisViewModel
+    analysisViewModel: AnalysisViewModel,
+    onPremiumRequired: () -> Unit
 ) {
     val analysisUiState by analysisViewModel.analysisUiState.collectAsState()
     // ✅ ViewModel에서 통화 상태 가져오기 (remember 제거)
@@ -106,6 +128,13 @@ fun PremiumChartScreen(
         else -> Color.Gray
     }
 
+    // 프리미엄
+
+    var showPremiumDialog by remember { mutableStateOf(false) }
+
+    val isPremium by analysisViewModel.isPremium.collectAsState()
+
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -119,7 +148,9 @@ fun PremiumChartScreen(
             changeRate = changeRate,
             changeIcon = changeIcon,
             changeColor = changeColor,
-            onCurrencyChange = { analysisViewModel.updateSelectedCurrency(it) }
+            isPremium = isPremium,  // ✅ 추가
+            onCurrencyChange = { analysisViewModel.updateSelectedCurrency(it) },
+            onPremiumRequired = onPremiumRequired  // ✅ 추가
         )
 
         Spacer(modifier = Modifier.height(16.dp))
@@ -156,6 +187,16 @@ fun PremiumChartScreen(
         )
 
         Spacer(modifier = Modifier.height(24.dp))
+
+        if (showPremiumDialog) {
+            PremiumRequiredDialog(
+                onDismiss = { showPremiumDialog = false },
+                onPurchaseClick = {
+                    showPremiumDialog = false
+                    // 프리미엄 화면으로 이동 (구현 필요)
+                }
+            )
+        }
     }
 }
 
@@ -166,7 +207,9 @@ fun CurrentRateHeader(
     changeRate: String,
     changeIcon: Char,
     changeColor: Color,
-    onCurrencyChange: (CurrencyType) -> Unit
+    isPremium: Boolean,                              // ✅ 추가
+    onCurrencyChange: (CurrencyType) -> Boolean,     // ✅ Boolean 반환으로 변경
+    onPremiumRequired: () -> Unit                    // ✅ 추가
 ) {
     var expanded by remember { mutableStateOf(false) }
 
@@ -187,43 +230,14 @@ fun CurrentRateHeader(
     ) {
         Column {
             // 통화 선택 버튼
-            Box {
-                OutlinedButton(
-                    onClick = { expanded = true },
-                    colors = ButtonDefaults.outlinedButtonColors(
-                        containerColor = Color.White.copy(alpha = 0.2f)
-                    ),
-                    border = null
-                ) {
-                    Text(
-                        text = "${currency.emoji} ${currency.code}",
-                        color = Color.White,
-                        fontWeight = FontWeight.Bold
-                    )
-                    Icon(
-                        Icons.Filled.ArrowDropDown,
-                        contentDescription = null,
-                        tint = Color.White
-                    )
-                }
-
-                DropdownMenu(
-                    expanded = expanded,
-                    onDismissRequest = { expanded = false }
-                ) {
-                    CurrencyType.values().forEach { currencyType ->
-                        DropdownMenuItem(
-                            text = {
-                                Text("${currencyType.emoji} ${currencyType.koreanName} (${currencyType.code})")
-                            },
-                            onClick = {
-                                onCurrencyChange(currencyType)
-                                expanded = false
-                            }
-                        )
-                    }
-                }
-            }
+            CurrencyDropdown(
+                selectedCurrency = currency,
+                updateCurrentForeignCurrency = onCurrencyChange,
+                isPremium = isPremium,
+                onPremiumRequired = onPremiumRequired,
+                backgroundColor = Color.White.copy(alpha = 0.2f),
+                contentColor = Color.White
+            )
 
             Spacer(modifier = Modifier.height(16.dp))
 

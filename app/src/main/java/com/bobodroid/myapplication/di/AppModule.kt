@@ -16,27 +16,9 @@ object AppModule {
     @Singleton
     @Provides
     fun provideInvestRepository(
-        dollarRepository: DollarRepository,
-        yenRepository: YenRepository,
         currencyRecordDao: CurrencyRecordDao  // 새로운 DAO 추가
     ): InvestRepository {
-        return InvestRepository(dollarRepository, yenRepository, currencyRecordDao)
-    }
-
-    @Singleton
-    @Provides
-    fun provideDollarRepository(
-        dollarBuyDatabaseDao: DollarBuyDatabaseDao
-    ): DollarRepository {
-        return DollarRepository(dollarBuyDatabaseDao)
-    }
-
-    @Singleton
-    @Provides
-    fun provideYenRepository(
-        yenBuyDatabaseDao: YenBuyDatabaseDao
-    ): YenRepository {
-        return YenRepository(yenBuyDatabaseDao)
+        return InvestRepository(currencyRecordDao)
     }
 
     @Singleton

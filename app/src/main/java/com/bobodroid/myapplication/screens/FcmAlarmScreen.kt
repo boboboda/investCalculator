@@ -1,574 +1,579 @@
+// app/src/main/java/com/bobodroid/myapplication/screens/FcmAlarmScreen.kt
+
 package com.bobodroid.myapplication.screens
 
-import android.util.Log
-import androidx.compose.animation.AnimatedContent
-import androidx.compose.animation.ExperimentalAnimationApi
-import androidx.compose.animation.core.Spring
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.spring
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.slideInHorizontally
-import androidx.compose.animation.slideOutHorizontally
-import androidx.compose.animation.with
-import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.ExperimentalFoundationApi
-import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.gestures.detectHorizontalDragGestures
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.FlowRow
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.offset
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.wrapContentHeight
-import androidx.compose.foundation.layout.wrapContentSize
-import androidx.compose.foundation.layout.wrapContentWidth
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.pager.HorizontalPager
-import androidx.compose.foundation.pager.rememberPagerState
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.MaterialTheme
-import androidx.compose.material.SnackbarDuration
-import androidx.compose.material.SnackbarHost
-import androidx.compose.material.SnackbarHostState
-import androidx.compose.material.Surface
-import androidx.compose.material.Tab
-import androidx.compose.material.TabRow
-import androidx.compose.material.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.ArrowDropDown
-import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material.icons.rounded.Add
-import androidx.compose.material.icons.sharp.Delete
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.Divider
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FloatingActionButton
-import androidx.compose.material3.Icon
-import androidx.compose.material3.ListItem
-import androidx.compose.material3.TabRowDefaults
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
+import androidx.compose.material.icons.filled.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.scale
-import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.platform.LocalFocusManager
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.DpOffset
-import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.window.Dialog
 import androidx.hilt.navigation.compose.hiltViewModel
-import com.bobodroid.myapplication.MainActivity.Companion.TAG
-import com.bobodroid.myapplication.R
-import com.bobodroid.myapplication.components.AutoSizeText
-import com.bobodroid.myapplication.components.Dialogs.GuideDialog
-import com.bobodroid.myapplication.components.Dialogs.PremiumRequiredDialog
-import com.bobodroid.myapplication.components.Dialogs.TargetRateDialog
-import com.bobodroid.myapplication.components.Dialogs.TextFieldDialog
-import com.bobodroid.myapplication.components.RateView
-import com.bobodroid.myapplication.components.addFocusCleaner
-import com.bobodroid.myapplication.components.common.CurrencyDropdown
-import com.bobodroid.myapplication.components.shadowCustom
-import com.bobodroid.myapplication.models.datamodels.roomDb.Currencies
 import com.bobodroid.myapplication.models.datamodels.roomDb.CurrencyType
-import com.bobodroid.myapplication.models.datamodels.roomDb.RateDirection
 import com.bobodroid.myapplication.models.datamodels.roomDb.RateType
-import com.bobodroid.myapplication.models.datamodels.roomDb.emoji
 import com.bobodroid.myapplication.models.datamodels.service.UserApi.Rate
-import com.bobodroid.myapplication.models.viewmodels.AnalysisViewModel
 import com.bobodroid.myapplication.models.viewmodels.FcmAlarmViewModel
-import com.bobodroid.myapplication.ui.theme.DialogBackgroundColor
-import com.bobodroid.myapplication.ui.theme.HighRateColor
-import com.bobodroid.myapplication.ui.theme.LowRateColor
-import com.bobodroid.myapplication.ui.theme.WelcomeScreenBackgroundColor
-import com.bobodroid.myapplication.ui.theme.primaryColor
-import com.bobodroid.myapplication.ui.theme.surfaceColor
-import kotlinx.coroutines.launch
-import okhttp3.internal.wait
-import java.math.BigDecimal
-import java.text.NumberFormat
-import java.util.Locale
-import javax.annotation.meta.When
-import kotlin.math.abs
-import kotlin.math.absoluteValue
-import kotlin.math.roundToInt
 
+enum class AlarmTab(val title: String) {
+    RATE_ALERT("환율 알림"),
+    PROFIT_ALERT("수익률 알림"),
+    RECORD_AGE("매수 경과"),
+    HISTORY("히스토리"),
+    STATS("통계")
+}
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun FcmAlarmScreen() {
+fun FcmAlarmScreen(
+    viewModel: FcmAlarmViewModel = hiltViewModel(),
+    onNavigateToSettings: () -> Unit = {}
+) {
+    val targetRateData by viewModel.targetRateFlow.collectAsState()
+    val notificationSettings by viewModel.notificationSettings.collectAsState()
+    val isPremium by viewModel.isPremium.collectAsState()
+    val history by viewModel.notificationHistory.collectAsState()
+    val stats by viewModel.notificationStats.collectAsState()
 
-    val coroutineScope = rememberCoroutineScope()
-    val fcmAlarmViewModel: FcmAlarmViewModel = hiltViewModel()
-    val targetRateData = fcmAlarmViewModel.targetRateFlow.collectAsState()
+    // 활성화된 탭 계산
+    val availableTabs = remember(notificationSettings, isPremium) {
+        buildList {
+            add(AlarmTab.RATE_ALERT)
 
-    val fcmUiState = fcmAlarmViewModel.alarmUiState.collectAsState()
+            if (isPremium && notificationSettings?.recordAlert?.enabled == true) {
+                add(AlarmTab.PROFIT_ALERT)
+                add(AlarmTab.RECORD_AGE)
+            }
+
+            add(AlarmTab.HISTORY)
+
+            if (isPremium) {
+                add(AlarmTab.STATS)
+            }
+        }
+    }
 
     var selectedTabIndex by remember { mutableStateOf(0) }
-    var currencyExpanded by remember { mutableStateOf(false) }
-    var addTargetDialog by remember { mutableStateOf(false) }
 
-
-
-    var targetRateState by remember {
-        mutableStateOf(RateDirection.HIGH)
-    }
-
-
-    val targetRateMoneyType by fcmAlarmViewModel.selectedCurrency.collectAsState()
-
-    val currency = remember(targetRateMoneyType) {
-        Currencies.fromCurrencyType(targetRateMoneyType)
-    }
-
-    val rates = when(selectedTabIndex) {
-        0 -> when(targetRateMoneyType) {
-            CurrencyType.USD -> targetRateData.value.dollarHighRates
-            CurrencyType.JPY -> targetRateData.value.yenHighRates
-            else -> null
-        }
-        else -> when(targetRateMoneyType) {
-            CurrencyType.USD -> targetRateData.value.dollarLowRates
-            CurrencyType.JPY -> targetRateData.value.yenLowRates
-            else -> null
+    LaunchedEffect(availableTabs) {
+        if (selectedTabIndex >= availableTabs.size) {
+            selectedTabIndex = 0
         }
     }
 
-    val fcmAlarmScreenSnackBarHostState = remember { SnackbarHostState() }
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("알림 관리") },
+                actions = {
+                    IconButton(onClick = onNavigateToSettings) {
+                        Icon(
+                            imageVector = Icons.Default.Settings,
+                            contentDescription = "알림 설정",
+                            tint = Color(0xFF6366F1)
+                        )
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = Color.White
+                )
+            )
+        }
+    ) { paddingValues ->
 
-
-    // 프리미엄
-
-    var showPremiumDialog by remember { mutableStateOf(false) }
-
-    val isPremium by fcmAlarmViewModel.isPremium.collectAsState()
-
-
-    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.BottomCenter)
-    {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(16.dp)
+                .padding(paddingValues)
         ) {
-            // 상단 헤더
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically
+            // 탭바
+            if (availableTabs.isNotEmpty()) {
+                ScrollableTabRow(
+                    selectedTabIndex = selectedTabIndex,
+                    containerColor = Color.White,
+                    contentColor = Color(0xFF6366F1)
                 ) {
-                    Image(
-                        painter = painterResource(id = R.drawable.alarm),
-                        contentDescription = "",
-                        modifier = Modifier.padding(end = 8.dp)
-                    )
-                    Text(
-                        text = "목표 환율 알람 설정",
-                        fontSize = 20.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.Black
-                    )
-                }
-
-                CurrencyDropdown(
-                    selectedCurrency = targetRateMoneyType,
-                    updateCurrentForeignCurrency = { currency ->
-                        fcmAlarmViewModel.updateCurrentForeignCurrency(currency)
-                    },
-                    isPremium = isPremium,
-                    onPremiumRequired = {
-                        showPremiumDialog = true
-                    },
-                    backgroundColor = Color(0xFFF5F5F5),
-                    contentColor = primaryColor
-                )
-            }
-
-            // 현재 환율 표시
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.Center
-            ) {
-                // ExchangeRate의 getRateByCode()로 가져오기
-                val recentRateValue = fcmUiState.value.recentRate.getRateByCode(targetRateMoneyType.code) ?: "0"
-
-                // RateView에 그대로 전달 (ExchangeRate.fromDocumentSnapshot에서 이미 needsMultiply 처리됨)
-                RateView(
-                    title = targetRateMoneyType.code,
-                    recentRate = recentRateValue,
-                    createAt = fcmUiState.value.recentRate.createAt
-                )
-            }
-
-            // 탭과 리스트
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .weight(1f)
-                    .padding(vertical = 8.dp),
-                elevation = CardDefaults.elevatedCardElevation(4.dp),
-                colors = CardDefaults.cardColors(
-                    containerColor = Color.White
-                ),
-            ) {
-                Column {
-                    TabRow(
-                        selectedTabIndex = selectedTabIndex,
-                        modifier = Modifier.fillMaxWidth(),
-                        backgroundColor = surfaceColor,
-                        indicator = { tabPositions ->
-                            Box(
-                                Modifier
-                                    .tabIndicatorOffset(tabPositions[selectedTabIndex])
-                                    .height(4.dp)
-                                    .padding(horizontal = 24.dp)
-                                    .background(
-                                        color = when (selectedTabIndex) {
-                                            0 -> Color(0xFFD32F2F)
-                                            else -> Color(0xFF1976D2)
-                                        },
-                                        shape = RoundedCornerShape(topStart = 3.dp, topEnd = 3.dp)
-                                    )
-                            )
-                        }
-                    ) {
+                    availableTabs.forEachIndexed { index, tab ->
                         Tab(
-                            selected = selectedTabIndex == 0,
-                            onClick = { selectedTabIndex = 0 },
+                            selected = selectedTabIndex == index,
+                            onClick = { selectedTabIndex = index },
                             text = {
                                 Text(
-                                    "고점 목표 환율",
-                                    color = if(selectedTabIndex == 0) Color(0xFFD32F2F) else Color.Gray,
-                                    fontWeight = if(selectedTabIndex == 0) FontWeight.Bold else FontWeight.Normal
-                                )
-                            }
-                        )
-                        Tab(
-                            selected = selectedTabIndex == 1,
-                            onClick = { selectedTabIndex = 1 },
-                            text = {
-                                Text(
-                                    "저점 목표 환율",
-                                    color = if(selectedTabIndex == 1) Color(0xFF1976D2) else Color.Gray,
-                                    fontWeight = if(selectedTabIndex == 1) FontWeight.Bold else FontWeight.Normal
+                                    text = tab.title,
+                                    fontWeight = if (selectedTabIndex == index)
+                                        FontWeight.Bold else FontWeight.Normal
                                 )
                             }
                         )
                     }
-
-                    Log.d(TAG("FcmAlarmScreen", "ListItem"), rates.toString())
-                    LazyColumn(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .weight(1f)
-                            .padding(16.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        if(rates?.isEmpty() != false) {
-                            item {
-                                Row {
-                                    Text("목표환율이 없습니다. 추가해주세요")
-                                }
-                            }
-                        } else {
-                            items(rates) { rate ->
-                                RateItem(
-                                    rate = rate,
-                                    backgroundColor = if(selectedTabIndex == 0) HighRateColor else LowRateColor,
-                                    onDelete = { deleteRate ->
-                                        val rateType = RateType.from(targetRateMoneyType, targetRateState)
-                                        fcmAlarmViewModel.deleteTargetRate(
-                                            deleteRate = deleteRate,
-                                            type = rateType
-                                        )
-                                    }
-                                )
-                            }
-                        }
-                    }
                 }
             }
 
-            // Add FAB
-            FloatingActionButton(
-                onClick = {
-                    // USD, JPY가 아닌 경우 경고
-                    if(targetRateMoneyType != CurrencyType.USD && targetRateMoneyType != CurrencyType.JPY) {
-                        coroutineScope.launch {
-                            fcmAlarmScreenSnackBarHostState.showSnackbar(
-                                "현재 USD와 JPY만 지원됩니다.",
-                                actionLabel = "닫기",
-                                SnackbarDuration.Short
-                            )
-                        }
-                        return@FloatingActionButton
-                    }
+            // 탭 컨텐츠
+            when (availableTabs.getOrNull(selectedTabIndex)) {
+                AlarmTab.RATE_ALERT -> {
+                    RateAlertContent(
+                        targetRateData = targetRateData,
+                        onAddRate = { rate, type -> viewModel.addTargetRate(rate, type) },
+                        onDeleteRate = { rate, type -> viewModel.deleteTargetRate(rate, type) }
+                    )
+                }
 
-                    if((rates?.size ?: 0) < 5) {
-                        targetRateState = if(selectedTabIndex == 0) RateDirection.HIGH else RateDirection.LOW
-                        addTargetDialog = true
-                    } else {
-                        if (fcmAlarmScreenSnackBarHostState.currentSnackbarData == null) {
-                            coroutineScope.launch {
-                                fcmAlarmScreenSnackBarHostState.showSnackbar(
-                                    "목표환율은 최대 5개까지 생성가능합니다.",
-                                    actionLabel = "닫기",
-                                    SnackbarDuration.Short
-                                )
-                            }
-                        }
+                AlarmTab.PROFIT_ALERT -> {
+                    ProfitAlertContent(
+                        minPercent = notificationSettings?.conditions?.minProfitPercent ?: 5.0,
+                        onPercentChange = { viewModel.updateMinProfitPercent(it) }
+                    )
+                }
+
+                AlarmTab.RECORD_AGE -> {
+                    RecordAgeContent(
+                        alertDays = notificationSettings?.conditions?.recordAgeAlert?.alertDays ?: 7,
+                        alertTime = notificationSettings?.conditions?.recordAgeAlert?.alertTime ?: "09:00",
+                        onDaysChange = { viewModel.updateRecordAgeDays(it) },
+                        onTimeChange = { viewModel.updateRecordAgeTime(it) }
+                    )
+                }
+
+                AlarmTab.HISTORY -> {
+                    HistoryContent(
+                        history = history,
+                        onMarkAsRead = { viewModel.markAsRead(it) }
+                    )
+                }
+
+                AlarmTab.STATS -> {
+                    StatsContent(stats = stats)
+                }
+
+                null -> {
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text("탭을 선택해주세요")
                     }
-                },
-                modifier = Modifier
-                    .align(Alignment.End)
-                    .padding(16.dp),
-                containerColor = primaryColor
-            ) {
-                Icon(
-                    Icons.Filled.Add,
-                    contentDescription = "Add target rate",
-                    tint = Color.White
-                )
+                }
+            }
+        }
+    }
+}
+
+// ==================== 환율 알림 컨텐츠 ====================
+
+@Composable
+fun RateAlertContent(
+    targetRateData: com.bobodroid.myapplication.models.datamodels.roomDb.TargetRates,
+    onAddRate: (Rate, RateType) -> Unit,
+    onDeleteRate: (Rate, RateType) -> Unit
+) {
+    var selectedCurrency by remember { mutableStateOf(CurrencyType.USD) }
+    var selectedDirection by remember { mutableStateOf("HIGH") }
+
+    LazyColumn(
+        modifier = Modifier.fillMaxSize(),
+        contentPadding = PaddingValues(16.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        // 통화 선택
+        item {
+            Card(colors = CardDefaults.cardColors(containerColor = Color.White)) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(8.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    FilterChip(
+                        selected = selectedCurrency == CurrencyType.USD,
+                        onClick = { selectedCurrency = CurrencyType.USD },
+                        label = { Text("💵 달러") },
+                        modifier = Modifier.weight(1f)
+                    )
+                    FilterChip(
+                        selected = selectedCurrency == CurrencyType.JPY,
+                        onClick = { selectedCurrency = CurrencyType.JPY },
+                        label = { Text("💴 엔화") },
+                        modifier = Modifier.weight(1f)
+                    )
+                }
             }
         }
 
+        // 고점/저점 선택
+        item {
+            Card(colors = CardDefaults.cardColors(containerColor = Color.White)) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(8.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    FilterChip(
+                        selected = selectedDirection == "HIGH",
+                        onClick = { selectedDirection = "HIGH" },
+                        label = { Text("📈 고점") },
+                        modifier = Modifier.weight(1f)
+                    )
+                    FilterChip(
+                        selected = selectedDirection == "LOW",
+                        onClick = { selectedDirection = "LOW" },
+                        label = { Text("📉 저점") },
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+            }
+        }
+
+        // 목표환율 리스트
+        val rates = when {
+            selectedCurrency == CurrencyType.USD && selectedDirection == "HIGH" ->
+                targetRateData.dollarHighRates
+            selectedCurrency == CurrencyType.USD && selectedDirection == "LOW" ->
+                targetRateData.dollarLowRates
+            selectedCurrency == CurrencyType.JPY && selectedDirection == "HIGH" ->
+                targetRateData.yenHighRates
+            else -> targetRateData.yenLowRates
+        }
+
+        if (rates.isNullOrEmpty()) {
+            item {
+                Card(colors = CardDefaults.cardColors(containerColor = Color(0xFFF3F4F6))) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(48.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = "설정된 목표환율이 없습니다",
+                            color = Color(0xFF9CA3AF)
+                        )
+                    }
+                }
+            }
+        } else {
+            items(rates) { rate ->
+                RateItemCard(
+                    rate = rate,
+                    currency = selectedCurrency,
+                    direction = selectedDirection,
+                    onDelete = {
+                        val type = RateType.from(selectedCurrency,
+                            if (selectedDirection == "HIGH")
+                                com.bobodroid.myapplication.models.datamodels.roomDb.RateDirection.HIGH
+                            else
+                                com.bobodroid.myapplication.models.datamodels.roomDb.RateDirection.LOW
+                        )
+                        onDeleteRate(rate, type)
+                    }
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun RateItemCard(
+    rate: Rate,
+    currency: CurrencyType,
+    direction: String,
+    onDelete: () -> Unit
+) {
+    Card(
+        colors = CardDefaults.cardColors(
+            containerColor = if (direction == "HIGH") Color(0xFFFEF3C7) else Color(0xFFDCFCE7)
+        )
+    ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .wrapContentHeight()
+                .padding(16.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            SnackbarHost(
-                hostState = fcmAlarmScreenSnackBarHostState,
-                modifier = Modifier,
-                snackbar = { snackBarData ->
-                    Card(
-                        shape = RoundedCornerShape(8.dp),
-                        border = BorderStroke(1.5.dp, Color.Black),
-                        modifier = Modifier
-                            .padding(10.dp)
-                            .fillMaxWidth(),
-                    ) {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(8.dp)
-                                .padding(start = 10.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.Start
-                        ) {
-                            Text(
-                                text = snackBarData.message,
-                                fontSize = 15.sp,
-                                lineHeight = 20.sp,
-                                fontWeight = FontWeight.Medium
-                            )
-
-                            Spacer(modifier = Modifier.weight(1f))
-
-                            Text(
-                                modifier = Modifier
-                                    .padding(8.dp)
-                                    .clickable {
-                                        fcmAlarmScreenSnackBarHostState.currentSnackbarData?.dismiss()
-                                    },
-                                text = "닫기",
-                                fontWeight = FontWeight.Medium
-                            )
-                        }
-                    }
-                }
-            )
-        }
-    }
-
-    if (showPremiumDialog) {
-        PremiumRequiredDialog(
-            onDismiss = { showPremiumDialog = false },
-            onPurchaseClick = {
-                showPremiumDialog = false
-                // 프리미엄 화면으로 이동 (구현 필요)
-            }
-        )
-    }
-
-    if(addTargetDialog) {
-        val lastRate = rates?.lastOrNull()
-
-        TargetRateDialog(
-            onDismissRequest = {
-                addTargetDialog = it
-            },
-            lastRate = lastRate,
-            selected = { addTargetRate ->
-                val rateType = RateType.from(targetRateMoneyType, targetRateState)
-                fcmAlarmViewModel.addTargetRate(
-                    addRate = addTargetRate,
-                    type = rateType
+            Column {
+                Text(
+                    text = "${rate.rate}원",
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.Bold
                 )
-                addTargetDialog = false
+                Text(
+                    text = if (direction == "HIGH") "이상일 때 알림" else "이하일 때 알림",
+                    fontSize = 12.sp,
+                    color = Color(0xFF6B7280)
+                )
             }
-        )
-    }
-}
 
-
-@Composable
-fun RateItem(
-    rate: Rate,
-    backgroundColor: Color,
-    onDelete: (Rate) -> Unit
-) {
-    var offsetX by remember { mutableStateOf(0f) }
-    val buttonWidth = 100.dp
-    val buttonWidthPx = with(LocalDensity.current) { buttonWidth.toPx() }
-
-    val offsetXAnimated by animateFloatAsState(
-        targetValue = offsetX.coerceIn(-buttonWidthPx, buttonWidthPx),
-        animationSpec = spring(
-            dampingRatio = Spring.DampingRatioMediumBouncy,
-            stiffness = Spring.StiffnessLow
-        )
-    )
-
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(100.dp)
-            .padding(horizontal = 16.dp, vertical = 8.dp),
-        elevation = CardDefaults.elevatedCardElevation(5.dp)
-    ) {
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .fillMaxSize()
-                .background(Color.White)
-        ) {
-            // 삭제 버튼 (오른쪽)
-            Box(
-                modifier = Modifier
-                    .align(Alignment.CenterEnd)
-                    .fillMaxHeight()
-                    .width(buttonWidth)
-                    .background(Color.Red)
-                    .clickable {
-                        onDelete(rate)
-                        offsetX = 0f
-                    },
-                contentAlignment = Alignment.Center
-            ) {
+            IconButton(onClick = onDelete) {
                 Icon(
                     imageVector = Icons.Default.Delete,
-                    contentDescription = "Delete",
-                    tint = Color.White
+                    contentDescription = "삭제",
+                    tint = Color(0xFFEF4444)
                 )
             }
+        }
+    }
+}
 
-            // 메인 컨텐츠
-            Box(
-                modifier = Modifier
-                    .offset { IntOffset(offsetXAnimated.roundToInt(), 0) }
-                    .fillMaxWidth()
-                    .background(backgroundColor)
-                    .pointerInput(Unit) {
-                        detectHorizontalDragGestures(
-                            onDragEnd = {
-                                offsetX = when {
-                                    abs(offsetX) < buttonWidthPx / 2 -> 0f
-                                    offsetX < 0 -> -buttonWidthPx
-                                    else -> 0f
-                                }
-                            }
-                        ) { _, dragAmount ->
-                            val newOffset = offsetX + dragAmount
-                            offsetX = newOffset.coerceIn(-buttonWidthPx, 0f)
-                        }
-                    }
-            ) {
+// ==================== 수익률 알림 컨텐츠 ====================
+
+@Composable
+fun ProfitAlertContent(
+    minPercent: Double,
+    onPercentChange: (Double) -> Unit
+) {
+    LazyColumn(
+        modifier = Modifier.fillMaxSize(),
+        contentPadding = PaddingValues(16.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        item {
+            Card(colors = CardDefaults.cardColors(containerColor = Color.White)) {
                 Column(
                     modifier = Modifier
-                        .padding(16.dp)
-                        .fillMaxSize()
-                        .background(backgroundColor)
+                        .fillMaxWidth()
+                        .padding(20.dp)
                 ) {
+                    Text(
+                        text = "최소 수익률 설정",
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+
+                    Spacer(Modifier.height(8.dp))
+
+                    Text(
+                        text = "수익률이 ${minPercent.toInt()}% 이상일 때 알림을 받습니다",
+                        fontSize = 14.sp,
+                        color = Color(0xFF6B7280)
+                    )
+
+                    Spacer(Modifier.height(20.dp))
+
+                    Text(
+                        text = "${minPercent.toInt()}%",
+                        fontSize = 32.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFF16A34A)
+                    )
+
+                    Slider(
+                        value = minPercent.toFloat(),
+                        onValueChange = { onPercentChange(it.toDouble()) },
+                        valueRange = 1f..20f,
+                        steps = 18,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+
                     Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .weight(1f),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
                     ) {
-                        Text(
-                            text = "목표 환율 ${rate.number}",
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 16.sp,
-                            color = Color.Black
-                        )
-
-                        Text(
-                            text = "${rate.rate} 원",
-                            fontSize = 18.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = Color(0xFF1976D2)
-                        )
+                        Text("1%", fontSize = 12.sp, color = Color(0xFF9CA3AF))
+                        Text("20%", fontSize = 12.sp, color = Color(0xFF9CA3AF))
                     }
-
-                    Spacer(modifier = Modifier.height(4.dp))
                 }
             }
         }
     }
 }
 
+// ==================== 매수 경과 컨텐츠 ====================
 
-enum class TargetRateMoneyType {
-    Dollar,
-    Yen
+@Composable
+fun RecordAgeContent(
+    alertDays: Int,
+    alertTime: String,
+    onDaysChange: (Int) -> Unit,
+    onTimeChange: (String) -> Unit
+) {
+    LazyColumn(
+        modifier = Modifier.fillMaxSize(),
+        contentPadding = PaddingValues(16.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        item {
+            Card(colors = CardDefaults.cardColors(containerColor = Color.White)) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(20.dp)
+                ) {
+                    Text(
+                        text = "경과일 설정",
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+
+                    Spacer(Modifier.height(16.dp))
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        listOf(7, 14, 30).forEach { days ->
+                            FilterChip(
+                                selected = alertDays == days,
+                                onClick = { onDaysChange(days) },
+                                label = { Text("${days}일") },
+                                modifier = Modifier.weight(1f)
+                            )
+                        }
+                    }
+                }
+            }
+        }
+
+        item {
+            Card(colors = CardDefaults.cardColors(containerColor = Color.White)) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(20.dp)
+                ) {
+                    Text(
+                        text = "알림 시간",
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+
+                    Spacer(Modifier.height(16.dp))
+
+                    Text(
+                        text = alertTime,
+                        fontSize = 32.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFF6366F1)
+                    )
+                }
+            }
+        }
+    }
 }
 
-enum class TargetRateState {
-    High,
-    Low
+// ==================== 히스토리 컨텐츠 ====================
+
+@Composable
+fun HistoryContent(
+    history: List<com.bobodroid.myapplication.models.datamodels.notification.NotificationHistoryItem>,
+    onMarkAsRead: (String) -> Unit
+) {
+    if (history.isEmpty()) {
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                text = "받은 알림이 없습니다",
+                color = Color(0xFF9CA3AF)
+            )
+        }
+    } else {
+        LazyColumn(
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = PaddingValues(16.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            items(history) { item ->
+                Card(
+                    colors = CardDefaults.cardColors(
+                        containerColor = if (item.status == "READ")
+                            Color(0xFFF3F4F6) else Color.White
+                    ),
+                    onClick = { onMarkAsRead(item.id) }
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp)
+                    ) {
+                        Text(
+                            text = item.title,
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Medium
+                        )
+                        Spacer(Modifier.height(4.dp))
+                        Text(
+                            text = item.body,
+                            fontSize = 14.sp,
+                            color = Color(0xFF6B7280)
+                        )
+                        Spacer(Modifier.height(8.dp))
+                        Text(
+                            text = item.sentAt,
+                            fontSize = 12.sp,
+                            color = Color(0xFF9CA3AF)
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+// ==================== 통계 컨텐츠 ====================
+
+@Composable
+fun StatsContent(
+    stats: com.bobodroid.myapplication.models.datamodels.notification.NotificationStats?
+) {
+    LazyColumn(
+        modifier = Modifier.fillMaxSize(),
+        contentPadding = PaddingValues(16.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        if (stats != null) {
+            item {
+                Card(colors = CardDefaults.cardColors(containerColor = Color.White)) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(20.dp)
+                    ) {
+                        Text(
+                            text = "알림 통계",
+                            fontSize = 20.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+
+                        Spacer(Modifier.height(20.dp))
+
+                        StatRow("총 알림", "${stats.total}개")
+                        StatRow("확인한 알림", "${stats.read}개")
+                        StatRow("클릭한 알림", "${stats.clicked}개")
+                        StatRow("확인율", "${stats.readRate.toInt()}%")
+                        StatRow("클릭율", "${stats.clickRate.toInt()}%")
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun StatRow(label: String, value: String) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 8.dp),
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        Text(
+            text = label,
+            fontSize = 14.sp,
+            color = Color(0xFF6B7280)
+        )
+        Text(
+            text = value,
+            fontSize = 16.sp,
+            fontWeight = FontWeight.Medium
+        )
+    }
 }

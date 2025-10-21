@@ -1,47 +1,36 @@
+// app/src/main/java/com/bobodroid/myapplication/models/viewmodels/FcmAlarmViewModel.kt
+
 package com.bobodroid.myapplication.models.viewmodels
 
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.bobodroid.myapplication.MainActivity.Companion.TAG
-import com.bobodroid.myapplication.billing.BillingClientLifecycle.Companion.TAG
+import com.bobodroid.myapplication.models.datamodels.notification.*
 import com.bobodroid.myapplication.models.datamodels.repository.LatestRateRepository
 import com.bobodroid.myapplication.models.datamodels.repository.UserRepository
-import com.bobodroid.myapplication.models.datamodels.roomDb.CurrencyType
-import com.bobodroid.myapplication.models.datamodels.roomDb.ExchangeRate
-import com.bobodroid.myapplication.models.datamodels.roomDb.RateDirection
-import com.bobodroid.myapplication.models.datamodels.roomDb.RateType
-import com.bobodroid.myapplication.models.datamodels.roomDb.TargetRates
+import com.bobodroid.myapplication.models.datamodels.roomDb.*
 import com.bobodroid.myapplication.models.datamodels.service.UserApi.Rate
-import com.bobodroid.myapplication.models.datamodels.useCases.TargetRateUseCases
-import com.bobodroid.myapplication.models.datamodels.useCases.UserUseCases
-import com.bobodroid.myapplication.models.datamodels.websocket.WebSocketClient
+import com.bobodroid.myapplication.models.datamodels.useCases.FcmUseCases
 import com.bobodroid.myapplication.models.repository.SettingsRepository
 import com.bobodroid.myapplication.util.result.onError
 import com.bobodroid.myapplication.util.result.onSuccess
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharingStarted
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
-class FcmAlarmViewModel@Inject constructor(
-   private val userRepository: UserRepository,
-   private val fcmUseCases: TargetRateUseCases,
+class FcmAlarmViewModel @Inject constructor(
+    private val userRepository: UserRepository,
+    private val fcmUseCases: FcmUseCases,
     private val latestRateRepository: LatestRateRepository,
-   private val settingsRepository: SettingsRepository
-): ViewModel()  {
+    private val settingsRepository: SettingsRepository
+) : ViewModel() {
 
-    val selectedCurrency = settingsRepository.selectedCurrency.stateIn(
-        scope = viewModelScope,
-        started = SharingStarted.WhileSubscribed(5000),
-        initialValue = CurrencyType.USD
-    )
+    // ==================== 공통 State ====================
 
+    private val deviceId = MutableStateFlow("")
 
     val isPremium = userRepository.userData
         .map { it?.localUserData?.isPremium ?: false }
@@ -51,87 +40,75 @@ class FcmAlarmViewModel@Inject constructor(
             initialValue = false
         )
 
+    val selectedCurrency = settingsRepository.selectedCurrency.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = CurrencyType.USD
+    )
 
-    fun updateCurrentForeignCurrency(currency: CurrencyType): Boolean {
-        return settingsRepository.setSelectedCurrency(currency)
-    }
+    // ==================== 목표환율 State ====================
 
+    private val _targetRate = MutableStateFlow(
+        TargetRates(
+            dollarHighRates = emptyList(),
+            dollarLowRates = emptyList(),
+            yenHighRates = emptyList(),
+            yenLowRates = emptyList()
+        )
+    )
+    val targetRateFlow = _targetRate.asStateFlow()
 
+    // ==================== 알림 설정 State ====================
 
+    private val _notificationSettings = MutableStateFlow<NotificationSettings?>(null)
+    val notificationSettings = _notificationSettings.asStateFlow()
+
+    // ==================== 알림 히스토리 State ====================
+
+    private val _notificationHistory = MutableStateFlow<List<NotificationHistoryItem>>(emptyList())
+    val notificationHistory = _notificationHistory.asStateFlow()
+
+    // ==================== 알림 통계 State ====================
+
+    private val _notificationStats = MutableStateFlow<NotificationStats?>(null)
+    val notificationStats = _notificationStats.asStateFlow()
+
+    // ==================== UI State ====================
 
     private val _alarmUiState = MutableStateFlow(AlarmUiState())
     val alarmUiState = _alarmUiState.asStateFlow()
 
-    val sampleDollarHighRates = listOf(
-        Rate(number = 1, rate = 1320),
-        Rate(number = 2, rate = 1350),
-        Rate(number = 3, rate = 1380),
-        Rate(number = 4, rate = 1400),
-        Rate(number = 5, rate = 1420)
-    )
+    private val _isLoading = MutableStateFlow(false)
+    val isLoading = _isLoading.asStateFlow()
 
-    val sampleDollarLowRates = listOf(
-        Rate(number = 1, rate = 1250),
-        Rate(number = 2, rate = 1270),
-        Rate(number = 3, rate = 1290)
-    )
+    private val _error = MutableStateFlow<String?>(null)
+    val error = _error.asStateFlow()
 
-    val sampleYenHighRates = listOf(
-        Rate(number = 1, rate = 890),
-        Rate(number = 2, rate = 920),
-        Rate(number = 3, rate = 950),
-        Rate(number = 4, rate = 980)
-    )
-
-    val sampleYenLowRates = listOf(
-        Rate(number = 1, rate = 850),
-        Rate(number = 2, rate = 870),
-        Rate(number = 3, rate = 890)
-    )
-
-    private val _targetRate = MutableStateFlow(
-        TargetRates(
-            dollarHighRates = sampleDollarHighRates,
-            dollarLowRates = sampleDollarLowRates,
-            yenHighRates = sampleYenHighRates,
-            yenLowRates = sampleYenLowRates
-        )
-    )
-
-    val targetRateFlow = _targetRate.asStateFlow()
-
-    private val deviceId = MutableStateFlow("")
-
+    // ==================== 초기화 ====================
 
     init {
-        // receivedLatestRate는 별도 코루틴
         viewModelScope.launch {
             receivedLatestRate()
         }
 
-        // initAlarmData는 별도 코루틴
         viewModelScope.launch {
             initAlarmData()
         }
-
     }
-
-
 
     fun initAlarmData() {
         viewModelScope.launch {
             // 유저 데이터가 준비될 때까지 대기
             val userData = userRepository.waitForUserData()
 
-            if(userData.exchangeRates != null) {
+            if (userData.exchangeRates != null) {
                 initTarRates(userData.exchangeRates)
                 deviceId.emit(userData.localUserData.id.toString())
             }
 
-            // 이후 초기화 작업 진행
-            Log.d(TAG("FcmAlarmViewModel", "init") , "${userData}")
+            Log.d(TAG("FcmAlarmViewModel", "init"), "${userData}")
 
-
+            // 목표환율 실시간 업데이트
             fcmUseCases.targetRateUpdateUseCase(
                 onUpdate = {
                     viewModelScope.launch {
@@ -139,6 +116,11 @@ class FcmAlarmViewModel@Inject constructor(
                     }
                 }
             )
+
+            // 알림 설정/히스토리/통계 로드
+            loadNotificationSettings()
+            loadNotificationHistory()
+            loadNotificationStats()
         }
     }
 
@@ -151,16 +133,20 @@ class FcmAlarmViewModel@Inject constructor(
         }
     }
 
-
     fun initTarRates(targetRates: TargetRates) {
         _targetRate.value = targetRates
     }
 
+    fun updateCurrentForeignCurrency(currency: CurrencyType): Boolean {
+        return settingsRepository.setSelectedCurrency(currency)
+    }
 
+    // ==================== 목표환율 관리 ====================
 
     fun addTargetRate(
         addRate: Rate,
-        type: RateType) {
+        type: RateType
+    ) {
         viewModelScope.launch {
             fcmUseCases.targetRateAddUseCase(
                 deviceId = deviceId.value,
@@ -168,35 +154,214 @@ class FcmAlarmViewModel@Inject constructor(
                 type = type,
                 newRate = addRate
             ).onSuccess { targetRate, _ ->
-                Log.d(TAG("FcmAlarmViewModel", "Success"), "Result: $targetRate")
+                Log.d(TAG("FcmAlarmViewModel", "addTargetRate"), "Success: $targetRate")
                 _targetRate.emit(targetRate)
-                Log.d(TAG("FcmAlarmViewModel", "Emit"), "Emitted to _targetRate")
             }.onError { error ->
-                Log.e(TAG("FcmAlarmViewModel", "Error"), "Error occurred", error.exception)
+                Log.e(TAG("FcmAlarmViewModel", "addTargetRate"), "Error", error.exception)
+                _error.value = error.message
             }
         }
     }
 
     fun deleteTargetRate(
         deleteRate: Rate,
-        type: RateType) {
+        type: RateType
+    ) {
         viewModelScope.launch {
             fcmUseCases.targetRateDeleteUseCase(
                 deviceId = deviceId.value,
                 targetRates = targetRateFlow.value,
                 type = type,
                 deleteRate = deleteRate
-            ).onSuccess { updateTargetRate, _  ->
-                Log.d(TAG("FcmAlarmViewModel", "Success"), "Result: $updateTargetRate")
+            ).onSuccess { updateTargetRate, _ ->
+                Log.d(TAG("FcmAlarmViewModel", "deleteTargetRate"), "Success: $updateTargetRate")
                 _targetRate.emit(updateTargetRate)
-                Log.d(TAG("FcmAlarmViewModel", "Emit"), "Emitted to _targetRate")
             }.onError { error ->
-                Log.e(TAG("FcmAlarmViewModel", "Error"), "Error occurred", error.exception)
+                Log.e(TAG("FcmAlarmViewModel", "deleteTargetRate"), "Error", error.exception)
+                _error.value = error.message
             }
         }
     }
 
+    // ==================== 알림 설정 관리 ====================
 
+    fun loadNotificationSettings() {
+        viewModelScope.launch {
+            _isLoading.value = true
+            fcmUseCases.getNotificationSettingsUseCase(deviceId.value)
+                .onSuccess { settings, _ ->
+                    Log.d(TAG("FcmAlarmViewModel", "loadSettings"), "Success")
+                    _notificationSettings.value = settings
+                }
+                .onError { error ->
+                    Log.e(TAG("FcmAlarmViewModel", "loadSettings"), "Error", error.exception)
+                    _error.value = "설정을 불러올 수 없습니다"
+                }
+            _isLoading.value = false
+        }
+    }
+
+    fun toggleGlobalNotification(enabled: Boolean) {
+        updateSettings(
+            UpdateNotificationSettingsRequest(globalEnabled = enabled)
+        )
+    }
+
+    fun toggleRateAlert(enabled: Boolean) {
+        val current = _notificationSettings.value?.rateAlert ?: ChannelSettings()
+        updateSettings(
+            UpdateNotificationSettingsRequest(
+                rateAlert = current.copy(enabled = enabled)
+            )
+        )
+    }
+
+    fun toggleProfitAlert(enabled: Boolean) {
+        if (!isPremium.value) {
+            _error.value = "프리미엄 기능입니다"
+            return
+        }
+
+        val current = _notificationSettings.value?.recordAlert ?: ChannelSettings()
+        updateSettings(
+            UpdateNotificationSettingsRequest(
+                recordAlert = current.copy(enabled = enabled)
+            )
+        )
+    }
+
+    fun updateRecordAgeTime(time: String) {
+        val current = _notificationSettings.value?.conditions ?: NotificationConditions()
+        updateSettings(
+            UpdateNotificationSettingsRequest(
+                conditions = current.copy(
+                    recordAgeAlert = current.recordAgeAlert.copy(alertTime = time)
+                )
+            )
+        )
+    }
+
+    fun updateRecordAgeDays(days: Int) {
+        val current = _notificationSettings.value?.conditions ?: NotificationConditions()
+        updateSettings(
+            UpdateNotificationSettingsRequest(
+                conditions = current.copy(
+                    recordAgeAlert = current.recordAgeAlert.copy(alertDays = days)
+                )
+            )
+        )
+    }
+
+    fun updateDailySummaryTime(time: String) {
+        val current = _notificationSettings.value?.conditions ?: NotificationConditions()
+        updateSettings(
+            UpdateNotificationSettingsRequest(
+                conditions = current.copy(
+                    dailySummary = current.dailySummary.copy(summaryTime = time)
+                )
+            )
+        )
+    }
+
+    fun updateQuietHours(quietHours: QuietHours) {
+        updateSettings(
+            UpdateNotificationSettingsRequest(quietHours = quietHours)
+        )
+    }
+
+    fun updateMinProfitPercent(percent: Double) {
+        val current = _notificationSettings.value?.conditions ?: NotificationConditions()
+        updateSettings(
+            UpdateNotificationSettingsRequest(
+                conditions = current.copy(minProfitPercent = percent)
+            )
+        )
+    }
+
+    private fun updateSettings(request: UpdateNotificationSettingsRequest) {
+        viewModelScope.launch {
+            _isLoading.value = true
+            fcmUseCases.updateNotificationSettingsUseCase(deviceId.value, request)
+                .onSuccess { settings, _ ->
+                    Log.d(TAG("FcmAlarmViewModel", "updateSettings"), "Success")
+                    _notificationSettings.value = settings
+                }
+                .onError { error ->
+                    Log.e(TAG("FcmAlarmViewModel", "updateSettings"), "Error", error.exception)
+                    _error.value = "설정 업데이트 실패"
+                }
+            _isLoading.value = false
+        }
+    }
+
+    // ==================== 알림 히스토리 관리 ====================
+
+    fun loadNotificationHistory(limit: Int = 50) {
+        viewModelScope.launch {
+            fcmUseCases.getNotificationHistoryUseCase(deviceId.value, limit)
+                .onSuccess { history, _ ->
+                    Log.d(TAG("FcmAlarmViewModel", "loadHistory"), "Success: ${history.size}개")
+                    _notificationHistory.value = history
+                }
+                .onError { error ->
+                    Log.e(TAG("FcmAlarmViewModel", "loadHistory"), "Error", error.exception)
+                }
+        }
+    }
+
+    fun markAsRead(notificationId: String) {
+        viewModelScope.launch {
+            fcmUseCases.markAsReadUseCase(notificationId)
+                .onSuccess { _, _ ->
+                    Log.d(TAG("FcmAlarmViewModel", "markAsRead"), "Success")
+                    // 로컬 상태 업데이트
+                    _notificationHistory.value = _notificationHistory.value.map {
+                        if (it.id == notificationId) {
+                            it.copy(status = "READ")
+                        } else it
+                    }
+                }
+                .onError { error ->
+                    Log.e(TAG("FcmAlarmViewModel", "markAsRead"), "Error", error.exception)
+                }
+        }
+    }
+
+    // ==================== 알림 통계 관리 ====================
+
+    fun loadNotificationStats() {
+        viewModelScope.launch {
+            fcmUseCases.getNotificationStatsUseCase(deviceId.value)
+                .onSuccess { stats, _ ->
+                    Log.d(TAG("FcmAlarmViewModel", "loadStats"), "Success")
+                    _notificationStats.value = stats
+                }
+                .onError { error ->
+                    Log.e(TAG("FcmAlarmViewModel", "loadStats"), "Error", error.exception)
+                }
+        }
+    }
+
+    // ==================== 테스트 ====================
+
+    fun sendTestNotification() {
+        viewModelScope.launch {
+            fcmUseCases.sendTestNotificationUseCase(deviceId.value)
+                .onSuccess { _, _ ->
+                    Log.d(TAG("FcmAlarmViewModel", "sendTest"), "Success")
+                }
+                .onError { error ->
+                    Log.e(TAG("FcmAlarmViewModel", "sendTest"), "Error", error.exception)
+                    _error.value = "테스트 알림 전송 실패"
+                }
+        }
+    }
+
+    // ==================== 에러 처리 ====================
+
+    fun clearError() {
+        _error.value = null
+    }
 }
 
 data class AlarmUiState(

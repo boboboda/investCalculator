@@ -13,6 +13,7 @@ import com.bobodroid.myapplication.models.datamodels.useCases.KakaoLoginUseCase
 import com.bobodroid.myapplication.models.datamodels.useCases.LocalExistCheckUseCase
 import com.bobodroid.myapplication.models.datamodels.useCases.LocalIdAddUseCase
 import com.bobodroid.myapplication.models.datamodels.useCases.LocalUserUpdate
+import com.bobodroid.myapplication.models.datamodels.useCases.MarkNotificationAsClickedUseCase
 import com.bobodroid.myapplication.models.datamodels.useCases.MarkNotificationAsReadUseCase
 import com.bobodroid.myapplication.models.datamodels.useCases.RestoreFromServerUseCase
 import com.bobodroid.myapplication.models.datamodels.useCases.SendTestNotificationUseCase
@@ -103,7 +104,8 @@ object UseCaseModule {
         getNotificationHistoryUseCase: GetNotificationHistoryUseCase,
         markAsReadUseCase: MarkNotificationAsReadUseCase,
         getNotificationStatsUseCase: GetNotificationStatsUseCase,
-        sendTestNotificationUseCase: SendTestNotificationUseCase
+        sendTestNotificationUseCase: SendTestNotificationUseCase,
+        markAsClickedUseCase: MarkNotificationAsClickedUseCase,
     ): FcmUseCases {
         return FcmUseCases(
             targetRateAddUseCase = targetRateAddUseCase,
@@ -113,6 +115,7 @@ object UseCaseModule {
             updateNotificationSettingsUseCase = updateNotificationSettingsUseCase,
             getNotificationHistoryUseCase = getNotificationHistoryUseCase,
             markAsReadUseCase = markAsReadUseCase,
+            markAsClickedUseCase = markAsClickedUseCase,
             getNotificationStatsUseCase = getNotificationStatsUseCase,
             sendTestNotificationUseCase = sendTestNotificationUseCase
         )

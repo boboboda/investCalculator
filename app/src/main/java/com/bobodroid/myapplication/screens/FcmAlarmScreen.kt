@@ -511,6 +511,9 @@ fun TargetRateTab(
 }
 
 // ==================== 2. 수익률 알림 탭 ====================
+// app/src/main/java/com/bobodroid/myapplication/screens/FcmAlarmScreen.kt
+
+// ==================== 수익률 알림 탭 ====================
 @Composable
 fun ProfitAlertTabNew(
     viewModel: FcmAlarmViewModel
@@ -544,12 +547,19 @@ fun ProfitAlertTabNew(
                 .padding(16.dp)
         ) {
             // 안내 텍스트
-            Text(
-                text = "보유 중인 각 기록마다 목표 수익률을 설정하세요",
-                fontSize = 14.sp,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(bottom = 16.dp)
-            )
+            Column(modifier = Modifier.padding(bottom = 16.dp)) {
+                Text(
+                    text = "보유 중인 각 기록마다 목표 수익률을 설정하세요",
+                    fontSize = 14.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Text(
+                    text = "스위치를 켜서 알림을 받을 기록만 선택하세요",
+                    fontSize = 12.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(top = 4.dp)
+                )
+            }
 
             when {
                 isLoading -> {
@@ -598,6 +608,9 @@ fun ProfitAlertTabNew(
                         ) { record ->
                             RecordAlertCard(
                                 record = record,
+                                onToggle = { enabled ->
+                                    viewModel.toggleRecordAlert(record.recordId, enabled)
+                                },
                                 onPercentChange = { newPercent ->
                                     viewModel.updateRecordProfitPercent(record.recordId, newPercent)
                                 }
@@ -607,15 +620,27 @@ fun ProfitAlertTabNew(
 
                     Spacer(modifier = Modifier.height(16.dp))
 
+                    // 활성화된 기록 수 표시
+                    val enabledCount = recordsWithAlerts.count { it.enabled }
+                    if (enabledCount > 0) {
+                        Text(
+                            text = "💡 ${enabledCount}개 기록의 알림이 활성화됩니다",
+                            fontSize = 13.sp,
+                            color = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.padding(bottom = 8.dp)
+                        )
+                    }
+
                     // 저장 버튼
                     Button(
                         onClick = { viewModel.saveRecordAlerts() },
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(56.dp),
-                        enabled = !isLoading,
+                        enabled = !isLoading && enabledCount > 0,
                         colors = ButtonDefaults.buttonColors(
-                            containerColor = MaterialTheme.colorScheme.primary
+                            containerColor = MaterialTheme.colorScheme.primary,
+                            disabledContainerColor = MaterialTheme.colorScheme.surfaceVariant
                         )
                     ) {
                         if (isLoading) {
@@ -636,7 +661,7 @@ fun ProfitAlertTabNew(
                             }
                         } else {
                             Text(
-                                text = "💾 저장",
+                                text = if (enabledCount > 0) "💾 저장 (${enabledCount}개)" else "💾 저장",
                                 fontSize = 16.sp,
                                 fontWeight = FontWeight.Bold
                             )
@@ -652,40 +677,78 @@ fun ProfitAlertTabNew(
 @Composable
 fun RecordAlertCard(
     record: RecordWithAlert,
+    onToggle: (Boolean) -> Unit,
     onPercentChange: (Float) -> Unit
 ) {
     val numberFormat = NumberFormat.getNumberInstance(Locale.KOREA)
-    val money = try {
-        numberFormat.format(record.money.toDouble().toInt())
+
+    // 투자 금액
+    val investMoney = try {
+        record.money.toDouble()
+    } catch (e: Exception) {
+        0.0
+    }
+
+    val moneyFormatted = try {
+        numberFormat.format(investMoney.toInt())
     } catch (e: Exception) {
         record.money
     }
 
-    // 환율 변화량 계산
-    val rateChange = try {
-        val buyRate = record.buyRate.toFloat()
-        (buyRate * record.profitPercent / 100).toInt()
+    // 매수 환율
+    val buyRate = try {
+        record.buyRate.toFloat()
     } catch (e: Exception) {
-        0
+        0f
+    }
+
+    // 외화량
+    val exchangeMoney = try {
+        record.exchangeMoney.toDouble()
+    } catch (e: Exception) {
+        0.0
+    }
+
+    // 목표 환율 계산
+    val targetRate = if (record.enabled && record.profitPercent != null) {
+        try {
+            buyRate * (1 + record.profitPercent!! / 100)
+        } catch (e: Exception) {
+            0f
+        }
+    } else {
+        0f
+    }
+
+    // ✅ 올바른 예상 수익금액 계산
+    val expectedProfit = if (record.enabled && record.profitPercent != null) {
+        try {
+            // 예상 수익 = (외화량 × 목표환율) - 투자금
+            (exchangeMoney * targetRate) - investMoney
+        } catch (e: Exception) {
+            0.0
+        }
+    } else {
+        0.0
     }
 
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(
-            containerColor = Color.White
+            containerColor = if (record.enabled) Color.White else Color(0xFFF5F5F5)
         ),
         elevation = CardDefaults.cardElevation(
-            defaultElevation = 2.dp
+            defaultElevation = if (record.enabled) 4.dp else 1.dp
         )
     ) {
         Column(
             modifier = Modifier.padding(16.dp)
         ) {
-            // 기록 정보
+            // 헤더: 기록 정보 + 토글
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.Top
+                verticalAlignment = Alignment.CenterVertically
             ) {
                 Column(modifier = Modifier.weight(1f)) {
                     Row(
@@ -696,84 +759,194 @@ fun RecordAlertCard(
                             text = record.currencyCode,
                             fontSize = 18.sp,
                             fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.primary
+                            color = if (record.enabled)
+                                MaterialTheme.colorScheme.primary
+                            else
+                                MaterialTheme.colorScheme.onSurfaceVariant
                         )
                         Text(
                             text = record.categoryName,
                             fontSize = 16.sp,
-                            fontWeight = FontWeight.Medium
+                            fontWeight = FontWeight.Medium,
+                            color = if (record.enabled)
+                                Color.Black
+                            else
+                                MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
                     Spacer(modifier = Modifier.height(4.dp))
-                    Text(
-                        text = "${money}원 투자",
-                        fontSize = 14.sp,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
                     Text(
                         text = record.date,
                         fontSize = 12.sp,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
+
+                // 알림 ON/OFF 스위치
+                Switch(
+                    checked = record.enabled,
+                    onCheckedChange = onToggle,
+                    colors = SwitchDefaults.colors(
+                        checkedThumbColor = Color.White,
+                        checkedTrackColor = MaterialTheme.colorScheme.primary,
+                        uncheckedThumbColor = Color.White,
+                        uncheckedTrackColor = Color(0xFFCCCCCC)
+                    )
+                )
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(12.dp))
 
-            // 슬라이더
-            Column {
-                // 현재 선택된 값
-                Text(
-                    text = "${String.format("%.1f", record.profitPercent)}% (+${numberFormat.format(rateChange)}원)",
-                    fontSize = 24.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.align(Alignment.CenterHorizontally)
+            // 투자 정보
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                InfoItem(
+                    label = "투자금액",
+                    value = "${moneyFormatted}원",
+                    enabled = record.enabled
                 )
-
-                Spacer(modifier = Modifier.height(12.dp))
-
-                // 슬라이더
-                Slider(
-                    value = record.profitPercent,
-                    onValueChange = { newValue ->
-                        // 0.1 단위로 반올림
-                        val rounded = (newValue * 10).toInt() / 10f
-                        onPercentChange(rounded)
-                    },
-                    valueRange = 0.1f..5.0f,
-                    steps = 48,
-                    modifier = Modifier.fillMaxWidth()
+                InfoItem(
+                    label = "매수환율",
+                    value = "${numberFormat.format(buyRate.toInt())}원",
+                    enabled = record.enabled
                 )
-                // 최소/최대 범위
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    val minChange = try {
-                        (record.buyRate.toFloat() * 0.1 / 100).toInt()
-                    } catch (e: Exception) {
-                        0
-                    }
-                    val maxChange = try {
-                        (record.buyRate.toFloat() * 5.0 / 100).toInt()
-                    } catch (e: Exception) {
-                        0
+                InfoItem(
+                    label = "외화량",
+                    value = "${String.format("%.2f", exchangeMoney)} ${record.currencyCode}",
+                    enabled = record.enabled
+                )
+            }
+
+            // 알림이 활성화된 경우에만 슬라이더 표시
+            if (record.enabled) {
+                Spacer(modifier = Modifier.height(16.dp))
+                Divider(color = Color(0xFFE0E0E0))
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // 목표 수익률 설정
+                Column {
+                    // 현재 설정값
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.Bottom
+                    ) {
+                        Text(
+                            text = "목표 수익률",
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Medium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Text(
+                            text = "${String.format("%.1f", record.profitPercent ?: 0.4f)}%",
+                            fontSize = 28.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.primary
+                        )
                     }
 
-                    Text(
-                        text = "0.1% (+${numberFormat.format(minChange)}원)",
-                        fontSize = 12.sp,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    // 목표 환율 & 예상 수익
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Column {
+                            Text(
+                                text = "목표 환율",
+                                fontSize = 12.sp,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            Text(
+                                text = "${numberFormat.format(targetRate.toInt())}원",
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color(0xFF4CAF50)
+                            )
+                        }
+                        Column(horizontalAlignment = Alignment.End) {
+                            Text(
+                                text = "예상 수익",
+                                fontSize = 12.sp,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            Text(
+                                text = "${if (expectedProfit >= 0) "+" else ""}${numberFormat.format(expectedProfit.toInt())}원",
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = if (expectedProfit >= 0) Color(0xFFFF9800) else Color(0xFFEF4444)
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    // 슬라이더
+                    Slider(
+                        value = record.profitPercent ?: 0.4f,
+                        onValueChange = { newValue ->
+                            // 0.1 단위로 반올림
+                            val rounded = (newValue * 10).toInt() / 10f
+                            onPercentChange(rounded)
+                        },
+                        valueRange = 0.1f..5.0f,
+                        steps = 48,
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = SliderDefaults.colors(
+                            thumbColor = MaterialTheme.colorScheme.primary,
+                            activeTrackColor = MaterialTheme.colorScheme.primary,
+                            inactiveTrackColor = Color(0xFFE0E0E0)
+                        )
                     )
-                    Text(
-                        text = "5.0% (+${numberFormat.format(maxChange)}원)",
-                        fontSize = 12.sp,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+
+                    // 최소/최대 범위
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        val minRate = buyRate * 1.001f
+                        val maxRate = buyRate * 1.05f
+                        val minProfit = (exchangeMoney * minRate) - investMoney
+                        val maxProfit = (exchangeMoney * maxRate) - investMoney
+
+                        Text(
+                            text = "0.1% (${numberFormat.format(minRate.toInt())}원, +${numberFormat.format(minProfit.toInt())}원)",
+                            fontSize = 11.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Text(
+                            text = "5.0% (${numberFormat.format(maxRate.toInt())}원, +${numberFormat.format(maxProfit.toInt())}원)",
+                            fontSize = 11.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun InfoItem(
+    label: String,
+    value: String,
+    enabled: Boolean
+) {
+    Column {
+        Text(
+            text = label,
+            fontSize = 11.sp,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        Text(
+            text = value,
+            fontSize = 14.sp,
+            fontWeight = FontWeight.Bold,
+            color = if (enabled) Color.Black else MaterialTheme.colorScheme.onSurfaceVariant
+        )
     }
 }
 

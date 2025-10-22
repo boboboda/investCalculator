@@ -61,6 +61,15 @@ interface NotificationApiService {
         @Body settings: UpdateNotificationSettingsRequest
     ): NotificationSettingsResponse
 
+    /**
+     * 수익률 알림 배치 업데이트
+     */
+    @PUT("fcm/settings/{deviceId}/record-alerts")
+    suspend fun batchUpdateRecordAlerts(
+        @Path("deviceId") deviceId: String,
+        @Body request: BatchUpdateRecordAlertsRequest
+    ): BatchUpdateRecordAlertsResponse
+
     // ==================== 알림 히스토리 ====================
 
     /**
@@ -79,6 +88,15 @@ interface NotificationApiService {
     suspend fun markAsRead(
         @Path("notificationId") notificationId: String
     ): BaseResponse
+
+    /**
+     * 알림 클릭 처리 (신규 추가)
+     */
+    @PUT("fcm/history/{notificationId}/clicked")
+    suspend fun markAsClicked(
+        @Path("notificationId") notificationId: String
+    ): BaseResponse
+
 
     // ==================== 알림 통계 ====================
 
@@ -99,10 +117,4 @@ interface NotificationApiService {
     suspend fun sendTestNotification(
         @Path("deviceId") deviceId: String
     ): BaseResponse
-
-    @PUT("fcm/settings/{deviceId}/record-alerts")
-    suspend fun batchUpdateRecordAlerts(
-        @Path("deviceId") deviceId: String,
-        @Body request: BatchUpdateRecordAlertsRequest
-    ): BatchUpdateRecordAlertsResponse
 }

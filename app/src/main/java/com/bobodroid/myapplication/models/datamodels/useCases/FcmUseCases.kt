@@ -26,6 +26,7 @@ class FcmUseCases @Inject constructor(
     val updateNotificationSettingsUseCase: UpdateNotificationSettingsUseCase,
     val getNotificationHistoryUseCase: GetNotificationHistoryUseCase,
     val markAsReadUseCase: MarkNotificationAsReadUseCase,
+    val markAsClickedUseCase: MarkNotificationAsClickedUseCase,
     val getNotificationStatsUseCase: GetNotificationStatsUseCase,
     val sendTestNotificationUseCase: SendTestNotificationUseCase
 )
@@ -234,6 +235,26 @@ class MarkNotificationAsReadUseCase @Inject constructor() {
             }
         } catch (e: Exception) {
             Result.Error(message = "읽음 처리 중 오류가 발생했습니다", exception = e)
+        }
+    }
+}
+
+// ✅ 알림 클릭 처리 UseCase (신규 추가)
+class MarkNotificationAsClickedUseCase @Inject constructor() {
+    suspend operator fun invoke(notificationId: String): Result<Unit> {
+        return try {
+            val response = NotificationApi.service.markAsClicked(notificationId)
+
+            if (response.success) {
+                Result.Success(data = Unit, message = "클릭 처리 성공")
+            } else {
+                Result.Error(
+                    message = response.message ?: "클릭 처리 실패",
+                    exception = Exception(response.message)
+                )
+            }
+        } catch (e: Exception) {
+            Result.Error(message = "클릭 처리 중 오류가 발생했습니다", exception = e)
         }
     }
 }

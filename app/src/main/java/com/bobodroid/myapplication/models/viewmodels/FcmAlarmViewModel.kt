@@ -392,6 +392,8 @@ class FcmAlarmViewModel @Inject constructor(
 
     // ==================== 🆕 수익률 알림 관리 ====================
 
+    // app/src/main/java/com/bobodroid/myapplication/models/viewmodels/FcmAlarmViewModel.kt
+
     fun loadRecordsWithAlerts() {
         viewModelScope.launch {
             try {
@@ -420,7 +422,7 @@ class FcmAlarmViewModel @Inject constructor(
                         money = record.money ?: "0",
                         exchangeMoney = record.exchangeMoney ?: "0",
                         buyRate = record.buyRate ?: "0",
-                        profitPercent = existingAlert?.alertPercent ?: 1.0f
+                        profitPercent = existingAlert?.alertPercent,  // 기존 설정값 또는 null// 기존 설정 있으면 true
                     )
                 }
 
@@ -432,6 +434,20 @@ class FcmAlarmViewModel @Inject constructor(
                 _profitAlertMessage.value = "기록을 불러오는데 실패했습니다: ${e.message}"
             } finally {
                 _profitAlertLoading.value = false
+            }
+        }
+    }
+
+    // 알림 토글 함수 추가
+    fun toggleRecordAlert(recordId: String, enabled: Boolean) {
+        _recordsWithAlerts.value = _recordsWithAlerts.value.map { record ->
+            if (record.recordId == recordId) {
+                record.copy(
+                    enabled = enabled,
+                    profitPercent = if (enabled && record.profitPercent == null) 0.4f else record.profitPercent
+                )
+            } else {
+                record
             }
         }
     }
@@ -469,10 +485,15 @@ class FcmAlarmViewModel @Inject constructor(
                 Log.d(TAG("FcmAlarmViewModel", "saveRecordAlerts"), "백업 완료")
                 Log.d(TAG("FcmAlarmViewModel", "saveRecordAlerts"), "2단계: 알림 설정 저장 시작")
 
-                val recordAlerts = _recordsWithAlerts.value.map { record ->
+                // ✅ enabled=true이고 profitPercent가 null이 아닌 것만 필터링
+                val enabledRecords = _recordsWithAlerts.value.filter {
+                    it.enabled && it.profitPercent != null
+                }
+
+                val recordAlerts = enabledRecords.map { record ->
                     RecordProfitAlert(
                         recordId = record.recordId,
-                        alertPercent = record.profitPercent,
+                        alertPercent = record.profitPercent!!,
                         alerted = false,
                         lastAlertedAt = null
                     )
@@ -489,7 +510,7 @@ class FcmAlarmViewModel @Inject constructor(
 
                 if (response.success) {
                     _saveSuccess.value = true
-                    _profitAlertMessage.value = "알림 설정이 저장되었습니다"
+                    _profitAlertMessage.value = "알림 설정이 저장되었습니다 (${enabledRecords.size}개)"
                     Log.d(TAG("FcmAlarmViewModel", "saveRecordAlerts"), "저장 성공: ${recordAlerts.size}개")
                 } else {
                     _profitAlertMessage.value = "알림 설정 저장에 실패했습니다: ${response.message}"

@@ -34,6 +34,7 @@ import com.bobodroid.myapplication.components.Dialogs.GuideDialog
 import com.bobodroid.myapplication.components.MainBottomBar
 import com.bobodroid.myapplication.components.MainTopBar
 import com.bobodroid.myapplication.models.datamodels.social.SocialLoginManager
+import com.bobodroid.myapplication.models.datamodels.useCases.FcmUseCases
 import com.bobodroid.myapplication.models.viewmodels.AnalysisViewModel
 import com.bobodroid.myapplication.models.viewmodels.MainViewModel
 import com.bobodroid.myapplication.routes.*
@@ -45,6 +46,7 @@ import com.bobodroid.myapplication.util.PreferenceUtil
 import com.bobodroid.myapplication.widget.WidgetAlarmManager
 import com.bobodroid.myapplication.widget.WidgetUpdateHelper
 import com.bobodroid.myapplication.widget.WidgetUpdateService
+import com.bobodroid.myapplication.util.result.Result
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
@@ -63,6 +65,8 @@ class MainActivity : ComponentActivity() {
 
     private val mainViewModel: MainViewModel by viewModels()
     private val analysisViewModel: AnalysisViewModel by viewModels()
+
+    @Inject lateinit var fcmUseCases: FcmUseCases
 
     @Inject
     lateinit var socialLoginManager: SocialLoginManager
@@ -317,11 +321,66 @@ class MainActivity : ComponentActivity() {
     private fun handleIntent(intent: Intent?) {
         val navigateTo = intent?.getStringExtra("NAVIGATE_TO")
 
+        // ✅ 알림 클릭으로 앱이 열렸는지 확인
+        val fromNotification = intent?.getBooleanExtra("FROM_NOTIFICATION", false) ?: false
+        val notificationId = intent?.getStringExtra("NOTIFICATION_ID")
+        val notificationType = intent?.getStringExtra("NOTIFICATION_TYPE")
+        val recordId = intent?.getStringExtra("RECORD_ID")
+        val currency = intent?.getStringExtra("CURRENCY")
+
         Log.d(TAG("메인", "handleIntent"), "━━━━━━━━━━━━━━━━━━━━━━━━━━")
         Log.d(TAG("메인", "handleIntent"), "Intent 처리 시작")
         Log.d(TAG("메인", "handleIntent"), "navigateTo: $navigateTo")
+        Log.d(TAG("메인", "handleIntent"), "fromNotification: $fromNotification")
+        Log.d(TAG("메인", "handleIntent"), "notificationId: $notificationId")
+        Log.d(TAG("메인", "handleIntent"), "notificationType: $notificationType")
         Log.d(TAG("메인", "handleIntent"), "━━━━━━━━━━━━━━━━━━━━━━━━━━")
 
+        // ✅ 알림 클릭 처리
+        if (fromNotification && notificationId != null) {
+            Log.d(TAG("메인", "handleIntent"), "알림 클릭 감지 - markAsClicked 호출")
+
+            // ✅ lifecycleScope에서 호출하고 when으로 결과 처리
+            lifecycleScope.launch {
+                when (val result = fcmUseCases.markAsClickedUseCase(notificationId)) {
+                    is Result.Success -> {
+                        Log.d(TAG("메인", "handleIntent"), "✅ 알림 클릭 처리 완료")
+                    }
+                    is Result.Error -> {
+                        Log.e(TAG("메인", "handleIntent"), "❌ 알림 클릭 처리 실패: ${result.message}")
+                    }
+                    is Result.Loading -> {
+                        // 로딩 상태
+                    }
+                }
+            }
+
+            // ✅ 알림 타입에 따라 화면 이동
+            when (notificationType) {
+                "RATE_ALERT" -> {
+                    Log.d(TAG("메인", "handleIntent"), "환율 알림 - 알림 화면으로 이동")
+                    // TODO: 알림 화면으로 네비게이션
+                    // navController.navigate("fcm_alarm_screen")
+                }
+                "PROFIT_ALERT" -> {
+                    Log.d(TAG("메인", "handleIntent"), "수익률 알림 - 기록 상세로 이동 (recordId: $recordId)")
+                    // TODO: 해당 기록 상세 화면으로 네비게이션
+                    // navController.navigate("record_detail/$recordId")
+                }
+                "RECORD_AGE" -> {
+                    Log.d(TAG("메인", "handleIntent"), "매수 경과 알림 - 기록 화면으로 이동")
+                    // TODO: 기록 화면으로 네비게이션
+                    // navController.navigate("record_screen")
+                }
+                "DAILY_SUMMARY" -> {
+                    Log.d(TAG("메인", "handleIntent"), "일일 요약 - 마이페이지로 이동")
+                    // TODO: 마이페이지로 네비게이션
+                    // navController.navigate("my_page")
+                }
+            }
+        }
+
+        // 기존 네비게이션 처리
         if (navigateTo != null) {
             Log.d(TAG("메인", "handleIntent"), "네비게이션 요청: $navigateTo")
             // TODO: Compose Navigation으로 전달 필요

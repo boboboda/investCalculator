@@ -188,7 +188,8 @@ data class RecordWithAlert(
     val money: String,              // 투자 원화
     val exchangeMoney: String,      // 매수 외화량
     val buyRate: String,            // 매수 환율
-    val profitPercent: Float = 1.0f // 설정된 목표 수익률 (기본값 1%)
+    var profitPercent: Float? = null, // 설정된 목표 수익률 (null 허용)
+    var enabled: Boolean = false      // 알림 활성화 여부
 )
 
 // ==================== Enums ====================

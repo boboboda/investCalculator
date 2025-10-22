@@ -115,23 +115,60 @@ class MyPageViewModel @Inject constructor(
         }
     }
 
-    // ✅ 서버 백업
+
     fun syncToServer(result: (String) -> Unit) {
         viewModelScope.launch {
             val localUser = _myPageUiState.value.localUser
 
             socialLoginUseCases.syncToServer(localUser)
-                .onSuccess { _, message ->
+                .onSuccess { updatedUser, message ->
                     Log.d("MyPageViewModel", "백업 성공")
+
+                    // ✅ UI 상태 업데이트 (이미 lastSyncAt이 포함된 updatedUser)
+                    _myPageUiState.update { currentState ->
+                        currentState.copy(
+                            localUser = updatedUser
+                        )
+                    }
+
                     result(message ?: "데이터가 백업되었습니다")
                 }
-                .onError { error ->  // ✅ Result.Error 객체로 받음
+                .onError { error ->
                     Log.e("MyPageViewModel", "백업 실패: ${error.message}", error.exception)
                     result(error.message)
                 }
         }
     }
 
+    // ✅ 복구 기능 추가
+    fun restoreFromServer(result: (String) -> Unit) {
+        viewModelScope.launch {
+            val localUser = _myPageUiState.value.localUser
+
+            socialLoginUseCases.restoreFromServer(
+                deviceId = localUser.id.toString(),
+                socialId = localUser.socialId,
+                socialType = localUser.socialType
+            )
+                .onSuccess { recordCount, message ->
+                    Log.d("MyPageViewModel", "복구 성공: ${recordCount}개")
+
+                    // ✅ 통계 및 최근 활동 재계산
+                    viewModelScope.launch {
+                        calculateInvestmentStats()
+                        collectRecentActivities()
+                        calculateGoalProgress()
+                        calculateBadges()
+                    }
+
+                    result(message ?: "데이터를 복구했습니다")
+                }
+                .onError { error ->
+                    Log.e("MyPageViewModel", "복구 실패: ${error.message}", error.exception)
+                    result(error.message)
+                }
+        }
+    }
     fun unlinkSocial(result: (String) -> Unit) {
         viewModelScope.launch {
             val localUser = _myPageUiState.value.localUser

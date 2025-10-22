@@ -142,25 +142,7 @@ fun WidgetSettingsScreen(
                 )
             }
 
-            // 디버그 빌드에만 테스트 도구 표시
-            if (BuildConfig.DEBUG) {
-                TestControlCard(
-                    isPremium = isPremium,
-                    onTogglePremium = { newStatus ->  // ✅ 파라미터로 받기
 
-                        Log.d("Premium","프리미엄 상태: ${isPremium}, ${newStatus}")
-
-                        viewModel.setTestPremiumStatus(newStatus)
-
-                        if (newStatus) {
-                            viewModel.toggleRealtimeUpdate(true)
-                        } else {
-                            viewModel.toggleRealtimeUpdate(false)
-                        }
-                    },
-                    onRefreshStatus = { viewModel.refreshPremiumStatus() }
-                )
-            }
         }
     }
 }
@@ -642,85 +624,3 @@ fun WidgetPremiumPromotionCard(onUpgradeClick: () -> Unit) {
     }
 }
 
-/**
- * 테스트 컨트롤 카드 (디버그 빌드 전용)
- */
-@Composable
-fun TestControlCard(
-    isPremium: Boolean,
-    onTogglePremium: (Boolean) -> Unit,  // ✅ Boolean 파라미터
-    onRefreshStatus: () -> Unit
-) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = Color(0xFFFEF2F2)),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(20.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(
-                    imageVector = Icons.Rounded.BugReport,
-                    contentDescription = null,
-                    modifier = Modifier.size(24.dp),
-                    tint = Color(0xFFDC2626)
-                )
-
-                Spacer(modifier = Modifier.width(8.dp))
-
-                Text(
-                    text = "🔧 테스트 도구 (개발자 전용)",
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color(0xFF991B1B)
-                )
-            }
-
-            HorizontalDivider(color = Color(0xFFFECACA))
-
-            Text(
-                text = "현재 프리미엄 상태: ${if (isPremium) "✅ 프리미엄" else "❌ 일반"}",
-                fontSize = 14.sp,
-                color = Color(0xFF7F1D1D)
-            )
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                Button(
-                    onClick = {
-                        onTogglePremium(!isPremium)  // ✅ 계산된 값 전달!
-                    },
-                    modifier = Modifier.weight(1f),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = if (isPremium) Color(0xFFEF4444) else Color(0xFF10B981)
-                    ),
-                    shape = RoundedCornerShape(8.dp)
-                ) {
-                    Text(
-                        text = if (isPremium) "일반으로 변경" else "프리미엄으로 변경",
-                        fontSize = 13.sp
-                    )
-                }
-
-                OutlinedButton(
-                    onClick = onRefreshStatus,
-                    modifier = Modifier.weight(1f),
-                    shape = RoundedCornerShape(8.dp)
-                ) {
-                    Text(
-                        text = "상태 새로고침",
-                        fontSize = 13.sp,
-                        color = Color(0xFF991B1B)
-                    )
-                }
-            }
-        }
-    }
-}

@@ -7,10 +7,15 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.bobodroid.myapplication.MainActivity.Companion.TAG
 import com.bobodroid.myapplication.models.datamodels.notification.*
+import com.bobodroid.myapplication.models.datamodels.repository.InvestRepository
 import com.bobodroid.myapplication.models.datamodels.repository.LatestRateRepository
 import com.bobodroid.myapplication.models.datamodels.repository.UserRepository
 import com.bobodroid.myapplication.models.datamodels.roomDb.*
+import com.bobodroid.myapplication.models.datamodels.service.BackupApi.BackupApi
+import com.bobodroid.myapplication.models.datamodels.service.BackupApi.CreateBackupDto
+import com.bobodroid.myapplication.models.datamodels.service.BackupApi.CurrencyRecordDto
 import com.bobodroid.myapplication.models.datamodels.service.UserApi.Rate
+import com.bobodroid.myapplication.models.datamodels.service.notificationApi.NotificationApi
 import com.bobodroid.myapplication.models.datamodels.useCases.FcmUseCases
 import com.bobodroid.myapplication.models.repository.SettingsRepository
 import com.bobodroid.myapplication.util.result.onError
@@ -25,7 +30,8 @@ class FcmAlarmViewModel @Inject constructor(
     private val userRepository: UserRepository,
     private val fcmUseCases: FcmUseCases,
     private val latestRateRepository: LatestRateRepository,
-    private val settingsRepository: SettingsRepository
+    private val settingsRepository: SettingsRepository,
+    private val investRepository: InvestRepository
 ) : ViewModel() {
 
     // ==================== 공통 State ====================
@@ -49,16 +55,9 @@ class FcmAlarmViewModel @Inject constructor(
         initialValue = CurrencyType.USD
     )
 
-    // ==================== 목표환율 State ====================
+    // ==================== 목표환율 State (12개 통화 지원) ====================
 
-    private val _targetRate = MutableStateFlow(
-        TargetRates(
-            dollarHighRates = emptyList(),
-            dollarLowRates = emptyList(),
-            yenHighRates = emptyList(),
-            yenLowRates = emptyList()
-        )
-    )
+    private val _targetRate = MutableStateFlow(TargetRates.empty())
     val targetRateFlow = _targetRate.asStateFlow()
 
     // ==================== 알림 설정 State ====================
@@ -87,6 +86,20 @@ class FcmAlarmViewModel @Inject constructor(
     private val _error = MutableStateFlow<String?>(null)
     val error = _error.asStateFlow()
 
+    // ==================== 🆕 수익률 알림 State ====================
+
+    private val _recordsWithAlerts = MutableStateFlow<List<RecordWithAlert>>(emptyList())
+    val recordsWithAlerts: StateFlow<List<RecordWithAlert>> = _recordsWithAlerts.asStateFlow()
+
+    private val _profitAlertLoading = MutableStateFlow(false)
+    val profitAlertLoading: StateFlow<Boolean> = _profitAlertLoading.asStateFlow()
+
+    private val _profitAlertMessage = MutableStateFlow<String?>(null)
+    val profitAlertMessage: StateFlow<String?> = _profitAlertMessage.asStateFlow()
+
+    private val _saveSuccess = MutableStateFlow(false)
+    val saveSuccess: StateFlow<Boolean> = _saveSuccess.asStateFlow()
+
     // ==================== 초기화 ====================
 
     init {
@@ -105,7 +118,7 @@ class FcmAlarmViewModel @Inject constructor(
                     // deviceId 설정
                     deviceId.emit(userData.localUserData.id.toString())
 
-                    // 목표환율 초기화
+                    // ✅ 목표환율 초기화 (12개 통화 지원)
                     userData.exchangeRates?.let {
                         initTarRates(it)
                     }
@@ -120,6 +133,7 @@ class FcmAlarmViewModel @Inject constructor(
                         loadNotificationSettings()
                         loadNotificationHistory()
                         loadNotificationStats()
+                        loadRecordsWithAlerts()
 
                         // 목표환율 실시간 업데이트 구독
                         fcmUseCases.targetRateUpdateUseCase(
@@ -145,13 +159,15 @@ class FcmAlarmViewModel @Inject constructor(
 
     fun initTarRates(targetRates: TargetRates) {
         _targetRate.value = targetRates
+        Log.d(TAG("FcmAlarmViewModel", "initTarRates"),
+            "목표환율 초기화 완료 - 통화 ${targetRates.getAllCurrencies().size}개, 총 ${targetRates.getTotalCount()}개 목표환율")
     }
 
     fun updateCurrentForeignCurrency(currency: CurrencyType): Boolean {
         return settingsRepository.setSelectedCurrency(currency)
     }
 
-    // ==================== 목표환율 관리 ====================
+    // ==================== 목표환율 관리 (12개 통화 지원) ====================
 
     fun addTargetRate(
         addRate: Rate,
@@ -164,7 +180,8 @@ class FcmAlarmViewModel @Inject constructor(
                 type = type,
                 newRate = addRate
             ).onSuccess { targetRate, _ ->
-                Log.d(TAG("FcmAlarmViewModel", "addTargetRate"), "Success: $targetRate")
+                Log.d(TAG("FcmAlarmViewModel", "addTargetRate"),
+                    "Success: ${type.currency.koreanName} ${type.direction} - ${addRate.rate}")
                 _targetRate.emit(targetRate)
             }.onError { error ->
                 Log.e(TAG("FcmAlarmViewModel", "addTargetRate"), "Error", error.exception)
@@ -184,13 +201,22 @@ class FcmAlarmViewModel @Inject constructor(
                 type = type,
                 deleteRate = deleteRate
             ).onSuccess { updateTargetRate, _ ->
-                Log.d(TAG("FcmAlarmViewModel", "deleteTargetRate"), "Success: $updateTargetRate")
+                Log.d(TAG("FcmAlarmViewModel", "deleteTargetRate"),
+                    "Success: ${type.currency.koreanName} ${type.direction} - ${deleteRate.rate}")
                 _targetRate.emit(updateTargetRate)
             }.onError { error ->
                 Log.e(TAG("FcmAlarmViewModel", "deleteTargetRate"), "Error", error.exception)
                 _error.value = error.message
             }
         }
+    }
+
+    fun getTargetRates(currency: CurrencyType, direction: RateDirection): List<Rate> {
+        return targetRateFlow.value.getRates(currency, direction)
+    }
+
+    fun hasCurrencyTargetRates(currency: CurrencyType): Boolean {
+        return targetRateFlow.value.hasCurrency(currency)
     }
 
     // ==================== 알림 설정 관리 ====================
@@ -290,7 +316,6 @@ class FcmAlarmViewModel @Inject constructor(
 
     private fun updateSettings(request: UpdateNotificationSettingsRequest) {
         viewModelScope.launch {
-            _isLoading.value = true
             fcmUseCases.updateNotificationSettingsUseCase(deviceId.value, request)
                 .onSuccess { settings, _ ->
                     Log.d(TAG("FcmAlarmViewModel", "updateSettings"), "Success")
@@ -300,15 +325,14 @@ class FcmAlarmViewModel @Inject constructor(
                     Log.e(TAG("FcmAlarmViewModel", "updateSettings"), "Error", error.exception)
                     _error.value = "설정 업데이트 실패"
                 }
-            _isLoading.value = false
         }
     }
 
     // ==================== 알림 히스토리 관리 ====================
 
-    fun loadNotificationHistory(limit: Int = 50) {
+    fun loadNotificationHistory() {
         viewModelScope.launch {
-            fcmUseCases.getNotificationHistoryUseCase(deviceId.value, limit)
+            fcmUseCases.getNotificationHistoryUseCase(deviceId.value)
                 .onSuccess { history, _ ->
                     Log.d(TAG("FcmAlarmViewModel", "loadHistory"), "Success: ${history.size}개")
                     _notificationHistory.value = history
@@ -324,7 +348,6 @@ class FcmAlarmViewModel @Inject constructor(
             fcmUseCases.markAsReadUseCase(notificationId)
                 .onSuccess { _, _ ->
                     Log.d(TAG("FcmAlarmViewModel", "markAsRead"), "Success")
-                    // 로컬 상태 업데이트
                     _notificationHistory.value = _notificationHistory.value.map {
                         if (it.id == notificationId) {
                             it.copy(status = "READ")
@@ -365,6 +388,183 @@ class FcmAlarmViewModel @Inject constructor(
                     _error.value = "테스트 알림 전송 실패"
                 }
         }
+    }
+
+    // ==================== 🆕 수익률 알림 관리 ====================
+
+    fun loadRecordsWithAlerts() {
+        viewModelScope.launch {
+            try {
+                _profitAlertLoading.value = true
+
+                val unsoldRecords = investRepository.getUnsoldRecords().first()
+
+                Log.d(TAG("FcmAlarmViewModel", "loadRecordsWithAlerts"), "보유중 기록: ${unsoldRecords.size}개")
+
+                if (deviceId.value.isEmpty()) {
+                    _profitAlertMessage.value = "사용자 정보를 불러오는 중입니다"
+                    return@launch
+                }
+
+                val settingsResponse = NotificationApi.service.getNotificationSettings(deviceId.value)
+
+                val recordsWithAlerts = unsoldRecords.map { record ->
+                    val existingAlert = settingsResponse.data?.conditions?.recordProfitAlerts
+                        ?.find { it.recordId == record.id.toString() }
+
+                    RecordWithAlert(
+                        recordId = record.id.toString(),
+                        currencyCode = record.currencyCode,
+                        categoryName = record.categoryName ?: "",
+                        date = record.date ?: "",
+                        money = record.money ?: "0",
+                        exchangeMoney = record.exchangeMoney ?: "0",
+                        buyRate = record.buyRate ?: "0",
+                        profitPercent = existingAlert?.alertPercent ?: 1.0f
+                    )
+                }
+
+                _recordsWithAlerts.value = recordsWithAlerts
+                Log.d(TAG("FcmAlarmViewModel", "loadRecordsWithAlerts"), "설정 완료: ${recordsWithAlerts.size}개")
+
+            } catch (e: Exception) {
+                Log.e(TAG("FcmAlarmViewModel", "loadRecordsWithAlerts"), "로드 실패", e)
+                _profitAlertMessage.value = "기록을 불러오는데 실패했습니다: ${e.message}"
+            } finally {
+                _profitAlertLoading.value = false
+            }
+        }
+    }
+
+    fun updateRecordProfitPercent(recordId: String, percent: Float) {
+        _recordsWithAlerts.value = _recordsWithAlerts.value.map { record ->
+            if (record.recordId == recordId) {
+                record.copy(profitPercent = percent)
+            } else {
+                record
+            }
+        }
+    }
+
+    fun saveRecordAlerts() {
+        viewModelScope.launch {
+            try {
+                _profitAlertLoading.value = true
+                _saveSuccess.value = false
+
+                if (deviceId.value.isEmpty()) {
+                    _profitAlertMessage.value = "사용자 정보가 없습니다"
+                    return@launch
+                }
+
+                Log.d(TAG("FcmAlarmViewModel", "saveRecordAlerts"), "1단계: 백업 시작")
+
+                val backupSuccess = triggerBackup(deviceId.value)
+
+                if (!backupSuccess) {
+                    _profitAlertMessage.value = "백업에 실패했습니다. 알림 설정을 저장할 수 없습니다."
+                    return@launch
+                }
+
+                Log.d(TAG("FcmAlarmViewModel", "saveRecordAlerts"), "백업 완료")
+                Log.d(TAG("FcmAlarmViewModel", "saveRecordAlerts"), "2단계: 알림 설정 저장 시작")
+
+                val recordAlerts = _recordsWithAlerts.value.map { record ->
+                    RecordProfitAlert(
+                        recordId = record.recordId,
+                        alertPercent = record.profitPercent,
+                        alerted = false,
+                        lastAlertedAt = null
+                    )
+                }
+
+                val request = BatchUpdateRecordAlertsRequest(
+                    recordProfitAlerts = recordAlerts
+                )
+
+                val response = NotificationApi.service.batchUpdateRecordAlerts(
+                    deviceId = deviceId.value,
+                    request = request
+                )
+
+                if (response.success) {
+                    _saveSuccess.value = true
+                    _profitAlertMessage.value = "알림 설정이 저장되었습니다"
+                    Log.d(TAG("FcmAlarmViewModel", "saveRecordAlerts"), "저장 성공: ${recordAlerts.size}개")
+                } else {
+                    _profitAlertMessage.value = "알림 설정 저장에 실패했습니다: ${response.message}"
+                }
+
+            } catch (e: Exception) {
+                Log.e(TAG("FcmAlarmViewModel", "saveRecordAlerts"), "저장 실패", e)
+                _profitAlertMessage.value = "저장 중 오류가 발생했습니다: ${e.message}"
+            } finally {
+                _profitAlertLoading.value = false
+            }
+        }
+    }
+
+    private suspend fun triggerBackup(deviceId: String): Boolean {
+        return try {
+            val currentUserData = userRepository.userData.filterNotNull().first()
+            val localUser = currentUserData.localUserData ?: run {
+                Log.e(TAG("FcmAlarmViewModel", "triggerBackup"), "사용자 정보 없음")
+                return false
+            }
+
+            val allRecords = investRepository.getAllCurrencyRecords().first()
+
+            Log.d(TAG("FcmAlarmViewModel", "triggerBackup"), "백업 대상 기록: ${allRecords.size}개")
+
+            val currencyRecords = allRecords.map { record ->
+                CurrencyRecordDto(
+                    id = record.id.toString(),
+                    currencyCode = record.currencyCode,
+                    date = record.date ?: "",
+                    money = record.money ?: "0",
+                    rate = record.rate ?: "0",
+                    buyRate = record.buyRate ?: "0",
+                    exchangeMoney = record.exchangeMoney ?: "0",
+                    profit = record.profit ?: "0",
+                    expectProfit = record.expectProfit ?: "0",
+                    categoryName = record.categoryName ?: "",
+                    memo = record.memo ?: "",
+                    sellRate = record.sellRate,
+                    sellProfit = record.sellProfit,
+                    sellDate = record.sellDate,
+                    recordColor = record.recordColor ?: false
+                )
+            }
+
+            val backupDto = CreateBackupDto(
+                deviceId = deviceId,
+                socialId = localUser.socialId,
+                socialType = localUser.socialType,
+                currencyRecords = currencyRecords
+            )
+
+            val backupResponse = BackupApi.backupService.createBackupWithDto(backupDto)
+
+            if (backupResponse.success) {
+                Log.d(TAG("FcmAlarmViewModel", "triggerBackup"), "백업 성공: ${allRecords.size}개")
+                true
+            } else {
+                Log.e(TAG("FcmAlarmViewModel", "triggerBackup"), "백업 실패: ${backupResponse.message}")
+                false
+            }
+
+        } catch (e: Exception) {
+            Log.e(TAG("FcmAlarmViewModel", "triggerBackup"), "백업 에러", e)
+            false
+        }
+    }
+
+    fun clearProfitAlertMessage() {
+        _profitAlertMessage.value = null
+    }
+
+    fun refreshRecordAlerts() {
+        loadRecordsWithAlerts()
     }
 
     // ==================== 에러 처리 ====================

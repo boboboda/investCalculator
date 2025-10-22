@@ -59,6 +59,7 @@ data class NotificationConditions(
     val minRateChangePercent: Double = 0.0,
     val minProfitPercent: Double = 5.0,
     val recordAgeAlert: RecordAgeAlertSettings = RecordAgeAlertSettings(),
+    val recordProfitAlerts: List<RecordProfitAlert> = emptyList(),
     val dailySummary: DailySummarySettings = DailySummarySettings(),
     val batchNotifications: Boolean = true,
     val batchIntervalMinutes: Int = 30
@@ -144,6 +145,50 @@ data class NotificationStats(
 data class BaseResponse(
     val success: Boolean,
     val message: String
+)
+
+// ==================== 🆕 개별 기록 수익률 알림 ====================
+
+@JsonClass(generateAdapter = true)
+data class RecordProfitAlert(
+    val recordId: String,           // 기록 UUID
+    val alertPercent: Float,        // 목표 수익률 (0.1 ~ 5.0)
+    val alerted: Boolean = false,   // 알림 전송 완료 여부
+    val lastAlertedAt: String? = null  // 마지막 알림 시각
+)
+
+@JsonClass(generateAdapter = true)
+data class BatchUpdateRecordAlertsRequest(
+    val recordProfitAlerts: List<RecordProfitAlert>
+)
+
+@JsonClass(generateAdapter = true)
+data class BatchUpdateRecordAlertsResponse(
+    val success: Boolean,
+    val message: String,
+    val data: RecordAlertUpdateResult? = null
+)
+
+@JsonClass(generateAdapter = true)
+data class RecordAlertUpdateResult(
+    val deviceId: String,
+    val recordCount: Int
+)
+
+// ==================== 🆕 UI 상태용 데이터 클래스 ====================
+
+/**
+ * 기록 + 수익률 알림 설정 결합 모델
+ */
+data class RecordWithAlert(
+    val recordId: String,
+    val currencyCode: String,
+    val categoryName: String,
+    val date: String,
+    val money: String,              // 투자 원화
+    val exchangeMoney: String,      // 매수 외화량
+    val buyRate: String,            // 매수 환율
+    val profitPercent: Float = 1.0f // 설정된 목표 수익률 (기본값 1%)
 )
 
 // ==================== Enums ====================

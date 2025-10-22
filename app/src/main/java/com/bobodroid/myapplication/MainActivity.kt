@@ -22,12 +22,14 @@ import androidx.compose.ui.Modifier
 import androidx.core.content.ContextCompat
 import androidx.core.splashscreen.SplashScreen
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
+import androidx.hilt.work.HiltWorkerFactory
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import androidx.work.Configuration
 import com.bobodroid.myapplication.components.Dialogs.GuideDialog
 import com.bobodroid.myapplication.components.MainBottomBar
 import com.bobodroid.myapplication.components.MainTopBar
@@ -123,8 +125,6 @@ class MainActivity : ComponentActivity() {
             Log.e(TAG("메인","onCreate"), "❌ setupWidgetAutoUpdate() 실패", e)
         }
     }
-
-
 
     // ✅ 수정된 메서드 - 앱 시작 시에는 서비스 시작하지 않음 (앱 실행 중이므로)
     private fun setupWidgetAutoUpdate() {

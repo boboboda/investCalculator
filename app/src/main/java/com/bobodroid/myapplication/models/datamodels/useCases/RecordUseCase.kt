@@ -4,9 +4,11 @@ import android.util.Log
 import com.bobodroid.myapplication.MainActivity.Companion.TAG
 import com.bobodroid.myapplication.extensions.toBigDecimalWon
 import com.bobodroid.myapplication.models.datamodels.repository.InvestRepository
+import com.bobodroid.myapplication.models.datamodels.repository.UserRepository
 import com.bobodroid.myapplication.models.datamodels.roomDb.*
 import com.bobodroid.myapplication.models.viewmodels.CurrencyRecordState
 import com.bobodroid.myapplication.models.viewmodels.RecordListUiState
+import com.bobodroid.myapplication.worker.BackupScheduler
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -18,7 +20,9 @@ import java.util.UUID
 import javax.inject.Inject
 
 class RecordUseCase @Inject constructor(
-    private val investRepository: InvestRepository
+    private val investRepository: InvestRepository,
+    private val userRepository: UserRepository,
+    private val backupScheduler: BackupScheduler
 ) {
 
     // ===== 새로운 통합 메서드 (12개 통화 지원) =====
@@ -94,6 +98,9 @@ class RecordUseCase @Inject constructor(
         )
 
         investRepository.addCurrencyRecord(record)
+
+        // ✅ 프리미엄 사용자 자동 백업 예약
+        scheduleBackupIfPremium()
     }
 
     /**
@@ -119,6 +126,9 @@ class RecordUseCase @Inject constructor(
         )
 
         investRepository.updateCurrencyRecord(editedRecord)
+
+        // ✅ 프리미엄 사용자 자동 백업 예약
+        scheduleBackupIfPremium()
     }
 
     /**
@@ -144,6 +154,9 @@ class RecordUseCase @Inject constructor(
         )
 
         investRepository.updateCurrencyRecord(soldRecord)
+
+        // ✅ 프리미엄 사용자 자동 백업 예약
+        scheduleBackupIfPremium()
     }
 
     /**
@@ -152,6 +165,9 @@ class RecordUseCase @Inject constructor(
     suspend fun updateCurrencyRecordMemo(record: CurrencyRecord, memo: String) {
         val updatedRecord = record.copy(memo = memo)
         investRepository.updateCurrencyRecord(updatedRecord)
+
+        // ✅ 프리미엄 사용자 자동 백업 예약
+        scheduleBackupIfPremium()
     }
 
     /**
@@ -159,6 +175,9 @@ class RecordUseCase @Inject constructor(
      */
     suspend fun removeCurrencyRecord(record: CurrencyRecord) {
         investRepository.deleteCurrencyRecord(record)
+
+        // ✅ 프리미엄 사용자 자동 백업 예약
+        scheduleBackupIfPremium()
     }
 
     /**
@@ -167,6 +186,9 @@ class RecordUseCase @Inject constructor(
     suspend fun cancelSellCurrencyRecord(record: CurrencyRecord) {
         val canceledRecord = record.copyForCancelSell()
         investRepository.updateCurrencyRecord(canceledRecord)
+
+        // ✅ 프리미엄 사용자 자동 백업 예약
+        scheduleBackupIfPremium()
     }
 
     /**
@@ -175,6 +197,9 @@ class RecordUseCase @Inject constructor(
     suspend fun updateCurrencyRecordCategory(record: CurrencyRecord, groupName: String) {
         val updatedRecord = record.copy(categoryName = groupName)
         investRepository.updateCurrencyRecord(updatedRecord)
+
+        // ✅ 프리미엄 사용자 자동 백업 예약
+        scheduleBackupIfPremium()
     }
 
     /**
@@ -215,7 +240,21 @@ class RecordUseCase @Inject constructor(
             }
     }
 
+    // ✅ 프리미엄 체크 후 백업 예약
+    private suspend fun scheduleBackupIfPremium() {
+        try {
+            val userData = userRepository.userData.first()
+            val localUser = userData?.localUserData
 
+            // 프리미엄이고 소셜 로그인되어 있으면 백업 예약
+            if (localUser?.isPremium == true && !localUser.socialId.isNullOrEmpty()) {
+                backupScheduler.scheduleBackup()
+                Log.d("RecordUseCase", "자동 백업 예약됨")
+            }
+        } catch (e: Exception) {
+            Log.e("RecordUseCase", "백업 예약 실패", e)
+        }
+    }
 
     /**
      * 그룹 설정
@@ -257,7 +296,6 @@ class RecordUseCase @Inject constructor(
             ""
         }
     }
-
 }
 
 /**

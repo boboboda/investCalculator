@@ -71,6 +71,9 @@ data class LocalUserData(
     @ColumnInfo(name = "goal_set_month", defaultValue = "")
     var goalSetMonth: String? = null,
 
+    @ColumnInfo(name = "last_sync_at", defaultValue = "")
+    var lastSyncAt: String? = null,
+
     @ColumnInfo(name = "is_premium", defaultValue = "0")
     var isPremium: Boolean = false
 ) {

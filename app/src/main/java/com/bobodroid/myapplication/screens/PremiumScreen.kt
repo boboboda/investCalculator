@@ -1,6 +1,7 @@
 package com.bobodroid.myapplication.screens
 
 import android.app.Activity
+import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -21,24 +22,36 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.bobodroid.myapplication.BuildConfig
 import com.bobodroid.myapplication.billing.BillingClientLifecycle
+import com.bobodroid.myapplication.components.SocialLoginWarningBanner
+import com.bobodroid.myapplication.models.viewmodels.MyPageViewModel
 import com.bobodroid.myapplication.models.viewmodels.PremiumViewModel
+import com.bobodroid.myapplication.routes.MyPageRoute
 
 /**
  * 프리미엄 전용 화면
  * - 프리미엄 구매
  * - 구독 관리
  * - 혜택 상세 안내
+ * - ✅ 소셜 로그인 안내 추가
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PremiumScreen(
     onBackClick: () -> Unit,
-    viewModel: PremiumViewModel = hiltViewModel()
+    onAccountManageClick: () -> Unit = {}, // ✅ 계정 관리 화면으로 이동
+    viewModel: PremiumViewModel = hiltViewModel(),
+    myPageViewModel: MyPageViewModel = hiltViewModel() // ✅ 유저 정보 가져오기
 ) {
     val context = LocalContext.current
     val activity = context as? Activity
     val isPremium by viewModel.isPremium.collectAsState()
+
+    // ✅ 소셜 로그인 상태 확인
+    val myPageUiState by myPageViewModel.myPageUiState.collectAsState()
+    val localUser = myPageUiState.localUser
+    val isSocialLinked = localUser.socialType != "NONE" && !localUser.socialId.isNullOrEmpty()
 
     Scaffold(
         topBar = {
@@ -77,7 +90,12 @@ fun PremiumScreen(
 
                 PremiumFeaturesDetailCard()
             } else {
-                // 일반 사용자
+                // ✅ 일반 사용자 - 소셜 로그인 안내 배너 먼저 표시
+                SocialLoginWarningBanner(
+                    isSocialLinked = isSocialLinked,
+                    onLinkClick = onAccountManageClick
+                )
+
                 PremiumHeroCard(
                     onPurchaseClick = {
                         activity?.let { act ->
@@ -92,6 +110,27 @@ fun PremiumScreen(
                 PremiumFeaturesDetailCard()
 
                 PricingCard()
+            }
+
+
+            // 디버그 빌드에만 테스트 도구 표시
+            if (BuildConfig.DEBUG) {
+                TestControlCard(
+                    isPremium = isPremium,
+                    onTogglePremium = { newStatus ->  // ✅ 파라미터로 받기
+
+                        Log.d("Premium","프리미엄 상태: ${isPremium}, ${newStatus}")
+
+                        viewModel.setTestPremiumStatus(newStatus)
+
+                        if (newStatus) {
+                            viewModel.toggleRealtimeUpdate(true)
+                        } else {
+                            viewModel.toggleRealtimeUpdate(false)
+                        }
+                    },
+                    onRefreshStatus = { viewModel.refreshPremiumStatus() }
+                )
             }
         }
     }
@@ -190,21 +229,12 @@ fun SubscriptionManagementCard() {
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp)
             ) {
-                Icon(
-                    imageVector = Icons.Rounded.Settings,
-                    contentDescription = null,
-                    modifier = Modifier.size(20.dp)
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text("Google Play에서 관리하기")
+                Text("구독 관리하기", color = Color(0xFF6366F1))
             }
         }
     }
 }
 
-/**
- * 관리 항목
- */
 @Composable
 fun ManagementItem(
     icon: ImageVector,
@@ -213,16 +243,15 @@ fun ManagementItem(
 ) {
     Row(
         modifier = Modifier.fillMaxWidth(),
-        verticalAlignment = Alignment.CenterVertically
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         Icon(
             imageVector = icon,
             contentDescription = null,
-            modifier = Modifier.size(24.dp),
-            tint = Color(0xFF6366F1)
+            tint = Color(0xFF6366F1),
+            modifier = Modifier.size(24.dp)
         )
-
-        Spacer(modifier = Modifier.width(12.dp))
 
         Column(modifier = Modifier.weight(1f)) {
             Text(
@@ -231,7 +260,6 @@ fun ManagementItem(
                 fontWeight = FontWeight.Medium,
                 color = Color(0xFF1F2937)
             )
-
             Text(
                 text = description,
                 fontSize = 12.sp,
@@ -257,21 +285,21 @@ fun PremiumHeroCard(onPurchaseClick: () -> Unit) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(32.dp),
+                .padding(24.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Icon(
                 imageVector = Icons.Rounded.Star,
                 contentDescription = null,
-                modifier = Modifier.size(72.dp),
+                modifier = Modifier.size(64.dp),
                 tint = Color(0xFFFBBF24)
             )
 
-            Spacer(modifier = Modifier.height(20.dp))
+            Spacer(modifier = Modifier.height(16.dp))
 
             Text(
-                text = "프리미엄으로\n업그레이드하세요",
-                fontSize = 26.sp,
+                text = "프리미엄으로 업그레이드",
+                fontSize = 24.sp,
                 fontWeight = FontWeight.Bold,
                 color = Color.White,
                 textAlign = TextAlign.Center
@@ -520,8 +548,8 @@ fun DetailFeatureItem(
                 Text(
                     text = item,
                     fontSize = 14.sp,
-                    color = Color(0xFF6B7280),
-                    lineHeight = 20.sp
+                    color = Color(0xFF4B5563),
+                    modifier = Modifier.weight(1f)
                 )
             }
         }
@@ -536,8 +564,8 @@ fun PricingCard() {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = Color(0xFFF0F9FF)),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Column(
             modifier = Modifier
@@ -545,54 +573,137 @@ fun PricingCard() {
                 .padding(20.dp)
         ) {
             Text(
-                text = "가격 안내",
+                text = "가격",
                 fontSize = 18.sp,
                 fontWeight = FontWeight.Bold,
-                color = Color(0xFF0C4A6E)
+                color = Color(0xFF1F2937)
             )
 
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(16.dp))
 
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+                verticalAlignment = Alignment.Bottom
             ) {
                 Column {
                     Text(
                         text = "월간 구독",
                         fontSize = 14.sp,
-                        fontWeight = FontWeight.Medium,
-                        color = Color(0xFF0C4A6E)
+                        color = Color(0xFF6B7280)
                     )
-
-                    Text(
-                        text = "언제든지 취소 가능",
-                        fontSize = 12.sp,
-                        color = Color(0xFF075985)
-                    )
+                    Row(verticalAlignment = Alignment.Bottom) {
+                        Text(
+                            text = "₩4,900",
+                            fontSize = 28.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color(0xFF6366F1)
+                        )
+                        Text(
+                            text = " / 월",
+                            fontSize = 14.sp,
+                            color = Color(0xFF6B7280)
+                        )
+                    }
                 }
 
+                Surface(
+                    shape = RoundedCornerShape(8.dp),
+                    color = Color(0xFFEEF2FF)
+                ) {
+                    Text(
+                        text = "언제든지 해지 가능",
+                        fontSize = 12.sp,
+                        color = Color(0xFF6366F1),
+                        fontWeight = FontWeight.Medium,
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
+                    )
+                }
+            }
+        }
+    }
+}
+
+
+/**
+ * 테스트 컨트롤 카드 (디버그 빌드 전용)
+ */
+@Composable
+fun TestControlCard(
+    isPremium: Boolean,
+    onTogglePremium: (Boolean) -> Unit,  // ✅ Boolean 파라미터
+    onRefreshStatus: () -> Unit
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = Color(0xFFFEF2F2)),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(20.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    imageVector = Icons.Rounded.BugReport,
+                    contentDescription = null,
+                    modifier = Modifier.size(24.dp),
+                    tint = Color(0xFFDC2626)
+                )
+
+                Spacer(modifier = Modifier.width(8.dp))
+
                 Text(
-                    text = "₩4,900 / 월",
-                    fontSize = 20.sp,
+                    text = "🔧 테스트 도구 (개발자 전용)",
+                    fontSize = 16.sp,
                     fontWeight = FontWeight.Bold,
-                    color = Color(0xFF0284C7)
+                    color = Color(0xFF991B1B)
                 )
             }
 
-            Spacer(modifier = Modifier.height(12.dp))
-
-            HorizontalDivider(color = Color(0xFFBAE6FD))
-
-            Spacer(modifier = Modifier.height(12.dp))
+            HorizontalDivider(color = Color(0xFFFECACA))
 
             Text(
-                text = "• 첫 달 무료 체험 (신규 가입자에 한함)\n• Google Play를 통한 안전한 결제\n• 자동 갱신, 언제든지 해지 가능",
-                fontSize = 12.sp,
-                color = Color(0xFF075985),
-                lineHeight = 18.sp
+                text = "현재 프리미엄 상태: ${if (isPremium) "✅ 프리미엄" else "❌ 일반"}",
+                fontSize = 14.sp,
+                color = Color(0xFF7F1D1D)
             )
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Button(
+                    onClick = {
+                        onTogglePremium(!isPremium)  // ✅ 계산된 값 전달!
+                    },
+                    modifier = Modifier.weight(1f),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = if (isPremium) Color(0xFFEF4444) else Color(0xFF10B981)
+                    ),
+                    shape = RoundedCornerShape(8.dp)
+                ) {
+                    Text(
+                        text = if (isPremium) "일반으로 변경" else "프리미엄으로 변경",
+                        fontSize = 13.sp
+                    )
+                }
+
+                OutlinedButton(
+                    onClick = onRefreshStatus,
+                    modifier = Modifier.weight(1f),
+                    shape = RoundedCornerShape(8.dp)
+                ) {
+                    Text(
+                        text = "상태 새로고침",
+                        fontSize = 13.sp,
+                        color = Color(0xFF991B1B)
+                    )
+                }
+            }
         }
     }
 }

@@ -99,4 +99,10 @@ interface NotificationApiService {
     suspend fun sendTestNotification(
         @Path("deviceId") deviceId: String
     ): BaseResponse
+
+    @PUT("fcm/settings/{deviceId}/record-alerts")
+    suspend fun batchUpdateRecordAlerts(
+        @Path("deviceId") deviceId: String,
+        @Body request: BatchUpdateRecordAlertsRequest
+    ): BatchUpdateRecordAlertsResponse
 }

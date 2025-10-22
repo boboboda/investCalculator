@@ -1,5 +1,3 @@
-// app/src/main/java/com/bobodroid/myapplication/models/datamodels/service/UserApi/UserResponse.kt
-
 package com.bobodroid.myapplication.models.datamodels.service.UserApi
 
 import android.util.Log
@@ -50,6 +48,26 @@ data class UserResponseData(
     val targetRates: Map<String, CurrencyRatesJson>? = null
 ) {
     companion object {
+        // ✅ Map<String, CurrencyRatesJson> → TargetRates 변환 (REST API 응답용)
+        fun fromTargetRatesMap(targetRatesMap: Map<String, CurrencyRatesJson>): TargetRates {
+            val ratesMap = mutableMapOf<CurrencyType, CurrencyTargetRates>()
+
+            targetRatesMap.forEach { (currencyCode, currencyRatesJson) ->
+                try {
+                    val currencyType = CurrencyType.valueOf(currencyCode)
+                    ratesMap[currencyType] = CurrencyTargetRates(
+                        high = currencyRatesJson.high ?: emptyList(),
+                        low = currencyRatesJson.low ?: emptyList()
+                    )
+                } catch (e: IllegalArgumentException) {
+                    Log.w(TAG("UserResponseData", "fromTargetRatesMap"), "알 수 없는 통화 코드: $currencyCode")
+                }
+            }
+
+            return TargetRates(rates = ratesMap)
+        }
+
+        // ✅ JSON String → TargetRates 변환 (WebSocket용)
         fun fromTargetRateJson(jsonString: String): TargetRates? {
             return try {
                 if (jsonString.isBlank()) {

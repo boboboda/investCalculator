@@ -2,7 +2,6 @@
 
 package com.bobodroid.myapplication.screens
 
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -111,6 +110,7 @@ fun NotificationSettingsScreen(
                     icon = "💵",
                     title = "환율 알림",
                     description = "목표 환율 도달 시 즉시 알림",
+                    hint = "상세 설정은 알림 > 목표환율 탭에서",
                     enabled = settings?.rateAlert?.enabled ?: true,
                     isPremium = false,
                     onToggle = { viewModel.toggleRateAlert(it) },
@@ -120,9 +120,12 @@ fun NotificationSettingsScreen(
 
             // 수익률 알림 (프리미엄)
             item {
-                ProfitAlertCard(
+                NotificationCard(
+                    icon = "📊",
+                    title = "수익률 알림",
+                    description = "수익률 목표 달성 시 즉시 알림",
+                    hint = "상세 설정은 알림 > 수익률 알림 탭에서",
                     enabled = settings?.recordAlert?.enabled ?: false,
-                    minPercent = settings?.conditions?.minProfitPercent ?: 5.0,
                     isPremium = isPremium,
                     onToggle = {
                         if (isPremium) {
@@ -131,7 +134,6 @@ fun NotificationSettingsScreen(
                             showPremiumDialog = true
                         }
                     },
-                    onPercentChange = { viewModel.updateMinProfitPercent(it) },
                     onLockClick = { showPremiumDialog = true }
                 )
             }
@@ -147,10 +149,12 @@ fun NotificationSettingsScreen(
 
             // 매수 경과 알림 (프리미엄)
             item {
-                RecordAgeAlertCard(
+                NotificationCard(
+                    icon = "⏰",
+                    title = "매수 경과 알림",
+                    description = "매수 후 일정 기간 경과 시 알림",
+                    hint = "상세 설정은 알림 > 매수경과 탭에서",
                     enabled = settings?.recordAlert?.enabled ?: false,
-                    alertDays = settings?.conditions?.recordAgeAlert?.alertDays ?: 7,
-                    alertTime = settings?.conditions?.recordAgeAlert?.alertTime ?: "09:00",
                     isPremium = isPremium,
                     onToggle = {
                         if (isPremium) {
@@ -159,17 +163,18 @@ fun NotificationSettingsScreen(
                             showPremiumDialog = true
                         }
                     },
-                    onDaysChange = { viewModel.updateRecordAgeDays(it) },
-                    onTimeChange = { viewModel.updateRecordAgeTime(it) },
                     onLockClick = { showPremiumDialog = true }
                 )
             }
 
-            // 일일 요약 (프리미엄)
+            // 일일 요약 (프리미엄) - 추후 구현
             item {
-                DailySummaryCard(
+                NotificationCard(
+                    icon = "📊",
+                    title = "일일 요약",
+                    description = "하루 한 번 요약 리포트",
+                    hint = "추후 제공 예정",
                     enabled = settings?.systemAlert?.enabled ?: false,
-                    summaryTime = settings?.conditions?.dailySummary?.summaryTime ?: "20:00",
                     isPremium = isPremium,
                     onToggle = {
                         if (isPremium) {
@@ -178,22 +183,90 @@ fun NotificationSettingsScreen(
                             showPremiumDialog = true
                         }
                     },
-                    onTimeChange = { viewModel.updateDailySummaryTime(it) },
                     onLockClick = { showPremiumDialog = true }
                 )
             }
 
-            // 테스트 알림
+            // 방해금지 시간 섹션
             item {
-                OutlinedButton(
-                    onClick = { viewModel.sendTestNotification() },
-                    modifier = Modifier.fillMaxWidth()
+                Spacer(Modifier.height(12.dp))
+                SectionHeader(
+                    title = "🌙 방해금지 시간",
+                    description = "알림을 받지 않을 시간 설정"
+                )
+            }
+
+            item {
+                QuietHoursCard(
+                    enabled = settings?.quietHours?.enabled ?: false,
+                    startTime = settings?.quietHours?.startTime ?: "22:00",
+                    endTime = settings?.quietHours?.endTime ?: "08:00",
+                    onToggle = { enabled ->
+                        // ✅ 간단하게 토글만
+                        settings?.quietHours?.let { current ->
+                            viewModel.updateQuietHours(
+                                current.copy(enabled = enabled)
+                            )
+                        }
+                    }
+                )
+            }
+
+            // 일일 알림 제한
+            item {
+                Spacer(Modifier.height(12.dp))
+                SectionHeader(
+                    title = "🔔 일일 알림 제한",
+                    description = "하루 최대 알림 개수"
+                )
+            }
+
+            item {
+                Card(
+                    colors = CardDefaults.cardColors(containerColor = Color.White)
                 ) {
-                    Icon(Icons.Default.Notifications, null)
-                    Spacer(Modifier.width(8.dp))
-                    Text("테스트 알림 보내기")
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column {
+                            Text(
+                                text = "최대 알림 개수",
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.Medium
+                            )
+                            Text(
+                                text = "하루 ${settings?.maxDailyNotifications ?: 20}개까지",
+                                fontSize = 13.sp,
+                                color = Color(0xFF6B7280)
+                            )
+                        }
+
+                        Text(
+                            text = "${settings?.maxDailyNotifications ?: 20}개",
+                            fontSize = 20.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color(0xFF667eea)
+                        )
+                    }
                 }
             }
+
+            // 테스트 알림
+//            item {
+//                Spacer(Modifier.height(8.dp))
+//                OutlinedButton(
+//                    onClick = { viewModel.sendTestNotification() },
+//                    modifier = Modifier.fillMaxWidth()
+//                ) {
+//                    Icon(Icons.Default.Notifications, null)
+//                    Spacer(Modifier.width(8.dp))
+//                    Text("테스트 알림 보내기")
+//                }
+//            }
         }
     }
 
@@ -201,7 +274,7 @@ fun NotificationSettingsScreen(
     if (showPremiumDialog) {
         AlertDialog(
             onDismissRequest = { showPremiumDialog = false },
-            title = { Text("프리미엄 기능") },
+            title = { Text("🔒 프리미엄 기능") },
             text = { Text("이 기능은 프리미엄 사용자만 이용할 수 있습니다.") },
             confirmButton = {
                 TextButton(onClick = {
@@ -306,11 +379,13 @@ fun GlobalNotificationCard(
     }
 }
 
+// ✅ 간소화된 알림 카드 (ON/OFF만)
 @Composable
 fun NotificationCard(
     icon: String,
     title: String,
     description: String,
+    hint: String,
     enabled: Boolean,
     isPremium: Boolean,
     onToggle: (Boolean) -> Unit,
@@ -361,6 +436,14 @@ fun NotificationCard(
                         fontSize = 13.sp,
                         color = Color(0xFF6B7280)
                     )
+
+                    // ✅ 상세 설정 힌트
+                    Text(
+                        text = hint,
+                        fontSize = 11.sp,
+                        color = Color(0xFF9CA3AF),
+                        modifier = Modifier.padding(top = 4.dp)
+                    )
                 }
             }
 
@@ -373,14 +456,13 @@ fun NotificationCard(
     }
 }
 
+// ✅ 방해금지 시간 카드
 @Composable
-fun ProfitAlertCard(
+fun QuietHoursCard(
     enabled: Boolean,
-    minPercent: Double,
-    isPremium: Boolean,
-    onToggle: (Boolean) -> Unit,
-    onPercentChange: (Double) -> Unit,
-    onLockClick: () -> Unit
+    startTime: String,
+    endTime: String,
+    onToggle: (Boolean) -> Unit
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -400,29 +482,16 @@ fun ProfitAlertCard(
                     modifier = Modifier.weight(1f),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text("📊", fontSize = 28.sp)
+                    Text("🌙", fontSize = 28.sp)
                     Spacer(Modifier.width(12.dp))
                     Column {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text(
-                                text = "수익률 알림",
-                                fontSize = 16.sp,
-                                fontWeight = FontWeight.Medium
-                            )
-                            if (!isPremium) {
-                                Spacer(Modifier.width(6.dp))
-                                Icon(
-                                    imageVector = Icons.Default.Lock,
-                                    contentDescription = "프리미엄",
-                                    tint = Color(0xFFF59E0B),
-                                    modifier = Modifier
-                                        .size(16.dp)
-                                        .clickable { onLockClick() }
-                                )
-                            }
-                        }
                         Text(
-                            text = "수익률 목표 달성 시 즉시 알림",
+                            text = "방해금지 모드",
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Medium
+                        )
+                        Text(
+                            text = if (enabled) "$startTime ~ $endTime" else "설정 안 함",
                             fontSize = 13.sp,
                             color = Color(0xFF6B7280)
                         )
@@ -431,141 +500,17 @@ fun ProfitAlertCard(
 
                 Switch(
                     checked = enabled,
-                    onCheckedChange = onToggle,
-                    enabled = isPremium
+                    onCheckedChange = onToggle
                 )
             }
 
-            AnimatedVisibility(visible = enabled && isPremium) {
+            if (enabled) {
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(top = 16.dp)
+                        .padding(top = 12.dp)
                 ) {
                     Divider()
-                    Spacer(Modifier.height(16.dp))
-
-                    Text(
-                        text = "최소 수익률: ${minPercent.toInt()}%",
-                        fontSize = 14.sp,
-                        fontWeight = FontWeight.Medium,
-                        color = Color(0xFF374151)
-                    )
-
-                    Slider(
-                        value = minPercent.toFloat(),
-                        onValueChange = { onPercentChange(it.toDouble()) },
-                        valueRange = 1f..20f,
-                        steps = 18,
-                        modifier = Modifier.fillMaxWidth()
-                    )
-
-                    Text(
-                        text = "${minPercent.toInt()}% 이상 수익 발생 시 알림",
-                        fontSize = 12.sp,
-                        color = Color(0xFF6B7280)
-                    )
-                }
-            }
-        }
-    }
-}
-
-@Composable
-fun RecordAgeAlertCard(
-    enabled: Boolean,
-    alertDays: Int,
-    alertTime: String,
-    isPremium: Boolean,
-    onToggle: (Boolean) -> Unit,
-    onDaysChange: (Int) -> Unit,
-    onTimeChange: (String) -> Unit,
-    onLockClick: () -> Unit
-) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = Color.White)
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp)
-        ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Row(
-                    modifier = Modifier.weight(1f),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text("⏰", fontSize = 28.sp)
-                    Spacer(Modifier.width(12.dp))
-                    Column {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text(
-                                text = "매수 경과 알림",
-                                fontSize = 16.sp,
-                                fontWeight = FontWeight.Medium
-                            )
-                            if (!isPremium) {
-                                Spacer(Modifier.width(6.dp))
-                                Icon(
-                                    imageVector = Icons.Default.Lock,
-                                    contentDescription = "프리미엄",
-                                    tint = Color(0xFFF59E0B),
-                                    modifier = Modifier
-                                        .size(16.dp)
-                                        .clickable { onLockClick() }
-                                )
-                            }
-                        }
-                        Text(
-                            text = "매수 후 일정 기간 경과 시 알림",
-                            fontSize = 13.sp,
-                            color = Color(0xFF6B7280)
-                        )
-                    }
-                }
-
-                Switch(
-                    checked = enabled,
-                    onCheckedChange = onToggle,
-                    enabled = isPremium
-                )
-            }
-
-            AnimatedVisibility(visible = enabled && isPremium) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(top = 16.dp)
-                ) {
-                    Divider()
-                    Spacer(Modifier.height(16.dp))
-
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = "경과일",
-                            fontSize = 14.sp,
-                            color = Color(0xFF374151)
-                        )
-
-                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            listOf(7, 14, 30).forEach { days ->
-                                FilterChip(
-                                    selected = alertDays == days,
-                                    onClick = { onDaysChange(days) },
-                                    label = { Text("${days}일") }
-                                )
-                            }
-                        }
-                    }
 
                     Spacer(Modifier.height(12.dp))
 
@@ -575,114 +520,39 @@ fun RecordAgeAlertCard(
                             .clip(RoundedCornerShape(8.dp))
                             .background(Color(0xFFF3F4F6))
                             .padding(12.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
+                        horizontalArrangement = Arrangement.SpaceBetween
                     ) {
-                        Text(
-                            text = "알림 시간",
-                            fontSize = 14.sp,
-                            color = Color(0xFF374151)
-                        )
-
-                        Text(
-                            text = alertTime,
-                            fontSize = 16.sp,
-                            fontWeight = FontWeight.Medium,
-                            color = Color(0xFF1F2937)
-                        )
-                    }
-                }
-            }
-        }
-    }
-}
-
-@Composable
-fun DailySummaryCard(
-    enabled: Boolean,
-    summaryTime: String,
-    isPremium: Boolean,
-    onToggle: (Boolean) -> Unit,
-    onTimeChange: (String) -> Unit,
-    onLockClick: () -> Unit
-) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = Color.White)
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp)
-        ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Row(
-                    modifier = Modifier.weight(1f),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text("📊", fontSize = 28.sp)
-                    Spacer(Modifier.width(12.dp))
-                    Column {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
+                        Column {
                             Text(
-                                text = "일일 요약",
+                                text = "시작",
+                                fontSize = 12.sp,
+                                color = Color(0xFF6B7280)
+                            )
+                            Text(
+                                text = startTime,
                                 fontSize = 16.sp,
                                 fontWeight = FontWeight.Medium
                             )
-                            if (!isPremium) {
-                                Spacer(Modifier.width(6.dp))
-                                Icon(
-                                    imageVector = Icons.Default.Lock,
-                                    contentDescription = "프리미엄",
-                                    tint = Color(0xFFF59E0B),
-                                    modifier = Modifier
-                                        .size(16.dp)
-                                        .clickable { onLockClick() }
-                                )
-                            }
                         }
-                        Text(
-                            text = "하루 한 번 요약 리포트",
-                            fontSize = 13.sp,
-                            color = Color(0xFF6B7280)
+
+                        Icon(
+                            imageVector = Icons.Default.ArrowForward,
+                            contentDescription = null,
+                            tint = Color(0xFF6B7280)
                         )
-                    }
-                }
 
-                Switch(
-                    checked = enabled,
-                    onCheckedChange = onToggle,
-                    enabled = isPremium
-                )
-            }
-
-            AnimatedVisibility(visible = enabled && isPremium) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(top = 16.dp)
-                ) {
-                    Divider()
-                    Spacer(Modifier.height(16.dp))
-
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clip(RoundedCornerShape(8.dp))
-                            .background(Color(0xFFF3F4F6))
-                            .padding(12.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        Text("요약 시간", fontSize = 14.sp)
-                        Text(
-                            text = summaryTime,
-                            fontSize = 16.sp,
-                            fontWeight = FontWeight.Medium
-                        )
+                        Column {
+                            Text(
+                                text = "종료",
+                                fontSize = 12.sp,
+                                color = Color(0xFF6B7280)
+                            )
+                            Text(
+                                text = endTime,
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.Medium
+                            )
+                        }
                     }
                 }
             }

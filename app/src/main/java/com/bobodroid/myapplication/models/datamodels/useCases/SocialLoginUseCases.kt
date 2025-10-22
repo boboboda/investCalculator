@@ -3,13 +3,18 @@ package com.bobodroid.myapplication.models.datamodels.useCases
 import android.app.Activity
 import android.util.Log
 import com.bobodroid.myapplication.MainActivity.Companion.TAG
+import com.bobodroid.myapplication.models.datamodels.repository.InvestRepository
 import com.bobodroid.myapplication.models.datamodels.repository.UserRepository
 import com.bobodroid.myapplication.models.datamodels.roomDb.LocalUserData
 import com.bobodroid.myapplication.models.datamodels.roomDb.SocialType
+import com.bobodroid.myapplication.models.datamodels.service.BackupApi.BackupApi
+import com.bobodroid.myapplication.models.datamodels.service.BackupApi.BackupMapper
+import com.bobodroid.myapplication.models.datamodels.service.BackupApi.BackupRequest
 import com.bobodroid.myapplication.models.datamodels.service.UserApi.UserApi
 import com.bobodroid.myapplication.models.datamodels.service.UserApi.UserRequest
 import com.bobodroid.myapplication.models.datamodels.social.SocialLoginManager
 import com.bobodroid.myapplication.util.result.Result
+import kotlinx.coroutines.flow.first
 import javax.inject.Inject
 
 /**
@@ -432,9 +437,10 @@ class UnlinkSocialUseCase @Inject constructor(
  * 서버 백업 UseCase
  */
 class SyncToServerUseCase @Inject constructor(
-    private val userRepository: UserRepository
+    private val userRepository: UserRepository,
+    private val investRepository: InvestRepository
 ) {
-    suspend operator fun invoke(localUserData: LocalUserData): Result<Unit> {
+    suspend operator fun invoke(localUserData: LocalUserData): Result<LocalUserData> {
         return try {
             if (localUserData.socialId == null) {
                 return Result.Error(message = "소셜 로그인이 필요합니다")
@@ -442,33 +448,48 @@ class SyncToServerUseCase @Inject constructor(
 
             Log.d(TAG("SyncToServerUseCase", "invoke"), "서버 백업 시작")
 
-            val userRequest = UserRequest(
+            // ✅ 1. 모든 투자 기록 가져오기
+            val allRecords = investRepository.getAllCurrencyRecords().first()
+            Log.d(TAG("SyncToServerUseCase", "invoke"), "백업할 기록: ${allRecords.size}개")
+
+            // ✅ 2. CurrencyRecord → CurrencyRecordDto 변환
+            val recordDtos = BackupMapper.toDtoList(allRecords)
+
+            // ✅ 3. 백업 요청 생성
+            val backupRequest = BackupRequest(
                 deviceId = localUserData.id.toString(),
                 socialId = localUserData.socialId,
                 socialType = localUserData.socialType,
-                email = localUserData.email,
-                nickname = localUserData.nickname,
-                profileUrl = localUserData.profileUrl,
-                fcmToken = localUserData.fcmToken ?: ""
+                currencyRecords = recordDtos
             )
 
-            val response = UserApi.userService.userUpdate(
-                deviceId = localUserData.id.toString(),
-                userRequest = userRequest
-            )
+            // ✅ 4. 서버로 백업 전송
+            val response = BackupApi.backupService.createBackup(backupRequest)
 
             if (!response.success) {
                 return Result.Error(message = response.message)
             }
 
-            val syncedUser = localUserData.copy(isSynced = true)
+            // ✅ 5. 백업 성공 시 lastSyncAt 업데이트
+            val currentTime = java.text.SimpleDateFormat(
+                "yyyy-MM-dd'T'HH:mm:ss",
+                java.util.Locale.getDefault()
+            ).format(java.util.Date())
+
+            val syncedUser = localUserData.copy(
+                isSynced = true,
+                lastSyncAt = currentTime
+            )
+
+            // ✅ 6. DB에 저장
             userRepository.localUserUpdate(syncedUser)
 
-            Log.d(TAG("SyncToServerUseCase", "invoke"), "서버 백업 완료: ${response.message}")
+            Log.d(TAG("SyncToServerUseCase", "invoke"), "서버 백업 완료: ${response.message}, 기록 ${allRecords.size}개")
 
+            // ✅ 7. 업데이트된 사용자 데이터 반환
             Result.Success(
-                data = Unit,
-                message = "데이터가 백업되었습니다"
+                data = syncedUser,
+                message = "데이터가 백업되었습니다 (${allRecords.size}개)"
             )
 
         } catch (e: Exception) {
@@ -484,29 +505,69 @@ class SyncToServerUseCase @Inject constructor(
 /**
  * 서버에서 데이터 복구 UseCase
  */
+/**
+ * 서버에서 데이터 복구 UseCase (완성)
+ */
 class RestoreFromServerUseCase @Inject constructor(
-    private val userRepository: UserRepository
+    private val userRepository: UserRepository,
+    private val investRepository: InvestRepository
 ) {
-    suspend operator fun invoke(socialId: String, socialType: String): Result<LocalUserData> {
+    suspend operator fun invoke(
+        deviceId: String? = null,
+        socialId: String? = null,
+        socialType: String? = null
+    ): Result<Int> {
         return try {
-            Log.d(TAG("RestoreFromServerUseCase", "invoke"), "데이터 복구 시작: $socialId ($socialType)")
+            Log.d(TAG("RestoreFromServerUseCase", "invoke"), "데이터 복구 시작")
 
-            // ✅ find-by-social 엔드포인트 사용
-            val response = UserApi.userService.findBySocial(
-                socialId = socialId,
-                socialType = socialType
-            )
-
-            if (!response.success || response.data == null) {
-                return Result.Error(message = response.message ?: "서버에 저장된 데이터가 없습니다")
+            // ✅ 1. 복구 방식 결정 (deviceId 우선, 없으면 socialId)
+            val response = when {
+                !deviceId.isNullOrEmpty() -> {
+                    Log.d(TAG("RestoreFromServerUseCase", "invoke"), "deviceId로 복구: $deviceId")
+                    BackupApi.backupService.restoreByDeviceId(deviceId)
+                }
+                !socialId.isNullOrEmpty() && !socialType.isNullOrEmpty() -> {
+                    Log.d(TAG("RestoreFromServerUseCase", "invoke"), "socialId로 복구: $socialId")
+                    BackupApi.backupService.restoreBySocialId(socialId, socialType)
+                }
+                else -> {
+                    return Result.Error(message = "deviceId 또는 socialId가 필요합니다")
+                }
             }
 
-            val serverData = response.data
+            // ✅ 2. 응답 확인
+            if (!response.success || response.data == null) {
+                return Result.Error(message = response.message)
+            }
 
-            // TODO: 서버 데이터를 LocalUserData로 변환 후 로컬 DB에 저장
-            Log.d(TAG("RestoreFromServerUseCase", "invoke"), "데이터 복구 완료")
+            val restoreData = response.data
+            Log.d(TAG("RestoreFromServerUseCase", "invoke"), "복구할 기록: ${restoreData.recordCount}개")
 
-            Result.Error(message = "데이터 복구 기능은 추후 구현 예정입니다")
+            // ✅ 3. 기존 데이터 삭제 (선택적 - 주석 처리 가능)
+            // investRepository.deleteAllRecords()
+
+            // ✅ 4. CurrencyRecordDto → CurrencyRecord 변환
+            val records = BackupMapper.fromDtoList(restoreData.currencyRecords)
+
+            // ✅ 5. 로컬 DB에 저장
+            investRepository.addCurrencyRecords(records)
+
+            // ✅ 6. 사용자 정보 업데이트 (lastSyncAt)
+            val currentUser = userRepository.userData.first()?.localUserData
+            if (currentUser != null) {
+                val updatedUser = currentUser.copy(
+                    lastSyncAt = restoreData.lastBackupAt,
+                    isSynced = true
+                )
+                userRepository.localUserUpdate(updatedUser)
+            }
+
+            Log.d(TAG("RestoreFromServerUseCase", "invoke"), "데이터 복구 완료: ${records.size}개")
+
+            Result.Success(
+                data = records.size,
+                message = "데이터를 복구했습니다 (${records.size}개)"
+            )
 
         } catch (e: Exception) {
             Log.e(TAG("RestoreFromServerUseCase", "invoke"), "데이터 복구 실패", e)

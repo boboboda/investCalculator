@@ -99,7 +99,7 @@ fun RecordListRowView(
     val profitValue = BigDecimal(profit, mathContext)
     val isProfit = profitValue.signum() >= 0
 
-    val profitColor = if (isProfit) Color(0xFF10B981) else Color(0xFFEF4444)
+    val profitColor = if (isProfit) Color(0xFFEF4444) else Color(0xFF2563EB)
 
     // 날짜 표시
     val displayDate = if (data.recordColor!!) {

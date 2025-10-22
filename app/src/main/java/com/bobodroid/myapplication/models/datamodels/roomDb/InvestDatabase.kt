@@ -1,5 +1,6 @@
 package com.bobodroid.myapplication.models.datamodels.roomDb
 
+import androidx.room.AutoMigration
 import androidx.room.Database
 import androidx.room.RoomDatabase
 import java.util.UUID
@@ -10,7 +11,7 @@ import java.util.UUID
  * - ExchangeRate: 환율 정보 (UUID)
  * - CurrencyRecord: 통합 외화 기록 (UUID)
  *
- * fallbackToDestructiveMigration 사용으로 마이그레이션 불필요
+ * Version 32: lastSyncAt 필드 추가
  */
 @Database(
     entities = [
@@ -18,8 +19,11 @@ import java.util.UUID
         ExchangeRate::class,
         CurrencyRecord::class
     ],
-    version = 31,
-    exportSchema = true
+    version = 32,
+    exportSchema = true,
+    autoMigrations = [
+        AutoMigration(from = 31, to = 32)
+    ]
 )
 abstract class InvestDatabase : RoomDatabase() {
     abstract fun localUserDao(): LocalUserDatabaseDao

@@ -1,5 +1,6 @@
 package com.bobodroid.myapplication.di
 
+import com.bobodroid.myapplication.models.datamodels.repository.InvestRepository
 import com.bobodroid.myapplication.models.datamodels.repository.UserRepository
 import com.bobodroid.myapplication.models.datamodels.social.SocialLoginManager
 import com.bobodroid.myapplication.models.datamodels.useCases.DeleteUserUseCase
@@ -183,12 +184,14 @@ object UseCaseModule {
 
     @Provides
     fun provideSyncToServerUseCase(
-        userRepository: UserRepository
-    ): SyncToServerUseCase = SyncToServerUseCase(userRepository)
+        userRepository: UserRepository,
+        investRepository: InvestRepository
+    ): SyncToServerUseCase = SyncToServerUseCase(userRepository, investRepository)
 
     @Provides
     fun provideRestoreFromServerUseCase(
-        userRepository: UserRepository
-    ): RestoreFromServerUseCase = RestoreFromServerUseCase(userRepository)
+        userRepository: UserRepository,
+        investRepository: InvestRepository
+    ): RestoreFromServerUseCase = RestoreFromServerUseCase(userRepository, investRepository)
 
 }

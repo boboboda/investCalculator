@@ -1,5 +1,6 @@
 package com.bobodroid.myapplication.screens
 
+import android.content.Intent
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -25,10 +26,12 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
+import androidx.core.content.ContextCompat
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.bobodroid.myapplication.WebActivity
 import com.bobodroid.myapplication.billing.BillingClientLifecycle
 import com.bobodroid.myapplication.components.Dialogs.OnboardingTooltipDialog
 import com.bobodroid.myapplication.models.datamodels.roomDb.LocalUserData
@@ -142,13 +145,15 @@ fun MyPageScreen() {
 
             composable(MyPageRoute.Premium.routeName!!) {
                 PremiumScreen(
-                    onBackClick = { myPageRouteAction.goBack() }
+                    onBackClick = { myPageRouteAction.goBack() },
+                    onAccountManageClick = {
+                        // ✅ 계정 관리 화면으로 이동
+                        myPageRouteAction.navTo(MyPageRoute.CreateUser)
+                    }
                 )
             }
 
-            composable(MyPageRoute.CustomerServiceCenter.routeName!!) {
-                CustomerView(myPageRouteAction)
-            }
+            // ✅ CustomerServiceCenter 라우트 제거 - 바로 WebActivity로 이동
         }
 
         SnackbarHost(
@@ -236,7 +241,12 @@ fun ImprovedMyPageView(
             SettingSection(
                 onAccountManageClick = { myPageRouteAction.navTo(MyPageRoute.CreateUser) },
                 onCloudServiceClick = { myPageRouteAction.navTo(MyPageRoute.CloudService) },
-                onCustomerServiceClick = { myPageRouteAction.navTo(MyPageRoute.CustomerServiceCenter) },
+                onCustomerServiceClick = {
+                    // ✅ CustomerView 화면으로 가지 않고 바로 WebActivity 실행
+                    val webPostIntent = Intent(context, WebActivity::class.java)
+                    webPostIntent.putExtra("url", "https://cobusil.vercel.app/release/postBoard/dollarRecord")
+                    ContextCompat.startActivity(context, webPostIntent, null)
+                },
                 onWidgetSettingsClick = { myPageRouteAction.navTo(MyPageRoute.WidgetSettings) }
             )
         }

@@ -4,6 +4,8 @@ import android.app.Application
 import android.content.pm.PackageManager
 import android.util.Base64
 import android.util.Log
+import androidx.hilt.work.HiltWorkerFactory
+import androidx.work.Configuration
 import com.bobodroid.myapplication.BuildConfig
 import com.bobodroid.myapplication.billing.BillingClientLifecycle
 import com.google.android.gms.ads.MobileAds
@@ -16,12 +18,15 @@ import java.security.MessageDigest
 import javax.inject.Inject
 
 @HiltAndroidApp
-class InvestApplication: Application() {
+class InvestApplication: Application(), Configuration.Provider {
 
     @Inject
     lateinit var appStarter: AppStarter
 
     private val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+
+    @Inject
+    lateinit var workerFactory: HiltWorkerFactory
 
     companion object {
         lateinit var prefs: PreferenceUtil
@@ -62,6 +67,11 @@ class InvestApplication: Application() {
         instance = this
         this.billingClientLifecycle = BillingClientLifecycle.getInstance(this)
     }
+
+    override val workManagerConfiguration: Configuration
+        get() = Configuration.Builder()
+            .setWorkerFactory(workerFactory)
+            .build()
 
     /**
      * ✅ 키 해시 자동 출력

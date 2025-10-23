@@ -32,27 +32,39 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.bobodroid.myapplication.BuildConfig
 import com.bobodroid.myapplication.WebActivity
 import com.bobodroid.myapplication.billing.BillingClientLifecycle
 import com.bobodroid.myapplication.components.Dialogs.AccountFoundDialog
 import com.bobodroid.myapplication.components.Dialogs.DataRestoreDialog
 import com.bobodroid.myapplication.components.Dialogs.OnboardingTooltipDialog
+import com.bobodroid.myapplication.components.Dialogs.RewardAdInfoDialog
 import com.bobodroid.myapplication.models.datamodels.roomDb.LocalUserData
+import com.bobodroid.myapplication.models.datamodels.roomDb.PremiumType
 import com.bobodroid.myapplication.models.viewmodels.*
 import com.bobodroid.myapplication.routes.MainRoute
 import com.bobodroid.myapplication.routes.MyPageRoute
 import com.bobodroid.myapplication.routes.RouteAction
 import kotlinx.coroutines.launch
+import java.time.Duration
+import java.time.Instant
 import java.time.LocalDate
 import java.time.temporal.ChronoUnit
 
 @Composable
-fun MyPageScreen() {
+fun MyPageScreen(
+    sharedViewModel: SharedViewModel,
+    myPageViewModel: MyPageViewModel = hiltViewModel()
+) {
     val coroutineScope = rememberCoroutineScope()
-    val myPageViewModel: MyPageViewModel = hiltViewModel()
+    val context = LocalContext.current
     val uiState by myPageViewModel.myPageUiState.collectAsState()
     val mainScreenSnackBarHostState = remember { SnackbarHostState() }
     val navController = rememberNavController()
+
+    val premiumType by sharedViewModel.premiumType.collectAsState()
+    val premiumExpiryDate by sharedViewModel.premiumExpiryDate.collectAsState()
+    val showRewardAdInfo by sharedViewModel.showRewardAdInfo.collectAsState()
 
     val myPageRouteAction = remember {
         RouteAction<MyPageRoute>(navController, MyPageRoute.SelectView.routeName)
@@ -78,7 +90,13 @@ fun MyPageScreen() {
                     onSetGoal = { amount -> myPageViewModel.setMonthlyGoal(amount) },
                     showOnboarding = { showOnboarding = true },
                     badges = uiState.badges,
-                    isPremium = uiState.localUser.isPremium
+                    isPremium = uiState.localUser.isPremium,
+                    premiumType = premiumType,
+                    premiumExpiryDate = premiumExpiryDate,
+                    showRewardDialog = {
+                        sharedViewModel.showRewardAdDialog()
+                    },
+                    sharedViewModel = sharedViewModel
                 )
             }
 
@@ -268,6 +286,18 @@ fun MyPageScreen() {
                 onDismiss = { showOnboarding = false }
             )
         }
+
+        // 리워드 광고 안내 팝업
+        if (showRewardAdInfo) {
+            RewardAdInfoDialog(
+                onConfirm = {
+                    sharedViewModel.showRewardAdAndGrantPremium(context)
+                },
+                onDismiss = {
+                    sharedViewModel.closeRewardAdDialog()
+                }
+            )
+        }
     }
 }
 
@@ -281,7 +311,11 @@ fun ImprovedMyPageView(
     onSetGoal: (Long) -> Unit = {},
     showOnboarding: () -> Unit,
     badges: List<BadgeInfo>,
-    isPremium: Boolean = false
+    isPremium: Boolean = false,
+    premiumType: PremiumType,
+    premiumExpiryDate: String?,
+    showRewardDialog: () -> Unit,
+    sharedViewModel: SharedViewModel
 ) {
     val context = LocalContext.current
 
@@ -302,11 +336,16 @@ fun ImprovedMyPageView(
         item {
             PremiumPurchaseCard(
                 isPremium = isPremium,
+                premiumType = premiumType,
+                premiumExpiryDate = premiumExpiryDate,
                 onPurchaseClick = {
                     myPageRouteAction.navTo(MyPageRoute.Premium)
                 },
                 onSettingsClick = {
                     myPageRouteAction.navTo(MyPageRoute.Premium)
+                },
+                onWatchRewardAd = {
+                    showRewardDialog()
                 }
             )
         }
@@ -367,8 +406,55 @@ fun ImprovedMyPageView(
         item {
             Spacer(modifier = Modifier.height(32.dp))
         }
+
+        // MyPageScreen.kt 하단에 추가
+
+        if (BuildConfig.DEBUG) {
+            item {
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = Color(0xFFEF4444)
+                    )
+                ) {
+                    Column(
+                        modifier = Modifier.padding(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Text(
+                            "🔧 개발자 도구",
+                            color = Color.White,
+                            fontWeight = FontWeight.Bold
+                        )
+
+                        Button(
+                            onClick = { sharedViewModel.grantTestPremium(1) },
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = Color.White,
+                                contentColor = Color.Black
+                            )
+                        ) {
+                            Text("1분 후 만료 프리미엄 지급")
+                        }
+
+                        Button(
+                            onClick = { sharedViewModel.resetAdCounts() },
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = Color.White,
+                                contentColor = Color.Black
+                            )
+                        ) {
+                            Text("광고 카운트 초기화")
+                        }
+                    }
+                }
+            }
+        }
     }
 }
+
 
 /**
  * 프리미엄 구매/상태 카드
@@ -376,8 +462,11 @@ fun ImprovedMyPageView(
 @Composable
 fun PremiumPurchaseCard(
     isPremium: Boolean,
+    premiumType: PremiumType,
+    premiumExpiryDate: String?,
     onPurchaseClick: () -> Unit,
-    onSettingsClick: () -> Unit
+    onSettingsClick: () -> Unit,
+    onWatchRewardAd: () -> Unit
 ) {
     Card(
         modifier = Modifier
@@ -385,14 +474,28 @@ fun PremiumPurchaseCard(
             .padding(16.dp),
         shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(
-            containerColor = if (isPremium) Color(0xFFFEF3C7) else Color(0xFF6366F1)
+            containerColor = when {
+                // ✅ 중요: isPremium을 먼저 체크
+                !isPremium -> Color(0xFF6366F1)  // 무료 사용자 (파란색)
+                premiumType == PremiumType.REWARD_AD -> Color(0xFFFEF3C7)  // 리워드 (노란색)
+                premiumType == PremiumType.SUBSCRIPTION -> Color(0xFFFDE68A)  // 구독 (금색)
+                premiumType == PremiumType.EVENT || premiumType == PremiumType.LIFETIME -> Color(0xFFDDD6FE)  // 이벤트/평생 (보라색)
+                else -> Color(0xFF6366F1)  // 기본 (파란색)
+            }
         ),
         elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
     ) {
         if (isPremium) {
-            PremiumActiveContent(onSettingsClick = onSettingsClick)
+            PremiumActiveContent(
+                premiumType = premiumType,
+                premiumExpiryDate = premiumExpiryDate,
+                onSettingsClick = onSettingsClick
+            )
         } else {
-            PremiumPromotionContent(onPurchaseClick = onPurchaseClick)
+            PremiumPromotionContent(
+                onPurchaseClick = onPurchaseClick,
+                onWatchRewardAd = onWatchRewardAd
+            )
         }
     }
 }
@@ -401,7 +504,26 @@ fun PremiumPurchaseCard(
  * 프리미엄 활성 상태
  */
 @Composable
-fun PremiumActiveContent(onSettingsClick: () -> Unit) {
+fun PremiumActiveContent(
+    premiumType: PremiumType,
+    premiumExpiryDate: String?,
+    onSettingsClick: () -> Unit
+) {
+    // ✅ 타입별 색상 정의
+    val iconColor = when (premiumType) {
+        PremiumType.REWARD_AD -> Color(0xFFF59E0B)  // 주황색
+        PremiumType.SUBSCRIPTION -> Color(0xFFEAB308)  // 금색
+        PremiumType.EVENT, PremiumType.LIFETIME -> Color(0xFF8B5CF6)  // 보라색
+        else -> Color(0xFF6366F1)  // 파란색
+    }
+
+    val textColor = when (premiumType) {
+        PremiumType.REWARD_AD -> Color(0xFF92400E)  // 진한 갈색
+        PremiumType.SUBSCRIPTION -> Color(0xFF78350F)  // 진한 금색
+        PremiumType.EVENT, PremiumType.LIFETIME -> Color(0xFF5B21B6)  // 진한 보라색
+        else -> Color(0xFF1E40AF)  // 진한 파란색
+    }
+
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -416,26 +538,52 @@ fun PremiumActiveContent(onSettingsClick: () -> Unit) {
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
+                // 타입별 아이콘
                 Icon(
-                    imageVector = Icons.Rounded.Star,
+                    imageVector = when (premiumType) {
+                        PremiumType.REWARD_AD -> Icons.Rounded.PlayCircle
+                        PremiumType.SUBSCRIPTION -> Icons.Rounded.Star
+                        PremiumType.EVENT -> Icons.Rounded.CardGiftcard
+                        PremiumType.LIFETIME -> Icons.Rounded.AllInclusive
+                        else -> Icons.Rounded.Star
+                    },
                     contentDescription = null,
                     modifier = Modifier.size(32.dp),
-                    tint = Color(0xFFF59E0B)
+                    tint = iconColor
                 )
 
                 Column {
+                    // 타입별 제목
                     Text(
-                        text = "프리미엄 사용 중",
+                        text = when (premiumType) {
+                            PremiumType.REWARD_AD -> "24시간 무료 체험 중"
+                            PremiumType.SUBSCRIPTION -> "프리미엄 구독 중"
+                            PremiumType.EVENT -> "이벤트 프리미엄"
+                            PremiumType.LIFETIME -> "평생 프리미엄"
+                            else -> "프리미엄"
+                        },
                         fontSize = 20.sp,
                         fontWeight = FontWeight.Bold,
-                        color = Color(0xFF92400E)
+                        color = textColor
                     )
 
-                    Text(
-                        text = "모든 기능 이용 가능",
-                        fontSize = 13.sp,
-                        color = Color(0xFFB45309)
-                    )
+                    // 만료 시간 표시
+                    if (premiumType == PremiumType.REWARD_AD || premiumType == PremiumType.SUBSCRIPTION) {
+                        premiumExpiryDate?.let { expiry ->
+                            val remainingTime = calculateRemainingTime(expiry)
+                            Text(
+                                text = remainingTime,
+                                fontSize = 13.sp,
+                                color = textColor.copy(alpha = 0.8f)
+                            )
+                        }
+                    } else {
+                        Text(
+                            text = "모든 기능 이용 가능",
+                            fontSize = 13.sp,
+                            color = textColor.copy(alpha = 0.8f)
+                        )
+                    }
                 }
             }
 
@@ -446,22 +594,25 @@ fun PremiumActiveContent(onSettingsClick: () -> Unit) {
                 Icon(
                     imageVector = Icons.Rounded.Settings,
                     contentDescription = "설정",
-                    tint = Color(0xFF92400E)
+                    tint = iconColor
                 )
             }
         }
 
         Spacer(modifier = Modifier.height(20.dp))
 
-        PremiumBenefitsSummary(isCompact = true, textColor = Color(0xFF92400E))
+        PremiumBenefitsSummary(
+            isCompact = true,
+            textColor = textColor
+        )
     }
 }
 
-/**
- * 프리미엄 구매 프로모션
- */
 @Composable
-fun PremiumPromotionContent(onPurchaseClick: () -> Unit) {
+fun PremiumPromotionContent(
+    onPurchaseClick: () -> Unit,
+    onWatchRewardAd: () -> Unit
+) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -472,20 +623,20 @@ fun PremiumPromotionContent(onPurchaseClick: () -> Unit) {
             imageVector = Icons.Rounded.Star,
             contentDescription = null,
             modifier = Modifier.size(56.dp),
-            tint = Color(0xFFFBBF24)
+            tint = Color.White
         )
 
         Spacer(modifier = Modifier.height(16.dp))
 
         Text(
-            text = "프리미엄으로 업그레이드",
+            text = "프리미엄으로\n업그레이드하세요!",
             fontSize = 22.sp,
             fontWeight = FontWeight.Bold,
             color = Color.White,
             textAlign = TextAlign.Center
         )
 
-        Spacer(modifier = Modifier.height(8.dp))
+        Spacer(modifier = Modifier.height(12.dp))
 
         Text(
             text = "광고 없이 모든 기능을 사용하세요",
@@ -494,12 +645,47 @@ fun PremiumPromotionContent(onPurchaseClick: () -> Unit) {
             textAlign = TextAlign.Center
         )
 
-        Spacer(modifier = Modifier.height(20.dp))
+        Spacer(modifier = Modifier.height(24.dp))
 
-        PremiumBenefitsSummary(isCompact = true, textColor = Color.White)
+        // 리워드 광고 버튼
+        OutlinedButton(
+            onClick = onWatchRewardAd,
+            modifier = Modifier.fillMaxWidth(),
+            colors = ButtonDefaults.outlinedButtonColors(
+                contentColor = Color.White
+            ),
+            border = BorderStroke(2.dp, Color.White),
+            shape = RoundedCornerShape(12.dp)
+        ) {
+            Row(
+                horizontalArrangement = Arrangement.Center,
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.padding(vertical = 8.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Rounded.PlayCircle,
+                    contentDescription = null,
+                    modifier = Modifier.size(24.dp)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Column(horizontalAlignment = Alignment.Start) {
+                    Text(
+                        text = "광고 보고 24시간 무료",
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 15.sp
+                    )
+                    Text(
+                        text = "하루 1회 가능",
+                        fontSize = 12.sp,
+                        color = Color.White.copy(alpha = 0.8f)
+                    )
+                }
+            }
+        }
 
-        Spacer(modifier = Modifier.height(20.dp))
+        Spacer(modifier = Modifier.height(12.dp))
 
+        // 구독 버튼
         Button(
             onClick = onPurchaseClick,
             modifier = Modifier.fillMaxWidth(),
@@ -510,22 +696,45 @@ fun PremiumPromotionContent(onPurchaseClick: () -> Unit) {
             shape = RoundedCornerShape(12.dp)
         ) {
             Row(
-                verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.Center,
-                modifier = Modifier.padding(vertical = 4.dp)
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.padding(vertical = 8.dp)
             ) {
                 Icon(
                     imageVector = Icons.Rounded.Star,
                     contentDescription = null,
-                    modifier = Modifier.size(20.dp)
+                    modifier = Modifier.size(24.dp)
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
-                    text = "자세히 보기",
+                    text = "프리미엄 구독하기",
                     fontWeight = FontWeight.Bold,
-                    fontSize = 16.sp
+                    fontSize = 15.sp
                 )
             }
+        }
+    }
+}
+
+/**
+ * 남은 시간 계산
+ */
+@Composable
+fun calculateRemainingTime(expiryDate: String): String {
+    return remember(expiryDate) {
+        try {
+            val expiry = Instant.parse(expiryDate)
+            val now = Instant.now()
+            val duration = Duration.between(now, expiry)
+
+            when {
+                duration.isNegative -> "만료됨"
+                duration.toHours() < 1 -> "${duration.toMinutes()}분 남음"
+                duration.toHours() < 24 -> "${duration.toHours()}시간 남음"
+                else -> "${duration.toDays()}일 남음"
+            }
+        } catch (e: Exception) {
+            "남은 시간 확인 불가"
         }
     }
 }
@@ -565,9 +774,6 @@ fun PremiumBenefitsSummary(
     }
 }
 
-/**
- * 프리미엄 혜택 항목
- */
 @Composable
 fun PremiumBenefitItem(
     icon: ImageVector,
@@ -576,20 +782,18 @@ fun PremiumBenefitItem(
 ) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(10.dp)
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         Icon(
             imageVector = icon,
             contentDescription = null,
             modifier = Modifier.size(20.dp),
-            tint = textColor.copy(alpha = 0.9f)
+            tint = textColor
         )
-
         Text(
             text = text,
             fontSize = 14.sp,
-            color = textColor.copy(alpha = 0.9f),
-            fontWeight = FontWeight.Medium
+            color = textColor
         )
     }
 }

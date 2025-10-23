@@ -358,8 +358,7 @@ fun MainScreen(
             if (showPremiumPrompt) {
                 PremiumPromptDialog(
                     onWatchAd = {
-                        sharedViewModel.closePremiumPrompt()
-                        sharedViewModel.showRewardAdDialog()
+                        sharedViewModel.closePremiumPromptAndShowRewardDialog()
                     },
                     onDismiss = {
                         sharedViewModel.closePremiumPrompt()

@@ -28,6 +28,7 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.bobodroid.myapplication.components.Dialogs.ImprovedTargetRateDialog
 import com.bobodroid.myapplication.components.Dialogs.PremiumPromptDialog
+import com.bobodroid.myapplication.components.Dialogs.RewardAdInfoDialog
 import com.bobodroid.myapplication.components.common.CurrencyDropdown
 import com.bobodroid.myapplication.models.datamodels.service.notificationApi.RecordWithAlert
 import com.bobodroid.myapplication.models.datamodels.roomDb.*
@@ -60,6 +61,7 @@ fun FcmAlarmScreen(
 
     val isPremium by sharedViewModel.isPremium.collectAsState()
     val showPremiumPrompt by sharedViewModel.showPremiumPrompt.collectAsState()
+    val showRewardAdInfo by sharedViewModel.showRewardAdInfo.collectAsState()
 
     val targetRateData by viewModel.targetRateFlow.collectAsState()
     val notificationSettings by viewModel.notificationSettings.collectAsState()
@@ -210,11 +212,22 @@ fun FcmAlarmScreen(
     if (showPremiumPrompt) {
         PremiumPromptDialog(
             onWatchAd = {
-                sharedViewModel.closePremiumPrompt()
-                sharedViewModel.showRewardAdDialog()
+                sharedViewModel.closePremiumPromptAndShowRewardDialog()
             },
             onDismiss = {
                 sharedViewModel.closePremiumPrompt()
+            }
+        )
+    }
+
+    // 리워드 광고 안내 팝업
+    if (showRewardAdInfo) {
+        RewardAdInfoDialog(
+            onConfirm = {
+                sharedViewModel.showRewardAdAndGrantPremium(context)
+            },
+            onDismiss = {
+                sharedViewModel.closeRewardAdDialog()
             }
         )
     }

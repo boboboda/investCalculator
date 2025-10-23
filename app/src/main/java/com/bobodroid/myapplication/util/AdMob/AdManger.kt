@@ -36,11 +36,6 @@ class AdManager @Inject constructor() {
             _isRewardAdReady.value = it
             Log.d(TAG("AdManager", "loadRewardedAd"), "리워드 광고 준비: $it")
         })
-
-        loadTargetRewardedAdvertisement(context, onReadyAd = {
-            _isRewardTargetAdReady.value = it
-            Log.d(TAG("AdManager", "loadRewardedAd"), "타겟 리워드 광고 준비: $it")
-        })
     }
 
     /**

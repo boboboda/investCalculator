@@ -539,7 +539,7 @@ fun InvestNavHost(
         }
 
         composable(MainRoute.MyPage.routeName!!) {
-            MyPageScreen()
+            MyPageScreen(sharedViewModel = sharedViewModel)
         }
 
         composable(MainRoute.AnalysisScreen.routeName!!) {

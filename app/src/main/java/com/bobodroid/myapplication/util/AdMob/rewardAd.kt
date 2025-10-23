@@ -32,7 +32,7 @@ fun loadRewardedAdvertisement(context: Context, onReadyAd:(Boolean)-> Unit) {
 
 
             override fun onAdLoaded(ad: RewardedAd) {
-                Log.d(TAG("loadRewardedAdvertisement",""), "Ad was loaded.")
+                Log.d(TAG("loadRewardedAdvertisement",""), "front Ad was loaded.")
                 rewardedAd = ad
 
                 onReadyAd(true)
@@ -95,7 +95,7 @@ fun loadTargetRewardedAdvertisement(context: Context, onReadyAd: ((Boolean) -> U
 
 
             override fun onAdLoaded(ad: RewardedAd) {
-                Log.d(TAG("loadRewardedAdvertisement",""), "Ad was loaded.")
+                Log.d(TAG("loadRewardedAdvertisement",""), "Target Ad was loaded.")
                 targetRewardedAd = ad
                 onReadyAd?.invoke(true)
             }

@@ -268,6 +268,23 @@ class PremiumManager @Inject constructor(
         Log.d(TAG("PremiumManager", "setTestPremiumStatus"), "테스트 프리미엄 상태: $isPremium")
         updateUserPremiumStatus(isPremium)
     }
+
+    suspend fun grantTestPremium(user: LocalUserData, minutes: Int = 1): Boolean {
+        val expiryDate = Instant.now().plus(minutes.toLong(), ChronoUnit.MINUTES).toString()
+
+        val updatedUser = user.copy(
+            premiumType = "REWARD_AD",
+            premiumExpiryDate = expiryDate,
+            premiumGrantedBy = "test",
+            premiumGrantedAt = Instant.now().toString(),
+            isPremium = true
+        )
+
+        userUseCases.localUserUpdate(updatedUser)
+        Log.d(TAG("PremiumManager", "grantTestPremium"), "테스트 프리미엄 지급: ${minutes}분 후 만료")
+
+        return true
+    }
 }
 
 

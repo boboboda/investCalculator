@@ -27,6 +27,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.bobodroid.myapplication.MainActivity.Companion.TAG
 import com.bobodroid.myapplication.components.Dialogs.PremiumPromptDialog
 import com.bobodroid.myapplication.components.Dialogs.PremiumRequiredDialog
+import com.bobodroid.myapplication.components.Dialogs.RewardAdInfoDialog
 import com.bobodroid.myapplication.components.chart.ExchangeRateChart
 import com.bobodroid.myapplication.components.common.CurrencyDropdown
 import com.bobodroid.myapplication.models.datamodels.roomDb.Currencies
@@ -46,6 +47,7 @@ fun AnalysisScreen(
 
     val isPremium by sharedViewModel.isPremium.collectAsState()
     val showPremiumPrompt by sharedViewModel.showPremiumPrompt.collectAsState()
+    val showRewardAdInfo by sharedViewModel.showRewardAdInfo.collectAsState()
 
     val context = LocalContext.current
 
@@ -84,11 +86,22 @@ fun AnalysisScreen(
         if (showPremiumPrompt) {
             PremiumPromptDialog(
                 onWatchAd = {
-                    sharedViewModel.closePremiumPrompt()
-                    sharedViewModel.showRewardAdDialog()
+                    sharedViewModel.closePremiumPromptAndShowRewardDialog()
                 },
                 onDismiss = {
                     sharedViewModel.closePremiumPrompt()
+                }
+            )
+        }
+
+        // 리워드 광고 안내 팝업
+        if (showRewardAdInfo) {
+            RewardAdInfoDialog(
+                onConfirm = {
+                    sharedViewModel.showRewardAdAndGrantPremium(context)
+                },
+                onDismiss = {
+                    sharedViewModel.closeRewardAdDialog()
                 }
             )
         }

@@ -600,7 +600,7 @@ fun PricingCard() {
                     )
                     Row(verticalAlignment = Alignment.Bottom) {
                         Text(
-                            text = "₩4,900",
+                            text = "₩2,900",
                             fontSize = 28.sp,
                             fontWeight = FontWeight.Bold,
                             color = Color(0xFF6366F1)

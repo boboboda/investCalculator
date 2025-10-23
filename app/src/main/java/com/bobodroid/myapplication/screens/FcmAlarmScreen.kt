@@ -2,11 +2,15 @@
 
 package com.bobodroid.myapplication.screens
 
+import android.util.Log
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -16,19 +20,26 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.bobodroid.myapplication.components.Dialogs.ImprovedTargetRateDialog
+import com.bobodroid.myapplication.components.Dialogs.PremiumPromptDialog
 import com.bobodroid.myapplication.components.common.CurrencyDropdown
-import com.bobodroid.myapplication.models.datamodels.notification.RecordWithAlert
+import com.bobodroid.myapplication.models.datamodels.service.notificationApi.RecordWithAlert
 import com.bobodroid.myapplication.models.datamodels.roomDb.*
 import com.bobodroid.myapplication.models.datamodels.service.UserApi.Rate
-import com.bobodroid.myapplication.models.viewmodels.AlarmUiState
+import com.bobodroid.myapplication.models.datamodels.service.notificationApi.NotificationHistoryItem
+import com.bobodroid.myapplication.models.datamodels.service.notificationApi.NotificationStats
 import com.bobodroid.myapplication.models.viewmodels.FcmAlarmViewModel
+import com.bobodroid.myapplication.models.viewmodels.SharedViewModel
 import java.text.NumberFormat
+import java.text.SimpleDateFormat
 import java.util.Locale
+import java.util.TimeZone
 
 // 탭 정의
 enum class AlarmTab(val title: String, val icon: String) {
@@ -43,11 +54,15 @@ enum class AlarmTab(val title: String, val icon: String) {
 @Composable
 fun FcmAlarmScreen(
     viewModel: FcmAlarmViewModel = hiltViewModel(),
+    sharedViewModel: SharedViewModel,
     onNavigateToSettings: () -> Unit = {}
 ) {
+
+    val isPremium by sharedViewModel.isPremium.collectAsState()
+    val showPremiumPrompt by sharedViewModel.showPremiumPrompt.collectAsState()
+
     val targetRateData by viewModel.targetRateFlow.collectAsState()
     val notificationSettings by viewModel.notificationSettings.collectAsState()
-    val isPremium by viewModel.isPremium.collectAsState()
     val history by viewModel.notificationHistory.collectAsState()
     val stats by viewModel.notificationStats.collectAsState()
     val alarmUiState by viewModel.alarmUiState.collectAsState()
@@ -56,16 +71,38 @@ fun FcmAlarmScreen(
     var selectedTab by remember { mutableStateOf(AlarmTab.RATE_ALERT) }
     var showPremiumDialog by remember { mutableStateOf(false) }
 
-    // 사용 가능한 탭 계산
-    val availableTabs = remember(isPremium) {
-        listOf(
-            AlarmTab.RATE_ALERT,
-            AlarmTab.HISTORY,
-            if (isPremium) AlarmTab.PROFIT_ALERT else null,
-            if (isPremium) AlarmTab.RECORD_AGE else null,
-            if (isPremium) AlarmTab.STATS else null
-        ).filterNotNull()
+    val context = LocalContext.current
+
+    // ✅ 디버그 로그 추가
+    LaunchedEffect(isPremium) {
+        Log.d("FcmAlarmScreen", "━━━━━━━━━━━━━━━━━━━━━━━━━━")
+        Log.d("FcmAlarmScreen", "isPremium 상태: $isPremium")
+        Log.d("FcmAlarmScreen", "━━━━━━━━━━━━━━━━━━━━━━━━━━")
     }
+
+    LaunchedEffect(Unit) {
+        if (!isPremium) {
+            // ✅ ViewModel이 UseCase 호출 → UseCase가 AdManager 호출
+            sharedViewModel.showInterstitialAdIfNeeded(context)
+        }
+    }
+
+
+    // ✅ 사용 가능한 탭 계산 (무료: 목표환율 + 알림함만)
+    val availableTabs = remember(isPremium) {
+        buildList {
+            add(AlarmTab.RATE_ALERT)  // 무료
+            add(AlarmTab.HISTORY)     // 무료
+
+            // 프리미엄 전용
+            if (isPremium) {
+                add(AlarmTab.PROFIT_ALERT)
+                add(AlarmTab.RECORD_AGE)
+                add(AlarmTab.STATS)
+            }
+        }
+    }
+
 
     Column(
         modifier = Modifier
@@ -143,7 +180,7 @@ fun FcmAlarmScreen(
 
             AlarmTab.HISTORY -> NotificationHistoryTab(
                 history = history,
-                onMarkAsRead = { viewModel.markAsRead(it) }
+                viewModel = viewModel
             )
 
             AlarmTab.STATS -> {
@@ -166,6 +203,18 @@ fun FcmAlarmScreen(
                 TextButton(onClick = { showPremiumDialog = false }) {
                     Text("확인")
                 }
+            }
+        )
+    }
+
+    if (showPremiumPrompt) {
+        PremiumPromptDialog(
+            onWatchAd = {
+                sharedViewModel.closePremiumPrompt()
+                sharedViewModel.showRewardAdDialog()
+            },
+            onDismiss = {
+                sharedViewModel.closePremiumPrompt()
             }
         )
     }
@@ -510,8 +559,6 @@ fun TargetRateTab(
     }
 }
 
-// ==================== 2. 수익률 알림 탭 ====================
-// app/src/main/java/com/bobodroid/myapplication/screens/FcmAlarmScreen.kt
 
 // ==================== 수익률 알림 탭 ====================
 @Composable
@@ -955,7 +1002,7 @@ private fun InfoItem(
 fun RecordAgeTab(
     alertDays: Int,
     alertTime: String,
-    history: List<com.bobodroid.myapplication.models.datamodels.notification.NotificationHistoryItem>,
+    history: List<NotificationHistoryItem>,
     onDaysChange: (Int) -> Unit,
     onTimeChange: (String) -> Unit,
     onMarkAsRead: (String) -> Unit
@@ -1089,45 +1136,487 @@ fun RecordAgeTab(
 }
 
 // ==================== 4. 알림함 탭 ====================
+
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun NotificationHistoryTab(
-    history: List<com.bobodroid.myapplication.models.datamodels.notification.NotificationHistoryItem>,
-    onMarkAsRead: (String) -> Unit
+    viewModel: FcmAlarmViewModel,
+    history: List<NotificationHistoryItem>
 ) {
-    if (history.isEmpty()) {
-        Box(
-            modifier = Modifier.fillMaxSize(),
-            contentAlignment = Alignment.Center
+    var showDeleteDialog by remember { mutableStateOf(false) }
+    var deleteMode by remember { mutableStateOf<DeleteMode>(DeleteMode.NONE) }
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp)
+    ) {
+        // ✅ 읽지 않은 알림 개수 표시 (대문자 상태 확인)
+        val unreadCount = history.count { it.status.uppercase() == "SENT" }
+        val readCount = history.count {
+            val status = it.status.uppercase()
+            status == "READ" || status == "CLICKED"
+        }
+
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 12.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                Text(text = "📭", fontSize = 48.sp)
-                Text(
-                    text = "받은 알림이 없습니다",
-                    color = Color(0xFF9CA3AF),
-                    fontSize = 14.sp
+            // 읽지 않은 알림
+            Card(
+                modifier = Modifier.weight(1f),
+                colors = CardDefaults.cardColors(
+                    containerColor = Color(0xFFEEF2FF)
                 )
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(12.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.MarkEmailUnread,
+                        contentDescription = null,
+                        tint = Color(0xFF4F46E5),
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(
+                        text = "안읽음 $unreadCount",
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = Color(0xFF4F46E5)
+                    )
+                }
+            }
+
+            // 읽은 알림
+            Card(
+                modifier = Modifier.weight(1f),
+                colors = CardDefaults.cardColors(
+                    containerColor = Color(0xFFF9FAFB)
+                )
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(12.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.DoneAll,
+                        contentDescription = null,
+                        tint = Color(0xFF9CA3AF),
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(
+                        text = "읽음 $readCount",
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = Color(0xFF6B7280)
+                    )
+                }
             }
         }
-    } else {
-        LazyColumn(
-            modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+
+        // ✅ 삭제 버튼들
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 12.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            items(history) { item ->
-                NotificationHistoryCard(item, onMarkAsRead)
+            // 전체 삭제
+            OutlinedButton(
+                onClick = {
+                    deleteMode = DeleteMode.ALL
+                    showDeleteDialog = true
+                },
+                modifier = Modifier.weight(1f),
+                enabled = history.isNotEmpty()
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Delete,
+                    contentDescription = null,
+                    modifier = Modifier.size(16.dp)
+                )
+                Spacer(modifier = Modifier.width(4.dp))
+                Text("전체 삭제", fontSize = 13.sp)
+            }
+
+            // 읽은 알림 삭제
+            OutlinedButton(
+                onClick = {
+                    deleteMode = DeleteMode.READ
+                    showDeleteDialog = true
+                },
+                modifier = Modifier.weight(1f),
+                enabled = history.any {
+                    val status = it.status.uppercase()
+                    status == "READ" || status == "CLICKED"
+                }
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Check,
+                    contentDescription = null,
+                    modifier = Modifier.size(16.dp)
+                )
+                Spacer(modifier = Modifier.width(4.dp))
+                Text("읽은 알림", fontSize = 13.sp)
+            }
+        }
+
+        // ✅ 알림 리스트
+        if (history.isEmpty()) {
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
+            ) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Icon(
+                        imageVector = Icons.Default.Notifications,
+                        contentDescription = null,
+                        modifier = Modifier.size(64.dp),
+                        tint = Color.Gray
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Text(
+                        text = "알림 내역이 없습니다",
+                        color = Color.Gray,
+                        fontSize = 16.sp
+                    )
+                }
+            }
+        } else {
+            LazyColumn(
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                items(
+                    items = history,
+                    key = { it.id }
+                ) { notification ->
+                    DismissibleNotificationCard(
+                        notification = notification,
+                        onMarkAsRead = { viewModel.markAsRead(notification.id) },
+                        onDelete = { viewModel.deleteNotification(notification.id) },
+                        modifier = Modifier.animateItemPlacement()
+                    )
+                }
+            }
+        }
+    }
+
+    // ✅ 삭제 확인 다이얼로그
+    if (showDeleteDialog) {
+        AlertDialog(
+            onDismissRequest = { showDeleteDialog = false },
+            title = {
+                Text(
+                    text = when (deleteMode) {
+                        DeleteMode.ALL -> "모든 알림 삭제"
+                        DeleteMode.READ -> "읽은 알림 삭제"
+                        else -> ""
+                    }
+                )
+            },
+            text = {
+                Text(
+                    text = when (deleteMode) {
+                        DeleteMode.ALL -> "모든 알림을 삭제하시겠습니까?\n이 작업은 되돌릴 수 없습니다."
+                        DeleteMode.READ -> "읽은 알림을 모두 삭제하시겠습니까?"
+                        else -> ""
+                    }
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        when (deleteMode) {
+                            DeleteMode.ALL -> viewModel.deleteAllNotifications()
+                            DeleteMode.READ -> viewModel.deleteReadNotifications()
+                            else -> {}
+                        }
+                        showDeleteDialog = false
+                    }
+                ) {
+                    Text("삭제", color = Color.Red)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDeleteDialog = false }) {
+                    Text("취소")
+                }
+            }
+        )
+    }
+}
+
+// ✅ 삭제 모드 Enum
+enum class DeleteMode {
+    NONE, ALL, READ
+}
+
+// ✅ 알림 카드 (읽음/안읽음 구분 + 삭제 기능)
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun DismissibleNotificationCard(
+    notification: NotificationHistoryItem,
+    onMarkAsRead: () -> Unit,
+    onDelete: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val isRead = notification.status.uppercase() in listOf("READ", "CLICKED")
+    val dismissState = rememberSwipeToDismissBoxState(
+        confirmValueChange = {
+            if (it == SwipeToDismissBoxValue.EndToStart) {
+                onDelete()
+                true
+            } else {
+                false
+            }
+        }
+    )
+
+    SwipeToDismissBox(
+        state = dismissState,
+        modifier = modifier, // ✅ modifier를 SwipeToDismissBox에 적용
+        backgroundContent = {
+            // ✅ 배경을 카드 크기에 정확히 맞춤
+            Card(
+                modifier = Modifier.fillMaxSize(),
+                colors = CardDefaults.cardColors(
+                    containerColor = Color(0xFFEF4444)
+                ),
+                shape = RoundedCornerShape(12.dp),
+                elevation = CardDefaults.cardElevation(0.dp)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(horizontal = 20.dp),
+                    contentAlignment = Alignment.CenterEnd
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Delete,
+                        contentDescription = "삭제",
+                        tint = Color.White,
+                        modifier = Modifier.size(24.dp)
+                    )
+                }
+            }
+        },
+        enableDismissFromStartToEnd = false,
+        enableDismissFromEndToStart = true
+    ) {
+        Card(
+            modifier = Modifier.fillMaxWidth(), // ✅ modifier 제거
+            colors = CardDefaults.cardColors(
+                containerColor = if (isRead) Color(0xFFF9FAFB) else Color.White
+            ),
+            elevation = CardDefaults.cardElevation(
+                defaultElevation = if (isRead) 0.dp else 2.dp
+            ),
+            border = if (!isRead) BorderStroke(1.dp, Color(0xFFE5E7EB)) else null,
+            shape = RoundedCornerShape(12.dp)
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { if (!isRead) onMarkAsRead() }
+                    .padding(16.dp),
+                verticalAlignment = Alignment.Top
+            ) {
+                // ✅ 읽음/안읽음 표시 - 더 명확하게
+                Surface(
+                    shape = CircleShape,
+                    color = if (isRead) Color(0xFFE5E7EB) else Color(0xFF4F46E5),
+                    modifier = Modifier.size(10.dp)
+                ) {}
+
+                Spacer(modifier = Modifier.width(12.dp))
+
+                Column(modifier = Modifier.weight(1f)) {
+                    // 상태 라벨
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        if (!isRead) {
+                            Surface(
+                                shape = RoundedCornerShape(4.dp),
+                                color = Color(0xFFEEF2FF)
+                            ) {
+                                Text(
+                                    text = "NEW",
+                                    fontSize = 10.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color(0xFF4F46E5),
+                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                )
+                            }
+                        }
+
+                        Text(
+                            text = notification.title,
+                            fontSize = 15.sp,
+                            fontWeight = if (isRead) FontWeight.Normal else FontWeight.Bold,
+                            color = if (isRead) Color(0xFF6B7280) else Color.Black
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(6.dp))
+
+                    Text(
+                        text = notification.body,
+                        fontSize = 13.sp,
+                        color = if (isRead) Color(0xFF9CA3AF) else Color(0xFF6B7280),
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis
+                    )
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Schedule,
+                            contentDescription = null,
+                            tint = Color(0xFF9CA3AF),
+                            modifier = Modifier.size(12.dp)
+                        )
+                        Text(
+                            text = formatNotificationTime(notification.sentAt),
+                            fontSize = 11.sp,
+                            color = Color(0xFF9CA3AF)
+                        )
+
+                        // ✅ 읽은 시간 표시
+                        if (isRead && notification.readAt != null) {
+                            Text(
+                                text = "•",
+                                fontSize = 11.sp,
+                                color = Color(0xFF9CA3AF)
+                            )
+                            Icon(
+                                imageVector = Icons.Default.DoneAll,
+                                contentDescription = null,
+                                tint = Color(0xFF9CA3AF),
+                                modifier = Modifier.size(12.dp)
+                            )
+                            Text(
+                                text = formatReadTime(notification.readAt),
+                                fontSize = 11.sp,
+                                color = Color(0xFF9CA3AF)
+                            )
+                        }
+                    }
+                }
+
+                // ✅ 타입 아이콘
+                Surface(
+                    shape = CircleShape,
+                    color = if (isRead) Color(0xFFF3F4F6) else Color(0xFFEEF2FF),
+                    modifier = Modifier.size(36.dp)
+                ) {
+                    Box(
+                        contentAlignment = Alignment.Center,
+                        modifier = Modifier.fillMaxSize()
+                    ) {
+                        Icon(
+                            imageVector = when (notification.type) {
+                                "RATE_ALERT" -> Icons.Default.TrendingUp
+                                "PROFIT_ALERT" -> Icons.Default.AttachMoney
+                                "RECORD_AGE" -> Icons.Default.AccessTime
+                                else -> Icons.Default.Notifications
+                            },
+                            contentDescription = null,
+                            tint = if (isRead) Color(0xFF9CA3AF) else Color(0xFF4F46E5),
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
+                }
             }
         }
     }
 }
 
+
+// ✅ 시간 포맷팅 헬퍼 함수들 (한국 시간 기준)
+fun formatNotificationTime(isoTime: String): String {
+    return try {
+        // UTC 시간을 파싱
+        val inputFormat = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.KOREA)
+        inputFormat.timeZone = TimeZone.getTimeZone("UTC")
+        val date = inputFormat.parse(isoTime) ?: return isoTime
+
+        // 현재 시간 (시스템 시간 = 한국 시간)
+        val now = System.currentTimeMillis()
+        val diffMillis = now - date.time
+        val diffMinutes = (diffMillis / (1000 * 60)).toInt()
+        val diffHours = (diffMillis / (1000 * 60 * 60)).toInt()
+        val diffDays = (diffMillis / (1000 * 60 * 60 * 24)).toInt()
+
+        when {
+            diffMinutes < 1 -> "방금 전"
+            diffMinutes < 60 -> "${diffMinutes}분 전"
+            diffHours < 24 -> "${diffHours}시간 전"
+            diffDays < 7 -> "${diffDays}일 전"
+            else -> {
+                // 7일 이상: 한국 시간대로 날짜 표시
+                val outputFormat = SimpleDateFormat("MM/dd HH:mm", Locale.KOREA)
+                outputFormat.timeZone = TimeZone.getTimeZone("Asia/Seoul")
+                outputFormat.format(date)
+            }
+        }
+    } catch (e: Exception) {
+        isoTime
+    }
+}
+
+fun formatReadTime(isoTime: String): String {
+    return try {
+        // UTC 시간을 파싱
+        val inputFormat = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.KOREA)
+        inputFormat.timeZone = TimeZone.getTimeZone("UTC")
+        val date = inputFormat.parse(isoTime) ?: return "읽음"
+
+        // 현재 시간 (시스템 시간 = 한국 시간)
+        val now = System.currentTimeMillis()
+        val diffMillis = now - date.time
+        val diffMinutes = (diffMillis / (1000 * 60)).toInt()
+        val diffHours = (diffMillis / (1000 * 60 * 60)).toInt()
+
+        when {
+            diffMinutes < 1 -> "방금 읽음"
+            diffMinutes < 60 -> "${diffMinutes}분 전 읽음"
+            diffHours < 24 -> "${diffHours}시간 전 읽음"
+            else -> {
+                // 24시간 이상: 한국 시간대로 날짜 표시
+                val outputFormat = SimpleDateFormat("MM/dd HH:mm", Locale.KOREA)
+                outputFormat.timeZone = TimeZone.getTimeZone("Asia/Seoul")
+                "${outputFormat.format(date)} 읽음"
+            }
+        }
+    } catch (e: Exception) {
+        "읽음"
+    }
+}
+
+
+
+
 // ✅ 알림 히스토리 카드 (공통 컴포넌트)
 @Composable
 fun NotificationHistoryCard(
-    item: com.bobodroid.myapplication.models.datamodels.notification.NotificationHistoryItem,
+    item: NotificationHistoryItem,
     onMarkAsRead: (String) -> Unit
 ) {
     Card(
@@ -1183,7 +1672,7 @@ fun NotificationHistoryCard(
 // ==================== 5. 통계 탭 ====================
 @Composable
 fun NotificationStatsTab(
-    stats: com.bobodroid.myapplication.models.datamodels.notification.NotificationStats?
+    stats: NotificationStats?
 ) {
     LazyColumn(
         modifier = Modifier.fillMaxSize(),

@@ -3,7 +3,6 @@
 package com.bobodroid.myapplication.models.datamodels.service.notificationApi
 
 import com.bobodroid.myapplication.BuildConfig
-import com.bobodroid.myapplication.models.datamodels.notification.*
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
 import okhttp3.OkHttpClient
@@ -117,4 +116,38 @@ interface NotificationApiService {
     suspend fun sendTestNotification(
         @Path("deviceId") deviceId: String
     ): BaseResponse
+
+
+    /**
+     * 개별 알림 삭제
+     */
+    @DELETE("fcm/history/{notificationId}")
+    suspend fun deleteNotification(
+        @Path("notificationId") notificationId: String
+    ): BaseResponse
+
+    /**
+     * 모든 알림 삭제
+     */
+    @DELETE("fcm/history/all/{deviceId}")
+    suspend fun deleteAllNotifications(
+        @Path("deviceId") deviceId: String
+    ): DeleteNotificationsResponse
+
+    /**
+     * 읽은 알림만 삭제
+     */
+    @DELETE("fcm/history/read/{deviceId}")
+    suspend fun deleteReadNotifications(
+        @Path("deviceId") deviceId: String
+    ): DeleteNotificationsResponse
+
+    /**
+     * 오래된 알림 삭제
+     */
+    @DELETE("fcm/history/old/{deviceId}")
+    suspend fun deleteOldNotifications(
+        @Path("deviceId") deviceId: String,
+        @Query("days") days: Int = 30
+    ): DeleteNotificationsResponse
 }

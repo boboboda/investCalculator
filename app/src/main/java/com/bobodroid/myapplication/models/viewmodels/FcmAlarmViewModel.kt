@@ -6,7 +6,6 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.bobodroid.myapplication.MainActivity.Companion.TAG
-import com.bobodroid.myapplication.models.datamodels.notification.*
 import com.bobodroid.myapplication.models.datamodels.repository.InvestRepository
 import com.bobodroid.myapplication.models.datamodels.repository.LatestRateRepository
 import com.bobodroid.myapplication.models.datamodels.repository.UserRepository
@@ -15,7 +14,17 @@ import com.bobodroid.myapplication.models.datamodels.service.BackupApi.BackupApi
 import com.bobodroid.myapplication.models.datamodels.service.BackupApi.CreateBackupDto
 import com.bobodroid.myapplication.models.datamodels.service.BackupApi.CurrencyRecordDto
 import com.bobodroid.myapplication.models.datamodels.service.UserApi.Rate
+import com.bobodroid.myapplication.models.datamodels.service.notificationApi.BatchUpdateRecordAlertsRequest
+import com.bobodroid.myapplication.models.datamodels.service.notificationApi.ChannelSettings
 import com.bobodroid.myapplication.models.datamodels.service.notificationApi.NotificationApi
+import com.bobodroid.myapplication.models.datamodels.service.notificationApi.NotificationConditions
+import com.bobodroid.myapplication.models.datamodels.service.notificationApi.NotificationHistoryItem
+import com.bobodroid.myapplication.models.datamodels.service.notificationApi.NotificationSettings
+import com.bobodroid.myapplication.models.datamodels.service.notificationApi.NotificationStats
+import com.bobodroid.myapplication.models.datamodels.service.notificationApi.QuietHours
+import com.bobodroid.myapplication.models.datamodels.service.notificationApi.RecordProfitAlert
+import com.bobodroid.myapplication.models.datamodels.service.notificationApi.RecordWithAlert
+import com.bobodroid.myapplication.models.datamodels.service.notificationApi.UpdateNotificationSettingsRequest
 import com.bobodroid.myapplication.models.datamodels.useCases.FcmUseCases
 import com.bobodroid.myapplication.models.repository.SettingsRepository
 import com.bobodroid.myapplication.util.result.onError
@@ -592,6 +601,98 @@ class FcmAlarmViewModel @Inject constructor(
 
     fun clearError() {
         _error.value = null
+    }
+
+
+    // ==================== 알림 히스토리 관리 - 삭제 기능 추가 ====================
+
+    /**
+     * 개별 알림 삭제
+     */
+    fun deleteNotification(notificationId: String) {
+        viewModelScope.launch {
+            fcmUseCases.deleteNotificationUseCase(notificationId)
+                .onSuccess { _, message ->
+                    Log.d(TAG("FcmAlarmViewModel", "deleteNotification"), "Success: $message")
+
+                    // 로컬 리스트에서 제거
+                    _notificationHistory.value = _notificationHistory.value.filter {
+                        it.id != notificationId
+                    }
+                }
+                .onError { error ->
+                    Log.e(TAG("FcmAlarmViewModel", "deleteNotification"), "Error", error.exception)
+                    _error.value = "알림 삭제 실패"
+                }
+        }
+    }
+
+    /**
+     * 모든 알림 삭제
+     */
+    fun deleteAllNotifications() {
+        viewModelScope.launch {
+            fcmUseCases.deleteAllNotificationsUseCase(deviceId.value)
+                .onSuccess { count, message ->
+                    Log.d(TAG("FcmAlarmViewModel", "deleteAll"), "Success: $count 개 삭제")
+
+                    // 로컬 리스트 비우기
+                    _notificationHistory.value = emptyList()
+
+                    // 통계 새로고침
+                    loadNotificationStats()
+                }
+                .onError { error ->
+                    Log.e(TAG("FcmAlarmViewModel", "deleteAll"), "Error", error.exception)
+                    _error.value = "전체 삭제 실패"
+                }
+        }
+    }
+
+    /**
+     * 읽은 알림만 삭제
+     */
+    fun deleteReadNotifications() {
+        viewModelScope.launch {
+            fcmUseCases.deleteReadNotificationsUseCase(deviceId.value)
+                .onSuccess { count, message ->
+                    Log.d(TAG("FcmAlarmViewModel", "deleteRead"), "Success: $count 개 삭제")
+
+                    // 로컬 리스트에서 읽은 알림 제거
+                    _notificationHistory.value = _notificationHistory.value.filter {
+                        it.status == "sent" // 읽지 않은 것만 남김
+                    }
+
+                    // 통계 새로고침
+                    loadNotificationStats()
+                }
+                .onError { error ->
+                    Log.e(TAG("FcmAlarmViewModel", "deleteRead"), "Error", error.exception)
+                    _error.value = "읽은 알림 삭제 실패"
+                }
+        }
+    }
+
+    /**
+     * 오래된 알림 삭제 (기본 30일)
+     */
+    fun deleteOldNotifications(days: Int = 30) {
+        viewModelScope.launch {
+            fcmUseCases.deleteOldNotificationsUseCase(deviceId.value, days)
+                .onSuccess { count, message ->
+                    Log.d(TAG("FcmAlarmViewModel", "deleteOld"), "Success: $count 개 삭제")
+
+                    // 히스토리 새로고침
+                    loadNotificationHistory()
+
+                    // 통계 새로고침
+                    loadNotificationStats()
+                }
+                .onError { error ->
+                    Log.e(TAG("FcmAlarmViewModel", "deleteOld"), "Error", error.exception)
+                    _error.value = "오래된 알림 삭제 실패"
+                }
+        }
     }
 }
 

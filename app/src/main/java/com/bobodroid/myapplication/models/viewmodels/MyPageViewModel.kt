@@ -8,6 +8,9 @@ import com.bobodroid.myapplication.models.datamodels.repository.InvestRepository
 import com.bobodroid.myapplication.models.datamodels.repository.UserRepository
 import com.bobodroid.myapplication.models.datamodels.roomDb.CurrencyRecord
 import com.bobodroid.myapplication.models.datamodels.roomDb.LocalUserData
+import com.bobodroid.myapplication.models.datamodels.useCases.AccountFoundException
+import com.bobodroid.myapplication.models.datamodels.useCases.AccountSwitchUseCase
+import com.bobodroid.myapplication.models.datamodels.useCases.DeleteUserUseCase
 import com.bobodroid.myapplication.models.datamodels.useCases.SocialLoginUseCases
 import com.bobodroid.myapplication.models.datamodels.useCases.UserUseCases
 import com.bobodroid.myapplication.util.result.onError
@@ -16,6 +19,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.update
@@ -29,6 +33,8 @@ class MyPageViewModel @Inject constructor(
     private val userRepository: UserRepository,
     private val investRepository: InvestRepository,
     private val socialLoginUseCases: SocialLoginUseCases,
+    private val userUseCases: UserUseCases,
+    private val accountSwitchUseCase: AccountSwitchUseCase
 ) : ViewModel() {
 
     val _myPageUiState = MutableStateFlow(MyPageUiState())
@@ -64,36 +70,79 @@ class MyPageViewModel @Inject constructor(
     }
 
 
-    // ✅ Google 로그인 (수정됨)
-    fun loginWithGoogle(activity: Activity, result: (String) -> Unit) {
+    // 3. Google 로그인 수정 (계정 발견 처리)
+    fun loginWithGoogle(activity: Activity, onAccountFound: (AccountFoundInfo) -> Unit, onComplete: (String) -> Unit) {
         viewModelScope.launch {
             val localUser = _myPageUiState.value.localUser
 
             socialLoginUseCases.googleLogin(activity, localUser)
                 .onSuccess { updatedUser, message ->
                     Log.d("MyPageViewModel", "Google 로그인 성공: ${updatedUser.email}")
-                    result(message ?: "Google 로그인 성공!")
+                    onComplete(message ?: "Google 로그인 성공!")
                 }
-                .onError { error ->  // ✅ Result.Error 객체로 받음
-                    Log.e("MyPageViewModel", "Google 로그인 실패: ${error.message}", error.exception)
-                    result(error.message)
+                .onError { error ->
+                    Log.e("MyPageViewModel", "Google 로그인 결과: ${error.message}", error.exception)
+
+                    // ✅ 계정 발견 체크
+                    if (error.message == "ACCOUNT_FOUND" && error.exception is AccountFoundException) {
+                        val foundException = error.exception as AccountFoundException
+                        val accountInfo = AccountFoundInfo(
+                            serverDeviceId = foundException.serverDeviceId,
+                            email = foundException.email,
+                            nickname = foundException.nickname,
+                            lastSyncAt = foundException.lastSyncAt
+                        )
+
+                        // ✅ UI State 업데이트
+                        _myPageUiState.update {
+                            it.copy(
+                                foundAccount = accountInfo,
+                                showAccountFoundDialog = true
+                            )
+                        }
+
+                        onAccountFound(accountInfo)
+                    } else {
+                        onComplete(error.message)
+                    }
                 }
         }
     }
 
-    // ✅ Kakao 로그인 (수정됨)
-    fun loginWithKakao(activity: Activity, result: (String) -> Unit) {
+    // 4. Kakao 로그인 수정 (계정 발견 처리)
+    fun loginWithKakao(activity: Activity, onAccountFound: (AccountFoundInfo) -> Unit, onComplete: (String) -> Unit) {
         viewModelScope.launch {
             val localUser = _myPageUiState.value.localUser
 
             socialLoginUseCases.kakaoLogin(activity, localUser)
                 .onSuccess { updatedUser, message ->
                     Log.d("MyPageViewModel", "Kakao 로그인 성공: ${updatedUser.email}")
-                    result(message ?: "Kakao 로그인 성공!")
+                    onComplete(message ?: "Kakao 로그인 성공!")
                 }
-                .onError { error ->  // ✅ Result.Error 객체로 받음
-                    Log.e("MyPageViewModel", "Kakao 로그인 실패: ${error.message}", error.exception)
-                    result(error.message)
+                .onError { error ->
+                    Log.e("MyPageViewModel", "Kakao 로그인 결과: ${error.message}", error.exception)
+
+                    // ✅ 계정 발견 체크
+                    if (error.message == "ACCOUNT_FOUND" && error.exception is AccountFoundException) {
+                        val foundException = error.exception as AccountFoundException
+                        val accountInfo = AccountFoundInfo(
+                            serverDeviceId = foundException.serverDeviceId,
+                            email = foundException.email,
+                            nickname = foundException.nickname,
+                            lastSyncAt = foundException.lastSyncAt
+                        )
+
+                        _myPageUiState.update {
+                            it.copy(
+                                foundAccount = accountInfo,
+                                showAccountFoundDialog = true
+                            )
+                        }
+
+                        onAccountFound(accountInfo)
+                    } else {
+                        onComplete(error.message)
+                    }
                 }
         }
     }
@@ -110,6 +159,38 @@ class MyPageViewModel @Inject constructor(
                 }
                 .onError { error ->  // ✅ Result.Error 객체로 받음
                     Log.e("MyPageViewModel", "로그아웃 실패: ${error.message}", error.exception)
+                    result(error.message)
+                }
+        }
+    }
+
+    /**
+     * 회원 탈퇴
+     */
+    fun deleteAccount(result: (String) -> Unit) {
+        viewModelScope.launch {
+            val localUser = _myPageUiState.value.localUser
+
+            if (localUser.id.toString().isEmpty()) {
+                result("사용자 정보를 찾을 수 없습니다")
+                return@launch
+            }
+
+            userUseCases.deleteUser(localUser)
+                .onSuccess { _, message ->
+                    Log.d("MyPageViewModel", "✅ 회원 탈퇴 성공")
+
+                    // UI 상태 초기화
+                    _myPageUiState.update { currentState ->
+                        currentState.copy(
+                            localUser = LocalUserData()
+                        )
+                    }
+
+                    result(message ?: "회원 탈퇴가 완료되었습니다")
+                }
+                .onError { error ->
+                    Log.e("MyPageViewModel", "❌ 회원 탈퇴 실패: ${error.message}", error.exception)
                     result(error.message)
                 }
         }
@@ -153,14 +234,13 @@ class MyPageViewModel @Inject constructor(
                 .onSuccess { recordCount, message ->
                     Log.d("MyPageViewModel", "복구 성공: ${recordCount}개")
 
-                    // ✅ 통계 및 최근 활동 재계산
-                    viewModelScope.launch {
-                        calculateInvestmentStats()
-                        collectRecentActivities()
-                        calculateGoalProgress()
-                        calculateBadges()
-                    }
+                    // ❌ 삭제: 아래 4줄 제거
+                    // calculateInvestmentStats()
+                    // collectRecentActivities()
+                    // calculateGoalProgress()
+                    // calculateBadges()
 
+                    // ✅ Flow가 자동으로 감지하므로 별도 호출 불필요
                     result(message ?: "데이터를 복구했습니다")
                 }
                 .onError { error ->
@@ -169,6 +249,8 @@ class MyPageViewModel @Inject constructor(
                 }
         }
     }
+
+
     fun unlinkSocial(result: (String) -> Unit) {
         viewModelScope.launch {
             val localUser = _myPageUiState.value.localUser
@@ -187,16 +269,15 @@ class MyPageViewModel @Inject constructor(
 
 
 
-    // ✅ DB Flow는 이미 flowOn으로 IO 처리되므로 추가 작업 불필요
     private suspend fun calculateInvestmentStats() {
         combine(
             investRepository.getAllDollarBuyRecords(),
             investRepository.getAllYenBuyRecords()
         ) { dollarRecords, yenRecords ->
 
+            // 기존 계산 로직 그대로 유지
             Log.d("MyPageViewModel", "달러 기록: ${dollarRecords.size}개, 엔화 기록: ${yenRecords.size}개")
 
-            // 1. 총 투자금 계산 (환전한 금액 합계)
             val totalDollarInvestment = dollarRecords.sumOf {
                 it.money?.replace(",", "")?.toBigDecimalOrNull() ?: BigDecimal.ZERO
             }
@@ -205,7 +286,6 @@ class MyPageViewModel @Inject constructor(
             }
             val totalInvestment = totalDollarInvestment + totalYenInvestment
 
-            // 2. 예상 수익 계산
             val totalDollarProfit = dollarRecords.sumOf {
                 it.expectProfit?.replace(",", "")?.toBigDecimalOrNull() ?: BigDecimal.ZERO
             }
@@ -214,7 +294,6 @@ class MyPageViewModel @Inject constructor(
             }
             val totalProfit = totalDollarProfit + totalYenProfit
 
-            // 3. 수익률 계산
             val profitRate = if (totalInvestment > BigDecimal.ZERO) {
                 (totalProfit.divide(totalInvestment, 4, RoundingMode.HALF_UP) * BigDecimal(100))
                     .setScale(1, RoundingMode.HALF_UP)
@@ -222,7 +301,6 @@ class MyPageViewModel @Inject constructor(
                 BigDecimal.ZERO
             }
 
-            // 4. 거래 횟수 (recordColor: false = 보유중, true = 매도완료)
             val totalTrades = dollarRecords.size + yenRecords.size
             val dollarBuyCount = dollarRecords.filter { it.recordColor == false }.size
             val yenBuyCount = yenRecords.filter { it.recordColor == false }.size
@@ -243,13 +321,15 @@ class MyPageViewModel @Inject constructor(
                 sellCount = sellCount
             )
         }
-            .flowOn(Dispatchers.Default)  // ✅ 계산 작업은 Default 스레드
-            .collect { stats ->
+            .flowOn(Dispatchers.Default)
+            .collectLatest { stats ->  // ← collect를 collectLatest로 변경
                 _myPageUiState.update {
                     it.copy(investmentStats = stats)
                 }
             }
     }
+
+
 
     // 숫자 포맷팅 (₩10,500,000)
     private fun formatCurrency(amount: BigDecimal): String {
@@ -278,12 +358,12 @@ class MyPageViewModel @Inject constructor(
             investRepository.getAllYenBuyRecords()
         ) { dollarRecords, yenRecords ->
 
-            // 모든 거래를 RecentActivity로 변환
+            // 기존 로직 그대로 유지
             val dollarActivities = dollarRecords.map { record ->
                 RecentActivity(
                     date = record.date ?: "",
                     currencyType = "USD",
-                    isBuy = record.recordColor != true,  // false = 매수, true = 매도
+                    isBuy = record.recordColor != true,
                     amount = formatActivityAmount(record.money, record.rate, "USD"),
                     profit = if (record.recordColor == true) formatProfit(record.sellProfit) else null
                 )
@@ -299,19 +379,19 @@ class MyPageViewModel @Inject constructor(
                 )
             }
 
-            // 합치고 날짜순 정렬 후 최근 5건
             (dollarActivities + yenActivities)
                 .sortedByDescending { parseDate(it.date) }
                 .take(5)
-
         }
-            .flowOn(Dispatchers.Default)  // ✅ 정렬/변환 작업은 Default 스레드
-            .collect { activities ->
+            .flowOn(Dispatchers.Default)
+            .collectLatest { activities ->  // ← collect를 collectLatest로 변경
                 _myPageUiState.update {
                     it.copy(recentActivities = activities)
                 }
             }
     }
+
+
 
     // 활동 금액 포맷팅 (₩2,000,000 / 1,320원)
     private fun formatActivityAmount(money: String?, rate: String?, currencyType: String): String {
@@ -389,7 +469,7 @@ class MyPageViewModel @Inject constructor(
                 )
             }
 
-            // 이번 달 매도 수익 계산 (모든 통화)
+            // ✅ 이번 달 매도 수익 계산 (기존 함수 이름 사용)
             val monthlyProfit = calculateMonthlyProfit(allRecords, currentMonth)
 
             // 달성률 계산
@@ -403,12 +483,13 @@ class MyPageViewModel @Inject constructor(
                 progress = progress,
                 isSet = true
             )
-
-        }.collect { goal ->
-            _myPageUiState.update {
-                it.copy(monthlyGoal = goal)
-            }
         }
+            .flowOn(Dispatchers.Default)
+            .collectLatest { goal ->  // ← collect를 collectLatest로 변경
+                _myPageUiState.update {
+                    it.copy(monthlyGoal = goal)
+                }
+            }
     }
 
     /**
@@ -461,6 +542,7 @@ class MyPageViewModel @Inject constructor(
             investRepository.getAllYenBuyRecords()
         ) { dollarRecords, yenRecords ->
 
+            // 기존 로직 그대로 유지
             val totalTrades = dollarRecords.size + yenRecords.size
             val sellCount = dollarRecords.count { it.recordColor == true } +
                     yenRecords.count { it.recordColor == true }
@@ -473,16 +555,12 @@ class MyPageViewModel @Inject constructor(
                 it.expectProfit?.replace(",", "")?.toBigDecimalOrNull()?.toLong() ?: 0L
             }
 
-            val profitRate = if (totalInvestment > 0) {
-                ((totalProfit.toFloat() / totalInvestment.toFloat()) * 100).toInt()
-            } else 0
-
             listOf(
                 BadgeInfo(
                     type = BadgeType.FIRST_TRADE,
                     icon = "🎯",
                     title = "첫 거래",
-                    description = "첫 번째 환전을 완료했습니다",
+                    description = "첫 환전 기록을 생성했습니다",
                     isUnlocked = totalTrades >= 1,
                     progress = if (totalTrades >= 1) 100 else 0,
                     currentValue = totalTrades,
@@ -490,8 +568,8 @@ class MyPageViewModel @Inject constructor(
                 ),
                 BadgeInfo(
                     type = BadgeType.TRADER_50,
-                    icon = "📊",
-                    title = "활동적인 트레이더",
+                    icon = "📈",
+                    title = "트레이더",
                     description = "총 50회 거래를 달성했습니다",
                     isUnlocked = totalTrades >= 50,
                     progress = ((totalTrades.toFloat() / 50f) * 100).toInt().coerceIn(0, 100),
@@ -501,7 +579,7 @@ class MyPageViewModel @Inject constructor(
                 BadgeInfo(
                     type = BadgeType.TRADER_100,
                     icon = "🏆",
-                    title = "거래 마스터",
+                    title = "마스터 트레이더",
                     description = "총 100회 거래를 달성했습니다",
                     isUnlocked = totalTrades >= 100,
                     progress = ((totalTrades.toFloat() / 100f) * 100).toInt().coerceIn(0, 100),
@@ -509,38 +587,8 @@ class MyPageViewModel @Inject constructor(
                     targetValue = 100
                 ),
                 BadgeInfo(
-                    type = BadgeType.FIRST_PROFIT,
-                    icon = "💰",
-                    title = "첫 수익",
-                    description = "첫 번째 매도 수익을 얻었습니다",
-                    isUnlocked = sellCount >= 1,
-                    progress = if (sellCount >= 1) 100 else 0,
-                    currentValue = sellCount,
-                    targetValue = 1
-                ),
-                BadgeInfo(
-                    type = BadgeType.PROFIT_RATE_10,
-                    icon = "📈",
-                    title = "10% 수익률",
-                    description = "총 수익률 10%를 달성했습니다",
-                    isUnlocked = profitRate >= 10,
-                    progress = ((profitRate.toFloat() / 10f) * 100).toInt().coerceIn(0, 100),
-                    currentValue = profitRate,
-                    targetValue = 10
-                ),
-                BadgeInfo(
-                    type = BadgeType.PROFIT_RATE_20,
-                    icon = "🚀",
-                    title = "20% 수익률",
-                    description = "총 수익률 20%를 달성했습니다",
-                    isUnlocked = profitRate >= 20,
-                    progress = ((profitRate.toFloat() / 20f) * 100).toInt().coerceIn(0, 100),
-                    currentValue = profitRate,
-                    targetValue = 20
-                ),
-                BadgeInfo(
                     type = BadgeType.INVESTMENT_1M,
-                    icon = "💎",
+                    icon = "💰",
                     title = "백만장자",
                     description = "총 투자금 100만원을 달성했습니다",
                     isUnlocked = totalInvestment >= 1_000_000L,
@@ -559,10 +607,162 @@ class MyPageViewModel @Inject constructor(
                     targetValue = 1000
                 )
             )
-        }.collect { badges ->
-            _myPageUiState.update {
-                it.copy(badges = badges)
+        }
+            .flowOn(Dispatchers.Default)
+            .collectLatest { badges ->  // ← collect를 collectLatest로 변경
+                _myPageUiState.update {
+                    it.copy(badges = badges)
+                }
             }
+    }
+
+    // 5. 기존 계정 사용 (계정 전환) - 수정됨
+    fun useExistingAccount(onComplete: (String) -> Unit) {
+        viewModelScope.launch {
+            val foundAccount = _myPageUiState.value.foundAccount
+            val localUser = _myPageUiState.value.localUser
+
+            if (foundAccount == null) {
+                onComplete("계정 정보를 찾을 수 없습니다")
+                return@launch
+            }
+
+            // ✅ 계정 전환
+            accountSwitchUseCase(
+                serverDeviceId = foundAccount.serverDeviceId,
+                localUser = localUser
+            )
+                .onSuccess { result, message ->
+                    Log.d("MyPageViewModel", "계정 전환 성공")
+                    Log.d("MyPageViewModel", "  - 백업 데이터 존재: ${result.hasBackupData}")
+                    Log.d("MyPageViewModel", "  - 백업 기록 수: ${result.backupRecordCount}")
+
+                    // ✅ 백업 데이터가 있는 경우에만 복원 다이얼로그 표시
+                    if (result.hasBackupData && result.backupRecordCount > 0) {
+                        Log.d("MyPageViewModel", "✅ 백업 데이터 있음 → 복원 다이얼로그 표시")
+
+                        _myPageUiState.update {
+                            it.copy(
+                                localUser = result.switchedUser,
+                                showAccountFoundDialog = false,
+                                showDataRestoreDialog = true,  // ✅ 복원 다이얼로그 표시
+                                backupInfo = BackupInfo(
+                                    recordCount = result.backupRecordCount,
+                                    lastBackupAt = result.lastBackupAt
+                                )
+                            )
+                        }
+
+                        onComplete("계정이 전환되었습니다. 백업 데이터를 복원하시겠습니까?")
+                    } else {
+                        Log.d("MyPageViewModel", "ℹ️ 백업 데이터 없음 → 바로 완료")
+
+                        // ✅ 백업 데이터가 없으면 바로 완료
+                        _myPageUiState.update {
+                            it.copy(
+                                localUser = result.switchedUser,
+                                showAccountFoundDialog = false,
+                                showDataRestoreDialog = false,
+                                foundAccount = null
+                            )
+                        }
+
+                        onComplete("계정이 전환되었습니다 (백업 데이터 없음)")
+                    }
+                }
+                .onError { error ->
+                    Log.e("MyPageViewModel", "계정 전환 실패: ${error.message}", error.exception)
+
+                    _myPageUiState.update {
+                        it.copy(
+                            showAccountFoundDialog = false,
+                            foundAccount = null
+                        )
+                    }
+
+                    onComplete(error.message)
+                }
+        }
+    }
+
+
+
+    // 6. 새 계정으로 시작
+    fun createNewAccount(onComplete: (String) -> Unit) {
+        viewModelScope.launch {
+            Log.d("MyPageViewModel", "새 계정으로 시작 (서버 계정 무시)")
+
+            // ✅ 다이얼로그 닫기
+            _myPageUiState.update {
+                it.copy(
+                    showAccountFoundDialog = false,
+                    foundAccount = null
+                )
+            }
+
+            onComplete("새 계정으로 시작합니다")
+        }
+    }
+
+    // 7. 백업 데이터 복원
+    fun restoreBackupData(onComplete: (String) -> Unit) {
+        viewModelScope.launch {
+            val localUser = _myPageUiState.value.localUser
+
+            socialLoginUseCases.restoreFromServer(localUser.id.toString())
+                .onSuccess { _, message ->
+                    Log.d("MyPageViewModel", "백업 데이터 복원 성공")
+
+                    _myPageUiState.update {
+                        it.copy(
+                            showDataRestoreDialog = false,
+                            foundAccount = null
+                        )
+                    }
+
+                    onComplete(message ?: "데이터 복원 완료!")
+                }
+                .onError { error ->
+                    Log.e("MyPageViewModel", "데이터 복원 실패: ${error.message}", error.exception)
+
+                    _myPageUiState.update {
+                        it.copy(showDataRestoreDialog = false)
+                    }
+
+                    onComplete("데이터 복원 실패: ${error.message}")
+                }
+        }
+    }
+
+    // 8. 로컬 데이터 사용
+    fun useLocalData(onComplete: (String) -> Unit) {
+        viewModelScope.launch {
+            Log.d("MyPageViewModel", "로컬 데이터 사용 선택")
+
+            _myPageUiState.update {
+                it.copy(
+                    showDataRestoreDialog = false,
+                    foundAccount = null
+                )
+            }
+
+            onComplete("로컬 데이터를 사용합니다")
+        }
+    }
+
+    // 9. 다이얼로그 닫기
+    fun dismissAccountFoundDialog() {
+        _myPageUiState.update {
+            it.copy(
+                showAccountFoundDialog = false,
+                foundAccount = null
+            )
+        }
+    }
+
+    fun dismissDataRestoreDialog() {
+        _myPageUiState.update {
+            it.copy(showDataRestoreDialog = false)
         }
     }
 
@@ -630,5 +830,26 @@ data class MyPageUiState(
     val investmentStats: InvestmentStats = InvestmentStats(),
     val recentActivities: List<RecentActivity> = emptyList(),
     val monthlyGoal: MonthlyGoal = MonthlyGoal(),
-    val badges: List<BadgeInfo> = emptyList()
+    val badges: List<BadgeInfo> = emptyList(),
+
+    val foundAccount: AccountFoundInfo? = null,
+    val showAccountFoundDialog: Boolean = false,
+    val showDataRestoreDialog: Boolean = false,
+    val backupInfo: BackupInfo? = null
+)
+
+// ✅ 계정 발견 정보 데이터 클래스
+data class AccountFoundInfo(
+    val serverDeviceId: String,
+    val email: String?,
+    val nickname: String?,
+    val lastSyncAt: String?
+)
+
+
+
+// ✅ 백업 정보 데이터 클래스
+data class BackupInfo(
+    val recordCount: Int,
+    val lastBackupAt: String?
 )

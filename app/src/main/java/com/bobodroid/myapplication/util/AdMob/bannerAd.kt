@@ -1,8 +1,6 @@
-package com.bobodroid.myapplication.components.admobs
+package com.bobodroid.myapplication.util.AdMob
 
 import android.annotation.SuppressLint
-import android.content.Context
-import android.util.DisplayMetrics
 import android.util.Log
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.Text

@@ -1,13 +1,13 @@
 {
   "project_info": {
-    "project_number": "458388461923",
-    "project_id": "firebase-exchange-service",
-    "storage_bucket": "firebase-exchange-service.appspot.com"
+    "project_number": "217175237421",
+    "project_id": "invest-exchagerate-app",
+    "storage_bucket": "invest-exchagerate-app.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:458388461923:android:f6fc50bdfb72b20339db56",
+        "mobilesdk_app_id": "1:217175237421:android:462c78fe898aa980e269a4",
         "android_client_info": {
           "package_name": "com.bobodroid.myapplication"
         }
@@ -15,7 +15,7 @@
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyCPiNibvpcYBdAZM6PemAgGgWEqx-sRAvk"
+          "current_key": "AIzaSyDf88ISsZr7PtKGVfo5HoAF7CGcBIOpq3A"
         }
       ],
       "services": {

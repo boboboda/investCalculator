@@ -87,7 +87,7 @@ fun CloudView(
             SocialLoginWarningBanner(
                 isSocialLinked = isSocialLinked,
                 onLinkClick = {
-                    routeAction.navTo(MyPageRoute.CreateUser)
+                    routeAction.navTo(MyPageRoute.AccountManage)
                 }
             )
 

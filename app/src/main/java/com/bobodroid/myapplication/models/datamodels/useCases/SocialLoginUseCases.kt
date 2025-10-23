@@ -26,7 +26,7 @@ class SocialLoginUseCases(
     val socialLogout: SocialLogoutUseCase,
     val unlinkSocial: UnlinkSocialUseCase,  // ✅ 추가
     val syncToServer: SyncToServerUseCase,
-    val restoreFromServer: RestoreFromServerUseCase
+    val restoreFromServer: RestoreFromServerUseCase,
 )
 
 /**
@@ -52,9 +52,8 @@ class AlreadyLinkedException(
     message: String = "이미 다른 소셜 계정이 연동되어 있습니다"
 ) : Exception(message)
 
-/**
- * Google 로그인 UseCase (연동 차단 처리)
- */
+
+
 class GoogleLoginUseCase @Inject constructor(
     private val userRepository: UserRepository,
     private val socialLoginManager: SocialLoginManager
@@ -70,6 +69,26 @@ class GoogleLoginUseCase @Inject constructor(
 
             Log.d(TAG("GoogleLoginUseCase", "invoke"), "Google 로그인 성공: ${socialResult.email}")
 
+            // ✅ 1. find-by-social로 기존 계정 확인
+            val accountCheck = checkExistingAccount(socialResult.socialId, "GOOGLE")
+
+            // ✅ 2. 기존 계정이 발견되면 특별한 Result 반환
+            if (accountCheck is AccountCheckResult.Found) {
+                Log.d(TAG("GoogleLoginUseCase", "invoke"), "기존 계정 발견: ${accountCheck.serverDeviceId}")
+
+                // 특별한 Exception으로 기존 계정 정보 전달
+                return Result.Error(
+                    message = "ACCOUNT_FOUND",  // 특수 메시지로 구분
+                    exception = AccountFoundException(
+                        serverDeviceId = accountCheck.serverDeviceId,
+                        email = accountCheck.email,
+                        nickname = accountCheck.nickname,
+                        lastSyncAt = accountCheck.lastSyncAt
+                    )
+                )
+            }
+
+            // ✅ 3. 기존 계정이 없으면 현재 로컬 계정에 연동
             val updatedUser = localUserData.copy(
                 socialId = socialResult.socialId,
                 socialType = SocialType.GOOGLE.name,
@@ -112,6 +131,35 @@ class GoogleLoginUseCase @Inject constructor(
         }
     }
 
+    // ✅ 기존 계정 확인 함수
+    private suspend fun checkExistingAccount(
+        socialId: String,
+        socialType: String
+    ): AccountCheckResult {
+        return try {
+            val response = UserApi.userService.findBySocial(
+                socialId = socialId,
+                socialType = socialType
+            )
+
+            if (response.success && response.data != null) {
+                Log.d(TAG("GoogleLoginUseCase", "checkExistingAccount"), "기존 계정 발견!")
+                AccountCheckResult.Found(
+                    serverDeviceId = response.data.deviceId ?: "",
+                    email = response.data.email,
+                    nickname = response.data.nickname,
+                    lastSyncAt = response.data.updatedAt
+                )
+            } else {
+                Log.d(TAG("GoogleLoginUseCase", "checkExistingAccount"), "기존 계정 없음")
+                AccountCheckResult.NotFound
+            }
+        } catch (e: Exception) {
+            Log.e(TAG("GoogleLoginUseCase", "checkExistingAccount"), "계정 확인 실패", e)
+            AccountCheckResult.NotFound
+        }
+    }
+
     private suspend fun syncWithServer(user: LocalUserData): SyncResult {
         return try {
             val userRequest = UserRequest(
@@ -133,38 +181,16 @@ class GoogleLoginUseCase @Inject constructor(
             if (response.code == "ALREADY_LINKED") {
                 Log.w(TAG("GoogleLoginUseCase", "syncWithServer"), "이미 다른 소셜 계정이 연동되어 있음")
 
-                // 🔍 디버깅: 서버 응답 전체 로깅
-                Log.w(TAG("GoogleLoginUseCase", "syncWithServer"), "서버 응답 전체: $response")
-                Log.w(TAG("GoogleLoginUseCase", "syncWithServer"), "response.data: ${response.data}")
-                Log.w(TAG("GoogleLoginUseCase", "syncWithServer"), "response.data is null: ${response.data == null}")
-
-                if (response.data != null) {
-                    Log.w(TAG("GoogleLoginUseCase", "syncWithServer"), "socialType 원본: ${response.data?.socialType}")
-                    Log.w(TAG("GoogleLoginUseCase", "syncWithServer"), "email: ${response.data?.email}")
-                    Log.w(TAG("GoogleLoginUseCase", "syncWithServer"), "nickname: ${response.data?.nickname}")
-                }
-
-                // ✅ 서버에서 보낸 소셜 타입을 한글로 변환
                 val rawSocialType = response.data?.socialType
-
-                Log.w(TAG("GoogleLoginUseCase", "syncWithServer"), "rawSocialType 추출 결과: '$rawSocialType'")
 
                 val socialTypeDisplay = when (rawSocialType?.uppercase()) {
                     "GOOGLE" -> "Google"
                     "KAKAO" -> "Kakao"
                     "NAVER" -> "Naver"
                     "APPLE" -> "Apple"
-                    null -> {
-                        Log.e(TAG("GoogleLoginUseCase", "syncWithServer"), "⚠️ socialType이 null입니다!")
-                        "알 수 없는 소셜"
-                    }
-                    else -> {
-                        Log.e(TAG("GoogleLoginUseCase", "syncWithServer"), "⚠️ 예상하지 못한 socialType: '$rawSocialType'")
-                        "알 수 없는 소셜($rawSocialType)"
-                    }
+                    null -> "알 수 없는 소셜"
+                    else -> "알 수 없는 소셜($rawSocialType)"
                 }
-
-                Log.w(TAG("GoogleLoginUseCase", "syncWithServer"), "최종 표시 타입: '$socialTypeDisplay'")
 
                 return SyncResult.AlreadyLinked(
                     currentSocialType = socialTypeDisplay,
@@ -188,7 +214,7 @@ class GoogleLoginUseCase @Inject constructor(
 }
 
 /**
- * Kakao 로그인 UseCase (연동 차단 처리)
+ * Kakao 로그인 UseCase (계정 발견 로직 추가)
  */
 class KakaoLoginUseCase @Inject constructor(
     private val userRepository: UserRepository,
@@ -205,6 +231,25 @@ class KakaoLoginUseCase @Inject constructor(
 
             Log.d(TAG("KakaoLoginUseCase", "invoke"), "Kakao 로그인 성공: ${socialResult.email}")
 
+            // ✅ 1. find-by-social로 기존 계정 확인
+            val accountCheck = checkExistingAccount(socialResult.socialId, "KAKAO")
+
+            // ✅ 2. 기존 계정이 발견되면 특별한 Result 반환
+            if (accountCheck is AccountCheckResult.Found) {
+                Log.d(TAG("KakaoLoginUseCase", "invoke"), "기존 계정 발견: ${accountCheck.serverDeviceId}")
+
+                return Result.Error(
+                    message = "ACCOUNT_FOUND",
+                    exception = AccountFoundException(
+                        serverDeviceId = accountCheck.serverDeviceId,
+                        email = accountCheck.email,
+                        nickname = accountCheck.nickname,
+                        lastSyncAt = accountCheck.lastSyncAt
+                    )
+                )
+            }
+
+            // ✅ 3. 기존 계정이 없으면 현재 로컬 계정에 연동
             val updatedUser = localUserData.copy(
                 socialId = socialResult.socialId,
                 socialType = SocialType.KAKAO.name,
@@ -214,10 +259,8 @@ class KakaoLoginUseCase @Inject constructor(
                 isSynced = false
             )
 
-            // ⚠️ 서버 동기화 시도 (연동 충돌 체크)
             val syncResult = syncWithServer(updatedUser)
 
-            // ⚠️ 연동 충돌 체크
             if (syncResult is SyncResult.AlreadyLinked) {
                 return Result.Error(
                     message = "이미 ${syncResult.currentSocialType}로 연동되어 있습니다",
@@ -247,6 +290,33 @@ class KakaoLoginUseCase @Inject constructor(
         }
     }
 
+    private suspend fun checkExistingAccount(
+        socialId: String,
+        socialType: String
+    ): AccountCheckResult {
+        return try {
+            val response = UserApi.userService.findBySocial(
+                socialId = socialId,
+                socialType = socialType
+            )
+
+            if (response.success && response.data != null) {
+                Log.d(TAG("KakaoLoginUseCase", "checkExistingAccount"), "기존 계정 발견!")
+                AccountCheckResult.Found(
+                    serverDeviceId = response.data.deviceId ?: "",
+                    email = response.data.email,
+                    nickname = response.data.nickname,
+                    lastSyncAt = response.data.updatedAt
+                )
+            } else {
+                Log.d(TAG("KakaoLoginUseCase", "checkExistingAccount"), "기존 계정 없음")
+                AccountCheckResult.NotFound
+            }
+        } catch (e: Exception) {
+            Log.e(TAG("KakaoLoginUseCase", "checkExistingAccount"), "계정 확인 실패", e)
+            AccountCheckResult.NotFound
+        }
+    }
 
     private suspend fun syncWithServer(user: LocalUserData): SyncResult {
         return try {
@@ -265,42 +335,18 @@ class KakaoLoginUseCase @Inject constructor(
                 userRequest = userRequest
             )
 
-            // ⚠️ 연동 충돌 에러 체크
             if (response.code == "ALREADY_LINKED") {
-                Log.w(TAG("GoogleLoginUseCase", "syncWithServer"), "이미 다른 소셜 계정이 연동되어 있음")
+                Log.w(TAG("KakaoLoginUseCase", "syncWithServer"), "이미 다른 소셜 계정이 연동되어 있음")
 
-                // 🔍 디버깅: 서버 응답 전체 로깅
-                Log.w(TAG("GoogleLoginUseCase", "syncWithServer"), "서버 응답 전체: $response")
-                Log.w(TAG("GoogleLoginUseCase", "syncWithServer"), "response.data: ${response.data}")
-                Log.w(TAG("GoogleLoginUseCase", "syncWithServer"), "response.data is null: ${response.data == null}")
-
-                if (response.data != null) {
-                    Log.w(TAG("GoogleLoginUseCase", "syncWithServer"), "socialType 원본: ${response.data?.socialType}")
-                    Log.w(TAG("GoogleLoginUseCase", "syncWithServer"), "email: ${response.data?.email}")
-                    Log.w(TAG("GoogleLoginUseCase", "syncWithServer"), "nickname: ${response.data?.nickname}")
-                }
-
-                // ✅ 서버에서 보낸 소셜 타입을 한글로 변환
                 val rawSocialType = response.data?.socialType
-
-                Log.w(TAG("GoogleLoginUseCase", "syncWithServer"), "rawSocialType 추출 결과: '$rawSocialType'")
-
                 val socialTypeDisplay = when (rawSocialType?.uppercase()) {
                     "GOOGLE" -> "Google"
                     "KAKAO" -> "Kakao"
                     "NAVER" -> "Naver"
                     "APPLE" -> "Apple"
-                    null -> {
-                        Log.e(TAG("GoogleLoginUseCase", "syncWithServer"), "⚠️ socialType이 null입니다!")
-                        "알 수 없는 소셜"
-                    }
-                    else -> {
-                        Log.e(TAG("GoogleLoginUseCase", "syncWithServer"), "⚠️ 예상하지 못한 socialType: '$rawSocialType'")
-                        "알 수 없는 소셜($rawSocialType)"
-                    }
+                    null -> "알 수 없는 소셜"
+                    else -> "알 수 없는 소셜($rawSocialType)"
                 }
-
-                Log.w(TAG("GoogleLoginUseCase", "syncWithServer"), "최종 표시 타입: '$socialTypeDisplay'")
 
                 return SyncResult.AlreadyLinked(
                     currentSocialType = socialTypeDisplay,
@@ -309,7 +355,7 @@ class KakaoLoginUseCase @Inject constructor(
                 )
             }
 
-            Log.d(TAG("GoogleLoginUseCase", "syncWithServer"), "서버 동기화 성공: ${response.message}")
+            Log.d(TAG("KakaoLoginUseCase", "syncWithServer"), "서버 동기화 성공: ${response.message}")
 
             val syncedUser = user.copy(isSynced = true)
             userRepository.localUserUpdate(syncedUser)
@@ -317,11 +363,22 @@ class KakaoLoginUseCase @Inject constructor(
             SyncResult.Success
 
         } catch (e: Exception) {
-            Log.e(TAG("GoogleLoginUseCase", "syncWithServer"), "서버 동기화 실패", e)
+            Log.e(TAG("KakaoLoginUseCase", "syncWithServer"), "서버 동기화 실패", e)
             SyncResult.Error(e)
         }
     }
 }
+
+/**
+ * 계정 발견 Exception
+ */
+class AccountFoundException(
+    val serverDeviceId: String,
+    val email: String?,
+    val nickname: String?,
+    val lastSyncAt: String?,
+    message: String = "기존 계정이 발견되었습니다"
+) : Exception(message)
 
 /**
  * 소셜 로그아웃 UseCase
@@ -577,4 +634,21 @@ class RestoreFromServerUseCase @Inject constructor(
             )
         }
     }
+}
+
+// ============================================
+// SocialLoginUseCases.kt 수정 코드
+// ============================================
+
+/**
+ * 계정 발견 결과 sealed class
+ */
+sealed class AccountCheckResult {
+    object NotFound : AccountCheckResult()  // 기존 계정 없음
+    data class Found(
+        val serverDeviceId: String,
+        val email: String?,
+        val nickname: String?,
+        val lastSyncAt: String?
+    ) : AccountCheckResult()  // 기존 계정 발견
 }

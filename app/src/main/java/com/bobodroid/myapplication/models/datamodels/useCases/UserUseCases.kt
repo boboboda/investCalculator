@@ -69,11 +69,49 @@ class LocalUserUpdate @Inject constructor(
 /**
  * 사용자 삭제 UseCase
  */
+/**
+ * 사용자 삭제 UseCase
+ * 1. 서버에서 삭제
+ * 2. 로컬 DB 삭제
+ */
 class DeleteUserUseCase @Inject constructor(
     private val userRepository: UserRepository
 ) {
-    suspend operator fun invoke() {
-        userRepository.localUserDataDelete()
+    suspend operator fun invoke(localUserData: LocalUserData): Result<Boolean> {
+        return try {
+            val deviceId = localUserData.id.toString()
+
+            Log.d(TAG("DeleteUserUseCase", "invoke"), "회원 탈퇴 시작 - deviceId: $deviceId")
+
+            // 1. 서버에서 삭제
+            val response = UserApi.userService.deleteUser(deviceId)
+
+            if (!response.success) {
+                Log.e(TAG("DeleteUserUseCase", "invoke"), "서버 탈퇴 실패: ${response.message}")
+                return Result.Error(
+                    message = response.message,
+                    exception = Exception("Server error: ${response.error}")
+                )
+            }
+
+            Log.d(TAG("DeleteUserUseCase", "invoke"), "✅ 서버 탈퇴 성공")
+
+            // 2. 로컬 DB 삭제
+            userRepository.localUserDataDelete()
+            Log.d(TAG("DeleteUserUseCase", "invoke"), "✅ 로컬 DB 삭제 완료")
+
+            Result.Success(
+                data = true,
+                message = "회원 탈퇴가 완료되었습니다"
+            )
+
+        } catch (e: Exception) {
+            Log.e(TAG("DeleteUserUseCase", "invoke"), "❌ 회원 탈퇴 실패", e)
+            Result.Error(
+                message = "탈퇴 처리 중 오류가 발생했습니다: ${e.message}",
+                exception = e
+            )
+        }
     }
 }
 
@@ -276,6 +314,7 @@ class LocalExistCheckUseCase @Inject constructor(
         }
     }
 }
+
 
 /**
  * UserDataType 데이터 클래스

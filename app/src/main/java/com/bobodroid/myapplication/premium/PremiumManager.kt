@@ -8,11 +8,16 @@ import com.android.billingclient.api.QueryPurchasesParams
 import com.bobodroid.myapplication.MainActivity.Companion.TAG
 import com.bobodroid.myapplication.billing.BillingClientLifecycle
 import com.bobodroid.myapplication.models.datamodels.repository.UserRepository
+import com.bobodroid.myapplication.models.datamodels.roomDb.LocalUserData
+import com.bobodroid.myapplication.models.datamodels.roomDb.PremiumType
+import com.bobodroid.myapplication.models.datamodels.useCases.UserUseCases
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
+import java.time.Instant
+import java.time.temporal.ChronoUnit
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -26,7 +31,8 @@ import javax.inject.Singleton
 @Singleton
 class PremiumManager @Inject constructor(
     @ApplicationContext private val context: Context,
-    private val userRepository: UserRepository
+    private val userRepository: UserRepository,
+    private val userUseCases: UserUseCases
 ) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
@@ -47,6 +53,142 @@ class PremiumManager @Inject constructor(
         scope.launch {
             syncPremiumStatus()
         }
+    }
+    /**
+     * 프리미엄 상태 확인
+     * LIFETIME > SUBSCRIPTION > EVENT > REWARD_AD > NONE
+     */
+    fun checkPremiumStatus(user: LocalUserData): PremiumType {
+        // LIFETIME은 만료 없음
+        if (user.premiumType == "LIFETIME") {
+            return PremiumType.LIFETIME
+        }
+
+        // 만료 날짜 확인
+        val expiryDate = user.premiumExpiryDate
+        if (expiryDate.isNullOrEmpty()) {
+            return PremiumType.NONE
+        }
+
+        val now = Instant.now()
+        val expiry = try {
+            Instant.parse(expiryDate)
+        } catch (e: Exception) {
+            Log.e(TAG("PremiumManager", "checkPremiumStatus"), "만료 날짜 파싱 실패: $expiryDate")
+            return PremiumType.NONE
+        }
+
+        // 만료되었는지 확인
+        if (now.isAfter(expiry)) {
+            Log.d(TAG("PremiumManager", "checkPremiumStatus"), "프리미엄 만료됨: ${user.premiumType}")
+            return PremiumType.NONE
+        }
+
+        // 타입에 따라 반환
+        return when (user.premiumType) {
+            "SUBSCRIPTION" -> PremiumType.SUBSCRIPTION
+            "EVENT" -> PremiumType.EVENT
+            "REWARD_AD" -> PremiumType.REWARD_AD
+            else -> PremiumType.NONE
+        }
+    }
+
+    /**
+     * 리워드 광고로 24시간 프리미엄 지급
+     */
+    suspend fun grantRewardPremium(user: LocalUserData): Boolean {
+        // 오늘 이미 사용했는지 확인
+        val today = Instant.now().truncatedTo(ChronoUnit.DAYS).toString()
+        if (user.lastRewardDate == today) {
+            Log.d(TAG("PremiumManager", "grantRewardPremium"), "오늘 이미 리워드 사용함")
+            return false
+        }
+
+        // 24시간 후 만료 시간 계산
+        val expiryDate = Instant.now().plus(24, ChronoUnit.HOURS).toString()
+
+        val updatedUser = user.copy(
+            premiumType = "REWARD_AD",
+            premiumExpiryDate = expiryDate,
+            premiumGrantedBy = "reward",
+            premiumGrantedAt = Instant.now().toString(),
+            dailyRewardUsed = true,
+            lastRewardDate = today,
+            totalRewardCount = user.totalRewardCount + 1,
+            isPremium = true
+        )
+
+        userUseCases.localUserUpdate(updatedUser)
+        Log.d(TAG("PremiumManager", "grantRewardPremium"), "24시간 프리미엄 지급 완료: $expiryDate")
+
+        return true
+    }
+
+    /**
+     * 정기 구독 활성화 (Google Play 결제 성공 시)
+     */
+    suspend fun activateSubscription(user: LocalUserData, expiryDate: String): Boolean {
+        val updatedUser = user.copy(
+            premiumType = "SUBSCRIPTION",
+            premiumExpiryDate = expiryDate,
+            premiumGrantedBy = "subscription",
+            premiumGrantedAt = Instant.now().toString(),
+            isPremium = true
+        )
+
+        userUseCases.localUserUpdate(updatedUser)
+        Log.d(TAG("PremiumManager", "activateSubscription"), "정기 구독 활성화: $expiryDate")
+
+        return true
+    }
+
+    /**
+     * 프리미엄 만료 처리
+     */
+    suspend fun expirePremium(user: LocalUserData): Boolean {
+        val updatedUser = user.copy(
+            premiumType = "NONE",
+            premiumExpiryDate = null,
+            isPremium = false
+        )
+
+        userUseCases.localUserUpdate(updatedUser)
+        Log.d(TAG("PremiumManager", "expirePremium"), "프리미엄 만료 처리 완료")
+
+        return true
+    }
+
+    /**
+     * 프리미엄 남은 시간 계산 (초 단위)
+     */
+    fun getRemainingSeconds(user: LocalUserData): Long {
+        val expiryDate = user.premiumExpiryDate ?: return 0L
+
+        val now = Instant.now()
+        val expiry = try {
+            Instant.parse(expiryDate)
+        } catch (e: Exception) {
+            return 0L
+        }
+
+        val remaining = expiry.epochSecond - now.epochSecond
+        return if (remaining > 0) remaining else 0L
+    }
+
+    /**
+     * 오늘 리워드 광고 사용 가능한지 확인
+     */
+    fun canUseRewardAdToday(user: LocalUserData): Boolean {
+        val today = Instant.now().truncatedTo(ChronoUnit.DAYS).toString()
+        return user.lastRewardDate != today
+    }
+
+    /**
+     * 프리미엄 만료 1시간 전인지 확인 (푸시 알림용)
+     */
+    fun isExpiringWithinHour(user: LocalUserData): Boolean {
+        val remaining = getRemainingSeconds(user)
+        return remaining in 1..3600  // 1초~1시간 사이
     }
 
     /**
@@ -122,10 +264,10 @@ class PremiumManager @Inject constructor(
     /**
      * 테스트용: 프리미엄 상태 강제 설정 (디버그 빌드에서만 사용)
      */
-    fun setTestPremiumStatus(isPremium: Boolean) {
+    suspend fun setTestPremiumStatus(isPremium: Boolean) {
         Log.d(TAG("PremiumManager", "setTestPremiumStatus"), "테스트 프리미엄 상태: $isPremium")
-        scope.launch {
-            updateUserPremiumStatus(isPremium)
-        }
+        updateUserPremiumStatus(isPremium)
     }
 }
+
+

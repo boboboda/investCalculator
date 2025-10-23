@@ -17,13 +17,12 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.bobodroid.myapplication.components.admobs.BannerAd
+import com.bobodroid.myapplication.util.AdMob.BannerAd
 import com.bobodroid.myapplication.components.common.CurrencyDropdown
 import com.bobodroid.myapplication.models.datamodels.roomDb.CurrencyType
 import com.bobodroid.myapplication.models.viewmodels.AdUiState
 import com.bobodroid.myapplication.models.viewmodels.MainUiState
 import com.bobodroid.myapplication.models.viewmodels.CurrencyHoldingInfo
-import java.math.BigDecimal
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -34,9 +33,9 @@ fun MainHeader(
     isPremium: Boolean,  // ✅ 추가
     onPremiumRequired: () -> Unit,  // ✅ 추가
     hideSellRecordState: Boolean,
-    onHide:(Boolean) -> Unit,
+    onHide: (Boolean) -> Unit,
     isCollapsed: Boolean = false,
-    onToggleClick: () -> Unit
+    onToggleClick: () -> Unit,
 ) {
     val rate = mainUiState.recentRate.getRateByCode(mainUiState.selectedCurrencyType.name) ?: "0"
 
@@ -359,7 +358,7 @@ fun MainHeader(
 
         // 광고
         AnimatedVisibility(
-            visible = !adUiState.bannerAdState,
+            visible =  adUiState.bannerAdState,
             enter = fadeIn() + expandVertically(),
             exit = fadeOut() + shrinkVertically()
         ) {

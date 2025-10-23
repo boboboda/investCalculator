@@ -1,6 +1,7 @@
 package com.bobodroid.myapplication.screens
 
 import android.content.Intent
+import android.util.Log
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -33,9 +34,12 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.bobodroid.myapplication.WebActivity
 import com.bobodroid.myapplication.billing.BillingClientLifecycle
+import com.bobodroid.myapplication.components.Dialogs.AccountFoundDialog
+import com.bobodroid.myapplication.components.Dialogs.DataRestoreDialog
 import com.bobodroid.myapplication.components.Dialogs.OnboardingTooltipDialog
 import com.bobodroid.myapplication.models.datamodels.roomDb.LocalUserData
 import com.bobodroid.myapplication.models.viewmodels.*
+import com.bobodroid.myapplication.routes.MainRoute
 import com.bobodroid.myapplication.routes.MyPageRoute
 import com.bobodroid.myapplication.routes.RouteAction
 import kotlinx.coroutines.launch
@@ -78,34 +82,132 @@ fun MyPageScreen() {
                 )
             }
 
-            composable(MyPageRoute.CreateUser.routeName!!) {
+            // ============================================
+// MyPageScreen.kt 수정 코드
+// AccountManageView 부분 - 백업 정보 전달
+// ============================================
+
+            composable(MyPageRoute.AccountManage.routeName!!) {
+                val uiState by myPageViewModel.myPageUiState.collectAsState()
+                val coroutineScope = rememberCoroutineScope()
+
+                // ✅ 계정 발견 다이얼로그
+                if (uiState.showAccountFoundDialog && uiState.foundAccount != null) {
+                    AccountFoundDialog(
+                        email = uiState.foundAccount!!.email,
+                        nickname = uiState.foundAccount!!.nickname,
+                        lastSyncAt = uiState.foundAccount!!.lastSyncAt,
+                        onUseExistingAccount = {
+                            myPageViewModel.useExistingAccount { resultMessage ->
+                                coroutineScope.launch {
+                                    mainScreenSnackBarHostState.showSnackbar(
+                                        resultMessage,
+                                        actionLabel = "닫기",
+                                        duration = SnackbarDuration.Short
+                                    )
+                                }
+                            }
+                        },
+                        onCreateNewAccount = {
+                            myPageViewModel.createNewAccount { resultMessage ->
+                                coroutineScope.launch {
+                                    mainScreenSnackBarHostState.showSnackbar(
+                                        resultMessage,
+                                        actionLabel = "닫기",
+                                        duration = SnackbarDuration.Short
+                                    )
+                                }
+                            }
+                        },
+                        onDismiss = {
+                            myPageViewModel.dismissAccountFoundDialog()
+                        }
+                    )
+                }
+
+                // ✅ 데이터 복원 다이얼로그 - 백업 정보 전달
+                if (uiState.showDataRestoreDialog) {
+                    DataRestoreDialog(
+                        recordCount = uiState.backupInfo?.recordCount ?: 0,  // ✅ 백업 기록 수
+                        lastBackupAt = uiState.backupInfo?.lastBackupAt,      // ✅ 마지막 백업 시간
+                        onRestoreData = {
+                            myPageViewModel.restoreBackupData { resultMessage ->
+                                coroutineScope.launch {
+                                    mainScreenSnackBarHostState.showSnackbar(
+                                        resultMessage,
+                                        actionLabel = "닫기",
+                                        duration = SnackbarDuration.Long
+                                    )
+                                }
+                            }
+                        },
+                        onUseLocalData = {
+                            myPageViewModel.useLocalData { resultMessage ->
+                                coroutineScope.launch {
+                                    mainScreenSnackBarHostState.showSnackbar(
+                                        resultMessage,
+                                        actionLabel = "닫기",
+                                        duration = SnackbarDuration.Short
+                                    )
+                                }
+                            }
+                        },
+                        onDismiss = {
+                            myPageViewModel.dismissDataRestoreDialog()
+                        }
+                    )
+                }
+
                 AccountManageView(
                     routeAction = myPageRouteAction,
                     localUser = uiState.localUser,
                     onGoogleLogin = { activity ->
-                        myPageViewModel.loginWithGoogle(activity) { resultMessage ->
-                            coroutineScope.launch {
-                                mainScreenSnackBarHostState.showSnackbar(
-                                    resultMessage,
-                                    actionLabel = "닫기",
-                                    duration = SnackbarDuration.Short
-                                )
+                        myPageViewModel.loginWithGoogle(
+                            activity = activity,
+                            onAccountFound = { accountInfo ->
+                                Log.d("MyPageScreen", "계정 발견: ${accountInfo.email}")
+                            },
+                            onComplete = { resultMessage ->
+                                coroutineScope.launch {
+                                    mainScreenSnackBarHostState.showSnackbar(
+                                        resultMessage,
+                                        actionLabel = "닫기",
+                                        duration = SnackbarDuration.Short
+                                    )
+                                }
                             }
-                        }
+                        )
                     },
                     onKakaoLogin = { activity ->
-                        myPageViewModel.loginWithKakao(activity) { resultMessage ->
-                            coroutineScope.launch {
-                                mainScreenSnackBarHostState.showSnackbar(
-                                    resultMessage,
-                                    actionLabel = "닫기",
-                                    duration = SnackbarDuration.Short
-                                )
+                        myPageViewModel.loginWithKakao(
+                            activity = activity,
+                            onAccountFound = { accountInfo ->
+                                Log.d("MyPageScreen", "계정 발견: ${accountInfo.email}")
+                            },
+                            onComplete = { resultMessage ->
+                                coroutineScope.launch {
+                                    mainScreenSnackBarHostState.showSnackbar(
+                                        resultMessage,
+                                        actionLabel = "닫기",
+                                        duration = SnackbarDuration.Short
+                                    )
+                                }
                             }
-                        }
+                        )
                     },
                     onLogout = {
                         myPageViewModel.logout { resultMessage ->
+                            coroutineScope.launch {
+                                mainScreenSnackBarHostState.showSnackbar(
+                                    resultMessage,
+                                    actionLabel = "닫기",
+                                    duration = SnackbarDuration.Short
+                                )
+                            }
+                        }
+                    },
+                    onDeleteAccount = {
+                        myPageViewModel.deleteAccount { resultMessage ->
                             coroutineScope.launch {
                                 mainScreenSnackBarHostState.showSnackbar(
                                     resultMessage,
@@ -148,7 +250,7 @@ fun MyPageScreen() {
                     onBackClick = { myPageRouteAction.goBack() },
                     onAccountManageClick = {
                         // ✅ 계정 관리 화면으로 이동
-                        myPageRouteAction.navTo(MyPageRoute.CreateUser)
+                        myPageRouteAction.navTo(MyPageRoute.AccountManage)
                     }
                 )
             }
@@ -192,7 +294,7 @@ fun ImprovedMyPageView(
         item {
             ProfileHeader(
                 localUser = localUser,
-                onProfileClick = { myPageRouteAction.navTo(MyPageRoute.CreateUser) }
+                onProfileClick = { myPageRouteAction.navTo(MyPageRoute.AccountManage) }
             )
         }
 
@@ -239,7 +341,7 @@ fun ImprovedMyPageView(
         // 설정 메뉴
         item {
             SettingSection(
-                onAccountManageClick = { myPageRouteAction.navTo(MyPageRoute.CreateUser) },
+                onAccountManageClick = { myPageRouteAction.navTo(MyPageRoute.AccountManage) },
                 onCloudServiceClick = { myPageRouteAction.navTo(MyPageRoute.CloudService) },
                 onCustomerServiceClick = {
                     // ✅ CustomerView 화면으로 가지 않고 바로 WebActivity 실행

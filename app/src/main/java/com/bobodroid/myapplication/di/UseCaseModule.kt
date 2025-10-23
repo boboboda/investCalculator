@@ -1,8 +1,14 @@
 package com.bobodroid.myapplication.di
 
+import android.content.Context
 import com.bobodroid.myapplication.models.datamodels.repository.InvestRepository
 import com.bobodroid.myapplication.models.datamodels.repository.UserRepository
 import com.bobodroid.myapplication.models.datamodels.social.SocialLoginManager
+import com.bobodroid.myapplication.models.datamodels.useCases.AccountSwitchUseCase
+import com.bobodroid.myapplication.models.datamodels.useCases.DeleteAllNotificationsUseCase
+import com.bobodroid.myapplication.models.datamodels.useCases.DeleteNotificationUseCase
+import com.bobodroid.myapplication.models.datamodels.useCases.DeleteOldNotificationsUseCase
+import com.bobodroid.myapplication.models.datamodels.useCases.DeleteReadNotificationsUseCase
 import com.bobodroid.myapplication.models.datamodels.useCases.DeleteUserUseCase
 import com.bobodroid.myapplication.models.datamodels.useCases.FcmUseCases
 import com.bobodroid.myapplication.models.datamodels.useCases.GetNotificationHistoryUseCase
@@ -27,10 +33,13 @@ import com.bobodroid.myapplication.models.datamodels.useCases.UnlinkSocialUseCas
 import com.bobodroid.myapplication.models.datamodels.useCases.UpdateNotificationSettingsUseCase
 import com.bobodroid.myapplication.models.datamodels.useCases.UserUseCases
 import com.bobodroid.myapplication.models.datamodels.websocket.WebSocketClient
+import com.bobodroid.myapplication.premium.PremiumManager
+import com.bobodroid.myapplication.util.AdMob.AdManager
 import com.bobodroid.myapplication.util.AdMob.AdUseCase
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
+import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import javax.inject.Singleton
 
@@ -93,6 +102,8 @@ object UseCaseModule {
 
     // ==================== FCM UseCases ====================
 
+    // ==================== FCM UseCases ====================
+
     @Provides
     @Singleton
     fun provideFcmUseCases(
@@ -103,9 +114,14 @@ object UseCaseModule {
         updateNotificationSettingsUseCase: UpdateNotificationSettingsUseCase,
         getNotificationHistoryUseCase: GetNotificationHistoryUseCase,
         markAsReadUseCase: MarkNotificationAsReadUseCase,
+        markAsClickedUseCase: MarkNotificationAsClickedUseCase,
         getNotificationStatsUseCase: GetNotificationStatsUseCase,
         sendTestNotificationUseCase: SendTestNotificationUseCase,
-        markAsClickedUseCase: MarkNotificationAsClickedUseCase,
+        // 🆕 삭제 UseCases
+        deleteNotificationUseCase: DeleteNotificationUseCase,
+        deleteAllNotificationsUseCase: DeleteAllNotificationsUseCase,
+        deleteReadNotificationsUseCase: DeleteReadNotificationsUseCase,
+        deleteOldNotificationsUseCase: DeleteOldNotificationsUseCase
     ): FcmUseCases {
         return FcmUseCases(
             targetRateAddUseCase = targetRateAddUseCase,
@@ -117,9 +133,16 @@ object UseCaseModule {
             markAsReadUseCase = markAsReadUseCase,
             markAsClickedUseCase = markAsClickedUseCase,
             getNotificationStatsUseCase = getNotificationStatsUseCase,
-            sendTestNotificationUseCase = sendTestNotificationUseCase
+            sendTestNotificationUseCase = sendTestNotificationUseCase,
+            // 🆕 삭제 UseCases
+            deleteNotificationUseCase = deleteNotificationUseCase,
+            deleteAllNotificationsUseCase = deleteAllNotificationsUseCase,
+            deleteReadNotificationsUseCase = deleteReadNotificationsUseCase,
+            deleteOldNotificationsUseCase = deleteOldNotificationsUseCase
         )
     }
+
+    // ==================== 기존 Providers ====================
 
     @Provides
     fun provideGetNotificationSettingsUseCase(): GetNotificationSettingsUseCase {
@@ -142,6 +165,11 @@ object UseCaseModule {
     }
 
     @Provides
+    fun provideMarkNotificationAsClickedUseCase(): MarkNotificationAsClickedUseCase {
+        return MarkNotificationAsClickedUseCase()
+    }
+
+    @Provides
     fun provideGetNotificationStatsUseCase(): GetNotificationStatsUseCase {
         return GetNotificationStatsUseCase()
     }
@@ -150,6 +178,29 @@ object UseCaseModule {
     fun provideSendTestNotificationUseCase(): SendTestNotificationUseCase {
         return SendTestNotificationUseCase()
     }
+
+    // ==================== 🆕 삭제 UseCase Providers ====================
+
+    @Provides
+    fun provideDeleteNotificationUseCase(): DeleteNotificationUseCase {
+        return DeleteNotificationUseCase()
+    }
+
+    @Provides
+    fun provideDeleteAllNotificationsUseCase(): DeleteAllNotificationsUseCase {
+        return DeleteAllNotificationsUseCase()
+    }
+
+    @Provides
+    fun provideDeleteReadNotificationsUseCase(): DeleteReadNotificationsUseCase {
+        return DeleteReadNotificationsUseCase()
+    }
+
+    @Provides
+    fun provideDeleteOldNotificationsUseCase(): DeleteOldNotificationsUseCase {
+        return DeleteOldNotificationsUseCase()
+    }
+
 
 
 
@@ -197,4 +248,33 @@ object UseCaseModule {
         investRepository: InvestRepository
     ): RestoreFromServerUseCase = RestoreFromServerUseCase(userRepository, investRepository)
 
+
+    @Provides
+    fun provideAccountSwitchUseCase(
+        userRepository: UserRepository,
+    ): AccountSwitchUseCase = AccountSwitchUseCase(
+        userRepository,
+    )
+
+    // 🆕 PremiumManager 추가
+    @Provides
+    @Singleton
+    fun providePremiumManager(
+        userUseCases: UserUseCases,
+        userRepository: UserRepository,
+        @ApplicationContext context: Context
+    ): PremiumManager {
+        return PremiumManager(context, userRepository, userUseCases)
+    }
+
+    // 🆕 AdUseCase 수정 (PremiumManager 주입)
+    @Provides
+    @Singleton
+    fun provideAdUseCase(
+        userUseCases: UserUseCases,
+        premiumManager: PremiumManager,
+        adManager: AdManager
+    ): AdUseCase {
+        return AdUseCase(userUseCases, premiumManager, adManager)
+    }
 }

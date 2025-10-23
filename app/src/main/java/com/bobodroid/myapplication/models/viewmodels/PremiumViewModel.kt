@@ -147,7 +147,7 @@ class PremiumViewModel @Inject constructor(
     /**
      * 테스트용: 프리미엄 상태 강제 설정
      */
-    fun setTestPremiumStatus(isPremium: Boolean) {
+    suspend fun setTestPremiumStatus(isPremium: Boolean) {
         premiumManager.setTestPremiumStatus(isPremium)
     }
 

@@ -37,11 +37,13 @@ import com.bobodroid.myapplication.models.datamodels.social.SocialLoginManager
 import com.bobodroid.myapplication.models.datamodels.useCases.FcmUseCases
 import com.bobodroid.myapplication.models.viewmodels.AnalysisViewModel
 import com.bobodroid.myapplication.models.viewmodels.MainViewModel
+import com.bobodroid.myapplication.models.viewmodels.SharedViewModel
 import com.bobodroid.myapplication.routes.*
 import com.bobodroid.myapplication.screens.*
 import com.bobodroid.myapplication.test.CurrencyTestRunner
 import com.bobodroid.myapplication.test.Phase2TestRunner
 import com.bobodroid.myapplication.ui.theme.InverstCalculatorTheme
+import com.bobodroid.myapplication.util.AdMob.AdManager
 import com.bobodroid.myapplication.util.PreferenceUtil
 import com.bobodroid.myapplication.widget.WidgetAlarmManager
 import com.bobodroid.myapplication.widget.WidgetUpdateHelper
@@ -64,9 +66,13 @@ class MainActivity : ComponentActivity() {
     }
 
     private val mainViewModel: MainViewModel by viewModels()
-    private val analysisViewModel: AnalysisViewModel by viewModels()
+
+    private val sharedViewModel: SharedViewModel by viewModels()
 
     @Inject lateinit var fcmUseCases: FcmUseCases
+
+    @Inject
+    lateinit var adManager: AdManager
 
     @Inject
     lateinit var socialLoginManager: SocialLoginManager
@@ -81,6 +87,10 @@ class MainActivity : ComponentActivity() {
 
 
         super.onCreate(savedInstanceState)
+
+        adManager.preloadAllAds(this)
+
+        handleIntent(intent)
 
         Log.w(TAG("메인","onCreate"), "━━━━━━━━━━━━━━━━━━━━━━━━━━")
         Log.w(TAG("메인","onCreate"), "📱 onCreate 실행")
@@ -106,7 +116,6 @@ class MainActivity : ComponentActivity() {
 
         handleIntent(intent)
 
-//        CurrencyTestRunner.runPhase1Test()
 
         Phase2TestRunner.runPhase2Test()
 
@@ -114,7 +123,7 @@ class MainActivity : ComponentActivity() {
             InverstCalculatorTheme {
                 AppScreen(
                     mainViewModel,
-                    analysisViewModel,
+                    sharedViewModel,
                     activity = this
                 )
             }
@@ -423,7 +432,7 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun AppScreen(
     mainViewModel: MainViewModel,
-    analysisViewModel: AnalysisViewModel,
+    sharedViewModel: SharedViewModel,
     activity: Activity
 ) {
     Column(
@@ -437,7 +446,7 @@ fun AppScreen(
         ) {
             InvestAppScreen(
                 mainViewModel,
-                analysisViewModel,
+                sharedViewModel,
                 activity
             )
         }
@@ -448,7 +457,7 @@ fun AppScreen(
 @Composable
 fun InvestAppScreen(
     mainViewModel: MainViewModel,
-    analysisViewModel: AnalysisViewModel,
+    sharedViewModel: SharedViewModel,
     activity: Activity
 ) {
     val investNavController = rememberNavController()
@@ -481,7 +490,7 @@ fun InvestAppScreen(
                 investNavController = investNavController,
                 mainViewModel = mainViewModel,
                 activity = activity,
-                analysisViewModel = analysisViewModel,
+                sharedViewModel = sharedViewModel
             )
 
             if(guideDialog) {
@@ -504,7 +513,7 @@ fun InvestAppScreen(
 fun InvestNavHost(
     investNavController: NavHostController,
     startRouter: MainRoute = MainRoute.Main,
-    analysisViewModel: AnalysisViewModel,
+    sharedViewModel: SharedViewModel,
     mainViewModel: MainViewModel,
     activity: Activity
 ) {
@@ -515,7 +524,8 @@ fun InvestNavHost(
                 activity = activity,
                 onNavigateToPremium = {
                     investNavController.navigate(MainRoute.MyPage.routeName!!)
-                }
+                },
+                sharedViewModel = sharedViewModel
             )
         }
 
@@ -523,7 +533,8 @@ fun InvestNavHost(
             FcmAlarmScreen(
                 onNavigateToSettings = {
                     investNavController.navigate(MainRoute.NotificationSettings.routeName!!)
-                }
+                },
+                sharedViewModel = sharedViewModel
             )
         }
 
@@ -532,7 +543,9 @@ fun InvestNavHost(
         }
 
         composable(MainRoute.AnalysisScreen.routeName!!) {
-            AnalysisScreen(analysisViewModel)
+            AnalysisScreen(
+                sharedViewModel = sharedViewModel
+            )
         }
 
         composable(MainRoute.NotificationSettings.routeName!!) {

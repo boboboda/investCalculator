@@ -81,6 +81,12 @@ class BillingClientLifecycle private constructor(
                 Log.d(TAG, "The BillingClient is ready. You can query purchases here.")
                 this@BillingClientLifecycle.fetchAvailableProducts()
             }
+
+            // ✅ 구독 상태 확인 추가
+            BillingClientLifecycle.getInstance(applicationContext)
+                .queryActivePurchases("recordadvertisementremove") { hasPremium ->
+                    Log.d(TAG, "Billing setup 후 구독 상태 확인: ${if (hasPremium) "프리미엄" else "일반 사용자"}")
+                }
         }
     }
 

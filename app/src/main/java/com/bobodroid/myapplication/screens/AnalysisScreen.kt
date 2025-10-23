@@ -19,10 +19,13 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
 import com.bobodroid.myapplication.MainActivity.Companion.TAG
+import com.bobodroid.myapplication.components.Dialogs.PremiumPromptDialog
 import com.bobodroid.myapplication.components.Dialogs.PremiumRequiredDialog
 import com.bobodroid.myapplication.components.chart.ExchangeRateChart
 import com.bobodroid.myapplication.components.common.CurrencyDropdown
@@ -31,12 +34,29 @@ import com.bobodroid.myapplication.models.datamodels.roomDb.CurrencyType
 import com.bobodroid.myapplication.models.datamodels.roomDb.emoji
 import com.bobodroid.myapplication.models.viewmodels.AnalysisViewModel
 import com.bobodroid.myapplication.models.viewmodels.RateRangeCurrency
+import com.bobodroid.myapplication.models.viewmodels.SharedViewModel
 import com.bobodroid.myapplication.ui.theme.primaryColor
 
 @Composable
 fun AnalysisScreen(
-    analysisViewModel: AnalysisViewModel
+    analysisViewModel: AnalysisViewModel = hiltViewModel(),
+    sharedViewModel: SharedViewModel,
 ) {
+
+
+    val isPremium by sharedViewModel.isPremium.collectAsState()
+    val showPremiumPrompt by sharedViewModel.showPremiumPrompt.collectAsState()
+
+    val context = LocalContext.current
+
+    LaunchedEffect(Unit) {
+        if (!isPremium) {
+            // ✅ ViewModel이 UseCase 호출 → UseCase가 AdManager 호출
+            sharedViewModel.showInterstitialAdIfNeeded(context)
+        }
+    }
+
+
     // ✅ 프리미엄 다이얼로그 상태 추가
     var showPremiumDialog by remember { mutableStateOf(false) }
 
@@ -57,6 +77,18 @@ fun AnalysisScreen(
                 onPurchaseClick = {
                     showPremiumDialog = false
                     // 프리미엄 화면으로 이동 (구현 필요)
+                }
+            )
+        }
+
+        if (showPremiumPrompt) {
+            PremiumPromptDialog(
+                onWatchAd = {
+                    sharedViewModel.closePremiumPrompt()
+                    sharedViewModel.showRewardAdDialog()
+                },
+                onDismiss = {
+                    sharedViewModel.closePremiumPrompt()
                 }
             )
         }

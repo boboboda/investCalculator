@@ -3,7 +3,6 @@ package com.bobodroid.myapplication.models.datamodels.roomDb
 import androidx.room.AutoMigration
 import androidx.room.Database
 import androidx.room.RoomDatabase
-import java.util.UUID
 
 /**
  * 투자 기록 데이터베이스
@@ -12,6 +11,10 @@ import java.util.UUID
  * - CurrencyRecord: 통합 외화 기록 (UUID)
  *
  * Version 32: lastSyncAt 필드 추가
+ * Version 33: interstitialAdCount 필드 추가 (전면 광고 카운트)
+ * Version 34: 프리미엄 & 광고 확장 필드 추가
+ *            - premiumType, premiumExpiryDate, premiumGrantedBy, premiumGrantedAt
+ *            - dailyRewardUsed, lastRewardDate, totalRewardCount
  */
 @Database(
     entities = [
@@ -19,10 +22,12 @@ import java.util.UUID
         ExchangeRate::class,
         CurrencyRecord::class
     ],
-    version = 32,
+    version = 34,
     exportSchema = true,
     autoMigrations = [
-        AutoMigration(from = 31, to = 32)
+        AutoMigration(from = 31, to = 32),
+        AutoMigration(from = 32, to = 33),
+        AutoMigration(from = 33, to = 34)
     ]
 )
 abstract class InvestDatabase : RoomDatabase() {

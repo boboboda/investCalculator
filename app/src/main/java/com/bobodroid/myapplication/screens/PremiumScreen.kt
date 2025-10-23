@@ -28,6 +28,7 @@ import com.bobodroid.myapplication.components.SocialLoginWarningBanner
 import com.bobodroid.myapplication.models.viewmodels.MyPageViewModel
 import com.bobodroid.myapplication.models.viewmodels.PremiumViewModel
 import com.bobodroid.myapplication.routes.MyPageRoute
+import kotlinx.coroutines.launch
 
 /**
  * 프리미엄 전용 화면
@@ -52,6 +53,9 @@ fun PremiumScreen(
     val myPageUiState by myPageViewModel.myPageUiState.collectAsState()
     val localUser = myPageUiState.localUser
     val isSocialLinked = localUser.socialType != "NONE" && !localUser.socialId.isNullOrEmpty()
+
+
+    val coroutineScope = rememberCoroutineScope()
 
     Scaffold(
         topBar = {
@@ -119,14 +123,16 @@ fun PremiumScreen(
                     isPremium = isPremium,
                     onTogglePremium = { newStatus ->  // ✅ 파라미터로 받기
 
-                        Log.d("Premium","프리미엄 상태: ${isPremium}, ${newStatus}")
+                        coroutineScope.launch {
+                            Log.d("Premium","프리미엄 상태: ${isPremium}, ${newStatus}")
 
-                        viewModel.setTestPremiumStatus(newStatus)
+                            viewModel.setTestPremiumStatus(newStatus)
 
-                        if (newStatus) {
-                            viewModel.toggleRealtimeUpdate(true)
-                        } else {
-                            viewModel.toggleRealtimeUpdate(false)
+                            if (newStatus) {
+                                viewModel.toggleRealtimeUpdate(true)
+                            } else {
+                                viewModel.toggleRealtimeUpdate(false)
+                            }
                         }
                     },
                     onRefreshStatus = { viewModel.refreshPremiumStatus() }

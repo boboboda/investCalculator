@@ -89,4 +89,5 @@ class UserRepository @Inject constructor(
     suspend fun waitForUserData(): UserData {  // ⭐ 변경
         return userData.filterNotNull().first()
     }
+
 }

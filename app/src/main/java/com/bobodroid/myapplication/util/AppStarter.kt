@@ -17,19 +17,13 @@ import javax.inject.Singleton
 @Singleton
 class AppStarter @Inject constructor(
     private val localExistCheckUseCase: LocalExistCheckUseCase,
-    private val rateRepository: LatestRateRepository,
     private val noticeRepository: NoticeRepository,
-    private val adManager: AdManager
 ) {
     fun startApp(context: Context) {
         CoroutineScope(Dispatchers.IO).launch {
             localExistCheckUseCase.invoke()
             noticeRepository.loadNotice()
 
-            withContext(Dispatchers.Main) {
-                adManager.loadBannerAd(context)
-                adManager.loadRewardedAd(context)
-            }
         }
     }
 }

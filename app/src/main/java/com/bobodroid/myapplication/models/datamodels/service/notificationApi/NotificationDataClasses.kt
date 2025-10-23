@@ -1,6 +1,6 @@
 // app/src/main/java/com/bobodroid/myapplication/models/datamodels/notification/NotificationDataClasses.kt
 
-package com.bobodroid.myapplication.models.datamodels.notification
+package com.bobodroid.myapplication.models.datamodels.service.notificationApi
 
 import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
@@ -209,3 +209,11 @@ enum class NotificationStatus {
     CLICKED,
     FAILED
 }
+
+
+@JsonClass(generateAdapter = true)
+data class DeleteNotificationsResponse(
+    val success: Boolean,
+    val message: String,
+    val deletedCount: Int? = null
+)

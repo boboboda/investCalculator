@@ -1,4 +1,4 @@
-package com.bobodroid.myapplication.components.admobs
+package com.bobodroid.myapplication.util.AdMob
 
 import android.app.Activity
 import android.content.Context

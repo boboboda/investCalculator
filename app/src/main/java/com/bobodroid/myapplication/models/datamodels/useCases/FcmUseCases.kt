@@ -4,7 +4,6 @@ package com.bobodroid.myapplication.models.datamodels.useCases
 
 import android.util.Log
 import com.bobodroid.myapplication.MainActivity.Companion.TAG
-import com.bobodroid.myapplication.models.datamodels.notification.*
 import com.bobodroid.myapplication.models.datamodels.roomDb.RateDirection
 import com.bobodroid.myapplication.models.datamodels.roomDb.RateType
 import com.bobodroid.myapplication.models.datamodels.roomDb.TargetRates
@@ -12,6 +11,10 @@ import com.bobodroid.myapplication.models.datamodels.service.UserApi.Rate
 import com.bobodroid.myapplication.models.datamodels.service.UserApi.UserApi
 import com.bobodroid.myapplication.models.datamodels.service.UserApi.UserRatesUpdateRequest
 import com.bobodroid.myapplication.models.datamodels.service.notificationApi.NotificationApi
+import com.bobodroid.myapplication.models.datamodels.service.notificationApi.NotificationHistoryItem
+import com.bobodroid.myapplication.models.datamodels.service.notificationApi.NotificationSettings
+import com.bobodroid.myapplication.models.datamodels.service.notificationApi.NotificationStats
+import com.bobodroid.myapplication.models.datamodels.service.notificationApi.UpdateNotificationSettingsRequest
 import com.bobodroid.myapplication.models.datamodels.websocket.WebSocketClient
 import com.bobodroid.myapplication.util.result.Result
 import javax.inject.Inject
@@ -28,7 +31,12 @@ class FcmUseCases @Inject constructor(
     val markAsReadUseCase: MarkNotificationAsReadUseCase,
     val markAsClickedUseCase: MarkNotificationAsClickedUseCase,
     val getNotificationStatsUseCase: GetNotificationStatsUseCase,
-    val sendTestNotificationUseCase: SendTestNotificationUseCase
+    val sendTestNotificationUseCase: SendTestNotificationUseCase,
+    // 🆕 삭제 UseCases
+    val deleteNotificationUseCase: DeleteNotificationUseCase,
+    val deleteAllNotificationsUseCase: DeleteAllNotificationsUseCase,
+    val deleteReadNotificationsUseCase: DeleteReadNotificationsUseCase,
+    val deleteOldNotificationsUseCase: DeleteOldNotificationsUseCase
 )
 
 // ==================== 목표환율 UseCase ====================
@@ -297,6 +305,100 @@ class SendTestNotificationUseCase @Inject constructor() {
             }
         } catch (e: Exception) {
             Result.Error(message = "테스트 알림 전송 중 오류가 발생했습니다", exception = e)
+        }
+    }
+}
+
+class DeleteNotificationUseCase @Inject constructor() {
+    suspend operator fun invoke(notificationId: String): Result<Unit> {
+        return try {
+            val response = NotificationApi.service.deleteNotification(notificationId)
+
+            if (response.success) {
+                Result.Success(data = Unit, message = "알림이 삭제되었습니다")
+            } else {
+                Result.Error(
+                    message = response.message ?: "알림 삭제 실패",
+                    exception = Exception(response.message)
+                )
+            }
+        } catch (e: Exception) {
+            Result.Error(message = "알림 삭제 중 오류가 발생했습니다", exception = e)
+        }
+    }
+}
+
+/**
+ * 모든 알림 삭제
+ */
+class DeleteAllNotificationsUseCase @Inject constructor() {
+    suspend operator fun invoke(deviceId: String): Result<Int> {
+        return try {
+            val response = NotificationApi.service.deleteAllNotifications(deviceId)
+
+            if (response.success) {
+                Result.Success(
+                    data = response.deletedCount ?: 0,
+                    message = response.message
+                )
+            } else {
+                Result.Error(
+                    message = response.message,
+                    exception = Exception(response.message)
+                )
+            }
+        } catch (e: Exception) {
+            Result.Error(message = "전체 삭제 중 오류가 발생했습니다", exception = e)
+        }
+    }
+}
+
+/**
+ * 읽은 알림만 삭제
+ */
+class DeleteReadNotificationsUseCase @Inject constructor() {
+    suspend operator fun invoke(deviceId: String): Result<Int> {
+        return try {
+            val response = NotificationApi.service.deleteReadNotifications(deviceId)
+
+            if (response.success) {
+                Result.Success(
+                    data = response.deletedCount ?: 0,
+                    message = response.message
+                )
+            } else {
+                Result.Error(
+                    message = response.message,
+                    exception = Exception(response.message)
+                )
+            }
+        } catch (e: Exception) {
+            Result.Error(message = "읽은 알림 삭제 중 오류가 발생했습니다", exception = e)
+        }
+    }
+}
+
+/**
+ * 오래된 알림 삭제
+ */
+class DeleteOldNotificationsUseCase @Inject constructor() {
+    suspend operator fun invoke(deviceId: String, days: Int = 30): Result<Int> {
+        return try {
+            val response = NotificationApi.service.deleteOldNotifications(deviceId, days)
+
+            if (response.success) {
+                Result.Success(
+                    data = response.deletedCount ?: 0,
+                    message = response.message
+                )
+            } else {
+                Result.Error(
+                    message = response.message,
+                    exception = Exception(response.message)
+                )
+            }
+        } catch (e: Exception) {
+            Result.Error(message = "오래된 알림 삭제 중 오류가 발생했습니다", exception = e)
         }
     }
 }

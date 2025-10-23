@@ -39,7 +39,7 @@ sealed class MyPageRoute(
     override val subRoutes: List<String> = emptyList()
 ): Route {
     data object SelectView: MyPageRoute("SelectView", "선택뷰")
-    data object CreateUser: MyPageRoute("CreateUser", "유저생성")
+    data object AccountManage: MyPageRoute("AccountManage", "계정 관리")
     data object CustomerServiceCenter: MyPageRoute("CustomerServiceCenter", "고객센터")
     data object CloudService: MyPageRoute("CloudService", "클라우드")
     data object WidgetSettings: MyPageRoute("WidgetSettings", "위젯 설정") // ✅ 추가

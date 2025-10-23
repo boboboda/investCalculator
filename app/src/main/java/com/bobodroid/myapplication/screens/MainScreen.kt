@@ -1,8 +1,6 @@
 package com.bobodroid.myapplication.screens
 
 import android.app.Activity
-import android.util.Log
-import android.widget.Toast
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -27,11 +25,9 @@ import com.bobodroid.myapplication.components.Dialogs.NoticeDialog
 import kotlinx.coroutines.delay
 import androidx.compose.material3.Text
 import androidx.compose.ui.platform.LocalFocusManager
-import com.bobodroid.myapplication.components.Dialogs.RewardShowAskDialog
 import com.bobodroid.myapplication.components.Dialogs.SellResultDialog
 import com.bobodroid.myapplication.components.Dialogs.TextFieldDialog
 import com.bobodroid.myapplication.components.Dialogs.ThanksDialog
-import com.bobodroid.myapplication.components.admobs.showTargetRewardedAdvertisement
 import com.bobodroid.myapplication.components.mainComponents.AddBottomSheet
 import com.bobodroid.myapplication.components.mainComponents.EditBottomSheet
 import com.bobodroid.myapplication.components.mainComponents.MainHeader
@@ -46,21 +42,31 @@ import com.bobodroid.myapplication.screens.MainEvent.BottomSheetEvent
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.saveable.rememberSaveable
 import com.bobodroid.myapplication.components.Dialogs.OnboardingTooltipDialog
+import com.bobodroid.myapplication.components.Dialogs.PremiumPromptDialog
 import com.bobodroid.myapplication.components.Dialogs.PremiumRequiredDialog
+import com.bobodroid.myapplication.components.Dialogs.RewardAdInfoDialog
 import com.bobodroid.myapplication.components.mainComponents.GroupChangeBottomSheet
+import com.bobodroid.myapplication.models.viewmodels.SharedViewModel
 import com.bobodroid.myapplication.util.PreferenceUtil
-import kotlinx.coroutines.Job
 
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterialApi::class)
 @Composable
 fun MainScreen(
     mainViewModel: MainViewModel,
+    sharedViewModel: SharedViewModel,
     activity: Activity,
     onNavigateToPremium: () -> Unit
 ) {
     val mainUiState by mainViewModel.mainUiState.collectAsState()
-    val adUiState by mainViewModel.adUiState.collectAsState()
+    val adUiState by sharedViewModel.adUiState.collectAsState()
+
+    val isPremium by sharedViewModel.isPremium.collectAsState()
+
+    val showPremiumPrompt by sharedViewModel.showPremiumPrompt.collectAsState()
+    val showRewardAdInfo by sharedViewModel.showRewardAdInfo.collectAsState()
+
+
     val recordListUiState by mainViewModel.recordListUiState.collectAsState()
     val noticeUiState by mainViewModel.noticeUiState.collectAsState()
 
@@ -88,9 +94,6 @@ fun MainScreen(
     var isHeaderCollapsed by rememberSaveable { mutableStateOf(true) }
 
     //프리미엄
-
-    val isPremium by mainViewModel.isPremium.collectAsState()
-
     var showPremiumDialog by remember { mutableStateOf(false) }
 
 
@@ -145,14 +148,14 @@ fun MainScreen(
                 updateCurrentForeignCurrency = { currency ->
                     mainViewModel.updateCurrentForeignCurrency(currency)
                 },
-                isPremium = isPremium,
                 onPremiumRequired = {
                     showPremiumDialog = true  // ✅ 토스트 대신 다이얼로그 표시
                 },
                 hideSellRecordState = hideSellRecordState,
                 onHide = { hideSellRecordState = it },
                 isCollapsed = isHeaderCollapsed,
-                onToggleClick = { isHeaderCollapsed = !isHeaderCollapsed }
+                onToggleClick = { isHeaderCollapsed = !isHeaderCollapsed },
+                isPremium = isPremium
             )
 
             Column(
@@ -351,6 +354,32 @@ fun MainScreen(
                     }
                 )
             }
+
+            if (showPremiumPrompt) {
+                PremiumPromptDialog(
+                    onWatchAd = {
+                        sharedViewModel.closePremiumPrompt()
+                        sharedViewModel.showRewardAdDialog()
+                    },
+                    onDismiss = {
+                        sharedViewModel.closePremiumPrompt()
+                    }
+                )
+            }
+
+            // 리워드 광고 안내 팝업
+            if (showRewardAdInfo) {
+                RewardAdInfoDialog(
+                    onConfirm = {
+                        sharedViewModel.showRewardAdAndGrantPremium(context)
+                    },
+                    onDismiss = {
+                        sharedViewModel.closeRewardAdDialog()
+                    }
+                )
+            }
+
+
         }
 
         // 플로팅 버튼

@@ -3,11 +3,14 @@ package com.bobodroid.myapplication.screens
 import android.app.Activity
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.CloudOff
+import androidx.compose.material.icons.rounded.Warning
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -29,11 +32,14 @@ fun AccountManageView(
     onGoogleLogin: (Activity) -> Unit,
     onKakaoLogin: (Activity) -> Unit,
     onLogout: () -> Unit,
-    onUnlinkSocial: () -> Unit  // ✅ 연동 해제 추가
+    onDeleteAccount: () -> Unit,  // ✅ 추가
+    onUnlinkSocial: () -> Unit
 ) {
     val context = LocalContext.current
     val activity = context as? Activity
-    var showUnlinkDialog by remember { mutableStateOf(false) }  // ✅ 연동 해제 확인 다이얼로그
+    var showUnlinkDialog by remember { mutableStateOf(false) }
+    var showDeleteDialog by remember { mutableStateOf(false) }
+    var showFinalConfirmDialog by remember { mutableStateOf(false) }
 
     Scaffold(
         topBar = {
@@ -55,6 +61,7 @@ fun AccountManageView(
                 .fillMaxSize()
                 .padding(paddingValues)
                 .background(Color(0xFFF8F9FA))
+                .verticalScroll(rememberScrollState())
         ) {
 
             Spacer(modifier = Modifier.height(16.dp))
@@ -76,11 +83,12 @@ fun AccountManageView(
                     }
                 )
             } else {
-                // 로그인된 상태 - 로그아웃 & 연동 해제 버튼 표시
+                // 로그인된 상태 - 로그아웃 & 연동 해제 & 회원 탈퇴 버튼 표시
                 LoggedInSection(
                     localUser = localUser,
                     onLogout = onLogout,
-                    onUnlinkSocial = { showUnlinkDialog = true }  // ✅ 다이얼로그 표시
+                    onUnlinkSocial = { showUnlinkDialog = true },
+                    onDeleteAccount = { showDeleteDialog = true }  // ✅ 추가
                 )
             }
 
@@ -127,6 +135,100 @@ fun AccountManageView(
             }
         )
     }
+
+    // 1차 확인 다이얼로그
+    if (showDeleteDialog) {
+        AlertDialog(
+            onDismissRequest = { showDeleteDialog = false },
+            icon = {
+                Icon(
+                    imageVector = Icons.Rounded.Warning,
+                    contentDescription = null,
+                    tint = Color(0xFFEF4444),
+                    modifier = Modifier.size(48.dp)
+                )
+            },
+            title = {
+                Text(
+                    text = "회원 탈퇴",
+                    fontWeight = FontWeight.Bold
+                )
+            },
+            text = {
+                Text("정말 탈퇴하시겠습니까?\n모든 데이터가 삭제되며 복구할 수 없습니다.")
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        showDeleteDialog = false
+                        showFinalConfirmDialog = true
+                    }
+                ) {
+                    Text("다음", color = Color(0xFFEF4444))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDeleteDialog = false }) {
+                    Text("취소")
+                }
+            }
+        )
+    }
+
+    // 2차 최종 확인 다이얼로그
+    if (showFinalConfirmDialog) {
+        AlertDialog(
+            onDismissRequest = { showFinalConfirmDialog = false },
+            icon = {
+                Icon(
+                    imageVector = Icons.Rounded.Warning,
+                    contentDescription = null,
+                    tint = Color(0xFFEF4444),
+                    modifier = Modifier.size(48.dp)
+                )
+            },
+            title = {
+                Text(
+                    text = "최종 확인",
+                    fontWeight = FontWeight.Bold
+                )
+            },
+            text = {
+                Column {
+                    Text(
+                        "다음 내용이 영구적으로 삭제됩니다:",
+                        fontWeight = FontWeight.SemiBold
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text("• 모든 환율 기록")
+                    Text("• 알람 설정")
+                    Text("• 소셜 로그인 연동")
+                    Text("• 프리미엄 구독 정보")
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        "정말 진행하시겠습니까?",
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFFEF4444)
+                    )
+                }
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        showFinalConfirmDialog = false
+                        onDeleteAccount()
+                    }
+                ) {
+                    Text("탈퇴하기", color = Color(0xFFEF4444), fontWeight = FontWeight.Bold)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showFinalConfirmDialog = false }) {
+                    Text("취소")
+                }
+            }
+        )
+    }
 }
 
 /**
@@ -138,11 +240,11 @@ fun AccountStatusCard(localUser: LocalUserData) {
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp),
-        shape = RoundedCornerShape(16.dp),
-        elevation = CardDefaults.cardElevation(2.dp),
+        shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(
-            containerColor = Color.White
-        )
+            containerColor = if (localUser.socialType != "NONE") Color(0xFFE3F2FD) else Color.White
+        ),
+        elevation = CardDefaults.cardElevation(2.dp)
     ) {
         Row(
             modifier = Modifier
@@ -150,26 +252,18 @@ fun AccountStatusCard(localUser: LocalUserData) {
                 .padding(20.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // 상태 아이콘
             Icon(
-                imageVector = if (localUser.socialType != "NONE")
-                    Icons.Default.CheckCircle
-                else
-                    Icons.Default.CloudOff,
+                imageVector = if (localUser.socialType != "NONE") Icons.Default.CheckCircle else Icons.Default.CloudOff,
                 contentDescription = null,
-                tint = if (localUser.socialType != "NONE")
-                    Color(0xFF4CAF50)
-                else
-                    Color.Gray,
-                modifier = Modifier.size(48.dp)
+                tint = if (localUser.socialType != "NONE") Color(0xFF1976D2) else Color.Gray,
+                modifier = Modifier.size(40.dp)
             )
 
             Spacer(modifier = Modifier.width(16.dp))
 
-            // 상태 텍스트
             Column {
                 Text(
-                    text = if (localUser.socialType != "NONE") "연동됨" else "미연동",
+                    text = if (localUser.socialType != "NONE") "소셜 계정 연동됨" else "미연동",
                     fontSize = 18.sp,
                     fontWeight = FontWeight.Bold,
                     color = if (localUser.socialType != "NONE")
@@ -281,13 +375,14 @@ fun SocialLoginSection(
 }
 
 /**
- * 로그인된 상태 섹션 (로그아웃 + 연동 해제)
+ * 로그인된 상태 섹션 (로그아웃 + 연동 해제 + 회원 탈퇴)
  */
 @Composable
 fun LoggedInSection(
     localUser: LocalUserData,
     onLogout: () -> Unit,
-    onUnlinkSocial: () -> Unit  // ✅ 연동 해제 추가
+    onUnlinkSocial: () -> Unit,
+    onDeleteAccount: () -> Unit  // ✅ 추가
 ) {
     Column(
         modifier = Modifier
@@ -360,7 +455,7 @@ fun LoggedInSection(
 
         Spacer(modifier = Modifier.height(12.dp))
 
-        // ✅ 연동 해제 버튼 (새로 추가)
+        // ✅ 연동 해제 버튼
         OutlinedButton(
             onClick = onUnlinkSocial,
             modifier = Modifier
@@ -376,6 +471,38 @@ fun LoggedInSection(
                 fontSize = 15.sp,
                 fontWeight = FontWeight.Medium
             )
+        }
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        // ✅ 회원 탈퇴 버튼
+        OutlinedButton(
+            onClick = onDeleteAccount,
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(48.dp),
+            shape = RoundedCornerShape(12.dp),
+            colors = ButtonDefaults.outlinedButtonColors(
+                contentColor = Color(0xFFEF4444)
+            )
+        ) {
+            Row(
+                horizontalArrangement = Arrangement.Center,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    imageVector = Icons.Rounded.Warning,
+                    contentDescription = null,
+                    modifier = Modifier.size(18.dp),
+                    tint = Color(0xFFEF4444)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = "회원 탈퇴",
+                    fontSize = 15.sp,
+                    fontWeight = FontWeight.Medium
+                )
+            }
         }
     }
 }

@@ -14,11 +14,11 @@ import com.bobodroid.myapplication.models.datamodels.useCases.CurrencyRecordRequ
 import com.bobodroid.myapplication.models.datamodels.useCases.RecordUseCase
 import com.bobodroid.myapplication.models.datamodels.useCases.UserUseCases
 import com.bobodroid.myapplication.models.repository.SettingsRepository
+import com.bobodroid.myapplication.premium.PremiumManager
 import com.bobodroid.myapplication.screens.MainEvent
 import com.bobodroid.myapplication.screens.PopupEvent
 import com.bobodroid.myapplication.screens.RecordListEvent
 import com.bobodroid.myapplication.util.AdMob.AdManager
-import com.bobodroid.myapplication.util.AdMob.AdUseCase
 import com.bobodroid.myapplication.widget.WidgetUpdateHelper
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -41,11 +41,12 @@ class MainViewModel @Inject constructor(
     private val latestRateRepository: LatestRateRepository,
     private val noticeRepository: NoticeRepository,
     private val settingsRepository: SettingsRepository,
-    private val adManager: AdManager,
-    private val adUseCase: AdUseCase,
     private val recordUseCase: RecordUseCase,
+    private val premiumManager: PremiumManager,
     @ApplicationContext private val context: Context
 ) : ViewModel() {
+
+
 
     private val _mainUiState = MutableStateFlow(MainUiState())
     val mainUiState = _mainUiState.asStateFlow()
@@ -53,8 +54,6 @@ class MainViewModel @Inject constructor(
     private val _noticeUiState = MutableStateFlow(NoticeUiState())
     val noticeUiState = _noticeUiState.asStateFlow()
 
-    private val _adUiState = MutableStateFlow(AdUiState())
-    val adUiState = _adUiState.asStateFlow()
 
     private val _recordListUiState = MutableStateFlow(RecordListUiState())
     val recordListUiState = _recordListUiState.asStateFlow()
@@ -77,6 +76,7 @@ class MainViewModel @Inject constructor(
     )
 
 
+    // 뷰모델 초기화
 
     init {
         Log.e(TAG("MainViewModel", "init"), "━━━━━━━━━━━━━━━━━━━━━━━━━━")
@@ -93,10 +93,12 @@ class MainViewModel @Inject constructor(
         }
     }
 
+    // 프리미엄 체크
     suspend fun checkPremiumStatus(): Boolean {
-        val user = userRepository.userData.value?.localUserData
-        return user?.isPremium ?: false
+        val user = userRepository.userData.value?.localUserData ?: return false
+        return premiumManager.checkPremiumStatus(user) != PremiumType.NONE
     }
+
 
     // ✅ 초기화 메서드
     private fun startInitialData() {
@@ -135,10 +137,6 @@ class MainViewModel @Inject constructor(
             Log.d(TAG("MainViewModel", "startInitialData"), "📌 Step 3: noticeDialogState 시작")
             noticeDialogState()
             Log.d(TAG("MainViewModel", "init"), "✅ 공지사항 다이얼로그 확인완료")
-
-            Log.d(TAG("MainViewModel", "startInitialData"), "📌 Step 4: adDialogState 시작")
-            adDialogState()
-            Log.d(TAG("MainViewModel", "init"), "✅ 광고 확인완료")
 
             Log.d(TAG("MainViewModel", "startInitialData"), "📌 Step 5: fetchInitialLatestRate 시작")
             latestRateRepository.fetchInitialLatestRate()
@@ -221,32 +219,6 @@ class MainViewModel @Inject constructor(
         Log.d(TAG("MainViewModel", "noticeDialogState"), "━━━━━━━━━━━━━━━━━━━━━━━━━━")
     }
 
-    private suspend fun adDialogState() {
-        Log.d(TAG("MainViewModel", "adDialogState"), "━━━━━━━━━━━━━━━━━━━━━━━━━━")
-        Log.d(TAG("MainViewModel", "adDialogState"), "📺 광고 다이얼로그 상태 체크")
-
-        val isReady = adManager.isRewardAdReady.first()
-        Log.d(TAG("MainViewModel", "adDialogState"), "  - 광고 준비 상태: $isReady")
-
-        if(isReady) {
-            val shouldShowAd = adUseCase.processRewardAdState(
-                _mainUiState.value.localUser,
-                todayDate.value
-            )
-
-            if(shouldShowAd) {
-                Log.d(TAG("MainViewModel", "adDialogState"), "✅ 광고 다이얼로그 표시")
-                val uiStateUpdate = _adUiState.value.copy(rewardShowDialog = true)
-                _adUiState.emit(uiStateUpdate)
-            } else {
-                Log.d(TAG("MainViewModel", "adDialogState"), "❌ 광고 다이얼로그 표시 안함")
-            }
-        } else {
-            Log.d(TAG("MainViewModel", "adDialogState"), "❌ 광고가 준비되지 않음")
-        }
-
-        Log.d(TAG("MainViewModel", "adDialogState"), "━━━━━━━━━━━━━━━━━━━━━━━━━━")
-    }
 
     private suspend fun noticeExistCheck() {
         val noticeData = noticeRepository.waitForNoticeData()
@@ -714,17 +686,6 @@ class MainViewModel @Inject constructor(
         }
     }
 
-    fun rewardDelayDate() {
-        viewModelScope.launch {
-            adUseCase.delayRewardAd(_mainUiState.value.localUser, todayDate.value)
-        }
-    }
-
-    fun closeRewardDialog() {
-        val uiState = _adUiState.value.copy(rewardShowDialog = false)
-        _adUiState.value = uiState
-    }
-
     fun selectDelayDate() {
         viewModelScope.launch {
             Log.d(TAG("MainViewModel", "selectDelayDate"), "날짜 연기 신청")
@@ -784,11 +745,6 @@ data class NoticeUiState(
     val noticeState: Boolean = true
 )
 
-data class AdUiState(
-    val rewardShowDialog: Boolean = false,
-    val rewardAdState: Boolean = false,
-    val bannerAdState: Boolean = false
-)
 
 data class TotalProfitRangeDate(
     val startDate: String = "",

@@ -129,12 +129,12 @@ class PremiumViewModel @Inject constructor(
     /**
      * ✅ 구매 시작
      */
-    fun startPurchase(activity: Activity, productDetails: ProductDetails) {
+    fun startPurchase(activity: Activity, productDetails: ProductDetails, basePlanId: String) {
         Log.d(TAG("PremiumViewModel", "startPurchase"), "구매 시작: ${productDetails.productId}")
 
         _uiState.value = _uiState.value.copy(isLoading = true)
 
-        val responseCode = billingClient.startBillingFlow(activity, productDetails)
+        val responseCode = billingClient.startBillingFlow(activity, productDetails, basePlanId)
 
         when (responseCode) {
             BillingClient.BillingResponseCode.OK -> {

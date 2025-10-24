@@ -2,6 +2,7 @@ package com.bobodroid.myapplication.screens
 
 import android.app.Activity
 import android.util.Log
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -161,33 +162,21 @@ fun PremiumScreen(
                     onRestoreClick = {
                         // TODO: 구독 복원 로직
                         coroutineScope.launch {
-                            snackbarHostState.showSnackbar("구독 복원 기능 준비 중")
+                            viewModel.restorePurchases()
                         }
                     }
                 )
             } else {
                 // ✅ 일반 사용자 - 구독 유도
-                PremiumHeroCard(
-                    onPurchaseClick = {
-                        activity?.let { act ->
-                            if (products.isNotEmpty()) {
-                                billingClient.startBillingFlow(act, products.first())
-                            } else {
-                                coroutineScope.launch {
-                                    snackbarHostState.showSnackbar("상품 정보를 불러오는 중입니다")
-                                }
-                            }
-                        }
-                    }
-                )
+                PremiumHeroCard()
 
                 // 구독 플랜 표시
                 if (products.isNotEmpty()) {
                     SubscriptionPlansCard(
                         products = products,
-                        onProductClick = { product ->
+                        onPlanClick = { product, basePlanId ->  // ✅ basePlanId 추가
                             activity?.let { act ->
-                                billingClient.startBillingFlow(act, product)
+                                billingClient.startBillingFlow(act, product, basePlanId)  // ✅ basePlanId 전달
                             }
                         }
                     )
@@ -451,10 +440,13 @@ fun SubscriptionManagementCard(
 /**
  * 구독 플랜 카드
  */
+/**
+ * 구독 플랜 카드 - 하나의 상품에서 월간/연간 요금제 분리 표시
+ */
 @Composable
 fun SubscriptionPlansCard(
     products: List<ProductDetails>,
-    onProductClick: (ProductDetails) -> Unit
+    onPlanClick: (ProductDetails, String) -> Unit  // (product, basePlanId)
 ) {
     Column(
         modifier = Modifier.fillMaxWidth(),
@@ -466,55 +458,320 @@ fun SubscriptionPlansCard(
             fontWeight = FontWeight.Bold
         )
 
-        products.forEach { product ->
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(16.dp),
-                colors = CardDefaults.cardColors(containerColor = Color.White)
-            ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(20.dp)
+        // ✅ recordadvertisementremove 상품 찾기
+        val product = products.find {
+            it.productId == BillingClientLifecycle.PRODUCT_ID
+        }
+
+        product?.let { productDetails ->
+            val offers = productDetails.subscriptionOfferDetails ?: emptyList()
+
+            // ✅ 월간 요금제 찾기
+            val monthlyOffer = offers.find {
+                it.basePlanId == BillingClientLifecycle.BASE_PLAN_MONTHLY
+            }
+
+            // ✅ 연간 요금제 찾기
+            val yearlyOffer = offers.find {
+                it.basePlanId == BillingClientLifecycle.BASE_PLAN_YEARLY
+            }
+
+            // 월간 구독 카드
+            monthlyOffer?.let { offer ->
+                val pricingPhase = offer.pricingPhases.pricingPhaseList.firstOrNull()
+
+                SubscriptionPlanItem(
+                    planType = "월간",
+                    planIcon = Icons.Rounded.CalendarMonth,
+                    planColor = Color(0xFF6366F1),
+                    price = pricingPhase?.formattedPrice ?: "",
+                    renewalText = "매월 자동 갱신",
+                    onPlanClick = {
+                        onPlanClick(productDetails, BillingClientLifecycle.BASE_PLAN_MONTHLY)
+                    }
+                )
+            }
+
+            // 연간 구독 카드 (추천 배지 추가)
+            yearlyOffer?.let { offer ->
+                val pricingPhase = offer.pricingPhases.pricingPhaseList.firstOrNull()
+                val yearlyPrice = pricingPhase?.priceAmountMicros?.div(1_000_000.0) ?: 0.0
+                val monthlyEquivalent = yearlyPrice / 12
+
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.cardColors(containerColor = Color.White),
+                    border = BorderStroke(2.dp, Color(0xFFFBBF24))
                 ) {
-                    Text(
-                        text = product.name,
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.Bold
-                    )
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(20.dp)
+                    ) {
+                        // 추천 배지
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(
+                                    imageVector = Icons.Rounded.CalendarToday,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(24.dp),
+                                    tint = Color(0xFFF59E0B)
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(
+                                    text = "연간",
+                                    fontSize = 18.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
 
-                    Spacer(modifier = Modifier.height(8.dp))
+                            Surface(
+                                shape = RoundedCornerShape(8.dp),
+                                color = Color(0xFFFBBF24)
+                            ) {
+                                Text(
+                                    text = "💰 최고 할인",
+                                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color.White
+                                )
+                            }
+                        }
 
-                    val offer = product.subscriptionOfferDetails?.firstOrNull()
-                    val price = offer?.pricingPhases?.pricingPhaseList?.firstOrNull()
+                        Spacer(modifier = Modifier.height(12.dp))
 
-                    if (price != null) {
+                        // 가격 정보
+                        Row(
+                            verticalAlignment = Alignment.Bottom
+                        ) {
+                            Text(
+                                text = pricingPhase?.formattedPrice ?: "",
+                                fontSize = 28.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color(0xFFF59E0B)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = "/ 년",
+                                fontSize = 16.sp,
+                                color = Color.Gray,
+                                modifier = Modifier.padding(bottom = 4.dp)
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.height(4.dp))
+
                         Text(
-                            text = price.formattedPrice,
-                            fontSize = 24.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = Color(0xFF6366F1)
-                        )
-
-                        Text(
-                            text = "매월 자동 갱신",
+                            text = "연간 자동 갱신",
                             fontSize = 14.sp,
                             color = Color.Gray
                         )
-                    }
 
-                    Spacer(modifier = Modifier.height(16.dp))
-
-                    Button(
-                        onClick = { onProductClick(product) },
-                        modifier = Modifier.fillMaxWidth(),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = Color(0xFF6366F1)
+                        // 월 환산 가격
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = "월 ${String.format("%,.0f", monthlyEquivalent)}원 상당",
+                            fontSize = 14.sp,
+                            color = Color(0xFFF59E0B),
+                            fontWeight = FontWeight.Medium
                         )
-                    ) {
-                        Text("구독하기", fontSize = 16.sp)
+
+                        Spacer(modifier = Modifier.height(16.dp))
+
+                        Button(
+                            onClick = {
+                                onPlanClick(productDetails, BillingClientLifecycle.BASE_PLAN_YEARLY)
+                            },
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = Color(0xFFF59E0B)
+                            )
+                        ) {
+                            Text("구독하기", fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                        }
                     }
                 }
+            }
+
+            // 요금제가 없을 때
+            if (monthlyOffer == null && yearlyOffer == null) {
+                Text(
+                    text = "사용 가능한 요금제가 없습니다",
+                    fontSize = 14.sp,
+                    color = Color.Gray,
+                    modifier = Modifier.padding(16.dp)
+                )
+            }
+        }
+    }
+}
+
+/**
+ * 구독 플랜 아이템 (월간용)
+ */
+@Composable
+private fun SubscriptionPlanItem(
+    planType: String,
+    planIcon: ImageVector,
+    planColor: Color,
+    price: String,
+    renewalText: String,
+    onPlanClick: () -> Unit
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.White)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(20.dp)
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    imageVector = planIcon,
+                    contentDescription = null,
+                    modifier = Modifier.size(24.dp),
+                    tint = planColor
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = planType,
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            Row(
+                verticalAlignment = Alignment.Bottom
+            ) {
+                Text(
+                    text = price,
+                    fontSize = 28.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = planColor
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = "/ 월",
+                    fontSize = 16.sp,
+                    color = Color.Gray,
+                    modifier = Modifier.padding(bottom = 4.dp)
+                )
+            }
+
+            Spacer(modifier = Modifier.height(4.dp))
+
+            Text(
+                text = renewalText,
+                fontSize = 14.sp,
+                color = Color.Gray
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Button(
+                onClick = onPlanClick,
+                modifier = Modifier.fillMaxWidth(),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = planColor
+                )
+            ) {
+                Text("구독하기", fontSize = 16.sp)
+            }
+        }
+    }
+}
+
+/**
+ * 구독 플랜 아이템 (월간용)
+ */
+@Composable
+private fun SubscriptionPlanItem(
+    product: ProductDetails,
+    planType: String,
+    planIcon: ImageVector,
+    planColor: Color,
+    renewalText: String,
+    onProductClick: (ProductDetails) -> Unit
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.White)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(20.dp)
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    imageVector = planIcon,
+                    contentDescription = null,
+                    modifier = Modifier.size(24.dp),
+                    tint = planColor
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = planType,
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            val offer = product.subscriptionOfferDetails?.firstOrNull()
+            val price = offer?.pricingPhases?.pricingPhaseList?.firstOrNull()
+
+            if (price != null) {
+                Row(
+                    verticalAlignment = Alignment.Bottom
+                ) {
+                    Text(
+                        text = price.formattedPrice,
+                        fontSize = 28.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = planColor
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = "/ 월",
+                        fontSize = 16.sp,
+                        color = Color.Gray,
+                        modifier = Modifier.padding(bottom = 4.dp)
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(4.dp))
+
+                Text(
+                    text = renewalText,
+                    fontSize = 14.sp,
+                    color = Color.Gray
+                )
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Button(
+                onClick = { onProductClick(product) },
+                modifier = Modifier.fillMaxWidth(),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = planColor
+                )
+            ) {
+                Text("구독하기", fontSize = 16.sp)
             }
         }
     }
@@ -524,7 +781,7 @@ fun SubscriptionPlansCard(
  * 프리미엄 히어로 카드 (기존 코드 유지)
  */
 @Composable
-fun PremiumHeroCard(onPurchaseClick: () -> Unit) {
+fun PremiumHeroCard() {
     // 기존 구현 유지
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -567,22 +824,6 @@ fun PremiumHeroCard(onPurchaseClick: () -> Unit) {
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            Button(
-                onClick = onPurchaseClick,
-                modifier = Modifier.fillMaxWidth(),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = Color.White,
-                    contentColor = Color(0xFF6366F1)
-                ),
-                shape = RoundedCornerShape(12.dp)
-            ) {
-                Text(
-                    text = "지금 시작하기",
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.padding(vertical = 4.dp)
-                )
-            }
         }
     }
 }

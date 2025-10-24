@@ -33,9 +33,26 @@ class SharedViewModel @Inject constructor(
     private val userRepository: UserRepository
 ) : ViewModel() {
 
+    private val _adUiState = MutableStateFlow(AdUiState())
+    val adUiState = _adUiState.asStateFlow()
+
+    private val _showPremiumPrompt = MutableStateFlow(false)
+    val showPremiumPrompt = _showPremiumPrompt.asStateFlow()
+
+    private val _showRewardAdInfo = MutableStateFlow(false)
+    val showRewardAdInfo = _showRewardAdInfo.asStateFlow()
+
+    private val _snackbarEvent = Channel<String>(Channel.BUFFERED)
+    val snackbarEvent = _snackbarEvent.receiveAsFlow()
+
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━
+    // ✅ 이제 init 블록 (필드 초기화 후)
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━
+
     init {
+        Log.d(TAG("SharedViewModel", "init"), "SharedViewModel 초기화")
         observeAdStates()
-        startPremiumExpiryMonitoring()  // ← 추가
+        startPremiumExpiryMonitoring()
     }
 
 
@@ -146,29 +163,7 @@ class SharedViewModel @Inject constructor(
             initialValue = null
         )
 
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━
-    // 다이얼로그 상태
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-    private val _showPremiumPrompt = MutableStateFlow(false)
-    val showPremiumPrompt = _showPremiumPrompt.asStateFlow()
-
-    private val _showRewardAdInfo = MutableStateFlow(false)
-    val showRewardAdInfo = _showRewardAdInfo.asStateFlow()
-
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━
-    // 광고 UI 상태
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-    private val _adUiState = MutableStateFlow(AdUiState())
-    val adUiState = _adUiState.asStateFlow()
-
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━
-    // 이벤트 (스낵바용)
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-    private val _snackbarEvent = Channel<String>(Channel.BUFFERED)
-    val snackbarEvent = _snackbarEvent.receiveAsFlow()
 
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━
     // 초기화

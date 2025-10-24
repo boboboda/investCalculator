@@ -23,10 +23,8 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
 /**
- * BillingClient 생명주기 관리 클래스 - 완전판
- * - 구매 흐름 처리
- * - 서버 검증 콜백 제공
- * - 구독 상태 확인
+ * BillingClient 생명주기 관리 클래스
+ * - 하나의 상품에서 월간/연간 요금제 모두 가져오기
  */
 class BillingClientLifecycle private constructor(
     private val applicationContext: Context,
@@ -37,7 +35,6 @@ class BillingClientLifecycle private constructor(
     private val _fetchedProductList = MutableStateFlow<List<ProductDetails>>(emptyList())
     val fetchedProductList = _fetchedProductList.asStateFlow()
 
-    // ✅ 구매 완료 콜백 (외부에서 설정)
     private var onPurchaseCallback: ((Purchase) -> Unit)? = null
 
     fun setOnPurchaseCallback(callback: (Purchase) -> Unit) {
@@ -46,7 +43,13 @@ class BillingClientLifecycle private constructor(
 
     companion object {
         const val TAG = "BillingClientLifecycle"
+
+        // ✅ 하나의 상품 ID (여기에 월간/연간 요금제가 모두 포함됨)
         const val PRODUCT_ID = "recordadvertisementremove"
+
+        // ✅ 기본 요금제 ID들
+        const val BASE_PLAN_MONTHLY = "recordadvertisementremove"  // 월간
+        const val BASE_PLAN_YEARLY = "premium-subscription-yearly"  // 연간
 
         @Volatile
         private var INSTANCE: BillingClientLifecycle? = null
@@ -58,7 +61,6 @@ class BillingClientLifecycle private constructor(
         }
     }
 
-    // ✅ 구매 업데이트 리스너 (서버 검증 연동)
     private val purchasesUpdatedListener =
         PurchasesUpdatedListener { billingResult, purchases ->
             Log.d(TAG, "purchasesUpdatedListener: responseCode=${billingResult.responseCode}")
@@ -68,7 +70,6 @@ class BillingClientLifecycle private constructor(
                     purchases?.forEach { purchase ->
                         Log.d(TAG, "구매 성공: products=${purchase.products}, state=${purchase.purchaseState}")
 
-                        // ✅ PURCHASED 상태인 경우 서버 검증 트리거
                         if (purchase.purchaseState == Purchase.PurchaseState.PURCHASED) {
                             Log.d(TAG, "서버 검증 콜백 호출: token=${purchase.purchaseToken}")
                             onPurchaseCallback?.invoke(purchase)
@@ -82,8 +83,7 @@ class BillingClientLifecycle private constructor(
                 }
                 BillingClient.BillingResponseCode.ITEM_ALREADY_OWNED -> {
                     Log.d(TAG, "이미 구매한 상품입니다 - 복원 필요")
-                    // 복원 로직 트리거
-                    queryActivePurchases(PRODUCT_ID) { hasPremium ->
+                    queryAllActiveSubscriptions { hasPremium ->
                         if (hasPremium) {
                             Log.d(TAG, "구독 복원 완료")
                         }
@@ -95,7 +95,6 @@ class BillingClientLifecycle private constructor(
             }
         }
 
-    // 결제 클라이언트 상태 리스너
     private val billingClientStateListener = object : BillingClientStateListener {
         override fun onBillingServiceDisconnected() {
             Log.d(TAG, "Billing 서비스 연결 끊김 - 재연결 필요")
@@ -107,32 +106,57 @@ class BillingClientLifecycle private constructor(
                 Log.d(TAG, "BillingClient 준비 완료")
                 fetchAvailableProducts()
 
-                // ✅ 앱 시작 시 구독 상태 확인
-                queryActivePurchases(PRODUCT_ID) { hasPremium ->
+                queryAllActiveSubscriptions { hasPremium ->
                     Log.d(TAG, "앱 시작 시 구독 상태: ${if (hasPremium) "구독 활성" else "구독 없음"}")
                 }
             }
         }
     }
 
-    // 상품 정보 응답 리스너
     private val productDetailsResponseListener = object : ProductDetailsResponseListener {
         override fun onProductDetailsResponse(
             billingResult: BillingResult,
             productDetailsResult: com.android.billingclient.api.QueryProductDetailsResult
         ) {
+            Log.d(TAG, "━━━━━━━━━━━━━━━━━━━━━━━━━━")
+            Log.d(TAG, "상품 조회 응답 코드: ${billingResult.responseCode}")
+            Log.d(TAG, "상품 조회 디버그 메시지: ${billingResult.debugMessage}")
+
             val productDetailsList = productDetailsResult.productDetailsList ?: emptyList()
-            Log.d(TAG, "상품 정보 조회: count=${productDetailsList.size}")
-            productDetailsList.forEach { product ->
-                Log.d(TAG, "상품: ${product.productId}, ${product.name}")
+
+            Log.d(TAG, "상품 정보 조회 완료: ${productDetailsList.size}개")
+
+            if (productDetailsList.isEmpty()) {
+                Log.w(TAG, "⚠️ 조회된 상품이 없습니다!")
             }
+
+            productDetailsList.forEach { product ->
+                Log.d(TAG, "  └─ 상품: ${product.productId} | ${product.name}")
+                Log.d(TAG, "     타입: ${product.productType}")
+
+                // ✅ 기본 요금제 목록 로그
+                val offers = product.subscriptionOfferDetails
+                Log.d(TAG, "     기본 요금제 개수: ${offers?.size ?: 0}개")
+
+                offers?.forEach { offer ->
+                    val basePlanId = offer.basePlanId
+                    val pricingPhase = offer.pricingPhases.pricingPhaseList.firstOrNull()
+                    val price = pricingPhase?.formattedPrice ?: "N/A"
+                    val billingPeriod = pricingPhase?.billingPeriod ?: "N/A"
+
+                    Log.d(TAG, "       ├─ 요금제: $basePlanId")
+                    Log.d(TAG, "       │  가격: $price")
+                    Log.d(TAG, "       │  주기: $billingPeriod")
+                }
+            }
+            Log.d(TAG, "━━━━━━━━━━━━━━━━━━━━━━━━━━")
+
             externalScope.launch {
                 _fetchedProductList.emit(productDetailsList)
             }
         }
     }
 
-    // BillingClient 인스턴스
     private var billingClient: BillingClient
 
     init {
@@ -151,7 +175,7 @@ class BillingClientLifecycle private constructor(
         }
     }
 
-    // 구매 가능 상품 쿼리 파라미터
+    // ✅ 1개 상품만 조회 (월간/연간 요금제가 모두 포함됨)
     private val queryProductDetailsParams =
         QueryProductDetailsParams.newBuilder()
             .setProductList(
@@ -164,21 +188,29 @@ class BillingClientLifecycle private constructor(
             )
             .build()
 
-    /**
-     * 구매 가능한 상품 목록 가져오기
-     */
     fun fetchAvailableProducts() {
+        Log.d(TAG, "━━━━━━━━━━━━━━━━━━━━━━━━━━")
         Log.d(TAG, "상품 정보 조회 시작")
+        Log.d(TAG, "요청 제품: $PRODUCT_ID (월간/연간 요금제 포함)")
+        Log.d(TAG, "━━━━━━━━━━━━━━━━━━━━━━━━━━")
         billingClient.queryProductDetailsAsync(queryProductDetailsParams, productDetailsResponseListener)
     }
 
     /**
-     * 구매 플로우 시작
+     * ✅ 구매 플로우 시작 (특정 요금제 선택)
      */
-    fun startBillingFlow(activity: Activity, productDetails: ProductDetails): Int {
-        val offerToken = productDetails.subscriptionOfferDetails?.lastOrNull()?.offerToken
+    fun startBillingFlow(
+        activity: Activity,
+        productDetails: ProductDetails,
+        basePlanId: String  // 월간 or 연간 요금제 ID
+    ): Int {
+        val offer = productDetails.subscriptionOfferDetails?.find {
+            it.basePlanId == basePlanId
+        }
+
+        val offerToken = offer?.offerToken
             ?: run {
-                Log.e(TAG, "offerToken을 찾을 수 없습니다")
+                Log.e(TAG, "offerToken을 찾을 수 없습니다: basePlanId=$basePlanId")
                 return BillingClient.BillingResponseCode.ERROR
             }
 
@@ -199,14 +231,11 @@ class BillingClientLifecycle private constructor(
         }
 
         val billingResult = billingClient.launchBillingFlow(activity, billingFlowParams)
-        Log.d(TAG, "구매 플로우 시작: ${billingResult.responseCode}, ${billingResult.debugMessage}")
+        Log.d(TAG, "구매 플로우 시작: basePlanId=$basePlanId, responseCode=${billingResult.responseCode}")
 
         return billingResult.responseCode
     }
 
-    /**
-     * 활성 구독 확인
-     */
     fun queryActivePurchases(productId: String, onResult: (Boolean) -> Unit) {
         val params = QueryPurchasesParams.newBuilder()
             .setProductType(BillingClient.ProductType.SUBS)
@@ -233,9 +262,33 @@ class BillingClientLifecycle private constructor(
         }
     }
 
-    /**
-     * ✅ 최신 구매 정보 가져오기 (서버 동기화용)
-     */
+    fun queryAllActiveSubscriptions(onResult: (Boolean) -> Unit) {
+        val params = QueryPurchasesParams.newBuilder()
+            .setProductType(BillingClient.ProductType.SUBS)
+            .build()
+
+        billingClient.queryPurchasesAsync(params) { billingResult, purchases ->
+            Log.d(TAG, "전체 구독 조회: responseCode=${billingResult.responseCode}, count=${purchases.size}")
+
+            if (billingResult.responseCode == BillingClient.BillingResponseCode.OK) {
+                val hasPremium = purchases.any { purchase ->
+                    purchase.products.contains(PRODUCT_ID) &&
+                            purchase.purchaseState == Purchase.PurchaseState.PURCHASED
+                }
+
+                purchases.forEach { purchase ->
+                    Log.d(TAG, "구매 항목: ${purchase.products}, state=${purchase.purchaseState}")
+                }
+
+                Log.d(TAG, "프리미엄 상태: ${if (hasPremium) "활성" else "비활성"}")
+                onResult(hasPremium)
+            } else {
+                Log.e(TAG, "구매 조회 실패: ${billingResult.debugMessage}")
+                onResult(false)
+            }
+        }
+    }
+
     fun getLatestPurchase(productId: String, onResult: (Purchase?) -> Unit) {
         val params = QueryPurchasesParams.newBuilder()
             .setProductType(BillingClient.ProductType.SUBS)
@@ -254,8 +307,23 @@ class BillingClientLifecycle private constructor(
         }
     }
 
-    /**
-     * BillingClient 준비 상태 확인
-     */
+    fun getLatestActiveSubscription(onResult: (Purchase?) -> Unit) {
+        val params = QueryPurchasesParams.newBuilder()
+            .setProductType(BillingClient.ProductType.SUBS)
+            .build()
+
+        billingClient.queryPurchasesAsync(params) { billingResult, purchases ->
+            if (billingResult.responseCode == BillingClient.BillingResponseCode.OK) {
+                val purchase = purchases.find {
+                    it.products.contains(PRODUCT_ID) &&
+                            it.purchaseState == Purchase.PurchaseState.PURCHASED
+                }
+                onResult(purchase)
+            } else {
+                onResult(null)
+            }
+        }
+    }
+
     fun isClientReady(): Boolean = billingClient.isReady
 }

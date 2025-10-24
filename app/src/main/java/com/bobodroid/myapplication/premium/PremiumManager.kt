@@ -23,7 +23,7 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 /**
- * 프리미엄 상태 관리자 - 완전판
+ * 프리미엄 상태 관리자 - 완전판 (월간/연간 구독 지원)
  * - 앱 시작 시 구독 상태 확인 및 서버 동기화
  * - BillingClient 구매 이벤트 감시
  * - 서버 검증 자동 처리
@@ -43,13 +43,15 @@ class PremiumManager @Inject constructor(
     }
 
     companion object {
+        // ✅ 하위 호환성을 위한 상수 유지
+        @Deprecated("Use BillingClientLifecycle constants instead")
         private const val PRODUCT_ID = "recordadvertisementremove"
         private const val SYNC_INTERVAL_MS = 3_600_000L // 1시간
     }
 
     init {
         Log.d(TAG("PremiumManager", "init"), "━━━━━━━━━━━━━━━━━━━━━━━━━━")
-        Log.d(TAG("PremiumManager", "init"), "프리미엄 관리자 시작")
+        Log.d(TAG("PremiumManager", "init"), "프리미엄 관리자 시작 (월간/연간 구독 지원)")
 
         // ✅ 구매 완료 콜백 등록
         billingClient.setOnPurchaseCallback { purchase ->
@@ -70,18 +72,28 @@ class PremiumManager @Inject constructor(
      * ✅ 구매 완료 처리 - 서버 검증 및 DB 업데이트
      */
     private suspend fun handlePurchase(purchase: Purchase) {
-        Log.d(TAG("PremiumManager", "handlePurchase"), "구매 처리 시작: ${purchase.products}")
+        Log.d(TAG("PremiumManager", "handlePurchase"), "━━━━━━━━━━━━━━━━━━━━━━━━━━")
+        Log.d(TAG("PremiumManager", "handlePurchase"), "구매 처리 시작")
+        Log.d(TAG("PremiumManager", "handlePurchase"), "제품: ${purchase.products}")
 
         val user = userRepository.userData.value?.localUserData ?: run {
             Log.e(TAG("PremiumManager", "handlePurchase"), "사용자 데이터 없음")
             return
         }
 
+        // ✅ 구매한 제품 ID 추출 (월간 or 연간)
+        val productId = purchase.products.firstOrNull() ?: run {
+            Log.e(TAG("PremiumManager", "handlePurchase"), "제품 ID 없음")
+            return
+        }
+
+        Log.d(TAG("PremiumManager", "handlePurchase"), "구매 제품 ID: $productId")
+
         try {
             // 서버에 영수증 검증 요청
             val request = VerifyPurchaseRequest(
                 deviceId = user.id.toString(),
-                productId = PRODUCT_ID,
+                productId = productId,  // ✅ 실제 구매한 제품 ID 전달
                 basePlanId = extractBasePlanId(purchase),
                 purchaseToken = purchase.purchaseToken,
                 packageName = purchase.packageName
@@ -92,7 +104,8 @@ class PremiumManager @Inject constructor(
             val response = SubscriptionApi.service.verifyPurchase(request)
 
             if (response.success && response.data != null) {
-                Log.d(TAG("PremiumManager", "handlePurchase"), "서버 검증 성공: ${response.data}")
+                Log.d(TAG("PremiumManager", "handlePurchase"), "서버 검증 성공")
+                Log.d(TAG("PremiumManager", "handlePurchase"), "만료일: ${response.data.expiryTime}")
 
                 // DB 업데이트
                 val updatedUser = user.copy(
@@ -117,6 +130,7 @@ class PremiumManager @Inject constructor(
      * ✅ 구독 상태 동기화 (앱 시작 시 / 주기적)
      */
     suspend fun syncPremiumStatus() {
+        Log.d(TAG("PremiumManager", "syncPremiumStatus"), "━━━━━━━━━━━━━━━━━━━━━━━━━━")
         Log.d(TAG("PremiumManager", "syncPremiumStatus"), "구독 상태 동기화 시작")
 
         val user = userRepository.userData.value?.localUserData ?: run {
@@ -125,18 +139,20 @@ class PremiumManager @Inject constructor(
         }
 
         try {
-            // 1. BillingClient로 로컬 구독 확인
-            billingClient.getLatestPurchase(PRODUCT_ID) { purchase ->
+            // ✅ 모든 활성 구독 확인 (월간 OR 연간)
+            billingClient.getLatestActiveSubscription { purchase ->
                 scope.launch {
                     if (purchase != null && purchase.purchaseState == Purchase.PurchaseState.PURCHASED) {
-                        Log.d(TAG("PremiumManager", "syncPremiumStatus"), "활성 구독 발견")
+                        val productId = purchase.products.firstOrNull() ?: ""
+                        Log.d(TAG("PremiumManager", "syncPremiumStatus"), "활성 구독 발견: $productId")
 
                         // 서버 상태 확인
                         try {
                             val response = SubscriptionApi.service.getSubscriptionStatus(user.id.toString())
 
                             if (response.success && response.data.isPremium) {
-                                Log.d(TAG("PremiumManager", "syncPremiumStatus"), "서버 구독 확인: ${response.data}")
+                                Log.d(TAG("PremiumManager", "syncPremiumStatus"),
+                                    "서버 구독 확인 - 만료일: ${response.data.expiryTime}")
 
                                 // DB 업데이트
                                 val updatedUser = user.copy(
@@ -145,6 +161,7 @@ class PremiumManager @Inject constructor(
                                     isPremium = true
                                 )
                                 userUseCases.localUserUpdate(updatedUser)
+                                Log.d(TAG("PremiumManager", "syncPremiumStatus"), "✅ DB 업데이트 완료")
                             } else {
                                 // 서버에는 없는데 로컬에 있음 → 서버 재검증 요청
                                 Log.d(TAG("PremiumManager", "syncPremiumStatus"), "서버 재검증 요청")
@@ -237,14 +254,13 @@ class PremiumManager @Inject constructor(
             premiumExpiryDate = expiryDate,
             premiumGrantedBy = "reward",
             premiumGrantedAt = Instant.now().toString(),
-            dailyRewardUsed = true,
             lastRewardDate = today,
-            totalRewardCount = user.totalRewardCount + 1,
+            dailyRewardUsed = true,
             isPremium = true
         )
 
         userUseCases.localUserUpdate(updatedUser)
-        Log.d(TAG("PremiumManager", "grantRewardPremium"), "✅ 24시간 프리미엄 지급: $expiryDate")
+        Log.d(TAG("PremiumManager", "grantRewardPremium"), "✅ 24시간 프리미엄 지급")
 
         return true
     }
@@ -258,27 +274,11 @@ class PremiumManager @Inject constructor(
     }
 
     /**
-     * 정기 구독 활성화
-     */
-    suspend fun activateSubscription(user: LocalUserData, expiryDate: String): Boolean {
-        val updatedUser = user.copy(
-            premiumType = "SUBSCRIPTION",
-            premiumExpiryDate = expiryDate,
-            premiumGrantedBy = "subscription",
-            premiumGrantedAt = Instant.now().toString(),
-            isPremium = true
-        )
-
-        userUseCases.localUserUpdate(updatedUser)
-        Log.d(TAG("PremiumManager", "activateSubscription"), "✅ 정기 구독 활성화: $expiryDate")
-
-        return true
-    }
-
-    /**
      * 프리미엄 만료 처리
      */
-    suspend fun expirePremium(user: LocalUserData): Boolean {
+    private suspend fun expirePremium(user: LocalUserData) {
+        Log.d(TAG("PremiumManager", "expirePremium"), "프리미엄 만료 처리")
+
         val updatedUser = user.copy(
             premiumType = "NONE",
             premiumExpiryDate = null,
@@ -286,13 +286,10 @@ class PremiumManager @Inject constructor(
         )
 
         userUseCases.localUserUpdate(updatedUser)
-        Log.d(TAG("PremiumManager", "expirePremium"), "✅ 프리미엄 만료 처리")
-
-        return true
     }
 
     /**
-     * 프리미엄 남은 시간 (초)
+     * ✅ 프리미엄 남은 초 계산 (public으로 변경 - SharedViewModel에서 사용)
      */
     fun getRemainingSeconds(user: LocalUserData): Long {
         val expiryDate = user.premiumExpiryDate ?: return 0L
@@ -380,14 +377,24 @@ class PremiumManager @Inject constructor(
     }
 
     /**
-     * BasePlanId 추출 (Purchase 객체에서)
+     * ✅ BasePlanId 추출 (Purchase 객체에서)
      */
     private fun extractBasePlanId(purchase: Purchase): String {
         return try {
             val json = org.json.JSONObject(purchase.originalJson)
-            json.optString("basePlanId", "monthly-basic")
+            val basePlanId = json.optString("basePlanId", "")
+
+            Log.d(TAG("PremiumManager", "extractBasePlanId"), "추출된 basePlanId: $basePlanId")
+
+            // ✅ basePlanId가 없으면 기본값 반환
+            if (basePlanId.isEmpty()) {
+                "monthly-basic"
+            } else {
+                basePlanId
+            }
         } catch (e: Exception) {
-            "monthly-basic" // 기본값
+            Log.e(TAG("PremiumManager", "extractBasePlanId"), "BasePlanId 추출 실패", e)
+            "monthly-basic"
         }
     }
 }

@@ -62,6 +62,15 @@ interface SubscriptionApiService {
     ): SubscriptionResponse
 
     /**
+     * ✅ 구독 복원 (소셜 로그인 기반)
+     * POST /subscription/restore
+     */
+    @POST("subscription/restore")
+    suspend fun restoreSubscription(
+        @Body request: RestoreSubscriptionRequest
+    ): RestoreSubscriptionResponse
+
+    /**
      * 구독 상태 조회
      * GET /subscription/status/:deviceId
      */

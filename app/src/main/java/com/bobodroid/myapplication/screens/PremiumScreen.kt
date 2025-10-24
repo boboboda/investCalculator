@@ -1,3 +1,4 @@
+// app/src/main/java/com/bobodroid/myapplication/screens/PremiumScreen.kt
 package com.bobodroid.myapplication.screens
 
 import android.app.Activity
@@ -28,9 +29,12 @@ import com.bobodroid.myapplication.BuildConfig
 import com.bobodroid.myapplication.billing.BillingClientLifecycle
 import com.bobodroid.myapplication.components.SocialLoginWarningBanner
 import com.bobodroid.myapplication.models.datamodels.roomDb.LocalUserData
+import com.bobodroid.myapplication.models.datamodels.roomDb.PremiumType
 import com.bobodroid.myapplication.models.viewmodels.PremiumViewModel
 import com.bobodroid.myapplication.models.viewmodels.SharedViewModel
 import kotlinx.coroutines.launch
+import java.time.Duration
+import java.time.Instant
 
 /**
  * 프리미엄 구독 화면
@@ -53,20 +57,18 @@ fun PremiumScreen(
     val coroutineScope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
 
-    // ✅ SharedViewModel에서 전역 상태 가져오기
+
+    // ViewModel 상태
+    val uiState by viewModel.uiState.collectAsState()
     val user by sharedViewModel.user.collectAsState()
     val isPremium by sharedViewModel.isPremium.collectAsState()
     val premiumType by sharedViewModel.premiumType.collectAsState()
     val premiumExpiryDate by sharedViewModel.premiumExpiryDate.collectAsState()
 
-    // ✅ PremiumViewModel에서 화면 전용 상태 가져오기
-    val isServiceRunning by viewModel.isServiceRunning.collectAsState()
+    val products = uiState.products
+    val isLoading = uiState.isLoading
 
-    // BillingClient 인스턴스
-    val billingClient = remember { BillingClientLifecycle.getInstance(context) }
-    val products by billingClient.fetchedProductList.collectAsState()
-
-    // ✅ 스낵바 이벤트 구독
+    // ✅ 이벤트 처리
     LaunchedEffect(Unit) {
         sharedViewModel.snackbarEvent.collect { message ->
             snackbarHostState.showSnackbar(message)
@@ -74,6 +76,7 @@ fun PremiumScreen(
     }
 
     Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
                 title = { Text("프리미엄") },
@@ -82,101 +85,60 @@ fun PremiumScreen(
                         Icon(Icons.AutoMirrored.Rounded.ArrowBack, "뒤로가기")
                     }
                 },
-                actions = {
-                    IconButton(
-                        onClick = { viewModel.refreshPremiumStatus() }
-                    ) {
-                        Icon(Icons.Rounded.Refresh, "새로고침")
-                    }
-                },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = Color(0xFF6366F1),
                     titleContentColor = Color.White,
                     navigationIconContentColor = Color.White
                 )
             )
-        },
-        snackbarHost = { SnackbarHost(snackbarHostState) }
+        }
     ) { paddingValues ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
-                .background(Color(0xFFF9FAFB))
                 .verticalScroll(rememberScrollState())
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // ✅ 소셜 로그인 안내 (미연동 시에만)
-            val isSocialLinked = user.socialType != "NONE" && !user.socialId.isNullOrEmpty()
-            if (!isSocialLinked) {
-                SocialLoginWarningBanner(
-                    isSocialLinked = isSocialLinked,
-                    onLinkClick = onAccountManageClick
-                )
+            // ✅ 소셜 로그인 경고 배너 (필요 시)
+            if (!user.socialId.isNullOrEmpty()) {
+                // ✅ 소셜 로그인 안내 (미연동 시에만)
+                val isSocialLinked = user.socialType != "NONE" && !user.socialId.isNullOrEmpty()
+                if (!isSocialLinked) {
+                    SocialLoginWarningBanner(
+                        isSocialLinked = isSocialLinked,
+                        onLinkClick = onAccountManageClick
+                    )
+                }
             }
 
-            // ✅ 디버그 모드 (기존 코드 유지)
-            if (BuildConfig.DEBUG) {
-                TestControlCard(
-                    isPremium = isPremium,
-                    user = user,
-                    onTogglePremium = { newStatus ->
-                        coroutineScope.launch {
-                            Log.d("PremiumScreen", "프리미엄 상태 변경: $isPremium → $newStatus")
-                            viewModel.setTestPremiumStatus(newStatus)
-
-                            if (newStatus) {
-                                viewModel.toggleRealtimeUpdate(true)
-                            } else {
-                                viewModel.toggleRealtimeUpdate(false)
-                            }
-                        }
-                    },
-                    onRefreshStatus = { viewModel.refreshPremiumStatus() },
-                    onGrantTestPremium = { minutes ->
-                        sharedViewModel.grantTestPremium(minutes)
-                    },
-                    onResetAdCounts = {
-                        sharedViewModel.resetAdCounts()
-                    }
-                )
-            }
-
-            // ✅ 프리미엄 활성 상태
             if (isPremium) {
+                // ✅ 프리미엄 사용자 - 활성 상태 표시
                 PremiumActiveCard(
                     premiumType = premiumType,
                     premiumExpiryDate = premiumExpiryDate
                 )
+            } else {
+                // ✅ 일반 사용자
+                PremiumHeroCard()
 
-                // 실시간 업데이트 토글
-//                RealtimeUpdateCard(
-//                    isEnabled = isServiceRunning,
-//                    onToggle = { enabled ->
-//                        viewModel.toggleRealtimeUpdate(enabled)
-//                    }
-//                )
-
-                SubscriptionManagementCard(
+                // ✅ 구독 복원 버튼 (일반 사용자용)
+                RestorePurchaseCard(
                     onRestoreClick = {
-                        // TODO: 구독 복원 로직
                         coroutineScope.launch {
                             viewModel.restorePurchases()
                         }
                     }
                 )
-            } else {
-                // ✅ 일반 사용자 - 구독 유도
-                PremiumHeroCard()
 
                 // 구독 플랜 표시
                 if (products.isNotEmpty()) {
                     SubscriptionPlansCard(
                         products = products,
-                        onPlanClick = { product, basePlanId ->  // ✅ basePlanId 추가
+                        onPlanClick = { product, basePlanId ->
                             activity?.let { act ->
-                                billingClient.startBillingFlow(act, product, basePlanId)  // ✅ basePlanId 전달
+                                viewModel.startPurchase(act, product, basePlanId)
                             }
                         }
                     )
@@ -185,28 +147,42 @@ fun PremiumScreen(
                 PremiumBenefitsCard()
             }
 
-            PremiumFeaturesDetailCard()
+
+            // ✅ 디버그 모드일 때만 테스트 컨트롤 표시
+            if (BuildConfig.DEBUG) {
+                TestControlCard(
+                    isPremium = isPremium,
+                    user = user,
+                    onTogglePremium = { enabled ->
+                        viewModel.setTestPremiumStatus(enabled)
+                    },
+                    onRefreshStatus = {
+                        viewModel.refreshPremiumStatus()
+                    },
+                    onGrantTestPremium = { minutes ->
+                        sharedViewModel.grantTestPremium(minutes)
+                    },
+                    onResetAdCounts = {
+                        sharedViewModel.resetAdCounts()
+                    }
+                )
+            }
         }
     }
 }
 
 /**
- * ✅ 디버그 컨트롤 카드 (기존 로직 유지)
+ * ✅ 구독 복원 카드 (일반 사용자용)
  */
 @Composable
-fun TestControlCard(
-    isPremium: Boolean,
-    user: LocalUserData,
-    onTogglePremium: (Boolean) -> Unit,
-    onRefreshStatus: () -> Unit,
-    onGrantTestPremium: (Int) -> Unit,
-    onResetAdCounts: () -> Unit
+fun RestorePurchaseCard(
+    onRestoreClick: () -> Unit
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = Color(0xFFFEF2F2)),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        colors = CardDefaults.cardColors(containerColor = Color(0xFFF0F9FF)),
+        border = BorderStroke(1.dp, Color(0xFF93C5FD))
     ) {
         Column(
             modifier = Modifier
@@ -214,130 +190,64 @@ fun TestControlCard(
                 .padding(20.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
                 Icon(
-                    imageVector = Icons.Rounded.BugReport,
+                    imageVector = Icons.Rounded.Info,
                     contentDescription = null,
-                    modifier = Modifier.size(24.dp),
-                    tint = Color(0xFFDC2626)
+                    tint = Color(0xFF3B82F6),
+                    modifier = Modifier.size(20.dp)
                 )
-
-                Spacer(modifier = Modifier.width(8.dp))
-
                 Text(
-                    text = "🔧 테스트 도구 (개발자 전용)",
+                    text = "이미 구독하셨나요?",
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Bold,
-                    color = Color(0xFF991B1B)
+                    color = Color(0xFF1E40AF)
                 )
             }
 
-            HorizontalDivider(color = Color(0xFFFECACA))
+            Text(
+                text = "다른 기기에서 구매한 구독을 복원할 수 있습니다.",
+                fontSize = 14.sp,
+                color = Color(0xFF1E40AF),
+                lineHeight = 20.sp
+            )
 
-            // 현재 상태 표시
-            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                Text(
-                    text = "현재 상태: ${if (isPremium) "✅ 프리미엄" else "❌ 일반"}",
-                    fontSize = 14.sp,
-                    color = Color(0xFF7F1D1D),
-                    fontWeight = FontWeight.SemiBold
-                )
-                Text(
-                    text = "타입: ${user.premiumType}",
-                    fontSize = 12.sp,
-                    color = Color(0xFF991B1B)
-                )
-                user.premiumExpiryDate?.let {
-                    Text(
-                        text = "만료: $it",
-                        fontSize = 12.sp,
-                        color = Color(0xFF991B1B)
-                    )
-                }
-            }
-
-            HorizontalDivider(color = Color(0xFFFECACA))
-
-            // 버튼들
-            Row(
+            Button(
+                onClick = onRestoreClick,
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color(0xFF3B82F6)
+                ),
+                shape = RoundedCornerShape(12.dp)
             ) {
-                Button(
-                    onClick = { onTogglePremium(!isPremium) },
-                    modifier = Modifier.weight(1f),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = if (isPremium) Color(0xFFEF4444) else Color(0xFF10B981)
-                    ),
-                    shape = RoundedCornerShape(8.dp)
-                ) {
-                    Text(
-                        text = if (isPremium) "일반으로" else "프리미엄으로",
-                        fontSize = 13.sp
-                    )
-                }
-
-                OutlinedButton(
-                    onClick = onRefreshStatus,
-                    modifier = Modifier.weight(1f),
-                    shape = RoundedCornerShape(8.dp)
-                ) {
-                    Text(
-                        text = "새로고침",
-                        fontSize = 13.sp,
-                        color = Color(0xFF991B1B)
-                    )
-                }
-            }
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                Button(
-                    onClick = { onGrantTestPremium(1) },
-                    modifier = Modifier.weight(1f),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = Color(0xFFF59E0B)
-                    ),
-                    shape = RoundedCornerShape(8.dp)
-                ) {
-                    Text("1분 프리미엄", fontSize = 12.sp)
-                }
-
-                Button(
-                    onClick = { onResetAdCounts() },
-                    modifier = Modifier.weight(1f),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = Color(0xFF6366F1)
-                    ),
-                    shape = RoundedCornerShape(8.dp)
-                ) {
-                    Text("광고 초기화", fontSize = 12.sp)
-                }
+                Icon(
+                    Icons.Rounded.Restore,
+                    contentDescription = null,
+                    modifier = Modifier.size(18.dp)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text("구독 복원하기", fontSize = 15.sp)
             }
         }
     }
 }
 
 /**
- * 프리미엄 활성 카드
+ * 프리미엄 활성 상태 카드
  */
 @Composable
 fun PremiumActiveCard(
-    premiumType: com.bobodroid.myapplication.models.datamodels.roomDb.PremiumType,
+    premiumType: PremiumType,
     premiumExpiryDate: String?
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(
-            containerColor = when (premiumType) {
-                com.bobodroid.myapplication.models.datamodels.roomDb.PremiumType.SUBSCRIPTION -> Color(0xFFFEF3C7)
-                com.bobodroid.myapplication.models.datamodels.roomDb.PremiumType.REWARD_AD -> Color(0xFFFFEDD5)
-                com.bobodroid.myapplication.models.datamodels.roomDb.PremiumType.LIFETIME -> Color(0xFFDDD6FE)
-                else -> Color(0xFFF3F4F6)
-            }
+            containerColor = Color(0xFF10B981)
         ),
         elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
     ) {
@@ -348,18 +258,13 @@ fun PremiumActiveCard(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Icon(
-                imageVector = when (premiumType) {
-                    com.bobodroid.myapplication.models.datamodels.roomDb.PremiumType.SUBSCRIPTION -> Icons.Rounded.Star
-                    com.bobodroid.myapplication.models.datamodels.roomDb.PremiumType.REWARD_AD -> Icons.Rounded.PlayCircle
-                    com.bobodroid.myapplication.models.datamodels.roomDb.PremiumType.LIFETIME -> Icons.Rounded.AllInclusive
-                    else -> Icons.Rounded.CheckCircle
-                },
+                imageVector = Icons.Rounded.CheckCircle,
                 contentDescription = null,
                 modifier = Modifier.size(64.dp),
                 tint = when (premiumType) {
-                    com.bobodroid.myapplication.models.datamodels.roomDb.PremiumType.SUBSCRIPTION -> Color(0xFFF59E0B)
-                    com.bobodroid.myapplication.models.datamodels.roomDb.PremiumType.REWARD_AD -> Color(0xFFF97316)
-                    com.bobodroid.myapplication.models.datamodels.roomDb.PremiumType.LIFETIME -> Color(0xFF8B5CF6)
+                    PremiumType.SUBSCRIPTION -> Color(0xFFFCD34D)
+                    PremiumType.REWARD_AD -> Color(0xFFF97316)
+                    PremiumType.LIFETIME -> Color(0xFF8B5CF6)
                     else -> Color(0xFF6B7280)
                 }
             )
@@ -368,24 +273,24 @@ fun PremiumActiveCard(
 
             Text(
                 text = when (premiumType) {
-                    com.bobodroid.myapplication.models.datamodels.roomDb.PremiumType.SUBSCRIPTION -> "정기 구독 활성"
-                    com.bobodroid.myapplication.models.datamodels.roomDb.PremiumType.REWARD_AD -> "24시간 무료 체험"
-                    com.bobodroid.myapplication.models.datamodels.roomDb.PremiumType.LIFETIME -> "평생 이용권"
+                    PremiumType.SUBSCRIPTION -> "정기 구독 활성"
+                    PremiumType.REWARD_AD -> "24시간 무료 체험"
+                    PremiumType.LIFETIME -> "평생 이용권"
                     else -> "프리미엄 활성"
                 },
                 fontSize = 24.sp,
                 fontWeight = FontWeight.Bold,
-                color = Color(0xFF1F2937)
+                color = Color.White
             )
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            if (premiumExpiryDate != null && premiumType != com.bobodroid.myapplication.models.datamodels.roomDb.PremiumType.LIFETIME) {
+            if (premiumExpiryDate != null && premiumType != PremiumType.LIFETIME) {
                 val daysRemaining = calculateDaysRemaining(premiumExpiryDate)
                 Text(
                     text = "남은 기간: ${daysRemaining}일",
                     fontSize = 14.sp,
-                    color = Color(0xFF6B7280)
+                    color = Color.White.copy(alpha = 0.9f)
                 )
             }
         }
@@ -393,53 +298,6 @@ fun PremiumActiveCard(
 }
 
 
-
-/**
- * 구독 관리 카드
- */
-@Composable
-fun SubscriptionManagementCard(
-    onRestoreClick: () -> Unit
-) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White)
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(20.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            Text(
-                text = "구독 관리",
-                fontSize = 18.sp,
-                fontWeight = FontWeight.Bold
-            )
-
-            OutlinedButton(
-                onClick = onRestoreClick,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Icon(Icons.Rounded.Restore, null, modifier = Modifier.size(18.dp))
-                Spacer(modifier = Modifier.width(8.dp))
-                Text("구독 복원")
-            }
-
-            Text(
-                text = "• 다른 기기에서 구매한 구독을 복원할 수 있습니다\n• 구독은 Google Play에서 취소할 수 있습니다",
-                fontSize = 12.sp,
-                color = Color.Gray,
-                lineHeight = 16.sp
-            )
-        }
-    }
-}
-
-/**
- * 구독 플랜 카드
- */
 /**
  * 구독 플랜 카드 - 하나의 상품에서 월간/연간 요금제 분리 표시
  */
@@ -496,118 +354,34 @@ fun SubscriptionPlansCard(
             yearlyOffer?.let { offer ->
                 val pricingPhase = offer.pricingPhases.pricingPhaseList.firstOrNull()
                 val yearlyPrice = pricingPhase?.priceAmountMicros?.div(1_000_000.0) ?: 0.0
-                val monthlyEquivalent = yearlyPrice / 12
+                val monthlyPrice = yearlyPrice / 12
+                val discount = if (monthlyOffer != null) {
+                    val monthlyAmount = monthlyOffer.pricingPhases.pricingPhaseList.firstOrNull()
+                        ?.priceAmountMicros?.div(1_000_000.0) ?: 0.0
+                    if (monthlyAmount > 0) {
+                        ((1 - (monthlyPrice / monthlyAmount)) * 100).toInt()
+                    } else 0
+                } else 0
 
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(16.dp),
-                    colors = CardDefaults.cardColors(containerColor = Color.White),
-                    border = BorderStroke(2.dp, Color(0xFFFBBF24))
-                ) {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(20.dp)
-                    ) {
-                        // 추천 배지
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Icon(
-                                    imageVector = Icons.Rounded.CalendarToday,
-                                    contentDescription = null,
-                                    modifier = Modifier.size(24.dp),
-                                    tint = Color(0xFFF59E0B)
-                                )
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Text(
-                                    text = "연간",
-                                    fontSize = 18.sp,
-                                    fontWeight = FontWeight.Bold
-                                )
-                            }
-
-                            Surface(
-                                shape = RoundedCornerShape(8.dp),
-                                color = Color(0xFFFBBF24)
-                            ) {
-                                Text(
-                                    text = "💰 최고 할인",
-                                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
-                                    fontSize = 12.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = Color.White
-                                )
-                            }
-                        }
-
-                        Spacer(modifier = Modifier.height(12.dp))
-
-                        // 가격 정보
-                        Row(
-                            verticalAlignment = Alignment.Bottom
-                        ) {
-                            Text(
-                                text = pricingPhase?.formattedPrice ?: "",
-                                fontSize = 28.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = Color(0xFFF59E0B)
-                            )
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(
-                                text = "/ 년",
-                                fontSize = 16.sp,
-                                color = Color.Gray,
-                                modifier = Modifier.padding(bottom = 4.dp)
-                            )
-                        }
-
-                        Spacer(modifier = Modifier.height(4.dp))
-
-                        Text(
-                            text = "연간 자동 갱신",
-                            fontSize = 14.sp,
-                            color = Color.Gray
-                        )
-
-                        // 월 환산 가격
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Text(
-                            text = "월 ${String.format("%,.0f", monthlyEquivalent)}원 상당",
-                            fontSize = 14.sp,
-                            color = Color(0xFFF59E0B),
-                            fontWeight = FontWeight.Medium
-                        )
-
-                        Spacer(modifier = Modifier.height(16.dp))
-
-                        Button(
-                            onClick = {
-                                onPlanClick(productDetails, BillingClientLifecycle.BASE_PLAN_YEARLY)
-                            },
-                            modifier = Modifier.fillMaxWidth(),
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = Color(0xFFF59E0B)
-                            )
-                        ) {
-                            Text("구독하기", fontSize = 16.sp, fontWeight = FontWeight.Bold)
-                        }
+                SubscriptionPlanItemYearly(
+                    planType = "연간",
+                    planIcon = Icons.Rounded.CalendarToday,
+                    planColor = Color(0xFFF59E0B),
+                    price = pricingPhase?.formattedPrice ?: "",
+                    monthlyEquivalent = "월 ${String.format("%.0f", monthlyPrice)}원",
+                    discount = if (discount > 0) "$discount% 할인" else null,
+                    renewalText = "매년 자동 갱신",
+                    onPlanClick = {
+                        onPlanClick(productDetails, BillingClientLifecycle.BASE_PLAN_YEARLY)
                     }
-                }
-            }
-
-            // 요금제가 없을 때
-            if (monthlyOffer == null && yearlyOffer == null) {
-                Text(
-                    text = "사용 가능한 요금제가 없습니다",
-                    fontSize = 14.sp,
-                    color = Color.Gray,
-                    modifier = Modifier.padding(16.dp)
                 )
             }
+        } ?: run {
+            Text(
+                text = "구독 상품을 불러오는 중...",
+                color = Color.Gray,
+                modifier = Modifier.padding(16.dp)
+            )
         }
     }
 }
@@ -693,79 +467,108 @@ private fun SubscriptionPlanItem(
 }
 
 /**
- * 구독 플랜 아이템 (월간용)
+ * 구독 플랜 아이템 (연간용 - 추천 배지 포함)
  */
 @Composable
-private fun SubscriptionPlanItem(
-    product: ProductDetails,
+private fun SubscriptionPlanItemYearly(
     planType: String,
     planIcon: ImageVector,
     planColor: Color,
+    price: String,
+    monthlyEquivalent: String,
+    discount: String?,
     renewalText: String,
-    onProductClick: (ProductDetails) -> Unit
+    onPlanClick: () -> Unit
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White)
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        border = BorderStroke(2.dp, planColor)
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(20.dp)
         ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(
-                    imageVector = planIcon,
-                    contentDescription = null,
-                    modifier = Modifier.size(24.dp),
-                    tint = planColor
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    text = planType,
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.Bold
-                )
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        imageVector = planIcon,
+                        contentDescription = null,
+                        modifier = Modifier.size(24.dp),
+                        tint = planColor
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = planType,
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+
+                // 추천 배지
+                if (discount != null) {
+                    Surface(
+                        shape = RoundedCornerShape(8.dp),
+                        color = planColor
+                    ) {
+                        Text(
+                            text = discount,
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White,
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                        )
+                    }
+                }
             }
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            val offer = product.subscriptionOfferDetails?.firstOrNull()
-            val price = offer?.pricingPhases?.pricingPhaseList?.firstOrNull()
-
-            if (price != null) {
-                Row(
-                    verticalAlignment = Alignment.Bottom
-                ) {
-                    Text(
-                        text = price.formattedPrice,
-                        fontSize = 28.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = planColor
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        text = "/ 월",
-                        fontSize = 16.sp,
-                        color = Color.Gray,
-                        modifier = Modifier.padding(bottom = 4.dp)
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(4.dp))
-
+            Row(
+                verticalAlignment = Alignment.Bottom
+            ) {
                 Text(
-                    text = renewalText,
-                    fontSize = 14.sp,
-                    color = Color.Gray
+                    text = price,
+                    fontSize = 28.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = planColor
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = "/ 년",
+                    fontSize = 16.sp,
+                    color = Color.Gray,
+                    modifier = Modifier.padding(bottom = 4.dp)
                 )
             }
+
+            Spacer(modifier = Modifier.height(4.dp))
+
+            Text(
+                text = monthlyEquivalent,
+                fontSize = 14.sp,
+                color = planColor,
+                fontWeight = FontWeight.Medium
+            )
+
+            Spacer(modifier = Modifier.height(2.dp))
+
+            Text(
+                text = renewalText,
+                fontSize = 14.sp,
+                color = Color.Gray
+            )
 
             Spacer(modifier = Modifier.height(16.dp))
 
             Button(
-                onClick = { onProductClick(product) },
+                onClick = onPlanClick,
                 modifier = Modifier.fillMaxWidth(),
                 colors = ButtonDefaults.buttonColors(
                     containerColor = planColor
@@ -778,11 +581,10 @@ private fun SubscriptionPlanItem(
 }
 
 /**
- * 프리미엄 히어로 카드 (기존 코드 유지)
+ * 프리미엄 히어로 카드
  */
 @Composable
 fun PremiumHeroCard() {
-    // 기존 구현 유지
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(20.dp),
@@ -821,19 +623,18 @@ fun PremiumHeroCard() {
                 color = Color.White.copy(alpha = 0.9f),
                 textAlign = TextAlign.Center
             )
-
-            Spacer(modifier = Modifier.height(24.dp))
-
         }
     }
 }
 
 /**
- * 프리미엄 혜택 카드 (기존 코드 유지)
+ * 프리미엄 혜택 카드
+ */
+/**
+ * 프리미엄 혜택 카드 - 전체 혜택 표시
  */
 @Composable
 fun PremiumBenefitsCard() {
-    // 기존 구현 유지
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
@@ -852,10 +653,16 @@ fun PremiumBenefitsCard() {
             )
 
             val benefits = listOf(
-                Triple(Icons.Rounded.Block, "광고 없는 환경", "모든 광고 제거"),
-                Triple(Icons.Rounded.Notifications, "실시간 알림", "환율 변동 즉시 확인"),
-                Triple(Icons.Rounded.Analytics, "고급 분석", "상세한 수익 분석"),
-                Triple(Icons.Rounded.Cloud, "자동 백업", "데이터 안전 보관")
+                Triple(Icons.Rounded.Block, "광고 없는 환경", "모든 광고 완전 제거"),
+                Triple(Icons.Rounded.Public, "12개 통화 지원", "USD, JPY, EUR 등 주요 통화"),
+                Triple(Icons.Rounded.Notifications, "실시간 환율 알림", "목표 환율 도달 시 즉시 알림"),
+                Triple(Icons.Rounded.TrendingUp, "수익률 알림", "기록별 목표 수익률 달성 알림"),
+                Triple(Icons.Rounded.CalendarToday, "일일 리포트", "매일 수익 현황 요약 알림"),
+                Triple(Icons.Rounded.Update, "매수 경과 알림", "장기 보유 기록 리마인더"),
+                Triple(Icons.Rounded.Cloud, "자동 백업", "클라우드에 안전하게 데이터 보관"),
+                Triple(Icons.Rounded.Sync, "다중 기기 동기화", "모든 기기에서 실시간 동기화"),
+                Triple(Icons.Rounded.Analytics, "고급 분석", "상세한 수익률 및 통계"),
+                Triple(Icons.Rounded.Widgets, "위젯 실시간 업데이트", "백그라운드에서 자동 환율 갱신")
             )
 
             benefits.forEach { (icon, title, desc) ->
@@ -889,97 +696,136 @@ fun PremiumBenefitsCard() {
 }
 
 /**
- * 프리미엄 기능 상세 카드 (기존 코드 유지)
+ * ✅ 디버그 컨트롤 카드
  */
 @Composable
-fun PremiumFeaturesDetailCard() {
-    // 기존 구현과 동일
+fun TestControlCard(
+    isPremium: Boolean,
+    user: LocalUserData,
+    onTogglePremium: (Boolean) -> Unit,
+    onRefreshStatus: () -> Unit,
+    onGrantTestPremium: (Int) -> Unit,
+    onResetAdCounts: () -> Unit
+) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White)
+        colors = CardDefaults.cardColors(containerColor = Color(0xFFFEF2F2)),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(20.dp),
-            verticalArrangement = Arrangement.spacedBy(20.dp)
+            verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            Text(
-                text = "프리미엄 기능 상세",
-                fontSize = 18.sp,
-                fontWeight = FontWeight.Bold
-            )
-
-            // 상세 기능 목록...
-            DetailFeatureItem(
-                title = "광고 없는 쾌적한 환경",
-                items = listOf(
-                    "분석 화면 전면 광고 제거",
-                    "목표 환율 설정 광고 제거",
-                    "하단 배너 광고 완전 제거"
-                )
-            )
-
-            HorizontalDivider(color = Color(0xFFE5E7EB))
-
-            DetailFeatureItem(
-                title = "실시간 위젯 업데이트",
-                items = listOf(
-                    "WebSocket 실시간 환율 연결",
-                    "백그라운드 자동 업데이트",
-                    "알림을 통한 환율 확인"
-                )
-            )
-        }
-    }
-}
-
-@Composable
-fun DetailFeatureItem(title: String, items: List<String>) {
-    Column(
-        modifier = Modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(8.dp)
-    ) {
-        Text(
-            text = title,
-            fontSize = 16.sp,
-            fontWeight = FontWeight.SemiBold,
-            color = Color(0xFF1F2937)
-        )
-
-        items.forEach { item ->
-            Row(
-                verticalAlignment = Alignment.Top,
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(
-                    imageVector = Icons.Rounded.CheckCircle,
+                    imageVector = Icons.Rounded.BugReport,
                     contentDescription = null,
-                    tint = Color(0xFF10B981),
-                    modifier = Modifier.size(18.dp)
+                    modifier = Modifier.size(24.dp),
+                    tint = Color(0xFFDC2626)
                 )
+
+                Spacer(modifier = Modifier.width(8.dp))
 
                 Text(
-                    text = item,
-                    fontSize = 14.sp,
-                    color = Color(0xFF4B5563)
+                    text = "🔧 테스트 도구 (개발자 전용)",
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFF991B1B)
                 )
+            }
+
+            HorizontalDivider(color = Color(0xFFFECACA))
+
+            // 현재 상태 표시
+            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Text(
+                    text = "현재 상태: ${if (isPremium) "✅ 프리미엄" else "❌ 일반"}",
+                    fontSize = 14.sp,
+                    color = Color(0xFF7F1D1D),
+                    fontWeight = FontWeight.SemiBold
+                )
+                Text(
+                    text = "타입: ${user.premiumType}",
+                    fontSize = 12.sp,
+                    color = Color(0xFF991B1B)
+                )
+                user.premiumExpiryDate?.let {
+                    Text(
+                        text = "만료: $it",
+                        fontSize = 12.sp,
+                        color = Color(0xFF991B1B)
+                    )
+                }
+            }
+
+            HorizontalDivider(color = Color(0xFFFECACA))
+
+            // 버튼들
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Button(
+                    onClick = { onTogglePremium(!isPremium) },
+                    modifier = Modifier.weight(1f),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = if (isPremium) Color(0xFFEF4444) else Color(0xFF10B981)
+                    )
+                ) {
+                    Text(
+                        text = if (isPremium) "비활성화" else "활성화",
+                        fontSize = 13.sp
+                    )
+                }
+
+                Button(
+                    onClick = onRefreshStatus,
+                    modifier = Modifier.weight(1f),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color(0xFF3B82F6)
+                    )
+                ) {
+                    Text("새로고침", fontSize = 13.sp)
+                }
+            }
+
+            Button(
+                onClick = { onGrantTestPremium(1) },
+                modifier = Modifier.fillMaxWidth(),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color(0xFFF59E0B)
+                )
+            ) {
+                Text("1분 후 만료 프리미엄 지급", fontSize = 13.sp)
+            }
+
+            Button(
+                onClick = onResetAdCounts,
+                modifier = Modifier.fillMaxWidth(),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color(0xFF8B5CF6)
+                )
+            ) {
+                Text("광고 카운트 초기화", fontSize = 13.sp)
             }
         }
     }
 }
 
 /**
- * 남은 일수 계산 헬퍼
+ * 날짜 문자열에서 남은 일수 계산
  */
 private fun calculateDaysRemaining(expiryDate: String): Int {
     return try {
-        val expiry = java.time.Instant.parse(expiryDate)
-        val now = java.time.Instant.now()
-        val days = java.time.Duration.between(now, expiry).toDays()
-        days.toInt().coerceAtLeast(0)
+        val expiry = Instant.parse(expiryDate)
+        val now = Instant.now()
+        val days = Duration.between(now, expiry).toDays()
+        if (days > 0) days.toInt() else 0
     } catch (e: Exception) {
         0
     }
 }
+

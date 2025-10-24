@@ -1,6 +1,7 @@
 package com.bobodroid.myapplication.di
 
 import android.content.Context
+import com.bobodroid.myapplication.billing.BillingClientLifecycle
 import com.bobodroid.myapplication.models.datamodels.repository.InvestRepository
 import com.bobodroid.myapplication.models.datamodels.repository.UserRepository
 import com.bobodroid.myapplication.models.datamodels.social.SocialLoginManager
@@ -260,9 +261,9 @@ object UseCaseModule {
     @Provides
     @Singleton
     fun providePremiumManager(
+        @ApplicationContext context: Context,
         userUseCases: UserUseCases,
-        userRepository: UserRepository,
-        @ApplicationContext context: Context
+        userRepository: UserRepository
     ): PremiumManager {
         return PremiumManager(context, userRepository, userUseCases)
     }

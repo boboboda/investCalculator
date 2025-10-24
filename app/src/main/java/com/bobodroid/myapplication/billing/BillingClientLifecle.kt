@@ -21,11 +21,13 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import javax.inject.Singleton
 
 /**
  * BillingClient 생명주기 관리 클래스
  * - 하나의 상품에서 월간/연간 요금제 모두 가져오기
  */
+
 class BillingClientLifecycle private constructor(
     private val applicationContext: Context,
     private val externalScope: CoroutineScope =

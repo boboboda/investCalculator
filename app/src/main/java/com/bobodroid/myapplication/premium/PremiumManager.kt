@@ -1,3 +1,4 @@
+// app/src/main/java/com/bobodroid/myapplication/premium/PremiumManager.kt
 package com.bobodroid.myapplication.premium
 
 import android.content.Context
@@ -8,6 +9,7 @@ import com.bobodroid.myapplication.billing.BillingClientLifecycle
 import com.bobodroid.myapplication.models.datamodels.repository.UserRepository
 import com.bobodroid.myapplication.models.datamodels.roomDb.LocalUserData
 import com.bobodroid.myapplication.models.datamodels.roomDb.PremiumType
+import com.bobodroid.myapplication.models.datamodels.service.subscriptionApi.RestoreSubscriptionRequest
 import com.bobodroid.myapplication.models.datamodels.service.subscriptionApi.SubscriptionApi
 import com.bobodroid.myapplication.models.datamodels.service.subscriptionApi.VerifyPurchaseRequest
 import com.bobodroid.myapplication.models.datamodels.useCases.UserUseCases
@@ -96,7 +98,9 @@ class PremiumManager @Inject constructor(
                 productId = productId,  // ✅ 실제 구매한 제품 ID 전달
                 basePlanId = extractBasePlanId(purchase),
                 purchaseToken = purchase.purchaseToken,
-                packageName = purchase.packageName
+                packageName = purchase.packageName,
+                socialId = user.socialId,  // ✅ 소셜 정보 추가
+                socialType = user.socialType  // ✅ 소셜 정보 추가
             )
 
             Log.d(TAG("PremiumManager", "handlePurchase"), "서버 검증 요청: $request")
@@ -139,7 +143,53 @@ class PremiumManager @Inject constructor(
         }
 
         try {
-            // ✅ 모든 활성 구독 확인 (월간 OR 연간)
+            // ✅ 1단계: 소셜 로그인이 되어 있으면 서버에서 복원 시도
+            val socialId = user.socialId
+            val socialType = user.socialType
+
+            if (!socialId.isNullOrEmpty() && !socialType.isNullOrEmpty()) {
+                Log.d(TAG("PremiumManager", "syncPremiumStatus"), "소셜 로그인 감지 - 서버 복원 시도")
+
+                try {
+                    val restoreRequest = RestoreSubscriptionRequest(
+                        socialId = socialId,
+                        socialType = socialType
+                    )
+
+                    val restoreResponse =
+                        SubscriptionApi.service.restoreSubscription(restoreRequest)
+
+                    if (restoreResponse.success && restoreResponse.data != null) {
+                        val data = restoreResponse.data
+
+                        if (data.isPremium) {
+                            Log.d(TAG("PremiumManager", "syncPremiumStatus"), "✅ 서버에서 구독 복원 성공")
+
+                            val updatedUser = user.copy(
+                                premiumType = data.premiumType,
+                                premiumExpiryDate = data.expiryTime,
+                                premiumGrantedBy = "subscription",
+                                premiumGrantedAt = Instant.now().toString(),
+                                isPremium = true
+                            )
+
+                            userUseCases.localUserUpdate(updatedUser)
+                            Log.d(TAG("PremiumManager", "syncPremiumStatus"), "✅ 서버 복원 DB 업데이트 완료")
+                            Log.d(
+                                TAG("PremiumManager", "syncPremiumStatus"),
+                                "━━━━━━━━━━━━━━━━━━━━━━━━━━"
+                            )
+                            return // 성공했으면 여기서 종료
+                        }
+                    }
+
+                    Log.d(TAG("PremiumManager", "syncPremiumStatus"), "서버에 복원할 구독 없음 - 로컬 확인으로 진행")
+                } catch (e: Exception) {
+                    Log.w(TAG("PremiumManager", "syncPremiumStatus"), "서버 복원 실패 - 로컬 확인으로 진행", e)
+                }
+            }
+
+            // ✅ 2단계: 로컬 BillingClient에서 활성 구독 확인
             billingClient.getLatestActiveSubscription { purchase ->
                 scope.launch {
                     if (purchase != null && purchase.purchaseState == Purchase.PurchaseState.PURCHASED) {
@@ -148,11 +198,14 @@ class PremiumManager @Inject constructor(
 
                         // 서버 상태 확인
                         try {
-                            val response = SubscriptionApi.service.getSubscriptionStatus(user.id.toString())
+                            val response =
+                                SubscriptionApi.service.getSubscriptionStatus(user.id.toString())
 
                             if (response.success && response.data.isPremium) {
-                                Log.d(TAG("PremiumManager", "syncPremiumStatus"),
-                                    "서버 구독 확인 - 만료일: ${response.data.expiryTime}")
+                                Log.d(
+                                    TAG("PremiumManager", "syncPremiumStatus"),
+                                    "서버 구독 확인 - 만료일: ${response.data.expiryTime}"
+                                )
 
                                 // DB 업데이트
                                 val updatedUser = user.copy(
@@ -183,6 +236,8 @@ class PremiumManager @Inject constructor(
         } catch (e: Exception) {
             Log.e(TAG("PremiumManager", "syncPremiumStatus"), "동기화 실패", e)
         }
+
+        Log.d(TAG("PremiumManager", "syncPremiumStatus"), "━━━━━━━━━━━━━━━━━━━━━━━━━━")
     }
 
     /**
@@ -196,6 +251,22 @@ class PremiumManager @Inject constructor(
                 syncPremiumStatus()
             }
         }
+    }
+
+    /**
+     * 프리미엄 만료 처리
+     */
+    private suspend fun expirePremium(user: LocalUserData) {
+        Log.d(TAG("PremiumManager", "expirePremium"), "프리미엄 만료 처리")
+
+        val updatedUser = user.copy(
+            premiumType = "NONE",
+            premiumExpiryDate = null,
+            isPremium = false
+        )
+
+        userUseCases.localUserUpdate(updatedUser)
+        Log.d(TAG("PremiumManager", "expirePremium"), "✅ 만료 처리 완료")
     }
 
     /**
@@ -237,101 +308,20 @@ class PremiumManager @Inject constructor(
     }
 
     /**
-     * 리워드 광고로 24시간 프리미엄 지급
+     * ✅ 프리미엄 상태 새로고침 (외부 호출용)
      */
-    suspend fun grantRewardPremium(user: LocalUserData): Boolean {
-        val today = Instant.now().truncatedTo(ChronoUnit.DAYS).toString()
-
-        if (user.lastRewardDate == today) {
-            Log.d(TAG("PremiumManager", "grantRewardPremium"), "오늘 이미 리워드 사용")
-            return false
-        }
-
-        val expiryDate = Instant.now().plus(24, ChronoUnit.HOURS).toString()
-
-        val updatedUser = user.copy(
-            premiumType = "REWARD_AD",
-            premiumExpiryDate = expiryDate,
-            premiumGrantedBy = "reward",
-            premiumGrantedAt = Instant.now().toString(),
-            lastRewardDate = today,
-            dailyRewardUsed = true,
-            isPremium = true
-        )
-
-        userUseCases.localUserUpdate(updatedUser)
-        Log.d(TAG("PremiumManager", "grantRewardPremium"), "✅ 24시간 프리미엄 지급")
-
-        return true
+    suspend fun refreshPremiumStatus() {
+        Log.d(TAG("PremiumManager", "refreshPremiumStatus"), "프리미엄 상태 새로고침 요청")
+        syncPremiumStatus()
     }
 
     /**
-     * 오늘 리워드 광고 사용 가능 여부
+     * ✅ isPremium 상태만 DB 업데이트
      */
-    fun canUseRewardAdToday(user: LocalUserData): Boolean {
-        val today = Instant.now().truncatedTo(ChronoUnit.DAYS).toString()
-        return user.lastRewardDate != today
-    }
-
-    /**
-     * 프리미엄 만료 처리
-     */
-    private suspend fun expirePremium(user: LocalUserData) {
-        Log.d(TAG("PremiumManager", "expirePremium"), "프리미엄 만료 처리")
-
-        val updatedUser = user.copy(
-            premiumType = "NONE",
-            premiumExpiryDate = null,
-            isPremium = false
-        )
-
-        userUseCases.localUserUpdate(updatedUser)
-    }
-
-    /**
-     * ✅ 프리미엄 남은 초 계산 (public으로 변경 - SharedViewModel에서 사용)
-     */
-    fun getRemainingSeconds(user: LocalUserData): Long {
-        val expiryDate = user.premiumExpiryDate ?: return 0L
-
-        val now = Instant.now()
-        val expiry = try {
-            Instant.parse(expiryDate)
-        } catch (e: Exception) {
-            return 0L
-        }
-
-        val remaining = expiry.epochSecond - now.epochSecond
-        return if (remaining > 0) remaining else 0L
-    }
-
-    /**
-     * 프리미엄 만료 1시간 전인지 확인 (푸시 알림용)
-     */
-    fun isExpiringWithinHour(user: LocalUserData): Boolean {
-        val remaining = getRemainingSeconds(user)
-        return remaining in 1..3600  // 1초~1시간 사이
-    }
-
-    /**
-     * ✅ 수동으로 프리미엄 상태 새로고침
-     */
-    fun refreshPremiumStatus() {
-        Log.d(TAG("PremiumManager", "refreshPremiumStatus"), "수동 새로고침 요청")
-        scope.launch {
-            syncPremiumStatus()
-        }
-    }
-
-    /**
-     * ✅ User DB에 프리미엄 상태 업데이트
-     */
-    private suspend fun updateUserPremiumStatus(isPremium: Boolean) {
+    suspend fun updateUserPremiumStatus(isPremium: Boolean) {
         try {
-            val currentUser = userRepository.userData.value?.localUserData
-
-            if (currentUser == null) {
-                Log.w(TAG("PremiumManager", "updateUserPremiumStatus"), "사용자 정보 없음")
+            val currentUser = userRepository.userData.value?.localUserData ?: run {
+                Log.e(TAG("PremiumManager", "updateUserPremiumStatus"), "사용자 데이터 없음")
                 return
             }
 
@@ -340,8 +330,10 @@ class PremiumManager @Inject constructor(
                 val updatedUser = currentUser.copy(isPremium = isPremium)
                 userRepository.localUserUpdate(updatedUser)
 
-                Log.d(TAG("PremiumManager", "updateUserPremiumStatus"),
-                    "✅ DB 업데이트 완료: isPremium = $isPremium")
+                Log.d(
+                    TAG("PremiumManager", "updateUserPremiumStatus"),
+                    "✅ DB 업데이트 완료: isPremium = $isPremium"
+                )
             }
         } catch (e: Exception) {
             Log.e(TAG("PremiumManager", "updateUserPremiumStatus"), "DB 업데이트 실패", e)
@@ -397,4 +389,76 @@ class PremiumManager @Inject constructor(
             "monthly-basic"
         }
     }
+
+
+    /**
+     * 리워드 광고로 24시간 프리미엄 지급
+     */
+    suspend fun grantRewardPremium(user: LocalUserData): Boolean {
+        val today = Instant.now().truncatedTo(ChronoUnit.DAYS).toString()
+
+        if (user.lastRewardDate == today) {
+            Log.d(TAG("PremiumManager", "grantRewardPremium"), "오늘 이미 리워드 사용")
+            return false
+        }
+
+        val expiryDate = Instant.now().plus(24, ChronoUnit.HOURS).toString()
+
+        val updatedUser = user.copy(
+            premiumType = "REWARD_AD",
+            premiumExpiryDate = expiryDate,
+            premiumGrantedBy = "reward",
+            premiumGrantedAt = Instant.now().toString(),
+            lastRewardDate = today,
+            dailyRewardUsed = true,
+            isPremium = true
+        )
+
+        userUseCases.localUserUpdate(updatedUser)
+        Log.d(TAG("PremiumManager", "grantRewardPremium"), "✅ 24시간 프리미엄 지급")
+
+        return true
+    }
+
+    /**
+     * 오늘 리워드 광고 사용 가능 여부
+     */
+    fun canUseRewardAdToday(user: LocalUserData): Boolean {
+        val today = Instant.now().truncatedTo(ChronoUnit.DAYS).toString()
+        return user.lastRewardDate != today
+    }
+
+
+    /**
+     * ✅ 프리미엄 남은 초 계산 (public으로 변경 - SharedViewModel에서 사용)
+     */
+    fun getRemainingSeconds(user: LocalUserData): Long {
+        val expiryDate = user.premiumExpiryDate ?: return 0L
+
+        val now = Instant.now()
+        val expiry = try {
+            Instant.parse(expiryDate)
+        } catch (e: Exception) {
+            return 0L
+        }
+
+        val remaining = expiry.epochSecond - now.epochSecond
+        return if (remaining > 0) remaining else 0L
+    }
+
+    /**
+     * 프리미엄 만료 1시간 전인지 확인 (푸시 알림용)
+     */
+    fun isExpiringWithinHour(user: LocalUserData): Boolean {
+        val remaining = getRemainingSeconds(user)
+        return remaining in 1..3600  // 1초~1시간 사이
+    }
+
+
+
+
+
+
+
+
 }

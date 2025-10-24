@@ -66,6 +66,7 @@ fun MyPageScreen(
     val premiumExpiryDate by sharedViewModel.premiumExpiryDate.collectAsState()
     val showRewardAdInfo by sharedViewModel.showRewardAdInfo.collectAsState()
 
+
     val myPageRouteAction = remember {
         RouteAction<MyPageRoute>(navController, MyPageRoute.SelectView.routeName)
     }
@@ -301,6 +302,8 @@ fun MyPageScreen(
     }
 }
 
+// app/src/main/java/com/bobodroid/myapplication/screens/MyPageScreen.kt 중 ImprovedMyPageView 수정
+
 @Composable
 fun ImprovedMyPageView(
     myPageRouteAction: RouteAction<MyPageRoute>,
@@ -318,6 +321,9 @@ fun ImprovedMyPageView(
     sharedViewModel: SharedViewModel
 ) {
     val context = LocalContext.current
+
+    // ✅ 소셜 로그인 필수 다이얼로그 상태 추가
+    var showSocialLoginRequiredDialog by remember { mutableStateOf(false) }
 
     LazyColumn(
         modifier = Modifier
@@ -339,7 +345,17 @@ fun ImprovedMyPageView(
                 premiumType = premiumType,
                 premiumExpiryDate = premiumExpiryDate,
                 onPurchaseClick = {
-                    myPageRouteAction.navTo(MyPageRoute.Premium)
+                    // ✅ 소셜 로그인 체크
+                    val isSocialLoggedIn = !localUser.socialId.isNullOrEmpty() &&
+                            !localUser.socialType.isNullOrEmpty()
+
+                    if (isSocialLoggedIn) {
+                        // 로그인 되어있으면 프리미엄 화면으로 이동
+                        myPageRouteAction.navTo(MyPageRoute.Premium)
+                    } else {
+                        // 로그인 안 되어있으면 다이얼로그 표시
+                        showSocialLoginRequiredDialog = true
+                    }
                 },
                 onSettingsClick = {
                     myPageRouteAction.navTo(MyPageRoute.Premium)
@@ -383,7 +399,6 @@ fun ImprovedMyPageView(
                 onAccountManageClick = { myPageRouteAction.navTo(MyPageRoute.AccountManage) },
                 onCloudServiceClick = { myPageRouteAction.navTo(MyPageRoute.CloudService) },
                 onCustomerServiceClick = {
-                    // ✅ CustomerView 화면으로 가지 않고 바로 WebActivity 실행
                     val webPostIntent = Intent(context, WebActivity::class.java)
                     webPostIntent.putExtra("url", "https://cobusil.vercel.app/release/postBoard/dollarRecord")
                     ContextCompat.startActivity(context, webPostIntent, null)
@@ -407,52 +422,119 @@ fun ImprovedMyPageView(
             Spacer(modifier = Modifier.height(32.dp))
         }
 
-        // MyPageScreen.kt 하단에 추가
-
+        // 디버그 카드...
         if (BuildConfig.DEBUG) {
-            item {
-                Card(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
-                    colors = CardDefaults.cardColors(
-                        containerColor = Color(0xFFEF4444)
-                    )
-                ) {
-                    Column(
-                        modifier = Modifier.padding(16.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        Text(
-                            "🔧 개발자 도구",
-                            color = Color.White,
-                            fontWeight = FontWeight.Bold
-                        )
-
-                        Button(
-                            onClick = { sharedViewModel.grantTestPremium(1) },
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = Color.White,
-                                contentColor = Color.Black
-                            )
-                        ) {
-                            Text("1분 후 만료 프리미엄 지급")
-                        }
-
-                        Button(
-                            onClick = { sharedViewModel.resetAdCounts() },
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = Color.White,
-                                contentColor = Color.Black
-                            )
-                        ) {
-                            Text("광고 카운트 초기화")
-                        }
-                    }
-                }
-            }
+            // ... 기존 디버그 코드
         }
     }
+
+    // ✅ 소셜 로그인 필수 다이얼로그
+    if (showSocialLoginRequiredDialog) {
+        SocialLoginRequiredDialog(
+            onDismiss = { showSocialLoginRequiredDialog = false },
+            onLoginClick = {
+                showSocialLoginRequiredDialog = false
+                myPageRouteAction.navTo(MyPageRoute.AccountManage)
+            }
+        )
+    }
+}
+
+/**
+ * ✅ 소셜 로그인 필수 다이얼로그
+ */
+@Composable
+fun SocialLoginRequiredDialog(
+    onDismiss: () -> Unit,
+    onLoginClick: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        icon = {
+            Icon(
+                imageVector = Icons.Rounded.Lock,
+                contentDescription = null,
+                tint = Color(0xFF6366F1),
+                modifier = Modifier.size(48.dp)
+            )
+        },
+        title = {
+            Text(
+                text = "소셜 로그인이 필요합니다",
+                fontSize = 20.sp,
+                fontWeight = FontWeight.Bold,
+                textAlign = TextAlign.Center
+            )
+        },
+        text = {
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                Text(
+                    text = "구독 결제 및 복원을 위해서는\n소셜 로그인이 필수입니다",
+                    fontSize = 15.sp,
+                    textAlign = TextAlign.Center,
+                    color = Color(0xFF6B7280)
+                )
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                // 혜택 안내
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(
+                            color = Color(0xFFF3F4F6),
+                            shape = RoundedCornerShape(12.dp)
+                        )
+                        .padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Text(
+                        text = "소셜 로그인 혜택",
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFF1F2937)
+                    )
+
+                    BenefitItem("다른 기기에서도 구독 복원 가능")
+                    BenefitItem("구독 정보 안전하게 보관")
+                    BenefitItem("백업 및 동기화 기능 사용")
+                }
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = onLoginClick,
+                modifier = Modifier.fillMaxWidth(),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color(0xFF6366F1)
+                ),
+                shape = RoundedCornerShape(12.dp)
+            ) {
+                Text(
+                    text = "로그인하기",
+                    modifier = Modifier.padding(vertical = 4.dp),
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+        },
+        dismissButton = {
+            TextButton(
+                onClick = onDismiss,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text(
+                    text = "나중에",
+                    fontSize = 15.sp,
+                    color = Color(0xFF6B7280)
+                )
+            }
+        },
+        shape = RoundedCornerShape(20.dp)
+    )
 }
 
 

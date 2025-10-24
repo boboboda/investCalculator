@@ -14,7 +14,18 @@ data class VerifyPurchaseRequest(
     val productId: String,
     val basePlanId: String,
     val purchaseToken: String,
-    val packageName: String = "com.bobodroid.myapplication"
+    val packageName: String = "com.bobodroid.myapplication",
+    val socialId: String? = null,
+    val socialType: String? = null
+)
+
+/**
+ * ✅ 구독 복원 요청 (소셜 로그인 기반)
+ */
+@JsonClass(generateAdapter = true)
+data class RestoreSubscriptionRequest(
+    val socialId: String,
+    val socialType: String
 )
 
 // ==================== 응답 모델 ====================
@@ -45,7 +56,9 @@ data class SubscriptionData(
     val basePlanId: String,
     val expiryTime: String,
     val autoRenewing: Boolean,
-    val status: String
+    val status: String,
+    val socialId: String? = null,
+    val socialType: String? = null
 )
 
 /**
@@ -66,5 +79,31 @@ data class SubscriptionStatusData(
     val expiryTime: String? = null,
     val autoRenewing: Boolean? = null,
     val status: String? = null,
-    val daysRemaining: Int? = null
+    val daysRemaining: Int? = null,
+    val socialId: String? = null,
+    val socialType: String? = null
+)
+
+/**
+ * ✅ 구독 복원 응답 (소셜 로그인 기반)
+ */
+@JsonClass(generateAdapter = true)
+data class RestoreSubscriptionResponse(
+    val success: Boolean,
+    val message: String,
+    val data: RestoreSubscriptionData?
+)
+
+@JsonClass(generateAdapter = true)
+data class RestoreSubscriptionData(
+    val deviceId: String,
+    val isPremium: Boolean,
+    val premiumType: String,
+    val basePlanId: String? = null,
+    val expiryTime: String? = null,
+    val autoRenewing: Boolean? = null,
+    val status: String? = null,
+    val daysRemaining: Int? = null,
+    val socialId: String? = null,
+    val socialType: String? = null
 )

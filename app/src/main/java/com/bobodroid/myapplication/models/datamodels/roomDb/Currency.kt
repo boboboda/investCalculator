@@ -188,17 +188,17 @@ object Currencies {
         isPremium = true
     )
 
-    val TWD = Currency(
-        code = "TWD",
-        koreanName = "대만달러",
-        symbol = "NT$",
-        scale = 2,
-        needsMultiply = false,
-        isPremium = true
-    )
+//    val TWD = Currency(
+//        code = "TWD",
+//        koreanName = "대만달러",
+//        symbol = "NT$",
+//        scale = 2,
+//        needsMultiply = false,
+//        isPremium = true
+//    )
 
     // ✅ 전체 통화 리스트 (순서대로 표시됨)
-    val all = listOf(USD, JPY, EUR, GBP, CNY, AUD, CAD, CHF, HKD, SGD, NZD, THB, TWD)
+    val all = listOf(USD, JPY, EUR, GBP, CNY, AUD, CAD, CHF, HKD, SGD, NZD, THB)
 
     // 무료 통화만
     val free = all.filter { !it.isPremium }
@@ -226,7 +226,6 @@ object Currencies {
             CurrencyType.NZD -> NZD
             CurrencyType.CNY -> CNY
             CurrencyType.HKD -> HKD
-            CurrencyType.TWD -> TWD
             CurrencyType.SGD -> SGD
         }
     }
@@ -245,7 +244,6 @@ object CurrencyEmojiMapper {
         CurrencyType.NZD to "🇳🇿",
         CurrencyType.CNY to "🇨🇳",
         CurrencyType.HKD to "🇭🇰",
-        CurrencyType.TWD to "🇹🇼",
         CurrencyType.SGD to "🇸🇬"
     )
 
@@ -293,6 +291,6 @@ enum class CurrencyType(val code: String, val koreanName: String) {
     NZD("NZD", "뉴질랜드 달러"),
     CNY("CNY", "위안"),
     HKD("HKD", "홍콩 달러"),
-    TWD("TWD", "대만 달러"),
+//    TWD("TWD", "대만 달러"),
     SGD("SGD", "싱가포르 달러")
 }

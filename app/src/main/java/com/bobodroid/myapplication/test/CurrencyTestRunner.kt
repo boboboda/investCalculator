@@ -153,7 +153,6 @@ object CurrencyTestRunner {
                 CurrencyType.HKD -> "HK$"
                 CurrencyType.SGD -> "S$"
                 CurrencyType.NZD -> "NZ$"
-                CurrencyType.TWD -> "NT$"
             }
         }
 

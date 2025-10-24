@@ -58,6 +58,7 @@ class SharedViewModel @Inject constructor(
 
     // 만료 체크
 
+    // 만료 체크 (REWARD_AD, EVENT만)
     private fun startPremiumExpiryMonitoring() {
         viewModelScope.launch {
             while (true) {
@@ -65,7 +66,12 @@ class SharedViewModel @Inject constructor(
 
                 val user = userRepository.userData.value?.localUserData ?: continue
 
-                // 현재 프리미엄 상태 확인
+                // ✅ SUBSCRIPTION은 PremiumManager가 처리하므로 제외
+                if (user.premiumType == "SUBSCRIPTION") {
+                    continue
+                }
+
+                // 현재 프리미엄 상태 확인 (REWARD_AD, EVENT, LIFETIME만)
                 val currentType = premiumManager.checkPremiumStatus(user)
 
                 // DB에는 프리미엄인데 실제로는 만료됨
@@ -74,7 +80,7 @@ class SharedViewModel @Inject constructor(
                     !user.premiumExpiryDate.isNullOrEmpty()) {
 
                     Log.d(TAG("SharedViewModel", "monitoring"),
-                        "🔴 프리미엄 만료 감지 - 자동 초기화")
+                        "🔴 프리미엄 만료 감지 (${user.premiumType}) - 자동 초기화")
 
                     val expiredUser = user.copy(
                         premiumType = "NONE",
@@ -83,12 +89,18 @@ class SharedViewModel @Inject constructor(
                     )
 
                     userRepository.localUserUpdate(expiredUser)
-                    _snackbarEvent.trySend("⏰ 프리미엄이 만료되었습니다")
+
+                    // ✅ 타입별 메시지 구분
+                    val message = when (user.premiumType) {
+                        "REWARD_AD" -> "⏰ 24시간 무료 체험이 만료되었습니다"
+                        "EVENT" -> "⏰ 이벤트 프리미엄이 만료되었습니다"
+                        else -> "⏰ 프리미엄이 만료되었습니다"
+                    }
+                    _snackbarEvent.trySend(message)
                 }
             }
         }
     }
-
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━
     // 상태 (Repository에서 구독)
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━

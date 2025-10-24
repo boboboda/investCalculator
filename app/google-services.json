@@ -12,7 +12,32 @@
           "package_name": "com.bobodroid.myapplication"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "217175237421-6g0b74f9n8ktb8l82a5sll70947o847f.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.bobodroid.myapplication",
+            "certificate_hash": "61490b75beb2ed756ba1b36f0d22a61a602dc541"
+          }
+        },
+        {
+          "client_id": "217175237421-iav6bp9n2olgafdmij8fq4jh39034gup.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.bobodroid.myapplication",
+            "certificate_hash": "915474db7b49e30eefa9b5f68964bdf5c2f38342"
+          }
+        },
+        {
+          "client_id": "217175237421-mtee0q5dd00mjq6p1av72mg36tic8a99.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.bobodroid.myapplication",
+            "certificate_hash": "8a1612b6667f01d3155115166d4672bea6f9b47b"
+          }
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyDf88ISsZr7PtKGVfo5HoAF7CGcBIOpq3A"

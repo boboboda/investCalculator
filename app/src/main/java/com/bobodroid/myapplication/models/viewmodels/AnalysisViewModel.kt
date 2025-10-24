@@ -177,10 +177,20 @@ class AnalysisViewModel @Inject constructor(
         }
 
         return filteredRates.map {
-            // ExchangeRates를 Map으로 변환
+            // ✅ 12개 통화 모두 Map으로 변환
             val ratesMap = mapOf(
                 "USD" to it.exchangeRates.usd,
-                "JPY" to it.exchangeRates.jpy
+                "JPY" to it.exchangeRates.jpy,
+                "EUR" to it.exchangeRates.eur,
+                "GBP" to it.exchangeRates.gbp,
+                "CNY" to it.exchangeRates.cny,
+                "AUD" to it.exchangeRates.aud,
+                "CAD" to it.exchangeRates.cad,
+                "CHF" to it.exchangeRates.chf,
+                "HKD" to it.exchangeRates.hkd,
+                "SGD" to it.exchangeRates.sgd,
+                "NZD" to it.exchangeRates.nzd,
+                "THB" to it.exchangeRates.thb
             )
 
             RateRange(
@@ -202,11 +212,13 @@ class AnalysisViewModel @Inject constructor(
         }
     }
 
+
     private suspend fun loadDailyCharge() = withContext(Dispatchers.IO) {
         try {
             val changeAndLatestRate = RateApi.rateService.getDailyChange()
             Log.d(TAG("AnalysisViewModel", "loadDailyCharge"), "Received daily change data: $changeAndLatestRate")
 
+            // ✅ USD, JPY만 처리하던 기존 로직 (하위 호환성 유지)
             val (jpyIcon, jpyColor) = getChangeIndicator(changeAndLatestRate.change.jpy)
             val (usdIcon, usdColor) = getChangeIndicator(changeAndLatestRate.change.usd)
 
@@ -386,14 +398,18 @@ private fun rangeDateFromTab(tabIndex: Int): Pair<String, String> {
     return Pair(startDate, endDate)
 }
 
+// ✅ 파일 상단 data class 수정
 data class RateRange(
-    val rates: Map<String, String> = emptyMap(),
-    val createAt: String = ""
+    val rates: Map<String, String>, // 12개 통화 모두 저장
+    val createAt: String
 ) {
-    fun getRate(currencyCode: String): String = rates[currencyCode] ?: ""
+    // ✅ 통화 코드로 환율 가져오기
+    fun getRate(currencyCode: String): String = rates[currencyCode] ?: "0"
+
+    // ✅ Currency 객체로 환율 가져오기
     fun getRate(currency: Currency): String = getRate(currency.code)
 
-    // 레거시 호환
+    // ✅ 하위 호환성 (레거시 코드 지원)
     val usd: String get() = getRate("USD")
     val jpy: String get() = getRate("JPY")
 }
@@ -409,21 +425,30 @@ data class AnalysisUiState(
     val latestRate: ExchangeRates = ExchangeRates(
         usd = "0",
         jpy = "0",
-//        eur = "0",
-//        gbp = "0",
-//        cny = "0",
-//        aud = "0",
-//        cad = "0",
-//        chf = "0",
-//        hkd = "0",
-//        sgd = "0",
-//        nzd = "0",
-//        thb = "0",
-//        twd = "0"
+        eur = "0",
+        gbp = "0",
+        cny = "0",
+        aud = "0",
+        cad = "0",
+        chf = "0",
+        hkd = "0",
+        sgd = "0",
+        nzd = "0",
+        thb = "0",
     ),
     val change: CurrencyChange = CurrencyChange(
         usd = "0",
         jpy = "0",
+        eur = "0",
+        gbp = "0",
+        cny = "0",
+        aud = "0",
+        cad = "0",
+        chf = "0",
+        hkd = "0",
+        sgd = "0",
+        nzd = "0",
+        thb = "0",
     ),
     val jpyChangeIcon: Char = '-',
     val jpyChangeColor: Color = Color.Gray,

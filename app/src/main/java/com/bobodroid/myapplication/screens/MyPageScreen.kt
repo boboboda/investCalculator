@@ -96,8 +96,7 @@ fun MyPageScreen(
                     premiumExpiryDate = premiumExpiryDate,
                     showRewardDialog = {
                         sharedViewModel.showRewardAdDialog()
-                    },
-                    sharedViewModel = sharedViewModel
+                    }
                 )
             }
 
@@ -318,7 +317,6 @@ fun ImprovedMyPageView(
     premiumType: PremiumType,
     premiumExpiryDate: String?,
     showRewardDialog: () -> Unit,
-    sharedViewModel: SharedViewModel
 ) {
     val context = LocalContext.current
 
@@ -403,7 +401,8 @@ fun ImprovedMyPageView(
                     webPostIntent.putExtra("url", "https://cobusil.vercel.app/release/postBoard/dollarRecord")
                     ContextCompat.startActivity(context, webPostIntent, null)
                 },
-                onWidgetSettingsClick = { myPageRouteAction.navTo(MyPageRoute.WidgetSettings) }
+                onWidgetSettingsClick = { myPageRouteAction.navTo(MyPageRoute.WidgetSettings) },
+                onHelpClick = showOnboarding  // ✅ 새로 추가
             )
         }
 
@@ -2001,12 +2000,18 @@ fun BadgeItemNew(badge: BadgeInfo) {
     }
 }
 
+// ============================================
+// MyPageScreen.kt 수정
+// SettingSection 함수 - 도움말 항목 추가
+// ============================================
+
 @Composable
 fun SettingSection(
     onAccountManageClick: () -> Unit,
     onCloudServiceClick: () -> Unit,
     onCustomerServiceClick: () -> Unit,
-    onWidgetSettingsClick: () -> Unit
+    onWidgetSettingsClick: () -> Unit,
+    onHelpClick: () -> Unit  // ✅ 새로 추가
 ) {
     Card(
         modifier = Modifier
@@ -2036,6 +2041,14 @@ fun SettingSection(
                 title = "클라우드 백업",
                 subtitle = "데이터 동기화",
                 onClick = onCloudServiceClick
+            )
+            HorizontalDivider(color = Color(0xFFE5E7EB))
+            // ✅ 도움말/사용법 항목 추가
+            SettingItem(
+                icon = Icons.Rounded.Info,
+                title = "도움말/사용법",
+                subtitle = "앱 사용 가이드",
+                onClick = onHelpClick
             )
             HorizontalDivider(color = Color(0xFFE5E7EB))
             SettingItem(

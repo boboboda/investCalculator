@@ -30,8 +30,6 @@ android {
         buildConfig = true
     }
 
-
-
     // Properties 로드
     val properties = loadProperties()
 
@@ -63,18 +61,39 @@ android {
         buildConfigField("String", "FONT_AD_KEY", "\"${getPropertyValue(properties, "font_ad_key", "default_value")}\"")
         buildConfigField("String", "REWARD_FRONT_AD_KEY", "\"${getPropertyValue(properties, "reward_font_ad_key", "default_value")}\"")
         buildConfigField("String", "REWARD_TARGET_FONT_AD_KEY", "\"${getPropertyValue(properties, "reward_target_font_ad_key", "default_value")}\"")
-
         buildConfigField("String", "KAKAO_APP_KEY", "\"${getPropertyValue(properties, "kakao_app_key", "")}\"")
 
         manifestPlaceholders["KAKAO_APP_KEY"] = getPropertyValue(properties, "kakao_app_key", "")
     }
 
+    // ✅ 서명 설정 추가
+    signingConfigs {
+        create("release") {
+            val storeFilePath = getPropertyValue(properties, "RELEASE_STORE_FILE", "")
+            if (storeFilePath.isNotEmpty()) {
+                storeFile = file(storeFilePath)
+                storePassword = getPropertyValue(properties, "RELEASE_STORE_PASSWORD", "")
+                keyAlias = getPropertyValue(properties, "RELEASE_KEY_ALIAS", "")
+                keyPassword = getPropertyValue(properties, "RELEASE_KEY_PASSWORD", "")
+            }
+        }
+    }
+
     buildTypes {
         release {
-            isMinifyEnabled = false
-            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
-            signingConfig = signingConfigs.getByName("debug")
+            // ✅ ProGuard 활성화
+            isMinifyEnabled = true
+            isShrinkResources = true
+
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro"
+            )
+
+            // ✅ Release 서명 사용
+            signingConfig = signingConfigs.getByName("release")
         }
+
         debug {
             // 디버그 설정
         }
@@ -167,7 +186,6 @@ dependencies {
     // Room
     implementation(libs.room.runtime)
     implementation(libs.room.ktx)
-//    implementation(libs.androidx.room.runtime.android)
     annotationProcessor(libs.room.compiler)
     kapt(libs.room.compiler)
 
@@ -225,14 +243,11 @@ dependencies {
     testImplementation(libs.hilt.android.testing)
     kaptTest(libs.hilt.compiler)
 
-    implementation(libs.play.services.auth)    // Google 로그인
+    // Social Login
+    implementation(libs.play.services.auth)
     implementation(libs.kakao.sdk.user)
 
+    // WorkManager
     implementation(libs.androidx.work.runtime.ktx)
     implementation(libs.androidx.hilt.work)
-    kapt(libs.androidx.hilt.compiler)
-
-    implementation(libs.androidx.work.runtime.ktx)
-    implementation(libs.androidx.hilt.work)
-    kapt(libs.androidx.hilt.compiler)
 }

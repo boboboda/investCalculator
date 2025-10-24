@@ -19,6 +19,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.time.Instant
 import java.time.temporal.ChronoUnit
 import javax.inject.Inject
@@ -130,105 +131,77 @@ class PremiumManager @Inject constructor(
         }
     }
 
+
     /**
-     * ✅ 구독 상태 동기화 (앱 시작 시 / 주기적)
+     * ✅ 구독 상태 동기화 (앱 시작 시 / 주기적) - SUBSCRIPTION만 처리
      */
     suspend fun syncPremiumStatus() {
         Log.d(TAG("PremiumManager", "syncPremiumStatus"), "━━━━━━━━━━━━━━━━━━━━━━━━━━")
         Log.d(TAG("PremiumManager", "syncPremiumStatus"), "구독 상태 동기화 시작")
 
         val user = userRepository.userData.value?.localUserData ?: run {
-            Log.w(TAG("PremiumManager", "syncPremiumStatus"), "사용자 데이터 없음")
+            Log.e(TAG("PremiumManager", "syncPremiumStatus"), "사용자 데이터 없음")
+            return
+        }
+
+        // ✅ SUBSCRIPTION만 처리 (REWARD_AD, EVENT는 SharedViewModel이 처리)
+        if (user.premiumType != "SUBSCRIPTION" && user.premiumType != "NONE") {
+            Log.d(TAG("PremiumManager", "syncPremiumStatus"),
+                "SUBSCRIPTION이 아님 (${user.premiumType}) - 동기화 건너뜀")
             return
         }
 
         try {
-            // ✅ 1단계: 소셜 로그인이 되어 있으면 서버에서 복원 시도
-            val socialId = user.socialId
-            val socialType = user.socialType
-
-            if (!socialId.isNullOrEmpty() && !socialType.isNullOrEmpty()) {
-                Log.d(TAG("PremiumManager", "syncPremiumStatus"), "소셜 로그인 감지 - 서버 복원 시도")
-
-                try {
-                    val restoreRequest = RestoreSubscriptionRequest(
-                        socialId = socialId,
-                        socialType = socialType
-                    )
-
-                    val restoreResponse =
-                        SubscriptionApi.service.restoreSubscription(restoreRequest)
-
-                    if (restoreResponse.success && restoreResponse.data != null) {
-                        val data = restoreResponse.data
-
-                        if (data.isPremium) {
-                            Log.d(TAG("PremiumManager", "syncPremiumStatus"), "✅ 서버에서 구독 복원 성공")
-
-                            val updatedUser = user.copy(
-                                premiumType = data.premiumType,
-                                premiumExpiryDate = data.expiryTime,
-                                premiumGrantedBy = "subscription",
-                                premiumGrantedAt = Instant.now().toString(),
-                                isPremium = true
-                            )
-
-                            userUseCases.localUserUpdate(updatedUser)
-                            Log.d(TAG("PremiumManager", "syncPremiumStatus"), "✅ 서버 복원 DB 업데이트 완료")
-                            Log.d(
-                                TAG("PremiumManager", "syncPremiumStatus"),
-                                "━━━━━━━━━━━━━━━━━━━━━━━━━━"
-                            )
-                            return // 성공했으면 여기서 종료
-                        }
-                    }
-
-                    Log.d(TAG("PremiumManager", "syncPremiumStatus"), "서버에 복원할 구독 없음 - 로컬 확인으로 진행")
-                } catch (e: Exception) {
-                    Log.w(TAG("PremiumManager", "syncPremiumStatus"), "서버 복원 실패 - 로컬 확인으로 진행", e)
+            withContext(Dispatchers.IO) {
+                if (!billingClient.isClientReady()) {
+                    Log.w(TAG("PremiumManager", "syncPremiumStatus"), "BillingClient 준비 안 됨")
+                    return@withContext
                 }
-            }
 
-            // ✅ 2단계: 로컬 BillingClient에서 활성 구독 확인
-            billingClient.getLatestActiveSubscription { purchase ->
-                scope.launch {
-                    if (purchase != null && purchase.purchaseState == Purchase.PurchaseState.PURCHASED) {
-                        val productId = purchase.products.firstOrNull() ?: ""
-                        Log.d(TAG("PremiumManager", "syncPremiumStatus"), "활성 구독 발견: $productId")
+                billingClient.getLatestActiveSubscription { purchase ->
+                    scope.launch {
+                        if (purchase != null) {
+                            val productId = purchase.products.firstOrNull() ?: ""
+                            Log.d(TAG("PremiumManager", "syncPremiumStatus"), "활성 구독 발견: $productId")
 
-                        // 서버 상태 확인
-                        try {
-                            val response =
-                                SubscriptionApi.service.getSubscriptionStatus(user.id.toString())
+                            // 서버 상태 확인
+                            try {
+                                val response =
+                                    SubscriptionApi.service.getSubscriptionStatus(user.id.toString())
 
-                            if (response.success && response.data.isPremium) {
-                                Log.d(
-                                    TAG("PremiumManager", "syncPremiumStatus"),
-                                    "서버 구독 확인 - 만료일: ${response.data.expiryTime}"
-                                )
+                                if (response.success && response.data.isPremium) {
+                                    Log.d(
+                                        TAG("PremiumManager", "syncPremiumStatus"),
+                                        "서버 구독 확인 - 만료일: ${response.data.expiryTime}"
+                                    )
 
-                                // DB 업데이트
-                                val updatedUser = user.copy(
-                                    premiumType = "SUBSCRIPTION",
-                                    premiumExpiryDate = response.data.expiryTime,
-                                    isPremium = true
-                                )
-                                userUseCases.localUserUpdate(updatedUser)
-                                Log.d(TAG("PremiumManager", "syncPremiumStatus"), "✅ DB 업데이트 완료")
-                            } else {
-                                // 서버에는 없는데 로컬에 있음 → 서버 재검증 요청
-                                Log.d(TAG("PremiumManager", "syncPremiumStatus"), "서버 재검증 요청")
-                                SubscriptionApi.service.reverifySubscription(user.id.toString())
+                                    // ✅ 중복 업데이트 방지
+                                    if (shouldUpdateUser(user, "SUBSCRIPTION", response.data.expiryTime)) {
+                                        val updatedUser = user.copy(
+                                            premiumType = "SUBSCRIPTION",
+                                            premiumExpiryDate = response.data.expiryTime,
+                                            isPremium = true
+                                        )
+                                        userUseCases.localUserUpdate(updatedUser)
+                                        Log.d(TAG("PremiumManager", "syncPremiumStatus"), "✅ DB 업데이트 완료")
+                                    } else {
+                                        Log.d(TAG("PremiumManager", "syncPremiumStatus"), "DB 이미 최신 상태 - 업데이트 생략")
+                                    }
+                                } else {
+                                    // 서버에는 없는데 로컬에 있음 → 서버 재검증 요청
+                                    Log.d(TAG("PremiumManager", "syncPremiumStatus"), "서버 재검증 요청")
+                                    SubscriptionApi.service.reverifySubscription(user.id.toString())
+                                }
+                            } catch (e: Exception) {
+                                Log.e(TAG("PremiumManager", "syncPremiumStatus"), "서버 확인 실패", e)
                             }
-                        } catch (e: Exception) {
-                            Log.e(TAG("PremiumManager", "syncPremiumStatus"), "서버 확인 실패", e)
-                        }
-                    } else {
-                        Log.d(TAG("PremiumManager", "syncPremiumStatus"), "활성 구독 없음")
+                        } else {
+                            Log.d(TAG("PremiumManager", "syncPremiumStatus"), "활성 구독 없음")
 
-                        // DB에 구독이 있으면 만료 처리
-                        if (user.premiumType == "SUBSCRIPTION") {
-                            expirePremium(user)
+                            // DB에 구독이 있으면 만료 처리
+                            if (user.premiumType == "SUBSCRIPTION") {
+                                expireSubscription(user)
+                            }
                         }
                     }
                 }
@@ -238,6 +211,35 @@ class PremiumManager @Inject constructor(
         }
 
         Log.d(TAG("PremiumManager", "syncPremiumStatus"), "━━━━━━━━━━━━━━━━━━━━━━━━━━")
+    }
+
+
+    /**
+     * ✅ DB 업데이트 필요 여부 체크 (중복 방지)
+     */
+    private fun shouldUpdateUser(
+        user: LocalUserData,
+        newPremiumType: String,
+        newExpiryDate: String?
+    ): Boolean {
+        // 타입이 다르면 업데이트 필요
+        if (user.premiumType != newPremiumType) {
+            return true
+        }
+
+        // 만료일이 다르면 업데이트 필요
+        if (user.premiumExpiryDate != newExpiryDate) {
+            return true
+        }
+
+        // isPremium 상태가 다르면 업데이트 필요
+        val shouldBePremium = newPremiumType != "NONE"
+        if (user.isPremium != shouldBePremium) {
+            return true
+        }
+
+        // 모두 같으면 업데이트 불필요
+        return false
     }
 
     /**
@@ -256,8 +258,26 @@ class PremiumManager @Inject constructor(
     /**
      * 프리미엄 만료 처리
      */
-    private suspend fun expirePremium(user: LocalUserData) {
-        Log.d(TAG("PremiumManager", "expirePremium"), "프리미엄 만료 처리")
+    /**
+     * ✅ 구독 만료 처리 (SUBSCRIPTION 전용)
+     */
+    private suspend fun expireSubscription(user: LocalUserData) {
+        Log.d(TAG("PremiumManager", "expireSubscription"), "구독 만료 처리 시작")
+
+        // ✅ 이미 만료 상태면 중복 실행 방지
+        if (user.premiumType == "NONE" && user.premiumExpiryDate == null) {
+            Log.d(TAG("PremiumManager", "expireSubscription"), "이미 만료 상태 - 건너뜀")
+            return
+        }
+
+        // ✅ SUBSCRIPTION이 아니면 처리하지 않음
+        if (user.premiumType != "SUBSCRIPTION") {
+            Log.w(TAG("PremiumManager", "expireSubscription"),
+                "SUBSCRIPTION이 아님 (${user.premiumType}) - 건너뜀")
+            return
+        }
+
+        Log.d(TAG("PremiumManager", "expireSubscription"), "구독 만료 처리 진행")
 
         val updatedUser = user.copy(
             premiumType = "NONE",
@@ -266,7 +286,7 @@ class PremiumManager @Inject constructor(
         )
 
         userUseCases.localUserUpdate(updatedUser)
-        Log.d(TAG("PremiumManager", "expirePremium"), "✅ 만료 처리 완료")
+        Log.d(TAG("PremiumManager", "expireSubscription"), "✅ 구독 만료 처리 완료")
     }
 
     /**

@@ -653,7 +653,7 @@ class MyPageViewModel @Inject constructor(
                             )
                         }
 
-                        onComplete("계정이 전환되었습니다. 백업 데이터를 복원하시겠습니까?")
+                        onComplete("계정이 전환되었습니다.")
                     } else {
                         Log.d("MyPageViewModel", "ℹ️ 백업 데이터 없음 → 바로 완료")
 

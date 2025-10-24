@@ -139,39 +139,32 @@ fun PremiumChartScreen(
         RateRangeCurrency(truncated, rate.createAt)
     }
 
+    // ✅ 선택된 통화의 최신 환율 가져오기
     val latestRate = run {
-        val rawValue = when(targetCurrency) {
-            CurrencyType.USD -> analysisUiState.latestRate.usd
-            CurrencyType.JPY -> analysisUiState.latestRate.jpy
-            else -> "0"
-        }.toFloatOrNull() ?: 0f
-
-        // ✅ ExchangeRate에 이미 needsMultiply 처리됨 - 추가 처리 불필요
+        val rawValue = analysisUiState.latestRate.getRate(targetCurrency.code).toFloatOrNull() ?: 0f
         String.format("%.2f", rawValue)
     }
 
+    // ✅ 선택된 통화의 변화량 가져오기
     val changeRate = run {
-        val rawValue = when(targetCurrency) {
-            CurrencyType.USD -> analysisUiState.change.usd
-            CurrencyType.JPY -> analysisUiState.change.jpy
-            else -> "0"
-        }.toFloatOrNull() ?: 0f
-
-        // ✅ ExchangeRate에 이미 needsMultiply 처리됨 - 추가 처리 불필요
+        val rawValue = analysisUiState.change.getChange(targetCurrency.code).toFloatOrNull() ?: 0f
         String.format("%.2f", rawValue)
     }
 
-    val changeIcon = when(targetCurrency) {
-        CurrencyType.USD -> analysisUiState.usdChangeIcon
-        CurrencyType.JPY -> analysisUiState.jpyChangeIcon
-        else -> '-'
+    // ✅ 변화 아이콘/색상 동적 계산
+    val (changeIcon, changeColor) = remember(changeRate) {
+        try {
+            val change = changeRate.toDouble()
+            when {
+                change > 0 -> Pair('▲', Color.Red)
+                change < 0 -> Pair('▼', Color.Blue)
+                else -> Pair('-', Color.Gray)
+            }
+        } catch (e: NumberFormatException) {
+            Pair('-', Color.Gray)
+        }
     }
 
-    val changeColor = when(targetCurrency) {
-        CurrencyType.USD -> analysisUiState.usdChangeColor
-        CurrencyType.JPY -> analysisUiState.jpyChangeColor
-        else -> Color.Gray
-    }
 
     // 프리미엄
 

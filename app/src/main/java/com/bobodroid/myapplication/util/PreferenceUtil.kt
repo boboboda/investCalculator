@@ -15,4 +15,12 @@ class PreferenceUtil(context: Context) {
         prefs.edit().putString(key, value).apply()
     }
 
+    // PreferenceUtil.kt에 추가
+    fun saveServiceRunning(isRunning: Boolean) {
+        prefs.edit().putBoolean("service_running", isRunning).apply()
+    }
+
+    fun getServiceRunning(): Boolean {
+        return prefs.getBoolean("service_running", false)
+    }
 }

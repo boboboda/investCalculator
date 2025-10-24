@@ -14,7 +14,6 @@ import com.android.billingclient.api.ProductDetailsResponseListener
 import com.android.billingclient.api.Purchase
 import com.android.billingclient.api.PurchasesUpdatedListener
 import com.android.billingclient.api.QueryProductDetailsParams
-import com.android.billingclient.api.QueryProductDetailsResult
 import com.android.billingclient.api.QueryPurchasesParams
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -23,8 +22,12 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
-// DefaultLifecycleObserver 사용은 아직 모르겠음
-// billingClient를 위한 context 생성자에 주입
+/**
+ * BillingClient 생명주기 관리 클래스 - 완전판
+ * - 구매 흐름 처리
+ * - 서버 검증 콜백 제공
+ * - 구독 상태 확인
+ */
 class BillingClientLifecycle private constructor(
     private val applicationContext: Context,
     private val externalScope: CoroutineScope =
@@ -32,130 +35,152 @@ class BillingClientLifecycle private constructor(
 ): DefaultLifecycleObserver {
 
     private val _fetchedProductList = MutableStateFlow<List<ProductDetails>>(emptyList())
-
     val fetchedProductList = _fetchedProductList.asStateFlow()
+
+    // ✅ 구매 완료 콜백 (외부에서 설정)
+    private var onPurchaseCallback: ((Purchase) -> Unit)? = null
+
+    fun setOnPurchaseCallback(callback: (Purchase) -> Unit) {
+        onPurchaseCallback = callback
+    }
 
     companion object {
         const val TAG = "BillingClientLifecycle"
-        // https://stackoverflow.com/a/11640026
-        @Volatile // 멀티쓰레드에서 다른 쓰레드가 해당 인스턴스 변수를 건드리지 못하도록 설정하는 것 - 링크 참조
-        private var INSTANCE : BillingClientLifecycle? = null
-        // static method - 자기 자신 생성해서 가져오는 팩토리 매소드
+        const val PRODUCT_ID = "recordadvertisementremove"
 
-        // 블럭내 코드가 호출될때 까지 자기 자신의 인스턴스 락시키기
-        // 인스턴스가 없다면 생성
-        fun getInstance(applicationContext: Context) : BillingClientLifecycle {
+        @Volatile
+        private var INSTANCE: BillingClientLifecycle? = null
+
+        fun getInstance(applicationContext: Context): BillingClientLifecycle {
             return INSTANCE ?: synchronized(this) {
                 INSTANCE ?: BillingClientLifecycle(applicationContext).also { INSTANCE = it }
-                // 인스턴스 생성하고 INSTANCE 변수에 생성한 녀석 넣어주기 also
             }
         }
     }
 
-    // 구매 업데이트 리스너
+    // ✅ 구매 업데이트 리스너 (서버 검증 연동)
     private val purchasesUpdatedListener =
         PurchasesUpdatedListener { billingResult, purchases ->
-            // To be implemented in a later section.
-            Log.d(TAG, "purchasesUpdatedListener: billingResult: $billingResult")
-            purchases?.forEach {
-                Log.d(TAG, "purchasesUpdatedListener: purchase: ${it}")
-            }
-        }
+            Log.d(TAG, "purchasesUpdatedListener: responseCode=${billingResult.responseCode}")
 
-    // 결제 클라 상태 리스너
-    // https://developer.android.com/google/play/billing/integrate?hl=ko#kts
-    private val billingClientStateListener : BillingClientStateListener = object : BillingClientStateListener {
-        //        참고: 자체 연결 재시도 로직을 구현하고 onBillingServiceDisconnected() 메서드를 재정의하는 것이 좋습니다.
-//        모든 메서드를 실행할 때는 BillingClient 연결을 유지해야 합니다.
-        override fun onBillingServiceDisconnected() {
-            Log.d(TAG, "onBillingServiceDisconnected: ")
-            Log.d(
-                TAG, "Try to restart the connection on the next request to\n" +
-                        "Google Play by calling the startConnection() method.")
-        }
+            when (billingResult.responseCode) {
+                BillingClient.BillingResponseCode.OK -> {
+                    purchases?.forEach { purchase ->
+                        Log.d(TAG, "구매 성공: products=${purchase.products}, state=${purchase.purchaseState}")
 
-        override fun onBillingSetupFinished(p0: BillingResult) {
-            Log.d(TAG, "onBillingSetupFinished: billingResult: ${p0.debugMessage}")
-            if (p0.responseCode ==  BillingClient.BillingResponseCode.OK) {
-                // The BillingClient is ready. You can query purchases here.
-                Log.d(TAG, "The BillingClient is ready. You can query purchases here.")
-                this@BillingClientLifecycle.fetchAvailableProducts()
-            }
-
-            // ✅ 구독 상태 확인 추가
-            BillingClientLifecycle.getInstance(applicationContext)
-                .queryActivePurchases("recordadvertisementremove") { hasPremium ->
-                    Log.d(TAG, "Billing setup 후 구독 상태 확인: ${if (hasPremium) "프리미엄" else "일반 사용자"}")
+                        // ✅ PURCHASED 상태인 경우 서버 검증 트리거
+                        if (purchase.purchaseState == Purchase.PurchaseState.PURCHASED) {
+                            Log.d(TAG, "서버 검증 콜백 호출: token=${purchase.purchaseToken}")
+                            onPurchaseCallback?.invoke(purchase)
+                        } else if (purchase.purchaseState == Purchase.PurchaseState.PENDING) {
+                            Log.d(TAG, "구매 대기 중 (PENDING)")
+                        }
+                    }
                 }
+                BillingClient.BillingResponseCode.USER_CANCELED -> {
+                    Log.d(TAG, "사용자가 구매를 취소했습니다")
+                }
+                BillingClient.BillingResponseCode.ITEM_ALREADY_OWNED -> {
+                    Log.d(TAG, "이미 구매한 상품입니다 - 복원 필요")
+                    // 복원 로직 트리거
+                    queryActivePurchases(PRODUCT_ID) { hasPremium ->
+                        if (hasPremium) {
+                            Log.d(TAG, "구독 복원 완료")
+                        }
+                    }
+                }
+                else -> {
+                    Log.e(TAG, "구매 실패: ${billingResult.debugMessage}")
+                }
+            }
         }
-    }
 
-    // object 형태로 리스너를 받아도 됨
-    // 리스너 메소드가 하나만 있을 경우에는 람다로 대체 가능
-    private val productDetailsResponseListener = object : ProductDetailsResponseListener {
+    // 결제 클라이언트 상태 리스너
+    private val billingClientStateListener = object : BillingClientStateListener {
+        override fun onBillingServiceDisconnected() {
+            Log.d(TAG, "Billing 서비스 연결 끊김 - 재연결 필요")
+        }
 
-        override fun onProductDetailsResponse(p0: BillingResult, p1: QueryProductDetailsResult) {
-            Log.d(TAG, "onProductDetailsResponse: billingResult: $p0, fetchedProductList: ${p1.productDetailsList}")
-            externalScope.launch {
-                // 이제 productDetailsList는 이미 List<ProductDetails>이므로 toList() 호출 필요 없음
-                _fetchedProductList.emit(p1.productDetailsList)
+        override fun onBillingSetupFinished(billingResult: BillingResult) {
+            Log.d(TAG, "Billing 설정 완료: ${billingResult.debugMessage}")
+            if (billingResult.responseCode == BillingClient.BillingResponseCode.OK) {
+                Log.d(TAG, "BillingClient 준비 완료")
+                fetchAvailableProducts()
+
+                // ✅ 앱 시작 시 구독 상태 확인
+                queryActivePurchases(PRODUCT_ID) { hasPremium ->
+                    Log.d(TAG, "앱 시작 시 구독 상태: ${if (hasPremium) "구독 활성" else "구독 없음"}")
+                }
             }
         }
     }
 
-    // 참고: 일부 Android 기기에는 정기 결제와 같은 특정 제품 유형을 지원하지 않는 이전 버전의 Google Play 스토어 앱이 포함되어 있을 수 있습니다. 앱에서 결제 흐름을 시작하기 전에 isFeatureSupported()를 호출하여 판매하려는 제품을 기기에서 지원하는지 확인할 수 있습니다. 지원되는 상품 유형 목록은 BillingClient.FeatureType을 참고하세요.
+    // 상품 정보 응답 리스너
+    private val productDetailsResponseListener = object : ProductDetailsResponseListener {
+        override fun onProductDetailsResponse(
+            billingResult: BillingResult,
+            productDetailsResult: com.android.billingclient.api.QueryProductDetailsResult
+        ) {
+            val productDetailsList = productDetailsResult.productDetailsList ?: emptyList()
+            Log.d(TAG, "상품 정보 조회: count=${productDetailsList.size}")
+            productDetailsList.forEach { product ->
+                Log.d(TAG, "상품: ${product.productId}, ${product.name}")
+            }
+            externalScope.launch {
+                _fetchedProductList.emit(productDetailsList)
+            }
+        }
+    }
 
-    // 내부에서 사용하기 위한 결제 클라이언트
+    // BillingClient 인스턴스
     private var billingClient: BillingClient
 
-
     init {
-
         val pendingPurchasesParams = PendingPurchasesParams.newBuilder()
-            .enableOneTimeProducts() // <-- 이 줄을 추가합니다.
+            .enableOneTimeProducts()
             .build()
 
-        Log.d(TAG, "init() called")
-        billingClient = BillingClient.newBuilder(this.applicationContext)
-            .setListener(purchasesUpdatedListener) // 구매 업데이트 리스너 같이 연결
+        Log.d(TAG, "BillingClient 초기화")
+        billingClient = BillingClient.newBuilder(applicationContext)
+            .setListener(purchasesUpdatedListener)
             .enablePendingPurchases(pendingPurchasesParams)
-            .build() // builder 패턴으로 생성
+            .build()
 
-        // 결제 클라이언트가 준비되지 않았다면
-        if(!billingClient.isReady) {
-            // 결제 클라 연결 시키기
-            billingClient.startConnection(this.billingClientStateListener)
+        if (!billingClient.isReady) {
+            billingClient.startConnection(billingClientStateListener)
         }
     }
 
-
-    // 구매가능 제품 쿼리
-    val queryProductDetailsParams =
+    // 구매 가능 상품 쿼리 파라미터
+    private val queryProductDetailsParams =
         QueryProductDetailsParams.newBuilder()
             .setProductList(
-                // ImmutableList.of(...) 대신 Kotlin의 listOf(...) 사용
                 listOf(
                     QueryProductDetailsParams.Product.newBuilder()
-                        .setProductId("recordadvertisementremove")
+                        .setProductId(PRODUCT_ID)
                         .setProductType(BillingClient.ProductType.SUBS)
-                        .build(),
+                        .build()
                 )
             )
             .build()
 
-    // 구입 가능한 제품 표시
-    fun fetchAvailableProducts(){
-        Log.d(TAG, "fetchAvailableProducts: ")
+    /**
+     * 구매 가능한 상품 목록 가져오기
+     */
+    fun fetchAvailableProducts() {
+        Log.d(TAG, "상품 정보 조회 시작")
         billingClient.queryProductDetailsAsync(queryProductDetailsParams, productDetailsResponseListener)
     }
 
-
-    fun startBillingFlow(activity: Activity,
-                         productDetails: ProductDetails) : Int{
-
-        val offerToken = productDetails.subscriptionOfferDetails?.let { offerDetailsList ->
-            offerDetailsList.last().offerToken
-        } ?: ""
+    /**
+     * 구매 플로우 시작
+     */
+    fun startBillingFlow(activity: Activity, productDetails: ProductDetails): Int {
+        val offerToken = productDetails.subscriptionOfferDetails?.lastOrNull()?.offerToken
+            ?: run {
+                Log.e(TAG, "offerToken을 찾을 수 없습니다")
+                return BillingClient.BillingResponseCode.ERROR
+            }
 
         val productDetailsParamsList = listOf(
             BillingFlowParams.ProductDetailsParams.newBuilder()
@@ -163,36 +188,32 @@ class BillingClientLifecycle private constructor(
                 .setOfferToken(offerToken)
                 .build()
         )
-        val billingFlowParams = BillingFlowParams
-            .newBuilder()
+
+        val billingFlowParams = BillingFlowParams.newBuilder()
             .setProductDetailsParamsList(productDetailsParamsList)
             .build()
 
         if (!billingClient.isReady) {
-            Log.e(TAG, "launchBillingFlow: BillingClient is not ready")
+            Log.e(TAG, "BillingClient가 준비되지 않았습니다")
+            return BillingClient.BillingResponseCode.SERVICE_UNAVAILABLE
         }
-        val billingResult = billingClient.launchBillingFlow(activity, billingFlowParams)
 
-        val responseCode = billingResult.responseCode
-        val debugMessage = billingResult.debugMessage
-        Log.d(TAG, "launchBillingFlow: BillingResponse $responseCode $debugMessage")
-        return responseCode
+        val billingResult = billingClient.launchBillingFlow(activity, billingFlowParams)
+        Log.d(TAG, "구매 플로우 시작: ${billingResult.responseCode}, ${billingResult.debugMessage}")
+
+        return billingResult.responseCode
     }
 
-
     /**
-     * 활성 구독 확인 (프리미엄 체크용)
+     * 활성 구독 확인
      */
-    fun queryActivePurchases(
-        productId: String,
-        onResult: (Boolean) -> Unit
-    ) {
+    fun queryActivePurchases(productId: String, onResult: (Boolean) -> Unit) {
         val params = QueryPurchasesParams.newBuilder()
             .setProductType(BillingClient.ProductType.SUBS)
             .build()
 
         billingClient.queryPurchasesAsync(params) { billingResult, purchases ->
-            Log.d(TAG, "queryActivePurchases: 결과=${billingResult.responseCode}, 구매수=${purchases.size}")
+            Log.d(TAG, "구독 조회: responseCode=${billingResult.responseCode}, count=${purchases.size}")
 
             if (billingResult.responseCode == BillingClient.BillingResponseCode.OK) {
                 val hasPremium = purchases.any { purchase ->
@@ -201,7 +222,7 @@ class BillingClientLifecycle private constructor(
                 }
 
                 purchases.forEach { purchase ->
-                    Log.d(TAG, "구매 항목: ${purchase.products}, 상태: ${purchase.purchaseState}")
+                    Log.d(TAG, "구매 항목: ${purchase.products}, state=${purchase.purchaseState}")
                 }
 
                 onResult(hasPremium)
@@ -213,10 +234,28 @@ class BillingClientLifecycle private constructor(
     }
 
     /**
-     * BillingClient 준비 상태 확인
+     * ✅ 최신 구매 정보 가져오기 (서버 동기화용)
      */
-    fun isClientReady(): Boolean {
-        return billingClient.isReady
+    fun getLatestPurchase(productId: String, onResult: (Purchase?) -> Unit) {
+        val params = QueryPurchasesParams.newBuilder()
+            .setProductType(BillingClient.ProductType.SUBS)
+            .build()
+
+        billingClient.queryPurchasesAsync(params) { billingResult, purchases ->
+            if (billingResult.responseCode == BillingClient.BillingResponseCode.OK) {
+                val purchase = purchases.find {
+                    it.products.contains(productId) &&
+                            it.purchaseState == Purchase.PurchaseState.PURCHASED
+                }
+                onResult(purchase)
+            } else {
+                onResult(null)
+            }
+        }
     }
 
+    /**
+     * BillingClient 준비 상태 확인
+     */
+    fun isClientReady(): Boolean = billingClient.isReady
 }

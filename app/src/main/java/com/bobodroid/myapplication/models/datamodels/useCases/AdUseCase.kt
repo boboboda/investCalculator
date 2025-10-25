@@ -3,8 +3,8 @@ package com.bobodroid.myapplication.util.AdMob
 import android.content.Context
 import android.util.Log
 import com.bobodroid.myapplication.MainActivity.Companion.TAG
-import com.bobodroid.myapplication.models.datamodels.roomDb.LocalUserData
-import com.bobodroid.myapplication.models.datamodels.roomDb.PremiumType
+import com.bobodroid.myapplication.domain.entity.PremiumType
+import com.bobodroid.myapplication.domain.entity.UserEntity
 import com.bobodroid.myapplication.models.datamodels.useCases.UserUseCases
 import com.bobodroid.myapplication.premium.PremiumManager
 import java.text.SimpleDateFormat
@@ -34,7 +34,7 @@ class AdUseCase @Inject constructor(
      */
     suspend fun showInterstitialAdIfNeeded(
         context: Context,
-        user: LocalUserData,
+        user: UserEntity,
         onPremiumPromptNeeded: () -> Unit = {}
     ): Boolean {
         // 프리미엄 사용자는 광고 스킵
@@ -82,7 +82,7 @@ class AdUseCase @Inject constructor(
     /**
      * 전면 광고 표시 여부 확인
      */
-    fun shouldShowInterstitialAd(user: LocalUserData): Boolean {
+    fun shouldShowInterstitialAd(user: UserEntity): Boolean {
         // 프리미엄 사용자는 광고 안 보여줌
         if (premiumManager.checkPremiumStatus(user) != PremiumType.NONE) {
             return false
@@ -93,7 +93,7 @@ class AdUseCase @Inject constructor(
     /**
      * 전면 광고 노출 카운트 증가
      */
-    suspend fun incrementInterstitialAdCount(user: LocalUserData): LocalUserData {
+    suspend fun incrementInterstitialAdCount(user: UserEntity): UserEntity {
         val updatedUser = user.copy(
             interstitialAdCount = user.interstitialAdCount + 1
         )
@@ -110,7 +110,7 @@ class AdUseCase @Inject constructor(
     /**
      * 프리미엄 유도 팝업 표시 조건 (10회 이상 & 10의 배수)
      */
-    fun shouldShowPremiumPrompt(user: LocalUserData): Boolean {
+    fun shouldShowPremiumPrompt(user: UserEntity): Boolean {
         // 프리미엄 사용자는 팝업 안 보여줌
         if (premiumManager.checkPremiumStatus(user) != PremiumType.NONE) {
             return false
@@ -135,7 +135,7 @@ class AdUseCase @Inject constructor(
      */
     suspend fun showRewardAdAndGrantPremium(
         context: Context,
-        user: LocalUserData,
+        user: UserEntity,
         onSuccess: () -> Unit = {},
         onAlreadyUsed: () -> Unit = {},
         onAdFailed: () -> Unit = {}
@@ -170,7 +170,7 @@ class AdUseCase @Inject constructor(
     /**
      * 리워드 광고 표시 여부 확인
      */
-    suspend fun processRewardAdState(user: LocalUserData): Boolean {
+    suspend fun processRewardAdState(user: UserEntity): Boolean {
         // 프리미엄 사용자는 광고 안 보여줌
         if (premiumManager.checkPremiumStatus(user) != PremiumType.NONE) {
             return false
@@ -183,7 +183,7 @@ class AdUseCase @Inject constructor(
     /**
      * 리워드 광고 연기 (다음 날까지)
      */
-    suspend fun delayRewardAd(user: LocalUserData, todayDate: String) {
+    suspend fun delayRewardAd(user: UserEntity, todayDate: String) {
         val updatedUser = user.copy(
             rewardAdShowingDate = delayDate(inputDate = todayDate, delayDay = 1)
         )
@@ -193,7 +193,7 @@ class AdUseCase @Inject constructor(
     /**
      * 리워드 광고 시청 완료 → 24시간 프리미엄 지급 (레거시)
      */
-    suspend fun onRewardAdWatched(user: LocalUserData): Boolean {
+    suspend fun onRewardAdWatched(user: UserEntity): Boolean {
         Log.d(TAG("AdUseCase", "onRewardAdWatched"), "리워드 광고 시청 완료")
 
         // 오늘 이미 사용했는지 확인
@@ -209,7 +209,7 @@ class AdUseCase @Inject constructor(
     /**
      * 30회 리워드 광고 시청 시 특별 혜택 제공 조건
      */
-    fun shouldOfferSpecialDiscount(user: LocalUserData): Boolean {
+    fun shouldOfferSpecialDiscount(user: UserEntity): Boolean {
         return user.totalRewardCount >= 30 &&
                 premiumManager.checkPremiumStatus(user) == PremiumType.NONE
     }
@@ -221,7 +221,7 @@ class AdUseCase @Inject constructor(
     /**
      * 배너 광고 표시 상태 확인
      */
-    fun bannerAdState(user: LocalUserData): Boolean {
+    fun bannerAdState(user: UserEntity): Boolean {
         // 프리미엄 사용자는 광고 안 보여줌
         if (premiumManager.checkPremiumStatus(user) != PremiumType.NONE) {
             return false
@@ -233,7 +233,7 @@ class AdUseCase @Inject constructor(
     /**
      * 배너 광고 제거 딜레이
      */
-    suspend fun deleteBannerDelayDate(user: LocalUserData, todayDate: String): Boolean {
+    suspend fun deleteBannerDelayDate(user: UserEntity, todayDate: String): Boolean {
         Log.d(TAG("AdUseCase", "deleteBannerDelayDate"), "날짜 연기 신청")
 
         val updateUserData = user.copy(

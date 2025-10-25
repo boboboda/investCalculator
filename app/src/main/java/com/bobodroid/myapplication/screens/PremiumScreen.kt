@@ -28,8 +28,9 @@ import com.android.billingclient.api.ProductDetails
 import com.bobodroid.myapplication.BuildConfig
 import com.bobodroid.myapplication.billing.BillingClientLifecycle
 import com.bobodroid.myapplication.components.SocialLoginWarningBanner
-import com.bobodroid.myapplication.models.datamodels.roomDb.LocalUserData
-import com.bobodroid.myapplication.models.datamodels.roomDb.PremiumType
+import com.bobodroid.myapplication.domain.entity.PremiumType
+import com.bobodroid.myapplication.domain.entity.SocialType
+import com.bobodroid.myapplication.domain.entity.UserEntity
 import com.bobodroid.myapplication.models.viewmodels.PremiumViewModel
 import com.bobodroid.myapplication.models.viewmodels.SharedViewModel
 import kotlinx.coroutines.launch
@@ -104,7 +105,7 @@ fun PremiumScreen(
             // ✅ 소셜 로그인 경고 배너 (필요 시)
             if (!user.socialId.isNullOrEmpty()) {
                 // ✅ 소셜 로그인 안내 (미연동 시에만)
-                val isSocialLinked = user.socialType != "NONE" && !user.socialId.isNullOrEmpty()
+                val isSocialLinked = user.socialType != SocialType.NONE && !user.socialId.isNullOrEmpty()
                 if (!isSocialLinked) {
                     SocialLoginWarningBanner(
                         isSocialLinked = isSocialLinked,
@@ -701,7 +702,7 @@ fun PremiumBenefitsCard() {
 @Composable
 fun TestControlCard(
     isPremium: Boolean,
-    user: LocalUserData,
+    user: UserEntity,
     onTogglePremium: (Boolean) -> Unit,
     onRefreshStatus: () -> Unit,
     onGrantTestPremium: (Int) -> Unit,

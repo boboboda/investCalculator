@@ -14,7 +14,7 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.unit.dp
 import com.bobodroid.myapplication.components.EmptyRecordView
 import com.bobodroid.myapplication.components.RecordHeader
-import com.bobodroid.myapplication.data.mapper.RecordMapper.toLegacyRecord
+import com.bobodroid.myapplication.domain.entity.RecordEntity
 import com.bobodroid.myapplication.models.datamodels.roomDb.CurrencyRecord
 import com.bobodroid.myapplication.models.datamodels.roomDb.CurrencyType
 import com.bobodroid.myapplication.models.viewmodels.CurrencyRecordState
@@ -28,7 +28,7 @@ import kotlinx.coroutines.launch
 @Composable
 fun RecordListView(
     currencyType: CurrencyType,
-    currencyRecordState: CurrencyRecordState<CurrencyRecord>,
+    currencyRecordState: CurrencyRecordState<RecordEntity>,
     hideSellRecordState: Boolean,
     scrollState: LazyListState = rememberLazyListState(),
     onEvent: (RecordListEvent) -> Unit
@@ -94,7 +94,7 @@ fun RecordListView(
 
                         RecordListRowView(
                             currencyType = currencyType,
-                            data = record.toLegacyRecord(),
+                            data = record,
                             sellState = record.recordColor!!,
                             groupList = groupList,
                             onEvent = { event ->

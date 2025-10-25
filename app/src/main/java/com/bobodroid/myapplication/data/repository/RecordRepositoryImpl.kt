@@ -5,9 +5,6 @@ import com.bobodroid.myapplication.data.mapper.RecordMapper.toDto
 import com.bobodroid.myapplication.data.mapper.RecordMapper.toDtoList
 import com.bobodroid.myapplication.data.mapper.RecordMapper.toEntity
 import com.bobodroid.myapplication.data.mapper.RecordMapper.toEntityList
-import com.bobodroid.myapplication.data.mapper.RecordMapper.toLegacyEntityList
-import com.bobodroid.myapplication.data.mapper.RecordMapper.toLegacyRecord
-import com.bobodroid.myapplication.data.mapper.RecordMapper.toLegacyRecordList
 import com.bobodroid.myapplication.domain.entity.RecordEntity
 import com.bobodroid.myapplication.domain.repository.IRecordRepository
 import com.bobodroid.myapplication.models.datamodels.roomDb.CurrencyRecordDao
@@ -38,7 +35,7 @@ class RecordRepositoryImpl @Inject constructor(
      */
     override fun getRecordsByCurrency(currencyCode: String): Flow<List<RecordEntity>> {
         return currencyRecordDao.getRecordsByCurrency(currencyCode)
-            .map { dtoList -> dtoList.toLegacyEntityList() }
+            .map { dtoList -> dtoList.toEntityList() }
     }
 
     /**
@@ -47,7 +44,7 @@ class RecordRepositoryImpl @Inject constructor(
      */
     override fun getAllRecords(): Flow<List<RecordEntity>> {
         return currencyRecordDao.getAllRecords()
-            .map { dtoList -> dtoList.toLegacyEntityList() }
+            .map { dtoList -> dtoList.toEntityList() }
     }
 
     /**
@@ -59,7 +56,7 @@ class RecordRepositoryImpl @Inject constructor(
         categoryName: String
     ): Flow<List<RecordEntity>> {
         return currencyRecordDao.getRecordsByCurrencyAndCategory(currencyCode, categoryName)
-            .map { dtoList -> dtoList.toLegacyEntityList() }
+            .map { dtoList -> dtoList.toEntityList() }
     }
 
     /**
@@ -68,7 +65,7 @@ class RecordRepositoryImpl @Inject constructor(
      */
     override fun getSoldRecords(): Flow<List<RecordEntity>> {
         return currencyRecordDao.getSoldRecords()
-            .map { dtoList -> dtoList.toLegacyEntityList() }
+            .map { dtoList -> dtoList.toEntityList() }
     }
 
     /**
@@ -77,7 +74,7 @@ class RecordRepositoryImpl @Inject constructor(
      */
     override fun getUnsoldRecords(): Flow<List<RecordEntity>> {
         return currencyRecordDao.getUnsoldRecords()
-            .map { dtoList -> dtoList.toLegacyEntityList() }
+            .map { dtoList -> dtoList.toEntityList() }
     }
 
     /**
@@ -103,7 +100,7 @@ class RecordRepositoryImpl @Inject constructor(
      * ⭐ Entity → DTO 변환
      */
     override suspend fun addRecord(record: RecordEntity) {
-        val dto = record.toLegacyRecord()
+        val dto = record.toDto()
         currencyRecordDao.insertRecord(dto)
     }
 
@@ -112,7 +109,7 @@ class RecordRepositoryImpl @Inject constructor(
      * ⭐ Entity → DTO 변환
      */
     override suspend fun addRecords(records: List<RecordEntity>) {
-        val dtoList = records.toLegacyRecordList()
+        val dtoList = records.toDtoList()
         currencyRecordDao.insertRecords(dtoList)
     }
 
@@ -121,7 +118,7 @@ class RecordRepositoryImpl @Inject constructor(
      * ⭐ Entity → DTO 변환
      */
     override suspend fun updateRecord(record: RecordEntity) {
-        val dto = record.toLegacyRecord()
+        val dto = record.toDto()
         currencyRecordDao.updateRecord(dto)
     }
 
@@ -130,7 +127,7 @@ class RecordRepositoryImpl @Inject constructor(
      * ⭐ Entity → DTO 변환
      */
     override suspend fun deleteRecord(record: RecordEntity) {
-        val dto = record.toLegacyRecord()
+        val dto = record.toDto()
         currencyRecordDao.deleteRecord(dto)
     }
 

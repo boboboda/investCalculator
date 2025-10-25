@@ -6,6 +6,7 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.bobodroid.myapplication.MainActivity.Companion.TAG
+import com.bobodroid.myapplication.data.local.entity.CurrencyRecordDto
 import com.bobodroid.myapplication.domain.entity.RecordAlertEntity
 import com.bobodroid.myapplication.domain.repository.IRecordRepository
 import com.bobodroid.myapplication.domain.repository.IUserRepository
@@ -15,7 +16,7 @@ import com.bobodroid.myapplication.models.datamodels.repository.LatestRateReposi
 import com.bobodroid.myapplication.models.datamodels.roomDb.*
 import com.bobodroid.myapplication.models.datamodels.service.BackupApi.BackupApi
 import com.bobodroid.myapplication.models.datamodels.service.BackupApi.CreateBackupDto
-import com.bobodroid.myapplication.models.datamodels.service.BackupApi.CurrencyRecordDto
+import com.bobodroid.myapplication.models.datamodels.service.BackupApi.CurrencyRecordBackUpDto
 import com.bobodroid.myapplication.models.datamodels.service.UserApi.Rate
 import com.bobodroid.myapplication.models.datamodels.service.notificationApi.BatchUpdateRecordAlertsRequest
 import com.bobodroid.myapplication.models.datamodels.service.notificationApi.ChannelSettings
@@ -580,7 +581,7 @@ class FcmAlarmViewModel @Inject constructor(
             Log.d(TAG("FcmAlarmViewModel", "triggerBackup"), "백업 대상 기록: ${allRecords.size}개")
 
             val currencyRecords = allRecords.map { record ->
-                CurrencyRecordDto(
+                CurrencyRecordBackUpDto(
                     id = record.id.toString(),
                     currencyCode = record.currencyCode,
                     date = record.date ?: "",
@@ -602,7 +603,7 @@ class FcmAlarmViewModel @Inject constructor(
             val backupDto = CreateBackupDto(
                 deviceId = deviceId,
                 socialId = localUser.socialId,
-                socialType = localUser.socialType,
+                socialType = localUser.socialType?.name,
                 currencyRecords = currencyRecords
             )
 

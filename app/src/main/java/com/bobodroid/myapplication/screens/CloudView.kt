@@ -20,7 +20,8 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.bobodroid.myapplication.components.SocialLoginStatusCard
 import com.bobodroid.myapplication.components.SocialLoginWarningBanner
-import com.bobodroid.myapplication.models.datamodels.roomDb.LocalUserData
+import com.bobodroid.myapplication.domain.entity.SocialType
+import com.bobodroid.myapplication.domain.entity.UserEntity
 import com.bobodroid.myapplication.models.viewmodels.MyPageViewModel
 import com.bobodroid.myapplication.routes.MyPageRoute
 import com.bobodroid.myapplication.routes.RouteAction
@@ -37,7 +38,7 @@ import kotlinx.coroutines.launch
 @Composable
 fun CloudView(
     routeAction: RouteAction<MyPageRoute>,
-    localUser: LocalUserData,
+    localUser: UserEntity,
     myPageViewModel: MyPageViewModel = hiltViewModel()
 ) {
     val context = LocalContext.current
@@ -45,7 +46,7 @@ fun CloudView(
     val snackbarHostState = remember { SnackbarHostState() }
 
     // ✅ 소셜 로그인 상태 확인
-    val isSocialLinked = localUser.socialType != "NONE" && !localUser.socialId.isNullOrEmpty()
+    val isSocialLinked = localUser.socialType != SocialType.NONE && !localUser.socialId.isNullOrEmpty()
 
     // ✅ 프리미엄 상태 확인
     val myPageUiState by myPageViewModel.myPageUiState.collectAsState()
@@ -100,7 +101,7 @@ fun CloudView(
             // ✅ 백업 상태 카드
             BackupStatusCard(
                 isSocialLinked = isSocialLinked,
-                isPremium = isPremium,
+                isPremium = isPremium ?: false,
                 lastSyncAt = localUser.lastSyncAt
             )
 
@@ -131,7 +132,7 @@ fun CloudView(
                             }
                         }
                     },
-                    isPremium = isPremium
+                    isPremium = isPremium ?: false
                 )
             }
 
@@ -139,7 +140,7 @@ fun CloudView(
             BackupInfoCard()
 
             // ✅ 프리미엄 안내 (일반 사용자만)
-            if (!isPremium && isSocialLinked) {
+            if (isPremium != null && !isPremium && isSocialLinked) {
                 PremiumBackupPromotionCard(
                     onUpgradeClick = {
                         routeAction.navTo(MyPageRoute.Premium)

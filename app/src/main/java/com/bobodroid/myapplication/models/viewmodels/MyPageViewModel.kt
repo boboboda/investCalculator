@@ -5,10 +5,10 @@ import android.app.Activity
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.bobodroid.myapplication.data.mapper.RecordMapper.toLegacyRecordList
 import com.bobodroid.myapplication.domain.entity.BadgeEntity
 import com.bobodroid.myapplication.domain.entity.InvestmentStatsEntity
 import com.bobodroid.myapplication.domain.entity.MonthlyGoalEntity
+import com.bobodroid.myapplication.domain.entity.UserEntity
 import com.bobodroid.myapplication.domain.repository.IRecordRepository
 import com.bobodroid.myapplication.domain.repository.IUserRepository
 import com.bobodroid.myapplication.domain.usecase.statistics.CalculateBadgesUseCase
@@ -16,7 +16,6 @@ import com.bobodroid.myapplication.domain.usecase.statistics.CalculateInvestment
 import com.bobodroid.myapplication.domain.usecase.statistics.CalculateMonthlyGoalUseCase
 import com.bobodroid.myapplication.models.datamodels.roomDb.Currencies
 import com.bobodroid.myapplication.models.datamodels.roomDb.CurrencyRecord
-import com.bobodroid.myapplication.models.datamodels.roomDb.LocalUserData
 import com.bobodroid.myapplication.models.datamodels.useCases.AccountFoundException
 import com.bobodroid.myapplication.models.datamodels.useCases.AccountSwitchUseCase
 import com.bobodroid.myapplication.models.datamodels.useCases.DeleteUserUseCase
@@ -58,7 +57,7 @@ class MyPageViewModel @Inject constructor(
         viewModelScope.launch {
             userRepository.userData.collect { userData ->
                 _myPageUiState.update {
-                    it.copy(localUser = userData?.localUserData ?: LocalUserData())
+                    it.copy(localUser = userData?.localUserData ?: UserEntity())
                 }
             }
         }
@@ -196,7 +195,7 @@ class MyPageViewModel @Inject constructor(
                     // UI 상태 초기화
                     _myPageUiState.update { currentState ->
                         currentState.copy(
-                            localUser = LocalUserData()
+                            localUser = UserEntity()
                         )
                     }
 
@@ -242,7 +241,7 @@ class MyPageViewModel @Inject constructor(
             socialLoginUseCases.restoreFromServer(
                 deviceId = localUser.id.toString(),
                 socialId = localUser.socialId,
-                socialType = localUser.socialType
+                socialType = localUser.socialType?.name
             )
                 .onSuccess { recordCount, message ->
                     Log.d("MyPageViewModel", "복구 성공: ${recordCount}개")
@@ -287,7 +286,7 @@ class MyPageViewModel @Inject constructor(
         recordRepository.getAllRecords()
             .map { records ->
                 // ⭐ UseCase 호출
-                calculateInvestmentStatsUseCase.execute(records.toLegacyRecordList())
+                calculateInvestmentStatsUseCase.execute(records)
             }
             .flowOn(Dispatchers.Default)
             .collectLatest { stats ->
@@ -415,7 +414,7 @@ class MyPageViewModel @Inject constructor(
 
             // ⭐ UseCase 호출
             calculateMonthlyGoalUseCase.execute(
-                allRecords = allRecords.toLegacyRecordList(),
+                allRecords = allRecords,
                 goalAmount = goalAmount,
                 goalMonth = goalMonth,
                 currentMonth = currentMonth
@@ -477,7 +476,7 @@ class MyPageViewModel @Inject constructor(
        recordRepository.getAllRecords()  // ⭐ 12개 통화
             .map { records ->
                 // ⭐ UseCase 호출
-                calculateBadgesUseCase.execute(records.toLegacyRecordList())
+                calculateBadgesUseCase.execute(records)
             }
             .flowOn(Dispatchers.Default)
             .collectLatest { badges ->
@@ -657,7 +656,7 @@ data class RecentActivity(
 
 // UiState
 data class MyPageUiState(
-    val localUser: LocalUserData = LocalUserData(),
+    val localUser: UserEntity = UserEntity(),
     val investmentStats: InvestmentStatsEntity = InvestmentStatsEntity(),
     val recentActivities: List<RecentActivity> = emptyList(),
     val monthlyGoal: MonthlyGoalEntity = MonthlyGoalEntity(),

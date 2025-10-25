@@ -4,10 +4,10 @@ package com.bobodroid.myapplication.models.datamodels.useCases
 
 import android.util.Log
 import com.bobodroid.myapplication.MainActivity.Companion.TAG
+import com.bobodroid.myapplication.domain.entity.SocialType
+import com.bobodroid.myapplication.domain.entity.UserEntity
 import com.bobodroid.myapplication.domain.repository.IUserRepository
 import com.bobodroid.myapplication.fcm.FCMTokenEvent
-import com.bobodroid.myapplication.models.datamodels.roomDb.LocalUserData
-import com.bobodroid.myapplication.models.datamodels.roomDb.SocialType
 import com.bobodroid.myapplication.models.datamodels.roomDb.TargetRates
 import com.bobodroid.myapplication.models.datamodels.roomDb.CurrencyTargetRates
 import com.bobodroid.myapplication.models.datamodels.roomDb.CurrencyType
@@ -39,16 +39,15 @@ class UserUseCases(
 class LocalIdAddUseCase @Inject constructor(
     private val userRepository: IUserRepository
 ) {
-    suspend operator fun invoke(): LocalUserData {
+    suspend operator fun invoke(): UserEntity {
         val fcmToken = FCMTokenEvent.tokenFlow.filterNotNull().first()
 
-        val createLocalUser = LocalUserData(
+        val createLocalUser = UserEntity(
             userResetDate = "",
             rateAdCount = 0,
             rateResetCount = 3,
             fcmToken = fcmToken,
-            socialType = SocialType.NONE.name
-        )
+            socialType = SocialType.NONE)
 
         userRepository.localUserAdd(createLocalUser)
         return createLocalUser
@@ -61,7 +60,7 @@ class LocalIdAddUseCase @Inject constructor(
 class LocalUserUpdate @Inject constructor(
     private val userRepository: IUserRepository
 ) {
-    suspend operator fun invoke(localUserData: LocalUserData) {
+    suspend operator fun invoke(localUserData: UserEntity) {
         userRepository.localUserUpdate(localUserData)
     }
 }
@@ -77,7 +76,7 @@ class LocalUserUpdate @Inject constructor(
 class DeleteUserUseCase @Inject constructor(
     private val userRepository: IUserRepository
 ) {
-    suspend operator fun invoke(localUserData: LocalUserData): Result<Boolean> {
+    suspend operator fun invoke(localUserData: UserEntity): Result<Boolean> {
         return try {
             val deviceId = localUserData.id.toString()
 
@@ -188,16 +187,16 @@ class LocalExistCheckUseCase @Inject constructor(
     /**
      * 소셜 로그인 상태 검증
      */
-    private suspend fun validateSocialLoginState(user: LocalUserData): LocalUserData {
-        if (user.socialType == "NONE" || user.socialId == null) {
+    private suspend fun validateSocialLoginState(user: UserEntity): UserEntity {
+        if (user.socialType == SocialType.NONE || user.socialId == null) {
             return user
         }
 
         Log.d(TAG("LocalExistCheckUseCase", "validateSocialLoginState"), "소셜 로그인 상태 검증: ${user.socialType}")
 
         val isActuallyLoggedIn = when (user.socialType) {
-            "GOOGLE" -> socialLoginManager.isGoogleLoggedIn()
-            "KAKAO" -> socialLoginManager.isKakaoLoggedIn()
+            SocialType.GOOGLE -> socialLoginManager.isGoogleLoggedIn()
+            SocialType.KAKAO  -> socialLoginManager.isKakaoLoggedIn()
             else -> false
         }
 
@@ -207,7 +206,7 @@ class LocalExistCheckUseCase @Inject constructor(
 
             val loggedOutUser = user.copy(
                 socialId = null,
-                socialType = "NONE",
+                socialType = SocialType.NONE,
                 email = null,
                 nickname = null,
                 profileUrl = null,
@@ -226,7 +225,7 @@ class LocalExistCheckUseCase @Inject constructor(
     /**
      * ✅ 서버 동기화 (모든 사용자 대상)
      */
-    private suspend fun syncWithServer(user: LocalUserData): UserResponse? {
+    private suspend fun syncWithServer(user: UserEntity): UserResponse? {
         return try {
             val fcmToken = InvestApplication.prefs.getData("fcm_token", "")
             Log.d(TAG("LocalExistCheckUseCase", "syncWithServer"), "━━━━━━━━━━━━━━━━━━━━━━━━━━")
@@ -269,7 +268,7 @@ class LocalExistCheckUseCase @Inject constructor(
                 val createServerUser = UserRequest(
                     deviceId = deviceId,
                     socialId = user.socialId,
-                    socialType = user.socialType,
+                    socialType = user.socialType?.name,
                     email = user.email,
                     nickname = user.nickname,
                     profileUrl = user.profileUrl,
@@ -320,6 +319,6 @@ class LocalExistCheckUseCase @Inject constructor(
  * UserDataType 데이터 클래스
  */
 data class UserData(
-    val localUserData: LocalUserData,
+    val localUserData: UserEntity,
     val exchangeRates: TargetRates? = null
 )

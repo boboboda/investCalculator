@@ -105,19 +105,19 @@ data class LocalUserDto(
     val userShowNoticeDate: String?,
 
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━
-    // 스프레드 설정
+    // 스프레드 설정 ⭐ 컬럼명 수정
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-    @ColumnInfo(name = "dr_buy_spread")
+    @ColumnInfo(name = "dr_Buy_Spread")  // ⭐ 대문자 B
     val drBuySpread: Int?,
 
-    @ColumnInfo(name = "dr_sell_spread")
+    @ColumnInfo(name = "dr_Sell_Spread")  // ⭐ 대문자 S
     val drSellSpread: Int?,
 
-    @ColumnInfo(name = "yen_buy_spread")
+    @ColumnInfo(name = "yen_Buy_Spread")  // ⭐ 대문자 B
     val yenBuySpread: Int?,
 
-    @ColumnInfo(name = "yen_sell_spread")
+    @ColumnInfo(name = "yen_Sell_Spread")  // ⭐ 대문자 S
     val yenSellSpread: Int?,
 
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━

@@ -4,6 +4,7 @@ package com.bobodroid.myapplication.domain.usecase.statistics
 
 import com.bobodroid.myapplication.domain.entity.BadgeEntity
 import com.bobodroid.myapplication.domain.entity.BadgeType
+import com.bobodroid.myapplication.domain.entity.RecordEntity
 import com.bobodroid.myapplication.models.datamodels.roomDb.CurrencyRecord
 import javax.inject.Inject
 
@@ -25,7 +26,7 @@ class CalculateBadgesUseCase @Inject constructor() {
      * @param allRecords 모든 통화의 기록
      * @return 뱃지 리스트
      */
-    fun execute(allRecords: List<CurrencyRecord>): List<BadgeEntity> {
+    fun execute(allRecords: List<RecordEntity>): List<BadgeEntity> {
 
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━
         // 1. 기본 통계 계산

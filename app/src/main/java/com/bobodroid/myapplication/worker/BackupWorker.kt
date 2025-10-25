@@ -6,7 +6,6 @@ import android.util.Log
 import androidx.hilt.work.HiltWorker
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
-import com.bobodroid.myapplication.data.mapper.RecordMapper.toLegacyRecordList
 import com.bobodroid.myapplication.domain.repository.IRecordRepository
 import com.bobodroid.myapplication.domain.repository.IUserRepository
 import com.bobodroid.myapplication.models.datamodels.service.BackupApi.BackupApi
@@ -53,7 +52,7 @@ class BackupWorker @AssistedInject constructor(
             Log.d(TAG, "👤 사용자: ${localUser.email}")
 
             // ✅ 2. 프리미엄 체크
-            if (!localUser.isPremium) {
+            if (localUser.isPremium != null && !localUser.isPremium) {
                 Log.d(TAG, "⚠️ 프리미엄 사용자 아님 - 백업 취소")
                 return Result.success()
             }
@@ -78,13 +77,13 @@ class BackupWorker @AssistedInject constructor(
             }
 
             // ✅ 5. DTO 변환
-            val recordDtos = BackupMapper.toDtoList(allRecords.toLegacyRecordList())
+            val recordDtos = BackupMapper.toDtoList(allRecords)
 
             // ✅ 6. 백업 요청 생성
             val backupRequest = BackupRequest(
                 deviceId = localUser.id.toString(),
                 socialId = localUser.socialId,
-                socialType = localUser.socialType,
+                socialType = localUser.socialType?.name,
                 currencyRecords = recordDtos
             )
 

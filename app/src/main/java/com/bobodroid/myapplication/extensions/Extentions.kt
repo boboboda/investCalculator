@@ -1,6 +1,8 @@
 package com.bobodroid.myapplication.extensions
 
 import android.icu.util.LocaleData
+import com.bobodroid.myapplication.domain.entity.PremiumType
+import com.bobodroid.myapplication.domain.entity.SocialType
 import com.bobodroid.myapplication.models.datamodels.roomDb.Currency
 import com.bobodroid.myapplication.models.datamodels.roomDb.Currencies
 import com.bobodroid.myapplication.models.datamodels.roomDb.CurrencyType
@@ -203,3 +205,23 @@ fun String.formatCurrencyNumber(currencyType: CurrencyType): String {
     val currency = Currencies.fromCurrencyType(currencyType)
     return this.formatCurrencyNumber(currency)
 }
+
+fun String.toSocialType(): SocialType {
+    return when(this) {
+        "NONE" -> SocialType.NONE
+        "GOOGLE" -> SocialType.GOOGLE
+        "KAKAO" -> SocialType.KAKAO
+        else -> SocialType.NONE
+    }
+}
+fun String.toPremiumType() : PremiumType {
+    return  when(this) {
+        "NONE" -> PremiumType.NONE
+        "SUBSCRIPTION" -> PremiumType.SUBSCRIPTION
+        "REWARD_AD" -> PremiumType.REWARD_AD
+        "EVENT" -> PremiumType.EVENT
+        "LIFETIME" -> PremiumType.LIFETIME
+        else -> PremiumType.NONE
+    }
+}
+

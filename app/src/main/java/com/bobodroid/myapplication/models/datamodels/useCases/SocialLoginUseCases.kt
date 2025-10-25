@@ -3,12 +3,10 @@ package com.bobodroid.myapplication.models.datamodels.useCases
 import android.app.Activity
 import android.util.Log
 import com.bobodroid.myapplication.MainActivity.Companion.TAG
-import com.bobodroid.myapplication.data.mapper.RecordMapper.toLegacyEntityList
-import com.bobodroid.myapplication.data.mapper.RecordMapper.toLegacyRecordList
+import com.bobodroid.myapplication.domain.entity.SocialType
+import com.bobodroid.myapplication.domain.entity.UserEntity
 import com.bobodroid.myapplication.domain.repository.IRecordRepository
 import com.bobodroid.myapplication.domain.repository.IUserRepository
-import com.bobodroid.myapplication.models.datamodels.roomDb.LocalUserData
-import com.bobodroid.myapplication.models.datamodels.roomDb.SocialType
 import com.bobodroid.myapplication.models.datamodels.service.BackupApi.BackupApi
 import com.bobodroid.myapplication.models.datamodels.service.BackupApi.BackupMapper
 import com.bobodroid.myapplication.models.datamodels.service.BackupApi.BackupRequest
@@ -62,8 +60,8 @@ class GoogleLoginUseCase @Inject constructor(
 ) {
     suspend operator fun invoke(
         activity: Activity,
-        localUserData: LocalUserData
-    ): Result<LocalUserData> {
+        localUserData: UserEntity
+    ): Result<UserEntity> {
         return try {
             Log.d(TAG("GoogleLoginUseCase", "invoke"), "Google 로그인 시작")
 
@@ -93,7 +91,7 @@ class GoogleLoginUseCase @Inject constructor(
             // ✅ 3. 기존 계정이 없으면 현재 로컬 계정에 연동
             val updatedUser = localUserData.copy(
                 socialId = socialResult.socialId,
-                socialType = SocialType.GOOGLE.name,
+                socialType = SocialType.GOOGLE,
                 email = socialResult.email,
                 nickname = socialResult.nickname,
                 profileUrl = socialResult.profileUrl,
@@ -162,12 +160,12 @@ class GoogleLoginUseCase @Inject constructor(
         }
     }
 
-    private suspend fun syncWithServer(user: LocalUserData): SyncResult {
+    private suspend fun syncWithServer(user: UserEntity): SyncResult {
         return try {
             val userRequest = UserRequest(
                 deviceId = user.id.toString(),
                 socialId = user.socialId,
-                socialType = user.socialType,
+                socialType = user.socialType?.name,
                 email = user.email,
                 nickname = user.nickname,
                 profileUrl = user.profileUrl,
@@ -224,8 +222,8 @@ class KakaoLoginUseCase @Inject constructor(
 ) {
     suspend operator fun invoke(
         activity: Activity,
-        localUserData: LocalUserData
-    ): Result<LocalUserData> {
+        localUserData: UserEntity
+    ): Result<UserEntity> {
         return try {
             Log.d(TAG("KakaoLoginUseCase", "invoke"), "Kakao 로그인 시작")
 
@@ -254,7 +252,7 @@ class KakaoLoginUseCase @Inject constructor(
             // ✅ 3. 기존 계정이 없으면 현재 로컬 계정에 연동
             val updatedUser = localUserData.copy(
                 socialId = socialResult.socialId,
-                socialType = SocialType.KAKAO.name,
+                socialType = SocialType.KAKAO,
                 email = socialResult.email,
                 nickname = socialResult.nickname,
                 profileUrl = socialResult.profileUrl,
@@ -320,12 +318,12 @@ class KakaoLoginUseCase @Inject constructor(
         }
     }
 
-    private suspend fun syncWithServer(user: LocalUserData): SyncResult {
+    private suspend fun syncWithServer(user: UserEntity): SyncResult {
         return try {
             val userRequest = UserRequest(
                 deviceId = user.id.toString(),
                 socialId = user.socialId,
-                socialType = user.socialType,
+                socialType = user.socialType?.name,
                 email = user.email,
                 nickname = user.nickname,
                 profileUrl = user.profileUrl,
@@ -397,14 +395,14 @@ class SocialLogoutUseCase @Inject constructor(
     private val userRepository: IUserRepository,
     private val socialLoginManager: SocialLoginManager
 ) {
-    suspend operator fun invoke(localUserData: LocalUserData): Result<LocalUserData> {
+    suspend operator fun invoke(localUserData: UserEntity): Result<UserEntity> {
         return try {
             Log.d(TAG("SocialLogoutUseCase", "invoke"), "로그아웃 시작: ${localUserData.socialType}")
 
             // ✅ 1단계: 먼저 로컬 DB 업데이트 (소셜 정보 초기화)
             val updatedUser = localUserData.copy(
                 socialId = "",
-                socialType = SocialType.NONE.name,
+                socialType = SocialType.NONE,
                 email = "",
                 nickname = "",
                 profileUrl = "",
@@ -414,9 +412,8 @@ class SocialLogoutUseCase @Inject constructor(
             userRepository.localUserUpdate(updatedUser)
             Log.d(TAG("SocialLogoutUseCase", "invoke"), "✅ 로컬 DB 업데이트 완료")
 
-            // ✅ 2단계: SDK 로그아웃 시도 (실패해도 계속 진행)
-            val socialTypeEnum = localUserData.getSocialTypeEnum()
-            val logoutResult = socialLoginManager.logout(socialTypeEnum)
+
+            val logoutResult = socialLoginManager.logout(localUserData.socialType)
 
             if (logoutResult.isFailure) {
                 val error = logoutResult.exceptionOrNull()
@@ -450,7 +447,7 @@ class SocialLogoutUseCase @Inject constructor(
 class UnlinkSocialUseCase @Inject constructor(
     private val userRepository: IUserRepository
 ) {
-    suspend operator fun invoke(localUserData: LocalUserData): Result<Unit> {
+    suspend operator fun invoke(localUserData: UserEntity): Result<Unit> {
         return try {
             Log.d(TAG("UnlinkSocialUseCase", "invoke"), "소셜 연동 해제 시작")
 
@@ -466,7 +463,7 @@ class UnlinkSocialUseCase @Inject constructor(
             // 로컬 DB 업데이트 (소셜 정보만 초기화, 목표환율 등은 유지)
             val updatedUser = localUserData.copy(
                 socialId = null,
-                socialType = SocialType.NONE.name,
+                socialType = SocialType.NONE,
                 email = null,
                 nickname = null,
                 profileUrl = null,
@@ -499,7 +496,7 @@ class SyncToServerUseCase @Inject constructor(
     private val userRepository: IUserRepository,
     private val recordRepository: IRecordRepository
 ) {
-    suspend operator fun invoke(localUserData: LocalUserData): Result<LocalUserData> {
+    suspend operator fun invoke(localUserData: UserEntity): Result<UserEntity> {
         return try {
             if (localUserData.socialId == null) {
                 return Result.Error(message = "소셜 로그인이 필요합니다")
@@ -512,13 +509,13 @@ class SyncToServerUseCase @Inject constructor(
             Log.d(TAG("SyncToServerUseCase", "invoke"), "백업할 기록: ${allRecords.size}개")
 
             // ✅ 2. CurrencyRecord → RecordEntityDao 변환
-            val recordDtos = BackupMapper.toDtoList(allRecords.toLegacyRecordList())
+            val recordDtos = BackupMapper.toDtoList(allRecords)
 
             // ✅ 3. 백업 요청 생성
             val backupRequest = BackupRequest(
                 deviceId = localUserData.id.toString(),
                 socialId = localUserData.socialId,
-                socialType = localUserData.socialType,
+                socialType = localUserData.socialType?.name,
                 currencyRecords = recordDtos
             )
 
@@ -609,7 +606,7 @@ class RestoreFromServerUseCase @Inject constructor(
             val records = BackupMapper.fromDtoList(restoreData.currencyRecords)
 
             // ✅ 5. 로컬 DB에 저장
-            recordRepository.addRecords(records.toLegacyEntityList())
+            recordRepository.addRecords(records)
 
             // ✅ 6. 사용자 정보 업데이트 (lastSyncAt)
             val currentUser = userRepository.userData.first()?.localUserData

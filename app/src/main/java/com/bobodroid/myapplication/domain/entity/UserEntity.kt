@@ -27,37 +27,37 @@ data class UserEntity(
     /**
      * 소셜 로그인 ID
      */
-    val socialId: String?,
+    val socialId: String? = null,
 
     /**
      * 소셜 로그인 타입 (GOOGLE, KAKAO, NONE)
      */
-    val socialType: SocialType,
+    val socialType: SocialType? = SocialType.NONE,
 
     /**
      * 이메일
      */
-    val email: String?,
+    val email: String? = null,
 
     /**
      * 닉네임
      */
-    val nickname: String?,
+    val nickname: String? = null,
 
     /**
      * 프로필 이미지 URL
      */
-    val profileUrl: String?,
+    val profileUrl: String? = null,
 
     /**
      * 동기화 여부
      */
-    val isSynced: Boolean,
+    val isSynced: Boolean? = false,
 
     /**
      * FCM 토큰
      */
-    val fcmToken: String?,
+    val fcmToken: String?  = null,
 
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━
     // 프리미엄 관리
@@ -66,27 +66,27 @@ data class UserEntity(
     /**
      * 프리미엄 여부
      */
-    val isPremium: Boolean,
+    val isPremium: Boolean? = false,
 
     /**
      * 프리미엄 타입
      */
-    val premiumType: PremiumType,
+    val premiumType: PremiumType = PremiumType.NONE,
 
     /**
      * 프리미엄 만료 시간 (ISO 8601)
      */
-    val premiumExpiryDate: String?,
+    val premiumExpiryDate: String? = null,
 
     /**
      * 프리미엄 지급자 (reward, subscription, admin, event)
      */
-    val premiumGrantedBy: String?,
+    val premiumGrantedBy: String? = null,
 
     /**
      * 프리미엄 지급 시간
      */
-    val premiumGrantedAt: String?,
+    val premiumGrantedAt: String? = null,
 
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━
     // 광고 관리
@@ -95,42 +95,42 @@ data class UserEntity(
     /**
      * 배너 광고 - 리셋 횟수
      */
-    val rateResetCount: Int?,
+    val rateResetCount: Int? = null,
 
     /**
      * 배너 광고 - 광고 횟수
      */
-    val rateAdCount: Int?,
+    val rateAdCount: Int?  = null,
 
     /**
      * 배너 광고 - 리셋 날짜
      */
-    val userResetDate: String?,
+    val userResetDate: String? = null,
 
     /**
      * 리워드 광고 - 표시 날짜
      */
-    val rewardAdShowingDate: String?,
+    val rewardAdShowingDate: String? = null,
 
     /**
      * 오늘 리워드 광고 사용 여부
      */
-    val dailyRewardUsed: Boolean,
+    val dailyRewardUsed: Boolean? = false,
 
     /**
      * 마지막 리워드 사용 날짜
      */
-    val lastRewardDate: String?,
+    val lastRewardDate: String? = null,
 
     /**
      * 총 리워드 광고 시청 횟수
      */
-    val totalRewardCount: Int,
+    val totalRewardCount: Int = 0,
 
     /**
      * 전면 광고 시청 횟수
      */
-    val interstitialAdCount: Int,
+    val interstitialAdCount: Int = 0,
 
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━
     // 알림 및 UI 설정
@@ -139,7 +139,7 @@ data class UserEntity(
     /**
      * 공지사항 표시 날짜
      */
-    val userShowNoticeDate: String?,
+    val userShowNoticeDate: String? = null,
 
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━
     // 스프레드 설정
@@ -148,22 +148,22 @@ data class UserEntity(
     /**
      * 달러 매수 스프레드
      */
-    val drBuySpread: Int?,
+    val drBuySpread: Int? = null,
 
     /**
      * 달러 매도 스프레드
      */
-    val drSellSpread: Int?,
+    val drSellSpread: Int? = null,
 
     /**
      * 엔화 매수 스프레드
      */
-    val yenBuySpread: Int?,
+    val yenBuySpread: Int? = null,
 
     /**
      * 엔화 매도 스프레드
      */
-    val yenSellSpread: Int?,
+    val yenSellSpread: Int? = null,
 
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━
     // 목표 설정
@@ -172,12 +172,12 @@ data class UserEntity(
     /**
      * 월간 수익 목표
      */
-    val monthlyProfitGoal: Long,
+    val monthlyProfitGoal: Long? = null,
 
     /**
      * 목표 설정 월 (yyyy-MM)
      */
-    val goalSetMonth: String?,
+    val goalSetMonth: String? = null,
 
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━
     // 동기화
@@ -186,13 +186,13 @@ data class UserEntity(
     /**
      * 마지막 동기화 시간
      */
-    val lastSyncAt: String?
+    val lastSyncAt: String? = null
 ) {
 
     /**
      * 프리미엄 여부 확인
      */
-    fun isActivePremium(): Boolean = isPremium
+    fun isActivePremium(): Boolean? = isPremium
 
     /**
      * 소셜 로그인 연동 여부

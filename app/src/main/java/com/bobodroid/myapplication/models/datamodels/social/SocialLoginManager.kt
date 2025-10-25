@@ -5,7 +5,7 @@ import android.content.Context
 import android.content.Intent
 import android.util.Log
 import com.bobodroid.myapplication.MainActivity.Companion.TAG
-import com.bobodroid.myapplication.models.datamodels.roomDb.SocialType
+import com.bobodroid.myapplication.domain.entity.SocialType
 import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.auth.api.signin.GoogleSignInAccount
 import com.google.android.gms.auth.api.signin.GoogleSignInClient
@@ -251,11 +251,12 @@ class SocialLoginManager @Inject constructor(
         }
     }
 
-    suspend fun logout(socialType: SocialType): Result<Unit> {
+    suspend fun logout(socialType: SocialType? = SocialType.NONE): Result<Unit> {
         return when (socialType) {
             SocialType.GOOGLE -> logoutGoogle()
             SocialType.KAKAO -> logoutKakao()
             SocialType.NONE -> Result.success(Unit)
+            else -> Result.success(Unit)
         }
     }
 

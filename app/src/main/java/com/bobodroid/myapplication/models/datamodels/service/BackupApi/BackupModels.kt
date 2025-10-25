@@ -7,7 +7,7 @@ import com.squareup.moshi.JsonClass
  * 백업할 투자 기록 DTO
  */
 @JsonClass(generateAdapter = true)
-data class CurrencyRecordDto(
+data class CurrencyRecordBackUpDto(
     val id: String,
     val currencyCode: String,
     val date: String,
@@ -33,7 +33,7 @@ data class BackupRequest(
     val deviceId: String,
     val socialId: String? = null,
     val socialType: String? = null,
-    val currencyRecords: List<CurrencyRecordDto>
+    val currencyRecords: List<CurrencyRecordBackUpDto>
 )
 
 /**
@@ -65,7 +65,7 @@ data class RestoreData(
     val deviceId: String,
     val socialId: String? = null,
     val socialType: String? = null,
-    val currencyRecords: List<CurrencyRecordDto>,
+    val currencyRecords: List<CurrencyRecordBackUpDto>,
     val lastBackupAt: String,
     val recordCount: Int
 )

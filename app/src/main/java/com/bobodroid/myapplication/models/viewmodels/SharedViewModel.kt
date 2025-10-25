@@ -5,9 +5,10 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.bobodroid.myapplication.MainActivity.Companion.TAG
+import com.bobodroid.myapplication.domain.entity.PremiumType
+import com.bobodroid.myapplication.domain.entity.SocialType
+import com.bobodroid.myapplication.domain.entity.UserEntity
 import com.bobodroid.myapplication.domain.repository.IUserRepository
-import com.bobodroid.myapplication.models.datamodels.roomDb.LocalUserData
-import com.bobodroid.myapplication.models.datamodels.roomDb.PremiumType
 import com.bobodroid.myapplication.premium.PremiumManager
 import com.bobodroid.myapplication.util.AdMob.AdUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -67,7 +68,7 @@ class SharedViewModel @Inject constructor(
                 val user = userRepository.userData.value?.localUserData ?: continue
 
                 // ✅ SUBSCRIPTION은 PremiumManager가 처리하므로 제외
-                if (user.premiumType == "SUBSCRIPTION") {
+                if (user.premiumType == PremiumType.SUBSCRIPTION) {
                     continue
                 }
 
@@ -76,14 +77,14 @@ class SharedViewModel @Inject constructor(
 
                 // DB에는 프리미엄인데 실제로는 만료됨
                 if (currentType == PremiumType.NONE &&
-                    user.premiumType != "NONE" &&
+                    user.premiumType != PremiumType.NONE &&
                     !user.premiumExpiryDate.isNullOrEmpty()) {
 
                     Log.d(TAG("SharedViewModel", "monitoring"),
                         "🔴 프리미엄 만료 감지 (${user.premiumType}) - 자동 초기화")
 
                     val expiredUser = user.copy(
-                        premiumType = "NONE",
+                        premiumType = PremiumType.NONE,
                         premiumExpiryDate = null,
                         isPremium = false
                     )
@@ -92,8 +93,8 @@ class SharedViewModel @Inject constructor(
 
                     // ✅ 타입별 메시지 구분
                     val message = when (user.premiumType) {
-                        "REWARD_AD" -> "⏰ 24시간 무료 체험이 만료되었습니다"
-                        "EVENT" -> "⏰ 이벤트 프리미엄이 만료되었습니다"
+                        PremiumType.REWARD_AD -> "⏰ 24시간 무료 체험이 만료되었습니다"
+                        PremiumType.EVENT -> "⏰ 이벤트 프리미엄이 만료되었습니다"
                         else -> "⏰ 프리미엄이 만료되었습니다"
                     }
                     _snackbarEvent.trySend(message)
@@ -105,12 +106,12 @@ class SharedViewModel @Inject constructor(
     // 상태 (Repository에서 구독)
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-    val user: StateFlow<LocalUserData> = userRepository.userData
+    val user: StateFlow<UserEntity> = userRepository.userData
         .mapNotNull { it?.localUserData }  // null이 아닌 경우만
         .stateIn(
             scope = viewModelScope,
             started = SharingStarted.Eagerly,
-            initialValue = LocalUserData()
+            initialValue = UserEntity()
         )
 
     val isPremium: StateFlow<Boolean> = userRepository.userData
@@ -141,14 +142,14 @@ class SharedViewModel @Inject constructor(
 
             // ✅ 만료 감지 시 자동 DB 업데이트
             if (currentType == PremiumType.NONE &&
-                user.premiumType != "NONE" &&
+                user.premiumType != PremiumType.NONE &&
                 !user.premiumExpiryDate.isNullOrEmpty()) {
 
                 viewModelScope.launch {
                     Log.d(TAG("SharedViewModel", "premiumType"), "🔴 만료 감지 - DB 초기화")
 
                     val expiredUser = user.copy(
-                        premiumType = "NONE",
+                        premiumType = PremiumType.NONE,
                         premiumExpiryDate = null,
                         isPremium = false
                     )

@@ -5,6 +5,7 @@ package com.bobodroid.myapplication.domain.usecase.record
 import android.util.Log
 import com.bobodroid.myapplication.domain.entity.CurrencyHoldingInfo
 import com.bobodroid.myapplication.domain.entity.HoldingStats
+import com.bobodroid.myapplication.domain.entity.RecordEntity
 import com.bobodroid.myapplication.models.datamodels.roomDb.Currencies
 import com.bobodroid.myapplication.models.datamodels.roomDb.CurrencyRecord
 import com.bobodroid.myapplication.models.datamodels.roomDb.CurrencyType
@@ -30,7 +31,7 @@ class CalculateHoldingStatsUseCase @Inject constructor() {
      * @return HoldingStatsEntity 계산된 통계
      */
     fun execute(
-        recordsByType: Map<CurrencyType, List<CurrencyRecord>>,
+        recordsByType: Map<CurrencyType, List<RecordEntity>>,
         currentRates: Map<String, String>
     ): HoldingStats {
 
@@ -64,7 +65,7 @@ class CalculateHoldingStatsUseCase @Inject constructor() {
      * 4. 수익률
      */
     private fun calculateCurrencyHolding(
-        records: List<CurrencyRecord>,
+        records: List<RecordEntity>,
         currentRate: String,
         currencyType: CurrencyType
     ): CurrencyHoldingInfo {

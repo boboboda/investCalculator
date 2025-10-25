@@ -2,7 +2,6 @@ package com.bobodroid.myapplication.models.datamodels.repository
 
 import android.util.Log
 import com.bobodroid.myapplication.MainActivity.Companion.TAG
-import com.bobodroid.myapplication.models.datamodels.roomDb.LocalUserData
 import com.bobodroid.myapplication.models.datamodels.service.noticeApi.NoticeApi
 import com.bobodroid.myapplication.models.datamodels.websocket.WebSocketClient
 import kotlinx.coroutines.flow.MutableStateFlow

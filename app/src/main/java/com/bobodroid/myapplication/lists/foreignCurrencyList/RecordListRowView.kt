@@ -43,6 +43,7 @@ import androidx.compose.ui.unit.sp
 import com.bobodroid.myapplication.MainActivity.Companion.TAG
 import com.bobodroid.myapplication.components.Dialogs.AskTriggerDialog
 import com.bobodroid.myapplication.components.Dialogs.TextFieldDialog
+import com.bobodroid.myapplication.domain.entity.RecordEntity
 import com.bobodroid.myapplication.extensions.formatWithCurrencyType
 import com.bobodroid.myapplication.extensions.toBigDecimalUs
 import com.bobodroid.myapplication.extensions.toBigDecimalWon
@@ -62,7 +63,7 @@ import java.math.RoundingMode
 @Composable
 fun RecordListRowView(
     currencyType: CurrencyType,
-    data: CurrencyRecord,
+    data: RecordEntity,
     sellState: Boolean = data.recordColor!!,
     groupList: List<String>,
     onEvent: (RecordListEvent) -> Unit,

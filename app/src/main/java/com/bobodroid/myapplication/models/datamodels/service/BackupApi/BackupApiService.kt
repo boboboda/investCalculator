@@ -22,7 +22,7 @@ data class CreateBackupDto(
     val deviceId: String,
     val socialId: String? = null,
     val socialType: String? = null,
-    val currencyRecords: List<CurrencyRecordDto>
+    val currencyRecords: List<CurrencyRecordBackUpDto>
 )
 
 // ✅ Moshi 설정

@@ -6,10 +6,9 @@ import android.util.Log
 import com.android.billingclient.api.Purchase
 import com.bobodroid.myapplication.MainActivity.Companion.TAG
 import com.bobodroid.myapplication.billing.BillingClientLifecycle
+import com.bobodroid.myapplication.domain.entity.PremiumType
+import com.bobodroid.myapplication.domain.entity.UserEntity
 import com.bobodroid.myapplication.domain.repository.IUserRepository
-import com.bobodroid.myapplication.models.datamodels.roomDb.LocalUserData
-import com.bobodroid.myapplication.models.datamodels.roomDb.PremiumType
-import com.bobodroid.myapplication.models.datamodels.service.subscriptionApi.RestoreSubscriptionRequest
 import com.bobodroid.myapplication.models.datamodels.service.subscriptionApi.SubscriptionApi
 import com.bobodroid.myapplication.models.datamodels.service.subscriptionApi.VerifyPurchaseRequest
 import com.bobodroid.myapplication.models.datamodels.useCases.UserUseCases
@@ -101,7 +100,7 @@ class PremiumManager @Inject constructor(
                 purchaseToken = purchase.purchaseToken,
                 packageName = purchase.packageName,
                 socialId = user.socialId,  // ✅ 소셜 정보 추가
-                socialType = user.socialType  // ✅ 소셜 정보 추가
+                socialType = user.socialType?.name  // ✅ 소셜 정보 추가
             )
 
             Log.d(TAG("PremiumManager", "handlePurchase"), "서버 검증 요청: $request")
@@ -114,7 +113,7 @@ class PremiumManager @Inject constructor(
 
                 // DB 업데이트
                 val updatedUser = user.copy(
-                    premiumType = "SUBSCRIPTION",
+                    premiumType = PremiumType.SUBSCRIPTION,
                     premiumExpiryDate = response.data.expiryTime,
                     premiumGrantedBy = "subscription",
                     premiumGrantedAt = Instant.now().toString(),
@@ -145,7 +144,7 @@ class PremiumManager @Inject constructor(
         }
 
         // ✅ SUBSCRIPTION만 처리 (REWARD_AD, EVENT는 SharedViewModel이 처리)
-        if (user.premiumType != "SUBSCRIPTION" && user.premiumType != "NONE") {
+        if (user.premiumType != PremiumType.SUBSCRIPTION && user.premiumType != PremiumType.NONE) {
             Log.d(TAG("PremiumManager", "syncPremiumStatus"),
                 "SUBSCRIPTION이 아님 (${user.premiumType}) - 동기화 건너뜀")
             return
@@ -176,9 +175,9 @@ class PremiumManager @Inject constructor(
                                     )
 
                                     // ✅ 중복 업데이트 방지
-                                    if (shouldUpdateUser(user, "SUBSCRIPTION", response.data.expiryTime)) {
+                                    if (shouldUpdateUser(user, PremiumType.SUBSCRIPTION, response.data.expiryTime)) {
                                         val updatedUser = user.copy(
-                                            premiumType = "SUBSCRIPTION",
+                                            premiumType = PremiumType.SUBSCRIPTION,
                                             premiumExpiryDate = response.data.expiryTime,
                                             isPremium = true
                                         )
@@ -199,7 +198,7 @@ class PremiumManager @Inject constructor(
                             Log.d(TAG("PremiumManager", "syncPremiumStatus"), "활성 구독 없음")
 
                             // DB에 구독이 있으면 만료 처리
-                            if (user.premiumType == "SUBSCRIPTION") {
+                            if (user.premiumType == PremiumType.SUBSCRIPTION) {
                                 expireSubscription(user)
                             }
                         }
@@ -218,8 +217,8 @@ class PremiumManager @Inject constructor(
      * ✅ DB 업데이트 필요 여부 체크 (중복 방지)
      */
     private fun shouldUpdateUser(
-        user: LocalUserData,
-        newPremiumType: String,
+        user: UserEntity,
+        newPremiumType: PremiumType,
         newExpiryDate: String?
     ): Boolean {
         // 타입이 다르면 업데이트 필요
@@ -233,7 +232,7 @@ class PremiumManager @Inject constructor(
         }
 
         // isPremium 상태가 다르면 업데이트 필요
-        val shouldBePremium = newPremiumType != "NONE"
+        val shouldBePremium = newPremiumType != PremiumType.NONE
         if (user.isPremium != shouldBePremium) {
             return true
         }
@@ -261,17 +260,17 @@ class PremiumManager @Inject constructor(
     /**
      * ✅ 구독 만료 처리 (SUBSCRIPTION 전용)
      */
-    private suspend fun expireSubscription(user: LocalUserData) {
+    private suspend fun expireSubscription(user: UserEntity) {
         Log.d(TAG("PremiumManager", "expireSubscription"), "구독 만료 처리 시작")
 
         // ✅ 이미 만료 상태면 중복 실행 방지
-        if (user.premiumType == "NONE" && user.premiumExpiryDate == null) {
+        if (user.premiumType == PremiumType.NONE && user.premiumExpiryDate == null) {
             Log.d(TAG("PremiumManager", "expireSubscription"), "이미 만료 상태 - 건너뜀")
             return
         }
 
         // ✅ SUBSCRIPTION이 아니면 처리하지 않음
-        if (user.premiumType != "SUBSCRIPTION") {
+        if (user.premiumType != PremiumType.SUBSCRIPTION) {
             Log.w(TAG("PremiumManager", "expireSubscription"),
                 "SUBSCRIPTION이 아님 (${user.premiumType}) - 건너뜀")
             return
@@ -280,7 +279,7 @@ class PremiumManager @Inject constructor(
         Log.d(TAG("PremiumManager", "expireSubscription"), "구독 만료 처리 진행")
 
         val updatedUser = user.copy(
-            premiumType = "NONE",
+            premiumType = PremiumType.NONE,
             premiumExpiryDate = null,
             isPremium = false
         )
@@ -292,9 +291,9 @@ class PremiumManager @Inject constructor(
     /**
      * 프리미엄 상태 확인 (우선순위: LIFETIME > SUBSCRIPTION > EVENT > REWARD_AD > NONE)
      */
-    fun checkPremiumStatus(user: LocalUserData): PremiumType {
+    fun checkPremiumStatus(user: UserEntity): PremiumType {
         // LIFETIME은 만료 없음
-        if (user.premiumType == "LIFETIME") {
+        if (user.premiumType == PremiumType.LIFETIME) {
             return PremiumType.LIFETIME
         }
 
@@ -319,12 +318,7 @@ class PremiumManager @Inject constructor(
         }
 
         // 타입 반환
-        return when (user.premiumType) {
-            "SUBSCRIPTION" -> PremiumType.SUBSCRIPTION
-            "EVENT" -> PremiumType.EVENT
-            "REWARD_AD" -> PremiumType.REWARD_AD
-            else -> PremiumType.NONE
-        }
+        return user.premiumType
     }
 
     /**
@@ -371,11 +365,11 @@ class PremiumManager @Inject constructor(
     /**
      * ✅ 테스트용: N분 후 만료되는 프리미엄 지급 (디버그)
      */
-    suspend fun grantTestPremium(user: LocalUserData, minutes: Int = 1): Boolean {
+    suspend fun grantTestPremium(user: UserEntity, minutes: Int = 1): Boolean {
         val expiryDate = Instant.now().plus(minutes.toLong(), ChronoUnit.MINUTES).toString()
 
         val updatedUser = user.copy(
-            premiumType = "REWARD_AD",
+            premiumType = PremiumType.REWARD_AD,
             premiumExpiryDate = expiryDate,
             premiumGrantedBy = "test",
             premiumGrantedAt = Instant.now().toString(),
@@ -414,7 +408,7 @@ class PremiumManager @Inject constructor(
     /**
      * 리워드 광고로 24시간 프리미엄 지급
      */
-    suspend fun grantRewardPremium(user: LocalUserData): Boolean {
+    suspend fun grantRewardPremium(user: UserEntity): Boolean {
         val today = Instant.now().truncatedTo(ChronoUnit.DAYS).toString()
 
         if (user.lastRewardDate == today) {
@@ -425,7 +419,7 @@ class PremiumManager @Inject constructor(
         val expiryDate = Instant.now().plus(24, ChronoUnit.HOURS).toString()
 
         val updatedUser = user.copy(
-            premiumType = "REWARD_AD",
+            premiumType = PremiumType.REWARD_AD,
             premiumExpiryDate = expiryDate,
             premiumGrantedBy = "reward",
             premiumGrantedAt = Instant.now().toString(),
@@ -443,7 +437,7 @@ class PremiumManager @Inject constructor(
     /**
      * 오늘 리워드 광고 사용 가능 여부
      */
-    fun canUseRewardAdToday(user: LocalUserData): Boolean {
+    fun canUseRewardAdToday(user: UserEntity): Boolean {
         val today = Instant.now().truncatedTo(ChronoUnit.DAYS).toString()
         return user.lastRewardDate != today
     }
@@ -452,7 +446,7 @@ class PremiumManager @Inject constructor(
     /**
      * ✅ 프리미엄 남은 초 계산 (public으로 변경 - SharedViewModel에서 사용)
      */
-    fun getRemainingSeconds(user: LocalUserData): Long {
+    fun getRemainingSeconds(user: UserEntity): Long {
         val expiryDate = user.premiumExpiryDate ?: return 0L
 
         val now = Instant.now()
@@ -469,7 +463,7 @@ class PremiumManager @Inject constructor(
     /**
      * 프리미엄 만료 1시간 전인지 확인 (푸시 알림용)
      */
-    fun isExpiringWithinHour(user: LocalUserData): Boolean {
+    fun isExpiringWithinHour(user: UserEntity): Boolean {
         val remaining = getRemainingSeconds(user)
         return remaining in 1..3600  // 1초~1시간 사이
     }

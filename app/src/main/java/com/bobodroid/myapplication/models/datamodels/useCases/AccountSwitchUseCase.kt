@@ -2,8 +2,9 @@ package com.bobodroid.myapplication.models.datamodels.useCases
 
 import android.util.Log
 import com.bobodroid.myapplication.MainActivity.Companion.TAG
+import com.bobodroid.myapplication.domain.entity.UserEntity
 import com.bobodroid.myapplication.domain.repository.IUserRepository
-import com.bobodroid.myapplication.models.datamodels.roomDb.LocalUserData
+import com.bobodroid.myapplication.extensions.toSocialType
 import com.bobodroid.myapplication.models.datamodels.service.BackupApi.BackupApi
 import com.bobodroid.myapplication.models.datamodels.service.UserApi.UserApi
 import com.bobodroid.myapplication.util.result.Result
@@ -14,7 +15,7 @@ import javax.inject.Inject
  * 계정 전환 결과
  */
 data class AccountSwitchResult(
-    val switchedUser: LocalUserData,
+    val switchedUser: UserEntity,
     val hasBackupData: Boolean,
     val backupRecordCount: Int = 0,
     val lastBackupAt: String? = null
@@ -31,7 +32,7 @@ class AccountSwitchUseCase @Inject constructor(
 ) {
     suspend operator fun invoke(
         serverDeviceId: String,
-        localUser: LocalUserData
+        localUser: UserEntity
     ): Result<AccountSwitchResult> {
         return try {
             Log.d(TAG("AccountSwitchUseCase", "invoke"), "━━━━━━━━━━━━━━━━━━━━━━━━━━")
@@ -95,7 +96,7 @@ class AccountSwitchUseCase @Inject constructor(
             val switchedUser = localUser.copy(
                 id = newDeviceId,
                 socialId = serverData.socialId ?: localUser.socialId,
-                socialType = serverData.socialType ?: localUser.socialType,
+                socialType = serverData.socialType?.toSocialType() ?: localUser.socialType,
                 email = serverData.email ?: localUser.email,
                 nickname = serverData.nickname ?: localUser.nickname,
                 profileUrl = serverData.profileUrl ?: localUser.profileUrl,

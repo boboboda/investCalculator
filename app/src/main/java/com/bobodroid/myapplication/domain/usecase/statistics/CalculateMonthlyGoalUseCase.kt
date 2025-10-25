@@ -3,6 +3,7 @@
 package com.bobodroid.myapplication.domain.usecase.statistics
 
 import com.bobodroid.myapplication.domain.entity.MonthlyGoalEntity
+import com.bobodroid.myapplication.domain.entity.RecordEntity
 import com.bobodroid.myapplication.models.datamodels.roomDb.CurrencyRecord
 import java.math.BigDecimal
 import java.math.RoundingMode
@@ -31,7 +32,7 @@ class CalculateMonthlyGoalUseCase @Inject constructor() {
      * @return 월간 목표 정보
      */
     fun execute(
-        allRecords: List<CurrencyRecord>,
+        allRecords: List<RecordEntity>,
         goalAmount: Long,
         goalMonth: String?,
         currentMonth: String
@@ -91,7 +92,7 @@ class CalculateMonthlyGoalUseCase @Inject constructor() {
      * @return 매도 수익 합계
      */
     private fun calculateMonthlyProfit(
-        records: List<CurrencyRecord>,
+        records: List<RecordEntity>,
         targetMonth: String
     ): Long {
         val totalProfit = records

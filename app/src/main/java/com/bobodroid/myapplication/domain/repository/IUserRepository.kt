@@ -1,12 +1,16 @@
 package com.bobodroid.myapplication.domain.repository
 
-import com.bobodroid.myapplication.models.datamodels.roomDb.LocalUserData
+import com.bobodroid.myapplication.domain.entity.UserEntity
 import com.bobodroid.myapplication.models.datamodels.useCases.UserData
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.StateFlow
 
 /**
- * User Repository 인터페이스
+ * User Repository 인터페이스 - Entity 버전
+ *
+ * [변경 사항]
+ * 기존: LocalUserData 사용
+ * 신규: UserEntity 사용
  *
  * Domain Layer의 추상화된 사용자 데이터 접근 인터페이스
  * - Platform 독립적인 비즈니스 로직 정의
@@ -22,17 +26,19 @@ interface IUserRepository {
 
     /**
      * 로컬 사용자 업데이트
+     * ⭐ UserEntity 사용
      *
-     * @param localUserData 업데이트할 사용자 데이터
+     * @param userEntity 업데이트할 사용자 Entity
      */
-    suspend fun localUserUpdate(localUserData: LocalUserData): Int
+    suspend fun localUserUpdate(userEntity: UserEntity): Int
 
     /**
      * 로컬 사용자 추가
+     * ⭐ UserEntity 사용
      *
-     * @param localUserData 추가할 사용자 데이터
+     * @param userEntity 추가할 사용자 Entity
      */
-    suspend fun localUserAdd(localUserData: LocalUserData): Any
+    suspend fun localUserAdd(userEntity: UserEntity): Any
 
     /**
      * 로컬 사용자 삭제
@@ -42,10 +48,11 @@ interface IUserRepository {
 
     /**
      * 로컬 사용자 데이터 조회
+     * ⭐ UserEntity 반환
      *
-     * @return LocalUserData Flow
+     * @return UserEntity Flow
      */
-    fun localUserDataGet(): Flow<LocalUserData?>
+    fun localUserDataGet(): Flow<UserEntity?>
 
     /**
      * UserData 업데이트

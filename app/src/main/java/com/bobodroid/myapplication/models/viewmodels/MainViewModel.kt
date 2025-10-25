@@ -5,10 +5,12 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.bobodroid.myapplication.MainActivity.Companion.TAG
-import com.bobodroid.myapplication.data.mapper.RecordMapper.toLegacyRecord
+import com.bobodroid.myapplication.data.mapper.RecordMapper.toDto
 import com.bobodroid.myapplication.domain.entity.HoldingStats
+import com.bobodroid.myapplication.domain.entity.PremiumType
 import com.bobodroid.myapplication.domain.entity.RecordEntity
 import com.bobodroid.myapplication.domain.entity.RecordFilterCriteria
+import com.bobodroid.myapplication.domain.entity.UserEntity
 import com.bobodroid.myapplication.domain.repository.IUserRepository
 import com.bobodroid.myapplication.domain.usecase.exchange.CalculateExchangeUseCase
 import com.bobodroid.myapplication.domain.usecase.record.CalculateHoldingStatsUseCase
@@ -273,7 +275,7 @@ class MainViewModel @Inject constructor(
         ) { recordState, mainState ->
 
             // ⭐ Step 1: 통화별 기록 준비
-            val recordsByType = mutableMapOf<CurrencyType, List<CurrencyRecord>>()
+            val recordsByType = mutableMapOf<CurrencyType, List<RecordEntity>>()
             CurrencyType.values().forEach { currencyType ->
                 // 보유중인 기록만 필터링 (매도 안된 것)
                 val records = recordState.getRecordsByType(currencyType).records
@@ -316,7 +318,7 @@ class MainViewModel @Inject constructor(
 
 
     // ✅ 현재 통화 타입별 기록 가져오기 - 새로운 구조
-    fun getCurrentRecordsFlow(): Flow<CurrencyRecordState<CurrencyRecord>> =
+    fun getCurrentRecordsFlow(): Flow<CurrencyRecordState<RecordEntity>> =
         combine(recordListUiState, mainUiState) { recordState, mainState ->
             recordState.getCurrentRecords(mainState.selectedCurrencyType)
         }
@@ -388,7 +390,7 @@ class MainViewModel @Inject constructor(
                 viewModelScope.launch {
                     val sellRecord = _recordListUiState.value.selectedRecord as? RecordEntity ?: return@launch
                     recordUseCase.sellCurrencyRecord(
-                        record = sellRecord.toLegacyRecord(),
+                        record = sellRecord,
                         sellDate = _mainUiState.value.selectedDate,
                         sellRate = _recordListUiState.value.sellRate
                     )
@@ -458,7 +460,7 @@ class MainViewModel @Inject constructor(
                 viewModelScope.launch {
                     val currencyRecord = event.record as? RecordEntity ?: return@launch
                     recordUseCase.editCurrencyRecord(
-                        record = currencyRecord.toLegacyRecord(),
+                        record = currencyRecord,
                         editDate = _mainUiState.value.selectedDate,
                         editMoney = event.editMoney,
                         editRate = event.editRate
@@ -475,7 +477,7 @@ class MainViewModel @Inject constructor(
                     }
                     is MainEvent.GroupChangeBottomSheetEvent.GroupChanged -> {
                         viewModelScope.launch {
-                            val currencyRecord = event.record as? CurrencyRecord ?: return@launch
+                            val currencyRecord = event.record as? RecordEntity ?: return@launch
                             recordUseCase.updateCurrencyRecordCategory(currencyRecord, event.groupName)
                             _mainUiState.update { it.copy(showGroupChangeBottomSheet = false) }
                         }
@@ -542,12 +544,12 @@ class MainViewModel @Inject constructor(
         viewModelScope.launch {
             when (event) {
                 is RecordListEvent.MemoUpdate -> {
-                    val currencyRecord = event.record as? CurrencyRecord ?: return@launch
+                    val currencyRecord = event.record as? RecordEntity ?: return@launch
                     recordUseCase.updateCurrencyRecordMemo(currencyRecord, event.updateMemo)
                     _mainSnackBarState.send("메모가 저장되었습니다.")
                 }
                 is RecordListEvent.RemoveRecord -> {
-                    val currencyRecord = event.data as? CurrencyRecord ?: return@launch
+                    val currencyRecord = event.data as? RecordEntity ?: return@launch
                     recordUseCase.removeCurrencyRecord(currencyRecord)
                 }
                 is RecordListEvent.CancelSellRecord -> {
@@ -557,7 +559,7 @@ class MainViewModel @Inject constructor(
                     _mainSnackBarState.send("매도가 취소되었습니다.")
                 }
                 is RecordListEvent.UpdateRecordCategory -> {
-                    val currencyRecord = event.record as? CurrencyRecord ?: return@launch
+                    val currencyRecord = event.record as? RecordEntity ?: return@launch
                     recordUseCase.updateCurrencyRecordCategory(currencyRecord, event.groupName)
                     _mainUiState.update { it.copy(showGroupChangeBottomSheet = false) }
                 }
@@ -656,7 +658,7 @@ data class MainUiState (
     val selectedCurrencyType: CurrencyType = CurrencyType.USD,
     val selectedDate: String = today,
     val recentRate: ExchangeRate = ExchangeRate(),
-    val localUser: LocalUserData = LocalUserData(),
+    val localUser: UserEntity = UserEntity(),
     val showRateBottomSheet: Boolean = false,
     val showEditBottomSheet: Boolean = false,
     val showSellResultDialog: Boolean = false,
@@ -681,7 +683,7 @@ data class TotalProfitRangeDate(
 )
 
 data class RecordListUiState(
-    val currencyRecords: Map<String, CurrencyRecordState<CurrencyRecord>> = emptyMap(),
+    val currencyRecords: Map<String, CurrencyRecordState<RecordEntity>> = emptyMap(),
     val selectedRecord: ForeignCurrencyRecord? = null,
     val sellRate: String = "",
     val sellProfit: String = "",
@@ -689,27 +691,27 @@ data class RecordListUiState(
     val refreshDate: String = "",
     val totalProfitRangeDate: TotalProfitRangeDate = TotalProfitRangeDate()
 ) {
-    fun getRecordsByCode(currencyCode: String): CurrencyRecordState<CurrencyRecord> {
+    fun getRecordsByCode(currencyCode: String): CurrencyRecordState<RecordEntity> {
         return currencyRecords[currencyCode] ?: CurrencyRecordState()
     }
 
-    fun getRecordsByType(type: CurrencyType): CurrencyRecordState<CurrencyRecord> {
+    fun getRecordsByType(type: CurrencyType): CurrencyRecordState<RecordEntity> {
         return currencyRecords[type.name] ?: CurrencyRecordState()
     }
 
-    fun getRecordsByCurrency(currency: Currency): CurrencyRecordState<CurrencyRecord> {
+    fun getRecordsByCurrency(currency: Currency): CurrencyRecordState<RecordEntity> {
         return currencyRecords[currency.code] ?: CurrencyRecordState()
     }
 
-    fun getCurrentRecords(selectedType: CurrencyType): CurrencyRecordState<CurrencyRecord> {
+    fun getCurrentRecords(selectedType: CurrencyType): CurrencyRecordState<RecordEntity> {
         return getRecordsByType(selectedType)
     }
 
-    fun getUsdRecords(): CurrencyRecordState<CurrencyRecord> {
+    fun getUsdRecords(): CurrencyRecordState<RecordEntity> {
         return getRecordsByCode("USD")
     }
 
-    fun getJpyRecords(): CurrencyRecordState<CurrencyRecord> {
+    fun getJpyRecords(): CurrencyRecordState<RecordEntity> {
         return getRecordsByCode("JPY")
     }
 }

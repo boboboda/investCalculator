@@ -20,7 +20,9 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.bobodroid.myapplication.models.datamodels.roomDb.LocalUserData
+import com.bobodroid.myapplication.domain.entity.PremiumType
+import com.bobodroid.myapplication.domain.entity.SocialType
+import com.bobodroid.myapplication.domain.entity.UserEntity
 import com.bobodroid.myapplication.routes.MyPageRoute
 import com.bobodroid.myapplication.routes.RouteAction
 
@@ -28,7 +30,7 @@ import com.bobodroid.myapplication.routes.RouteAction
 @Composable
 fun AccountManageView(
     routeAction: RouteAction<MyPageRoute>,
-    localUser: LocalUserData,
+    localUser: UserEntity,
     onGoogleLogin: (Activity) -> Unit,
     onKakaoLogin: (Activity) -> Unit,
     onLogout: () -> Unit,
@@ -72,7 +74,7 @@ fun AccountManageView(
             Spacer(modifier = Modifier.height(24.dp))
 
             // ✅ 로그인 버튼들
-            if (localUser.socialType == "NONE") {
+            if (localUser.socialType == SocialType.NONE) {
                 // 미로그인 상태 - 로그인 버튼 표시
                 SocialLoginSection(
                     onGoogleLogin = {
@@ -235,14 +237,14 @@ fun AccountManageView(
  * 상태 카드 컴포넌트
  */
 @Composable
-fun AccountStatusCard(localUser: LocalUserData) {
+fun AccountStatusCard(localUser: UserEntity) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp),
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(
-            containerColor = if (localUser.socialType != "NONE") Color(0xFFE3F2FD) else Color.White
+            containerColor = if (localUser.socialType != SocialType.NONE) Color(0xFFE3F2FD) else Color.White
         ),
         elevation = CardDefaults.cardElevation(2.dp)
     ) {
@@ -253,9 +255,9 @@ fun AccountStatusCard(localUser: LocalUserData) {
             verticalAlignment = Alignment.CenterVertically
         ) {
             Icon(
-                imageVector = if (localUser.socialType != "NONE") Icons.Default.CheckCircle else Icons.Default.CloudOff,
+                imageVector = if (localUser.socialType != SocialType.NONE) Icons.Default.CheckCircle else Icons.Default.CloudOff,
                 contentDescription = null,
-                tint = if (localUser.socialType != "NONE") Color(0xFF1976D2) else Color.Gray,
+                tint = if (localUser.socialType != SocialType.NONE) Color(0xFF1976D2) else Color.Gray,
                 modifier = Modifier.size(40.dp)
             )
 
@@ -263,10 +265,10 @@ fun AccountStatusCard(localUser: LocalUserData) {
 
             Column {
                 Text(
-                    text = if (localUser.socialType != "NONE") "소셜 계정 연동됨" else "미연동",
+                    text = if (localUser.socialType != SocialType.NONE) "소셜 계정 연동됨" else "미연동",
                     fontSize = 18.sp,
                     fontWeight = FontWeight.Bold,
-                    color = if (localUser.socialType != "NONE")
+                    color = if (localUser.socialType != SocialType.NONE)
                         Color.Black
                     else
                         Color.Gray
@@ -276,8 +278,8 @@ fun AccountStatusCard(localUser: LocalUserData) {
 
                 Text(
                     text = when (localUser.socialType) {
-                        "GOOGLE" -> "Google 계정으로 로그인됨"
-                        "KAKAO" -> "Kakao 계정으로 로그인됨"
+                        SocialType.GOOGLE -> "Google 계정으로 로그인됨"
+                        SocialType.KAKAO  -> "Kakao 계정으로 로그인됨"
                         else -> "소셜 계정을 연동해주세요"
                     },
                     fontSize = 13.sp,
@@ -379,7 +381,7 @@ fun SocialLoginSection(
  */
 @Composable
 fun LoggedInSection(
-    localUser: LocalUserData,
+    localUser: UserEntity,
     onLogout: () -> Unit,
     onUnlinkSocial: () -> Unit,
     onDeleteAccount: () -> Unit  // ✅ 추가
@@ -425,8 +427,8 @@ fun LoggedInSection(
                 InfoRow(
                     label = "연동 계정",
                     value = when (localUser.socialType) {
-                        "GOOGLE" -> "Google"
-                        "KAKAO" -> "Kakao"
+                        SocialType.GOOGLE -> "Google"
+                        SocialType.KAKAO ->  "Kakao"
                         else -> "없음"
                     }
                 )

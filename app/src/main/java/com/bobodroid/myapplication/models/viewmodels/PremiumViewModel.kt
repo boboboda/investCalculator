@@ -10,9 +10,10 @@ import com.android.billingclient.api.BillingClient
 import com.android.billingclient.api.ProductDetails
 import com.bobodroid.myapplication.MainActivity.Companion.TAG
 import com.bobodroid.myapplication.billing.BillingClientLifecycle
+import com.bobodroid.myapplication.domain.entity.PremiumType
+import com.bobodroid.myapplication.domain.entity.SocialType
 import com.bobodroid.myapplication.domain.repository.IUserRepository
-import com.bobodroid.myapplication.models.datamodels.roomDb.LocalUserData
-import com.bobodroid.myapplication.models.datamodels.roomDb.PremiumType
+import com.bobodroid.myapplication.extensions.toPremiumType
 import com.bobodroid.myapplication.models.datamodels.service.subscriptionApi.RestoreSubscriptionRequest
 import com.bobodroid.myapplication.models.datamodels.service.subscriptionApi.SubscriptionApi
 import com.bobodroid.myapplication.premium.PremiumManager
@@ -63,7 +64,7 @@ class PremiumViewModel @Inject constructor(
         val error: String? = null,
         // ✅ 소셜 로그인 상태 추가
         val isSocialLoggedIn: Boolean = false,
-        val socialType: String? = null
+        val socialType: SocialType = SocialType.NONE
     )
 
     private val _uiState = MutableStateFlow(PremiumUiState())
@@ -113,15 +114,15 @@ class PremiumViewModel @Inject constructor(
 
                 // ✅ 소셜 로그인 상태 체크
                 val isSocialLoggedIn = !user.socialId.isNullOrEmpty() &&
-                        !user.socialType.isNullOrEmpty()
+                        user.socialType != SocialType.NONE
 
                 _uiState.value = _uiState.value.copy(
-                    isPremium = user.isPremium,
+                    isPremium = user.isPremium ?: false,
                     premiumType = premiumType,
                     expiryDate = user.premiumExpiryDate,
                     daysRemaining = daysRemaining,
                     isSocialLoggedIn = isSocialLoggedIn,
-                    socialType = user.socialType
+                    socialType = user.socialType ?: SocialType.NONE
                 )
 
                 Log.d(TAG("PremiumViewModel", "observeUserData"),
@@ -206,7 +207,7 @@ class PremiumViewModel @Inject constructor(
                 val socialId = user.socialId
                 val socialType = user.socialType
 
-                if (socialId.isNullOrEmpty() || socialType.isNullOrEmpty()) {
+                if (socialId.isNullOrEmpty() || socialType != SocialType.NONE) {
                     Log.w(TAG("PremiumViewModel", "restorePurchases"), "소셜 로그인 정보 없음 - 로컬 복원 시도")
 
                     // 소셜 로그인 안 했으면 기존 방식으로 복원 (디바이스 기반)
@@ -234,7 +235,7 @@ class PremiumViewModel @Inject constructor(
 
                 val request = RestoreSubscriptionRequest(
                     socialId = socialId,
-                    socialType = socialType
+                    socialType = socialType.name
                 )
 
                 val response = SubscriptionApi.service.restoreSubscription(request)
@@ -252,7 +253,7 @@ class PremiumViewModel @Inject constructor(
 
                         // 5. 로컬 DB 업데이트
                         val updatedUser = user.copy(
-                            premiumType = data.premiumType,
+                            premiumType = data.premiumType.toPremiumType(),
                             premiumExpiryDate = data.expiryTime,
                             premiumGrantedBy = "subscription",
                             premiumGrantedAt = Instant.now().toString(),

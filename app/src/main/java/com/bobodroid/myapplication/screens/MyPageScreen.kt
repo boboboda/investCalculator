@@ -42,8 +42,9 @@ import com.bobodroid.myapplication.components.Dialogs.RewardAdInfoDialog
 import com.bobodroid.myapplication.domain.entity.BadgeEntity
 import com.bobodroid.myapplication.domain.entity.InvestmentStatsEntity
 import com.bobodroid.myapplication.domain.entity.MonthlyGoalEntity
-import com.bobodroid.myapplication.models.datamodels.roomDb.LocalUserData
-import com.bobodroid.myapplication.models.datamodels.roomDb.PremiumType
+import com.bobodroid.myapplication.domain.entity.PremiumType
+import com.bobodroid.myapplication.domain.entity.SocialType
+import com.bobodroid.myapplication.domain.entity.UserEntity
 import com.bobodroid.myapplication.models.viewmodels.*
 import com.bobodroid.myapplication.routes.MainRoute
 import com.bobodroid.myapplication.routes.MyPageRoute
@@ -94,7 +95,7 @@ fun MyPageScreen(
                     onSetGoal = { amount -> myPageViewModel.setMonthlyGoal(amount) },
                     showOnboarding = { showOnboarding = true },
                     badges = uiState.badges,
-                    isPremium = uiState.localUser.isPremium,
+                    isPremium = uiState.localUser.isPremium ?: false,
                     premiumType = premiumType,
                     premiumExpiryDate = premiumExpiryDate,
                     showRewardDialog = {
@@ -309,7 +310,7 @@ fun MyPageScreen(
 @Composable
 fun ImprovedMyPageView(
     myPageRouteAction: RouteAction<MyPageRoute>,
-    localUser: LocalUserData,
+    localUser: UserEntity,
     investmentStats: InvestmentStatsEntity = InvestmentStatsEntity(),
     recentActivities: List<RecentActivity> = emptyList(),
     monthlyGoal: MonthlyGoalEntity = MonthlyGoalEntity(),
@@ -348,7 +349,7 @@ fun ImprovedMyPageView(
                 onPurchaseClick = {
                     // ✅ 소셜 로그인 체크
                     val isSocialLoggedIn = !localUser.socialId.isNullOrEmpty() &&
-                            !localUser.socialType.isNullOrEmpty()
+                            localUser.socialType != SocialType.NONE
 
                     if (isSocialLoggedIn) {
                         // 로그인 되어있으면 프리미엄 화면으로 이동
@@ -992,10 +993,10 @@ fun PremiumBenefitDetailItem(
 
 @Composable
 fun ProfileHeader(
-    localUser: LocalUserData,
+    localUser: UserEntity,
     onProfileClick: () -> Unit
 ) {
-    val isSocialLinked = localUser.socialType != "NONE" && localUser.socialId != null
+    val isSocialLinked = localUser.socialType != SocialType.NONE && localUser.socialId != null
     val displayName = when {
         !localUser.nickname.isNullOrEmpty() -> localUser.nickname!!
         isSocialLinked -> localUser.email?.substringBefore("@") ?: "사용자"

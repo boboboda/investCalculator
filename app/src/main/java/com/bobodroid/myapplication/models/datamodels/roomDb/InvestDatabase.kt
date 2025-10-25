@@ -3,6 +3,8 @@ package com.bobodroid.myapplication.models.datamodels.roomDb
 import androidx.room.AutoMigration
 import androidx.room.Database
 import androidx.room.RoomDatabase
+import com.bobodroid.myapplication.data.local.entity.CurrencyRecordDto
+import com.bobodroid.myapplication.data.local.entity.LocalUserDto
 
 /**
  * 투자 기록 데이터베이스
@@ -18,16 +20,18 @@ import androidx.room.RoomDatabase
  */
 @Database(
     entities = [
-        LocalUserData::class,
+        LocalUserDto::class,
         ExchangeRate::class,
-        CurrencyRecord::class
+        CurrencyRecordDto::class
     ],
-    version = 34,
+    version = 36,
     exportSchema = true,
     autoMigrations = [
         AutoMigration(from = 31, to = 32),
         AutoMigration(from = 32, to = 33),
-        AutoMigration(from = 33, to = 34)
+        AutoMigration(from = 33, to = 34),
+        AutoMigration(from = 34, to = 35),
+        AutoMigration(from = 35, to = 36, spec = Migration35To36Spec::class)
     ]
 )
 abstract class InvestDatabase : RoomDatabase() {

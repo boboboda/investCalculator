@@ -4,7 +4,6 @@ import com.bobodroid.myapplication.data.local.entity.LocalUserDto
 import com.bobodroid.myapplication.domain.entity.UserEntity
 import com.bobodroid.myapplication.domain.entity.SocialType
 import com.bobodroid.myapplication.domain.entity.PremiumType
-import com.bobodroid.myapplication.models.datamodels.roomDb.LocalUserData
 
 /**
  * User Mapper
@@ -62,13 +61,13 @@ object UserMapper {
         return LocalUserDto(
             id = this.id,
             socialId = this.socialId,
-            socialType = this.socialType.name,
+            socialType = this.socialType?.name ?: SocialType.NONE.name,
             email = this.email,
             nickname = this.nickname,
             profileUrl = this.profileUrl,
-            isSynced = this.isSynced,
+            isSynced = this.isSynced ?: false,
             fcmToken = this.fcmToken,
-            isPremium = this.isPremium,
+            isPremium = this.isPremium ?: false,
             premiumType = this.premiumType.name,
             premiumExpiryDate = this.premiumExpiryDate,
             premiumGrantedBy = this.premiumGrantedBy,
@@ -77,7 +76,7 @@ object UserMapper {
             rateAdCount = this.rateAdCount,
             userResetDate = this.userResetDate,
             rewardAdShowingDate = this.rewardAdShowingDate,
-            dailyRewardUsed = this.dailyRewardUsed,
+            dailyRewardUsed = this.dailyRewardUsed ?: false,
             lastRewardDate = this.lastRewardDate,
             totalRewardCount = this.totalRewardCount,
             interstitialAdCount = this.interstitialAdCount,
@@ -86,7 +85,7 @@ object UserMapper {
             drSellSpread = this.drSellSpread,
             yenBuySpread = this.yenBuySpread,
             yenSellSpread = this.yenSellSpread,
-            monthlyProfitGoal = this.monthlyProfitGoal,
+            monthlyProfitGoal = this.monthlyProfitGoal ?: 0L,
             goalSetMonth = this.goalSetMonth,
             lastSyncAt = this.lastSyncAt
         )
@@ -116,83 +115,5 @@ object UserMapper {
             "LIFETIME" -> PremiumType.LIFETIME
             else -> PremiumType.NONE
         }
-    }
-
-    // ===== 하위 호환성 =====
-
-    /**
-     * 기존 LocalUserData → UserEntity
-     * 점진적 마이그레이션을 위한 변환
-     */
-    fun LocalUserData.toEntity(): UserEntity {
-        return UserEntity(
-            id = this.id,
-            socialId = this.socialId,
-            socialType = parseSocialType(this.socialType),
-            email = this.email,
-            nickname = this.nickname,
-            profileUrl = this.profileUrl,
-            isSynced = this.isSynced,
-            fcmToken = this.fcmToken,
-            isPremium = this.isPremium,
-            premiumType = parsePremiumType(this.premiumType),
-            premiumExpiryDate = this.premiumExpiryDate,
-            premiumGrantedBy = this.premiumGrantedBy,
-            premiumGrantedAt = this.premiumGrantedAt,
-            rateResetCount = this.rateResetCount,
-            rateAdCount = this.rateAdCount,
-            userResetDate = this.userResetDate,
-            rewardAdShowingDate = this.rewardAdShowingDate,
-            dailyRewardUsed = this.dailyRewardUsed,
-            lastRewardDate = this.lastRewardDate,
-            totalRewardCount = this.totalRewardCount,
-            interstitialAdCount = this.interstitialAdCount,
-            userShowNoticeDate = this.userShowNoticeDate,
-            drBuySpread = this.drBuySpread,
-            drSellSpread = this.drSellSpread,
-            yenBuySpread = this.yenBuySpread,
-            yenSellSpread = this.yenSellSpread,
-            monthlyProfitGoal = this.monthlyProfitGoal,
-            goalSetMonth = this.goalSetMonth,
-            lastSyncAt = this.lastSyncAt
-        )
-    }
-
-    /**
-     * UserEntity → 기존 LocalUserData
-     * 점진적 마이그레이션을 위한 역변환
-     */
-    fun UserEntity.toLegacyUser(): LocalUserData {
-        return LocalUserData(
-            id = this.id,
-            socialId = this.socialId,
-            socialType = this.socialType.name,
-            email = this.email,
-            nickname = this.nickname,
-            profileUrl = this.profileUrl,
-            isSynced = this.isSynced,
-            fcmToken = this.fcmToken,
-            isPremium = this.isPremium,
-            premiumType = this.premiumType.name,
-            premiumExpiryDate = this.premiumExpiryDate,
-            premiumGrantedBy = this.premiumGrantedBy,
-            premiumGrantedAt = this.premiumGrantedAt,
-            rateResetCount = this.rateResetCount,
-            rateAdCount = this.rateAdCount,
-            userResetDate = this.userResetDate,
-            rewardAdShowingDate = this.rewardAdShowingDate,
-            dailyRewardUsed = this.dailyRewardUsed,
-            lastRewardDate = this.lastRewardDate,
-            totalRewardCount = this.totalRewardCount,
-            interstitialAdCount = this.interstitialAdCount,
-            userShowNoticeDate = this.userShowNoticeDate,
-            drBuySpread = this.drBuySpread,
-            drSellSpread = this.drSellSpread,
-            yenBuySpread = this.yenBuySpread,
-            yenSellSpread = this.yenSellSpread,
-            monthlyProfitGoal = this.monthlyProfitGoal,
-            goalSetMonth = this.goalSetMonth,
-            lastSyncAt = this.lastSyncAt
-        )
     }
 }

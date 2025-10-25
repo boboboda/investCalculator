@@ -3,6 +3,7 @@
 package com.bobodroid.myapplication.domain.usecase.statistics
 
 import com.bobodroid.myapplication.domain.entity.InvestmentStatsEntity
+import com.bobodroid.myapplication.domain.entity.RecordEntity
 import com.bobodroid.myapplication.models.datamodels.roomDb.CurrencyRecord
 import java.math.BigDecimal
 import java.math.RoundingMode
@@ -26,7 +27,7 @@ class CalculateInvestmentStatsUseCase @Inject constructor() {
      * @param allRecords 모든 통화의 기록 (12개 통화)
      * @return 투자 통계
      */
-    fun execute(allRecords: List<CurrencyRecord>): InvestmentStatsEntity {
+    fun execute(allRecords: List<RecordEntity>): InvestmentStatsEntity {
 
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━
         // 1. 총 투자금 계산

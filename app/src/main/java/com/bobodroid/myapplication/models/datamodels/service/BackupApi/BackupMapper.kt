@@ -1,6 +1,7 @@
 // app/src/main/java/com/bobodroid/myapplication/models/datamodels/service/BackupApi/BackupMapper.kt
 package com.bobodroid.myapplication.models.datamodels.service.BackupApi
 
+import com.bobodroid.myapplication.domain.entity.RecordEntity
 import com.bobodroid.myapplication.models.datamodels.roomDb.CurrencyRecord
 
 /**
@@ -11,8 +12,8 @@ object BackupMapper {
     /**
      * CurrencyRecord → RecordEntityDao (백업용)
      */
-    fun toDto(record: CurrencyRecord): CurrencyRecordDto {
-        return CurrencyRecordDto(
+    fun toDto(record: RecordEntity): CurrencyRecordBackUpDto {
+        return CurrencyRecordBackUpDto(
             id = record.id.toString(),
             currencyCode = record.currencyCode,
             date = record.date ?: "",
@@ -34,8 +35,8 @@ object BackupMapper {
     /**
      * CurrencyRecordDto → CurrencyRecord (복구용)
      */
-    fun fromDto(dto: CurrencyRecordDto): CurrencyRecord {
-        return CurrencyRecord(
+    fun fromDto(dto: CurrencyRecordBackUpDto): RecordEntity {
+        return RecordEntity(
             id = java.util.UUID.fromString(dto.id),
             currencyCode = dto.currencyCode,
             date = dto.date,
@@ -57,14 +58,14 @@ object BackupMapper {
     /**
      * List<CurrencyRecord> → List<CurrencyRecordDto>
      */
-    fun toDtoList(records: List<CurrencyRecord>): List<CurrencyRecordDto> {
+    fun toDtoList(records: List<RecordEntity>): List<CurrencyRecordBackUpDto> {
         return records.map { toDto(it) }
     }
 
     /**
      * List<CurrencyRecordDto> → List<CurrencyRecord>
      */
-    fun fromDtoList(dtos: List<CurrencyRecordDto>): List<CurrencyRecord> {
+    fun fromDtoList(dtos: List<CurrencyRecordBackUpDto>): List<RecordEntity> {
         return dtos.map { fromDto(it) }
     }
 }

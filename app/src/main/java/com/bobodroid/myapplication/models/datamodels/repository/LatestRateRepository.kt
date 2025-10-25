@@ -2,7 +2,8 @@ package com.bobodroid.myapplication.models.datamodels.repository
 
 import android.util.Log
 import com.bobodroid.myapplication.MainActivity.Companion.TAG
-import com.bobodroid.myapplication.models.datamodels.roomDb.ExchangeRate
+import com.bobodroid.myapplication.data.mapper.ExchangeRateMapper
+import com.bobodroid.myapplication.domain.entity.ExchangeRateEntity
 import com.bobodroid.myapplication.models.datamodels.service.exchangeRateApi.RateApi
 import com.bobodroid.myapplication.models.datamodels.websocket.WebSocketClient
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -16,7 +17,7 @@ class LatestRateRepository @Inject constructor(
     private val webSocketClient: WebSocketClient
 ) {
 
-    private val _latestRate = MutableStateFlow(ExchangeRate())
+    private val _latestRate = MutableStateFlow(ExchangeRateEntity())
     val latestRateFlow = _latestRate.asStateFlow()
 
     private var isWebSocketSubscribed = false
@@ -56,10 +57,10 @@ class LatestRateRepository @Inject constructor(
                     }.toString()
 
                     // ✅ fromCustomJson이 needsMultiply 처리 (JPY, THB 100배)
-                    val exchangeRate = ExchangeRate.fromCustomJson(jsonString)
+                    val exchangeRate = ExchangeRateMapper.fromServerJson(jsonString)
 
                     if (exchangeRate != null) {
-                        _latestRate.emit(exchangeRate)
+                        _latestRate.emit(exchangeRate!!)
                         Log.d(TAG("LatestRateRepository", "fetchInitialLatestRate"),
                             "초기 최신 환율 로드 성공 (12개 통화): $exchangeRate")
                     }
@@ -97,7 +98,7 @@ class LatestRateRepository @Inject constructor(
      */
     private suspend fun onRateUpdate(rateString: String) {
         try {
-            val exchangeRate = ExchangeRate.fromCustomJson(rateString) ?: return
+            val exchangeRate = ExchangeRateMapper.fromServerJson(rateString) ?: return
 
             _latestRate.emit(exchangeRate)
 

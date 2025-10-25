@@ -14,6 +14,8 @@ import com.bobodroid.myapplication.models.datamodels.service.BackupApi.BackupReq
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
 import kotlinx.coroutines.flow.first
+import java.text.SimpleDateFormat
+import java.util.*
 
 /**
  * 자동 백업 Worker (프리미엄 전용)
@@ -98,11 +100,13 @@ class BackupWorker @AssistedInject constructor(
 
             Log.d(TAG, "✅ 서버 백업 성공")
 
-            // ✅ 8. lastSyncAt 업데이트
-            val currentTime = java.text.SimpleDateFormat(
-                "yyyy-MM-dd'T'HH:mm:ss",
-                java.util.Locale.getDefault()
-            ).format(java.util.Date())
+            // ✅ 8. lastSyncAt 업데이트 (한국 시간, ISO 8601 형식)
+            val currentTime = SimpleDateFormat(
+                "yyyy-MM-dd'T'HH:mm:ssXXX",
+                Locale.KOREA
+            ).apply {
+                timeZone = TimeZone.getTimeZone("Asia/Seoul")
+            }.format(Date())
 
             val updatedUser = localUser.copy(
                 isSynced = true,

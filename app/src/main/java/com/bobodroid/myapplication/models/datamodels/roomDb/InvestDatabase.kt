@@ -4,6 +4,7 @@ import androidx.room.AutoMigration
 import androidx.room.Database
 import androidx.room.RoomDatabase
 import com.bobodroid.myapplication.data.local.entity.CurrencyRecordDto
+import com.bobodroid.myapplication.data.local.entity.ExchangeRateDto
 import com.bobodroid.myapplication.data.local.entity.LocalUserDto
 
 /**
@@ -21,17 +22,18 @@ import com.bobodroid.myapplication.data.local.entity.LocalUserDto
 @Database(
     entities = [
         LocalUserDto::class,
-        ExchangeRate::class,
+        ExchangeRateDto::class,
         CurrencyRecordDto::class
     ],
-    version = 36,
+    version = 37,
     exportSchema = true,
     autoMigrations = [
         AutoMigration(from = 31, to = 32),
         AutoMigration(from = 32, to = 33),
         AutoMigration(from = 33, to = 34),
         AutoMigration(from = 34, to = 35),
-        AutoMigration(from = 35, to = 36, spec = Migration35To36Spec::class)
+        AutoMigration(from = 35, to = 36, spec = Migration35To36Spec::class),
+        AutoMigration(from = 36, to = 37),
     ]
 )
 abstract class InvestDatabase : RoomDatabase() {

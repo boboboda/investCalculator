@@ -15,6 +15,10 @@ import com.bobodroid.myapplication.models.datamodels.service.UserApi.UserRequest
 import com.bobodroid.myapplication.models.datamodels.social.SocialLoginManager
 import com.bobodroid.myapplication.util.result.Result
 import kotlinx.coroutines.flow.first
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
+import java.util.TimeZone
 import javax.inject.Inject
 
 /**
@@ -492,26 +496,33 @@ class UnlinkSocialUseCase @Inject constructor(
 /**
  * 서버 백업 UseCase
  */
+/**
+ * 서버로 데이터 백업 UseCase (수동 백업)
+ */
 class SyncToServerUseCase @Inject constructor(
     private val userRepository: IUserRepository,
     private val recordRepository: IRecordRepository
 ) {
     suspend operator fun invoke(localUserData: UserEntity): Result<UserEntity> {
         return try {
-            if (localUserData.socialId == null) {
+            Log.d(TAG("SyncToServerUseCase", "invoke"), "서버 백업 시작")
+
+            // ✅ 1. 소셜 로그인 확인
+            if (localUserData.socialId.isNullOrEmpty()) {
                 return Result.Error(message = "소셜 로그인이 필요합니다")
             }
 
-            Log.d(TAG("SyncToServerUseCase", "invoke"), "서버 백업 시작")
-
-            // ✅ 1. 모든 투자 기록 가져오기
+            // ✅ 2. 모든 투자 기록 가져오기
             val allRecords = recordRepository.getAllRecords().first()
-            Log.d(TAG("SyncToServerUseCase", "invoke"), "백업할 기록: ${allRecords.size}개")
 
-            // ✅ 2. CurrencyRecord → RecordEntityDao 변환
+            if (allRecords.isEmpty()) {
+                return Result.Error(message = "백업할 데이터가 없습니다")
+            }
+
+            // ✅ 3. DTO 변환
             val recordDtos = BackupMapper.toDtoList(allRecords)
 
-            // ✅ 3. 백업 요청 생성
+            // ✅ 4. 백업 요청 생성
             val backupRequest = BackupRequest(
                 deviceId = localUserData.id.toString(),
                 socialId = localUserData.socialId,
@@ -519,30 +530,32 @@ class SyncToServerUseCase @Inject constructor(
                 currencyRecords = recordDtos
             )
 
-            // ✅ 4. 서버로 백업 전송
+            // ✅ 5. 서버로 백업 전송
             val response = BackupApi.backupService.createBackup(backupRequest)
 
             if (!response.success) {
                 return Result.Error(message = response.message)
             }
 
-            // ✅ 5. 백업 성공 시 lastSyncAt 업데이트
-            val currentTime = java.text.SimpleDateFormat(
-                "yyyy-MM-dd'T'HH:mm:ss",
-                java.util.Locale.getDefault()
-            ).format(java.util.Date())
+            // ✅ 6. 백업 성공 시 lastSyncAt 업데이트 (한국 시간, ISO 8601 형식)
+            val currentTime = SimpleDateFormat(
+                "yyyy-MM-dd'T'HH:mm:ssXXX",
+                Locale.KOREA
+            ).apply {
+                timeZone = TimeZone.getTimeZone("Asia/Seoul")
+            }.format(Date())
 
             val syncedUser = localUserData.copy(
                 isSynced = true,
                 lastSyncAt = currentTime
             )
 
-            // ✅ 6. DB에 저장
+            // ✅ 7. DB에 저장
             userRepository.localUserUpdate(syncedUser)
 
             Log.d(TAG("SyncToServerUseCase", "invoke"), "서버 백업 완료: ${response.message}, 기록 ${allRecords.size}개")
 
-            // ✅ 7. 업데이트된 사용자 데이터 반환
+            // ✅ 8. 업데이트된 사용자 데이터 반환
             Result.Success(
                 data = syncedUser,
                 message = "데이터가 백업되었습니다 (${allRecords.size}개)"

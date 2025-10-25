@@ -113,7 +113,7 @@ fun MainHeader(
                                     color = Color(0xFF1F2937)
                                 )
                                 Text(
-                                    text = mainUiState.recentRate.createAt,
+                                    text = mainUiState.recentRate.createAt ?: "",
                                     fontSize = 10.sp,
                                     color = Color(0xFF9CA3AF)
                                 )
@@ -222,7 +222,7 @@ fun MainHeader(
                                             )
                                             Spacer(modifier = Modifier.height(4.dp))
                                             Text(
-                                                text = mainUiState.recentRate.createAt,
+                                                text = mainUiState.recentRate.createAt ?: "",
                                                 color = Color.White.copy(alpha = 0.7f),
                                                 fontSize = 11.sp
                                             )

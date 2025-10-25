@@ -2,7 +2,6 @@ package com.bobodroid.myapplication.data.mapper
 
 import com.bobodroid.myapplication.data.local.entity.ExchangeRateDto
 import com.bobodroid.myapplication.domain.entity.ExchangeRateEntity
-import com.bobodroid.myapplication.models.datamodels.roomDb.ExchangeRate
 import org.json.JSONObject
 
 /**
@@ -35,8 +34,8 @@ object ExchangeRateMapper {
     fun ExchangeRateEntity.toDto(): ExchangeRateDto {
         val ratesJson = mapToJson(this.rates)
         return ExchangeRateDto(
-            id = this.id,
-            createAt = this.createAt,
+            id = this.id ?: "",
+            createAt = this.createAt ?: "",
             rates = ratesJson
         )
     }
@@ -61,27 +60,27 @@ object ExchangeRateMapper {
      * 기존 ExchangeRate → ExchangeRateEntity
      * 점진적 마이그레이션을 위한 변환
      */
-    fun ExchangeRate.toEntity(): ExchangeRateEntity {
-        val ratesMap = parseJsonToMap(this.rates)
-        return ExchangeRateEntity(
-            id = this.id,
-            createAt = this.createAt,
-            rates = ratesMap
-        )
-    }
+//    fun ExchangeRate.toEntity(): ExchangeRateEntity {
+//        val ratesMap = parseJsonToMap(this.rates)
+//        return ExchangeRateEntity(
+//            id = this.id,
+//            createAt = this.createAt,
+//            rates = ratesMap
+//        )
+//    }
 
     /**
      * ExchangeRateEntity → 기존 ExchangeRate
      * 점진적 마이그레이션을 위한 역변환
      */
-    fun ExchangeRateEntity.toLegacyRate(): ExchangeRate {
-        val ratesJson = mapToJson(this.rates)
-        return ExchangeRate(
-            id = this.id,
-            createAt = this.createAt,
-            rates = ratesJson
-        )
-    }
+//    fun ExchangeRateEntity.toLegacyRate(): ExchangeRate {
+//        val ratesJson = mapToJson(this.rates)
+//        return ExchangeRate(
+//            id = this.id,
+//            createAt = this.createAt,
+//            rates = ratesJson
+//        )
+//    }
 
     // ===== 헬퍼 함수 =====
 
@@ -102,7 +101,7 @@ object ExchangeRateMapper {
             val keys = jsonObject.keys()
 
             while (keys.hasNext()) {
-                val key = keys.next()
+                val key = keys.next() as String  // ⭐ 타입 캐스팅
                 val value = jsonObject.optString(key, "0")
                 map[key] = value
             }
@@ -161,7 +160,7 @@ object ExchangeRateMapper {
             val keys = exchangeRates.keys()
 
             while (keys.hasNext()) {
-                val key = keys.next()
+                val key = keys.next() as String  // ⭐ 타입 캐스팅
                 val value = exchangeRates.optString(key, "0")
                 ratesMap[key] = value
             }

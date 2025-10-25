@@ -1,6 +1,6 @@
 package com.bobodroid.myapplication.domain.repository
 
-import com.bobodroid.myapplication.models.datamodels.roomDb.ExchangeRate
+import com.bobodroid.myapplication.domain.entity.ExchangeRateEntity
 import kotlinx.coroutines.flow.Flow
 
 /**
@@ -15,7 +15,7 @@ interface IExchangeRateRepository {
     /**
      * 최신 환율 데이터 Flow
      */
-    val latestRateFlow: Flow<ExchangeRate>
+    val latestRateFlow: Flow<ExchangeRateEntity>
 
     /**
      * REST API로 초기 환율 데이터 가져오기 (12개 통화)

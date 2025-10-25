@@ -7,6 +7,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.bobodroid.myapplication.MainActivity.Companion.TAG
 import com.bobodroid.myapplication.data.local.entity.CurrencyRecordDto
+import com.bobodroid.myapplication.domain.entity.ExchangeRateEntity
 import com.bobodroid.myapplication.domain.entity.RecordAlertEntity
 import com.bobodroid.myapplication.domain.repository.IRecordRepository
 import com.bobodroid.myapplication.domain.repository.IUserRepository
@@ -731,5 +732,5 @@ class FcmAlarmViewModel @Inject constructor(
 }
 
 data class AlarmUiState(
-    val recentRate: ExchangeRate = ExchangeRate()
+    val recentRate: ExchangeRateEntity = ExchangeRateEntity()
 )

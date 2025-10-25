@@ -1,5 +1,6 @@
 package com.bobodroid.myapplication.screens
 
+import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -26,6 +27,10 @@ import com.bobodroid.myapplication.models.viewmodels.MyPageViewModel
 import com.bobodroid.myapplication.routes.MyPageRoute
 import com.bobodroid.myapplication.routes.RouteAction
 import kotlinx.coroutines.launch
+import java.text.SimpleDateFormat
+import java.util.Calendar
+import java.util.Locale
+import java.util.TimeZone
 
 /**
  * 클라우드 백업 화면 (완전 개선 버전)
@@ -484,12 +489,18 @@ fun PremiumBackupPromotionCard(
 
 private fun formatSyncTime(lastSyncAt: String): String {
     return try {
-        val formatter = java.text.SimpleDateFormat(
-            "yyyy-MM-dd'T'HH:mm:ss",
-            java.util.Locale.getDefault()
-        )
+        // ISO 8601 형식 파싱 (타임존 포함)
+        val formatter = SimpleDateFormat(
+            "yyyy-MM-dd'T'HH:mm:ssXXX",
+            Locale.KOREA
+        ).apply {
+            timeZone = TimeZone.getTimeZone("Asia/Seoul")
+        }
+
         val syncDate = formatter.parse(lastSyncAt) ?: return "알 수 없음"
-        val now = java.util.Date()
+
+        // 현재 한국 시간
+        val now = Calendar.getInstance(TimeZone.getTimeZone("Asia/Seoul")).time
 
         val diffMillis = now.time - syncDate.time
         val diffSeconds = diffMillis / 1000
@@ -507,6 +518,7 @@ private fun formatSyncTime(lastSyncAt: String): String {
             else -> "${diffDays / 365}년 전"
         }
     } catch (e: Exception) {
+        Log.e("CloudView", "시간 포맷팅 실패: ${e.message}", e)
         "알 수 없음"
     }
 }

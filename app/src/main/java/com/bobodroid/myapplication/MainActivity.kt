@@ -40,7 +40,6 @@ import com.bobodroid.myapplication.models.viewmodels.MainViewModel
 import com.bobodroid.myapplication.models.viewmodels.SharedViewModel
 import com.bobodroid.myapplication.routes.*
 import com.bobodroid.myapplication.screens.*
-import com.bobodroid.myapplication.test.Phase2TestRunner
 import com.bobodroid.myapplication.ui.theme.InvestCalculatorTheme
 import com.bobodroid.myapplication.util.AdMob.AdManager
 import com.bobodroid.myapplication.util.PreferenceUtil
@@ -115,8 +114,6 @@ class MainActivity : ComponentActivity() {
 
         handleIntent(intent)
 
-
-        Phase2TestRunner.runPhase2Test()
 
         setContent {
             InvestCalculatorTheme {

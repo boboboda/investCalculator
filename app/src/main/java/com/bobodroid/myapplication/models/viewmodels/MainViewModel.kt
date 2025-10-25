@@ -6,6 +6,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.bobodroid.myapplication.MainActivity.Companion.TAG
 import com.bobodroid.myapplication.data.mapper.RecordMapper.toDto
+import com.bobodroid.myapplication.domain.entity.ExchangeRateEntity
 import com.bobodroid.myapplication.domain.entity.HoldingStats
 import com.bobodroid.myapplication.domain.entity.PremiumType
 import com.bobodroid.myapplication.domain.entity.RecordEntity
@@ -246,7 +247,7 @@ class MainViewModel @Inject constructor(
     // ✅ 수익 재계산 - 새로운 구조
     private suspend fun reFreshProfit() {
         val recentRate = _mainUiState.value.recentRate
-        val allRates = recentRate.getAllRates()
+        val allRates = recentRate.rates
 
         recordUseCase.refreshAllCurrencyProfits(allRates)
     }
@@ -657,7 +658,7 @@ val today = formatter.format(time)
 data class MainUiState (
     val selectedCurrencyType: CurrencyType = CurrencyType.USD,
     val selectedDate: String = today,
-    val recentRate: ExchangeRate = ExchangeRate(),
+    val recentRate: ExchangeRateEntity = ExchangeRateEntity(),
     val localUser: UserEntity = UserEntity(),
     val showRateBottomSheet: Boolean = false,
     val showEditBottomSheet: Boolean = false,

@@ -141,17 +141,6 @@ data class RecordEntity(
         )
     }
 
-    /**
-     * CurrencyType 변환 (하위 호환성)
-     */
-    override fun toType(): CurrencyType {
-        return when (currencyCode) {
-            "USD" -> CurrencyType.USD
-            "JPY" -> CurrencyType.JPY
-            else -> CurrencyType.USD  // 기본값
-        }
-    }
-
     // ===== 추가 비즈니스 로직 메서드 =====
 
     /**

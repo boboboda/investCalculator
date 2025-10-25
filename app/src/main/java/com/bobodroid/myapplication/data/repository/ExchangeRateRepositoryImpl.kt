@@ -2,8 +2,10 @@ package com.bobodroid.myapplication.data.repository
 
 import android.util.Log
 import com.bobodroid.myapplication.MainActivity.Companion.TAG
+import com.bobodroid.myapplication.data.mapper.ExchangeRateMapper
+import com.bobodroid.myapplication.data.mapper.ExchangeRateMapper.toEntity
+import com.bobodroid.myapplication.domain.entity.ExchangeRateEntity
 import com.bobodroid.myapplication.domain.repository.IExchangeRateRepository
-import com.bobodroid.myapplication.models.datamodels.roomDb.ExchangeRate
 import com.bobodroid.myapplication.models.datamodels.service.exchangeRateApi.RateApi
 import com.bobodroid.myapplication.models.datamodels.websocket.WebSocketClient
 import kotlinx.coroutines.flow.Flow
@@ -14,28 +16,27 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 /**
- * ExchangeRate Repository 구현체
+ * ExchangeRate Repository 구현체 - Entity 버전
  *
  * [변경 사항]
- * 기존: LatestRateRepository
- * 신규: ExchangeRateRepositoryImpl
- *
- * Data Layer의 실제 데이터 접근 구현
- * - REST API 및 WebSocket 통신
- * - Domain의 IExchangeRateRepository 인터페이스 구현
+ * - 외부(Domain): ExchangeRateEntity 사용
+ * - 내부: ExchangeRate.fromCustomJson() 파싱 후 Entity 변환
+ * - Mapper로 변환 처리
  */
 @Singleton
 class ExchangeRateRepositoryImpl @Inject constructor(
     private val webSocketClient: WebSocketClient
 ) : IExchangeRateRepository {
 
-    private val _latestRate = MutableStateFlow(ExchangeRate())
-    override val latestRateFlow: Flow<ExchangeRate> = _latestRate.asStateFlow()
+    // ⭐ ExchangeRateEntity 사용
+    private val _latestRate = MutableStateFlow(ExchangeRateEntity.empty())
+    override val latestRateFlow: Flow<ExchangeRateEntity> = _latestRate.asStateFlow()
 
     private var isWebSocketSubscribed = false
 
     /**
      * REST API로 초기 환율 데이터 가져오기 (12개 통화)
+     * ⭐ ExchangeRate → Entity 변환
      */
     override suspend fun fetchInitialRate(): Unit {
         try {
@@ -57,13 +58,14 @@ class ExchangeRateRepositoryImpl @Inject constructor(
                         put("exchangeRates", exchangeRatesJson)
                     }.toString()
 
-                    // ✅ fromCustomJson이 needsMultiply 처리 (JPY, THB 100배)
-                    val exchangeRate = ExchangeRate.fromCustomJson(jsonString)
+                    val exchangeRate = ExchangeRateMapper.fromServerJson(jsonString)
 
                     if (exchangeRate != null) {
+                        val entity = exchangeRate
                         _latestRate.emit(exchangeRate)
+
                         Log.d(TAG("ExchangeRateRepositoryImpl", "fetchInitialRate"),
-                            "초기 최신 환율 로드 성공 (12개 통화): $exchangeRate")
+                            "초기 최신 환율 로드 성공 (Entity): $entity")
                     }
                 }
             } else {
@@ -92,19 +94,22 @@ class ExchangeRateRepositoryImpl @Inject constructor(
                 onRateUpdate(initialRate)
             }
         )
+        isWebSocketSubscribed = true
     }
 
     /**
      * 환율 업데이트 처리 (private)
+     * ⭐ ExchangeRate → Entity 변환
      */
     private suspend fun onRateUpdate(rateString: String) {
         try {
-            val exchangeRate = ExchangeRate.fromCustomJson(rateString) ?: return
+            // ExchangeRate 파싱
+            val exchangeRate = ExchangeRateMapper.fromServerJson(rateString) ?: return
 
             _latestRate.emit(exchangeRate)
 
             Log.d(TAG("ExchangeRateRepositoryImpl", "onRateUpdate"),
-                "환율 업데이트 파싱 완료: $exchangeRate")
+                "환율 업데이트 파싱 완료 (Entity): $exchangeRate")
 
         } catch (e: Exception) {
             Log.e(TAG("ExchangeRateRepositoryImpl", "onRateUpdate"),

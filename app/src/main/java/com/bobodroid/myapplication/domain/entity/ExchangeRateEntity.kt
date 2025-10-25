@@ -18,12 +18,12 @@ data class ExchangeRateEntity(
     /**
      * 고유 ID
      */
-    val id: String,
+    val id: String? = null,
 
     /**
      * 생성 시간 (yyyy-MM-dd HH:mm:ss)
      */
-    val createAt: String,
+    val createAt: String? = null,
 
     /**
      * 환율 데이터 (통화 코드 → 환율)
@@ -35,7 +35,11 @@ data class ExchangeRateEntity(
      *   "EUR" -> "1400.25"
      * }
      */
-    val rates: Map<String, String>
+    val rates: Map<String, String> = mapOf(
+        "USD" to "0",
+        "JPY" to "0",
+        "EUR" to "0"
+    )
 ) {
 
     /**

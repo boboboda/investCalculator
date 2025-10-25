@@ -3,7 +3,7 @@ package com.bobodroid.myapplication.models.datamodels.websocket
 import android.util.Log
 import com.bobodroid.myapplication.BuildConfig
 import com.bobodroid.myapplication.MainActivity.Companion.TAG
-import com.bobodroid.myapplication.models.datamodels.repository.UserRepository
+import com.bobodroid.myapplication.domain.repository.IUserRepository
 import io.socket.client.IO
 import io.socket.client.Socket
 import kotlinx.coroutines.CompletableDeferred
@@ -17,7 +17,7 @@ import org.json.JSONObject
 import javax.inject.Inject
 
 class WebSocketClient @Inject constructor(
-    private val userRepository: UserRepository
+    private val userRepository: IUserRepository
 ) {
     private var socket: Socket? = null
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)

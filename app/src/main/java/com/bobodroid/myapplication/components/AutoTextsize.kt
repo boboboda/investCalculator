@@ -18,7 +18,9 @@ import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
+
 @Composable
+@Suppress("UnusedBoxWithConstraintsScope")
 fun AutoSizeText(
     value: String,
     modifier: Modifier = Modifier,
@@ -29,11 +31,16 @@ fun AutoSizeText(
     color: Color,
     textAlign: TextAlign = TextAlign.Center,
     lineHeight: Int = 20,
-    fontWeight: FontWeight? = null) {
+    fontWeight: FontWeight? = null
+) {
     BoxWithConstraints(
         modifier = modifier
     ) {
         var nFontSize = fontSize
+
+        // BoxWithConstraints의 scope를 명시적으로 사용
+        val maxWidthPx = with(LocalDensity.current) { maxWidth.toPx() }
+        val maxHeightDp = maxHeight
 
         val calculateParagraph = @Composable {
             Paragraph(
@@ -42,13 +49,13 @@ fun AutoSizeText(
                 density = LocalDensity.current,
                 resourceLoader = LocalFontLoader.current,
                 maxLines = maxLines,
-                width = with(LocalDensity.current) { maxWidth.toPx() }
+                width = maxWidthPx  // 미리 계산한 값 사용
             )
         }
 
         var intrinsics = calculateParagraph()
         with(LocalDensity.current) {
-            while ((intrinsics.height.toDp() > maxHeight || intrinsics.didExceedMaxLines) && nFontSize >= minFontSize) {
+            while ((intrinsics.height.toDp() > maxHeightDp || intrinsics.didExceedMaxLines) && nFontSize >= minFontSize) {
                 nFontSize *= scaleFactor
                 intrinsics = calculateParagraph()
             }
@@ -61,7 +68,7 @@ fun AutoSizeText(
             maxLines = maxLines,
             fontSize = nFontSize,
             textAlign = textAlign,
-            fontWeight = fontWeight)
-
+            fontWeight = fontWeight
+        )
     }
 }

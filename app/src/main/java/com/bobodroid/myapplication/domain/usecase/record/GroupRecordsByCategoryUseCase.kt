@@ -1,7 +1,6 @@
-// 파일 생성: domain/usecase/record/GroupRecordsByCategoryUseCase.kt
-
 package com.bobodroid.myapplication.domain.usecase.record
 
+import com.bobodroid.myapplication.domain.entity.RecordEntity
 import com.bobodroid.myapplication.models.datamodels.roomDb.ForeignCurrencyRecord
 import javax.inject.Inject
 
@@ -14,11 +13,12 @@ import javax.inject.Inject
  * [변경 사항]
  * - private 함수 → public UseCase 클래스
  * - RecordUseCase에서 분리
+ * - RecordEntity 직접 지원 추가
  */
 class GroupRecordsByCategoryUseCase @Inject constructor() {
 
     /**
-     * 기록을 카테고리별로 그룹화
+     * 기록을 카테고리별로 그룹화 (제네릭 버전)
      *
      * @param records 그룹화할 기록 리스트
      * @param selector 그룹 키를 추출하는 함수 (보통 { it.categoryName })
@@ -51,5 +51,27 @@ class GroupRecordsByCategoryUseCase @Inject constructor() {
         return sortedGrouped.mapValues { (_, recordList) ->
             recordList.sortedByDescending { it.date }
         }
+    }
+
+    /**
+     * RecordEntity 전용 오버로드 (더 명확한 사용)
+     *
+     * @param records RecordEntity 리스트
+     * @return 그룹화된 Map (Key: 카테고리명, Value: RecordEntity 리스트)
+     */
+    fun executeForEntity(
+        records: List<RecordEntity>
+    ): Map<String, List<RecordEntity>> {
+        return execute(records) { it.categoryName }
+    }
+
+    /**
+     * RecordEntity를 카테고리명으로 그룹화 (편의 함수)
+     *
+     * @param records RecordEntity 리스트
+     * @return 그룹화된 Map
+     */
+    operator fun invoke(records: List<RecordEntity>): Map<String, List<RecordEntity>> {
+        return executeForEntity(records)
     }
 }

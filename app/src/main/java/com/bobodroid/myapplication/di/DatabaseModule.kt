@@ -55,7 +55,7 @@ object DatabaseModule {
 
     @Provides
     @Singleton
-    fun provideCurrencyRecordDao(database: InvestDatabase): CurrencyRecordDao {
+    fun provideRecordEntityDao(database: InvestDatabase): CurrencyRecordDao {
         return database.currencyRecordDao()
     }
 }

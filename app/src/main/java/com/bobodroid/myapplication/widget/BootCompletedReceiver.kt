@@ -4,7 +4,7 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.util.Log
-import com.bobodroid.myapplication.models.datamodels.repository.UserRepository
+import com.bobodroid.myapplication.domain.repository.IUserRepository
 import com.bobodroid.myapplication.util.PreferenceUtil
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
@@ -22,7 +22,7 @@ import javax.inject.Inject
 class BootCompletedReceiver : BroadcastReceiver() {
 
     @Inject
-    lateinit var userRepository: UserRepository
+    lateinit var userRepository: IUserRepository
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 

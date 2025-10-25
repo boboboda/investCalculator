@@ -2,7 +2,7 @@ package com.bobodroid.myapplication.models.datamodels.useCases
 
 import android.util.Log
 import com.bobodroid.myapplication.MainActivity.Companion.TAG
-import com.bobodroid.myapplication.models.datamodels.repository.UserRepository
+import com.bobodroid.myapplication.domain.repository.IUserRepository
 import com.bobodroid.myapplication.models.datamodels.roomDb.LocalUserData
 import com.bobodroid.myapplication.models.datamodels.service.BackupApi.BackupApi
 import com.bobodroid.myapplication.models.datamodels.service.UserApi.UserApi
@@ -27,7 +27,7 @@ data class AccountSwitchResult(
  * 로컬 계정을 서버 계정으로 전환하는 역할
  */
 class AccountSwitchUseCase @Inject constructor(
-    private val userRepository: UserRepository
+    private val userRepository: IUserRepository
 ) {
     suspend operator fun invoke(
         serverDeviceId: String,

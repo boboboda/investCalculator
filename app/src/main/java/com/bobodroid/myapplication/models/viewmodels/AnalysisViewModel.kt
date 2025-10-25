@@ -8,10 +8,10 @@ import com.bobodroid.myapplication.MainActivity.Companion.TAG
 import com.bobodroid.myapplication.domain.entity.PeriodComparisonEntity
 import com.bobodroid.myapplication.domain.entity.RateStatisticsEntity
 import com.bobodroid.myapplication.domain.entity.TrendAnalysisEntity
+import com.bobodroid.myapplication.domain.repository.IUserRepository
 import com.bobodroid.myapplication.domain.usecase.analysis.CalculatePeriodComparisonUseCase
 import com.bobodroid.myapplication.domain.usecase.analysis.CalculateRateStatisticsUseCase
 import com.bobodroid.myapplication.domain.usecase.analysis.CalculateTrendAnalysisUseCase
-import com.bobodroid.myapplication.models.datamodels.repository.UserRepository
 import com.bobodroid.myapplication.models.datamodels.roomDb.Currencies
 import com.bobodroid.myapplication.models.datamodels.roomDb.Currency
 import com.bobodroid.myapplication.models.datamodels.roomDb.CurrencyType
@@ -38,7 +38,7 @@ import kotlin.math.sqrt
 
 @HiltViewModel
 class AnalysisViewModel @Inject constructor(
-    private val userRepository: UserRepository,
+    private val userRepository: IUserRepository,
     private val settingsRepository: SettingsRepository,
     private val calculateRateStatisticsUseCase: CalculateRateStatisticsUseCase,
     private val calculateTrendAnalysisUseCase: CalculateTrendAnalysisUseCase,

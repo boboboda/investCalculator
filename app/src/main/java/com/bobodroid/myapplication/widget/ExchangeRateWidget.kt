@@ -9,9 +9,9 @@ import android.util.Log
 import android.widget.RemoteViews
 import com.bobodroid.myapplication.R
 import com.bobodroid.myapplication.MainActivity
-import com.bobodroid.myapplication.models.datamodels.repository.InvestRepository
+import com.bobodroid.myapplication.domain.repository.IRecordRepository
+import com.bobodroid.myapplication.domain.repository.IUserRepository
 import com.bobodroid.myapplication.models.datamodels.repository.LatestRateRepository
-import com.bobodroid.myapplication.models.datamodels.repository.UserRepository
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -30,10 +30,10 @@ class ExchangeRateWidget : AppWidgetProvider() {
     lateinit var latestRateRepository: LatestRateRepository
 
     @Inject
-    lateinit var investRepository: InvestRepository
+    lateinit var recordRepository: IRecordRepository
 
     @Inject
-    lateinit var userRepository: UserRepository
+    lateinit var userRepository: IUserRepository
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
 
@@ -56,6 +56,14 @@ class ExchangeRateWidget : AppWidgetProvider() {
         scope.cancel()
     }
 
+    /**
+     * 위젯 업데이트 함수 (12개 통화 지원)
+     *
+     * [변경 사항]
+     * - getAllDollarBuyRecords(), getAllYenBuyRecords() 제거
+     * - getAllRecords() 하나로 통합
+     * - 통화별 필터링으로 USD, JPY 추출
+     */
     private fun updateAppWidget(
         context: Context,
         appWidgetManager: AppWidgetManager,
@@ -86,7 +94,7 @@ class ExchangeRateWidget : AppWidgetProvider() {
                 val user = userRepository.userData.firstOrNull()?.localUserData
                 val isPremium = user?.isPremium ?: false
 
-                // ✅ SharedPreferences에서 서비스 실행 상태 확인 - 파일명 수정!
+                // ✅ SharedPreferences에서 서비스 실행 상태 확인
                 val isServiceRunning = context.getSharedPreferences("prefs_name", Context.MODE_PRIVATE)
                     .getString("widget_service_running", "false") == "true"
 
@@ -132,9 +140,12 @@ class ExchangeRateWidget : AppWidgetProvider() {
                     val updateTime = latestRate.createAt ?: "정보 없음"
                     views.setTextViewText(R.id.widget_update_time, "업데이트: $updateTime")
 
-                    // 총 수익 계산
-                    val dollarRecords = investRepository.getAllDollarBuyRecords().firstOrNull() ?: emptyList()
-                    val yenRecords = investRepository.getAllYenBuyRecords().firstOrNull() ?: emptyList()
+                    // ⭐ 총 수익 계산 (12개 통화 지원)
+                    val allRecords = recordRepository.getAllRecords().firstOrNull() ?: emptyList()
+
+                    // ⭐ 통화별로 필터링
+                    val dollarRecords = allRecords.filter { it.currencyCode == "USD" }
+                    val yenRecords = allRecords.filter { it.currencyCode == "JPY" }
 
                     val totalDollarProfit = dollarRecords.sumOf {
                         it.expectProfit?.replace(",", "")?.toBigDecimalOrNull() ?: BigDecimal.ZERO

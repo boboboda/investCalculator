@@ -4,12 +4,12 @@ package com.bobodroid.myapplication.models.datamodels.service.BackupApi
 import com.bobodroid.myapplication.models.datamodels.roomDb.CurrencyRecord
 
 /**
- * CurrencyRecord <-> CurrencyRecordDto 변환
+ * CurrencyRecord <-> RecordEntityDao 변환
  */
 object BackupMapper {
 
     /**
-     * CurrencyRecord → CurrencyRecordDto (백업용)
+     * CurrencyRecord → RecordEntityDao (백업용)
      */
     fun toDto(record: CurrencyRecord): CurrencyRecordDto {
         return CurrencyRecordDto(

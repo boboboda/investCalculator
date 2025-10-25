@@ -5,14 +5,16 @@ import android.app.Activity
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.bobodroid.myapplication.data.mapper.RecordMapper.toLegacyRecordList
 import com.bobodroid.myapplication.domain.entity.BadgeEntity
 import com.bobodroid.myapplication.domain.entity.InvestmentStatsEntity
 import com.bobodroid.myapplication.domain.entity.MonthlyGoalEntity
+import com.bobodroid.myapplication.domain.repository.IRecordRepository
+import com.bobodroid.myapplication.domain.repository.IUserRepository
 import com.bobodroid.myapplication.domain.usecase.statistics.CalculateBadgesUseCase
 import com.bobodroid.myapplication.domain.usecase.statistics.CalculateInvestmentStatsUseCase
 import com.bobodroid.myapplication.domain.usecase.statistics.CalculateMonthlyGoalUseCase
-import com.bobodroid.myapplication.models.datamodels.repository.InvestRepository
-import com.bobodroid.myapplication.models.datamodels.repository.UserRepository
+import com.bobodroid.myapplication.models.datamodels.roomDb.Currencies
 import com.bobodroid.myapplication.models.datamodels.roomDb.CurrencyRecord
 import com.bobodroid.myapplication.models.datamodels.roomDb.LocalUserData
 import com.bobodroid.myapplication.models.datamodels.useCases.AccountFoundException
@@ -38,8 +40,8 @@ import javax.inject.Inject
 
 @HiltViewModel
 class MyPageViewModel @Inject constructor(
-    private val userRepository: UserRepository,
-    private val investRepository: InvestRepository,
+    private val userRepository: IUserRepository,
+    private val recordRepository: IRecordRepository,
     private val socialLoginUseCases: SocialLoginUseCases,
     private val userUseCases: UserUseCases,
     private val accountSwitchUseCase: AccountSwitchUseCase,
@@ -282,10 +284,10 @@ class MyPageViewModel @Inject constructor(
 
     private suspend fun calculateInvestmentStats() {
         // ⭐ 12개 통화 모두 가져오기
-        investRepository.getAllCurrencyRecords()
+        recordRepository.getAllRecords()
             .map { records ->
                 // ⭐ UseCase 호출
-                calculateInvestmentStatsUseCase.execute(records)
+                calculateInvestmentStatsUseCase.execute(records.toLegacyRecordList())
             }
             .flowOn(Dispatchers.Default)
             .collectLatest { stats ->
@@ -310,38 +312,23 @@ class MyPageViewModel @Inject constructor(
 
     // ✅ 최근 활동 수집
     private suspend fun collectRecentActivities() {
-        combine(
-            investRepository.getAllDollarBuyRecords(),
-            investRepository.getAllYenBuyRecords()
-        ) { dollarRecords, yenRecords ->
-
-            // 기존 로직 그대로 유지
-            val dollarActivities = dollarRecords.map { record ->
-                RecentActivity(
-                    date = record.date ?: "",
-                    currencyType = "USD",
-                    isBuy = record.recordColor != true,
-                    amount = formatActivityAmount(record.money, record.rate, "USD"),
-                    profit = if (record.recordColor == true) formatProfit(record.sellProfit) else null
-                )
+        recordRepository.getAllRecords()  // ⭐ 12개 통화 모두 가져오기
+            .map { records ->
+                // ⭐ 모든 기록을 RecentActivity로 변환
+                records.map { record ->
+                    RecentActivity(
+                        date = record.date ?: "",
+                        currencyType = record.currencyCode,  // ⭐ USD, JPY, EUR 등 동적 처리
+                        isBuy = record.recordColor != true,
+                        amount = formatActivityAmount(record.money, record.rate, record.currencyCode),
+                        profit = if (record.recordColor == true) formatProfit(record.sellProfit) else null
+                    )
+                }
+                    .sortedByDescending { parseDate(it.date) }  // 날짜순 정렬
+                    .take(5)  // 최근 5개만
             }
-
-            val yenActivities = yenRecords.map { record ->
-                RecentActivity(
-                    date = record.date ?: "",
-                    currencyType = "JPY",
-                    isBuy = record.recordColor != true,
-                    amount = formatActivityAmount(record.money, record.rate, "JPY"),
-                    profit = if (record.recordColor == true) formatProfit(record.sellProfit) else null
-                )
-            }
-
-            (dollarActivities + yenActivities)
-                .sortedByDescending { parseDate(it.date) }
-                .take(5)
-        }
             .flowOn(Dispatchers.Default)
-            .collectLatest { activities ->  // ← collect를 collectLatest로 변경
+            .collectLatest { activities ->
                 _myPageUiState.update {
                     it.copy(recentActivities = activities)
                 }
@@ -350,51 +337,75 @@ class MyPageViewModel @Inject constructor(
 
 
 
-    // 활동 금액 포맷팅 (₩2,000,000 / 1,320원)
-    private fun formatActivityAmount(money: String?, rate: String?, currencyType: String): String {
-        val formattedMoney = money?.replace(",", "")?.toBigDecimalOrNull()?.let {
-            "₩" + "%,d".format(it.toLong())
-        } ?: "₩0"
+    /**
+     * ✅ 활동 금액 포맷팅 (12개 통화 지원)
+     *
+     * @param money 외화 금액
+     * @param rate 환율
+     * @param currencyCode 통화 코드 (USD, JPY, EUR 등)
+     */
+    private fun formatActivityAmount(money: String?, rate: String?, currencyCode: String): String {
+        val moneyValue = money?.toFloatOrNull() ?: 0f
+        val rateValue = rate?.toFloatOrNull() ?: 0f
 
-        val formattedRate = rate?.replace(",", "")?.toBigDecimalOrNull()?.let {
-            "%,d".format(it.toLong()) + "원"
-        } ?: "0원"
+        // ⭐ Currency 정보 가져오기
+        val currency = Currencies.findByCode(currencyCode)
+        val symbol = currency?.symbol ?: currencyCode
 
-        return "$formattedMoney / $formattedRate"
-    }
-
-    // 수익 포맷팅 (+₩12,346)
-    private fun formatProfit(profit: String?): String? {
-        return profit?.replace(",", "")?.toBigDecimalOrNull()?.let { amount ->
-            val roundedAmount = amount.setScale(0, RoundingMode.HALF_UP)
-            val formatted = "%,d".format(roundedAmount.toLong())
-            when {
-                roundedAmount > BigDecimal.ZERO -> "+₩$formatted"
-                roundedAmount < BigDecimal.ZERO -> "-₩${formatted.replace("-", "")}"
-                else -> "₩0"
+        return when {
+            moneyValue == 0f -> "$symbol 0"
+            rateValue == 0f -> "$symbol ${formatCurrency(moneyValue.toBigDecimal())}"
+            else -> {
+                val krwAmount = moneyValue * rateValue
+                "$symbol ${formatCurrency(moneyValue.toBigDecimal())} (₩${formatCurrency(krwAmount.toBigDecimal())})"
             }
         }
     }
 
-    // 날짜 파싱 (yyyy-MM-dd 형식)
-    private fun parseDate(dateString: String): Long {
+    /**
+     * ✅ 수익 포맷팅
+     */
+    private fun formatProfit(profit: String?): String {
+        val profitValue = profit?.toFloatOrNull() ?: return "₩0"
+        val formatted = formatCurrency(profitValue.toBigDecimal())
+        return when {
+            profitValue > 0 -> "+₩$formatted"
+            profitValue < 0 -> "-₩${formatted.removePrefix("-")}"
+            else -> "₩0"
+        }
+    }
+
+    /**
+     * ✅ 날짜 파싱 (정렬용)
+     */
+    private fun parseDate(dateStr: String): Long {
         return try {
-            val parts = dateString.split("-")
+            // 날짜 형식에 맞게 파싱 (예: "2024.01.15")
+            val parts = dateStr.split(".")
             if (parts.size == 3) {
-                val year = parts[0].toLong()
-                val month = parts[1].toLong()
-                val day = parts[2].toLong()
-                year * 10000 + month * 100 + day
-            } else 0L
+                val year = parts[0].toInt()
+                val month = parts[1].toInt()
+                val day = parts[2].toInt()
+                year * 10000L + month * 100L + day
+            } else {
+                0L
+            }
         } catch (e: Exception) {
             0L
         }
     }
 
 
+
+
+
+
+
+
+
     private suspend fun calculateGoalProgress() {
         combine(
-            investRepository.getAllCurrencyRecords(),  // ⭐ 12개 통화
+            recordRepository.getAllRecords(),  // ⭐ 12개 통화
             userRepository.userData
         ) { allRecords, userData ->
             val localUser = userData?.localUserData
@@ -404,7 +415,7 @@ class MyPageViewModel @Inject constructor(
 
             // ⭐ UseCase 호출
             calculateMonthlyGoalUseCase.execute(
-                allRecords = allRecords,
+                allRecords = allRecords.toLegacyRecordList(),
                 goalAmount = goalAmount,
                 goalMonth = goalMonth,
                 currentMonth = currentMonth
@@ -463,10 +474,10 @@ class MyPageViewModel @Inject constructor(
 
 
     private suspend fun calculateBadges() {
-        investRepository.getAllCurrencyRecords()  // ⭐ 12개 통화
+       recordRepository.getAllRecords()  // ⭐ 12개 통화
             .map { records ->
                 // ⭐ UseCase 호출
-                calculateBadgesUseCase.execute(records)
+                calculateBadgesUseCase.execute(records.toLegacyRecordList())
             }
             .flowOn(Dispatchers.Default)
             .collectLatest { badges ->

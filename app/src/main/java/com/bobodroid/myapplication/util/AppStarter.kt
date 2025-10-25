@@ -3,7 +3,6 @@ package com.bobodroid.myapplication.util
 import android.content.Context
 import com.bobodroid.myapplication.models.datamodels.repository.LatestRateRepository
 import com.bobodroid.myapplication.models.datamodels.repository.NoticeRepository
-import com.bobodroid.myapplication.models.datamodels.repository.UserRepository
 import com.bobodroid.myapplication.models.datamodels.useCases.LocalExistCheckUseCase
 import com.bobodroid.myapplication.util.AdMob.AdManager
 import kotlinx.coroutines.CoroutineScope

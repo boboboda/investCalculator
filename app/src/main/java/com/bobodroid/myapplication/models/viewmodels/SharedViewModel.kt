@@ -5,7 +5,7 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.bobodroid.myapplication.MainActivity.Companion.TAG
-import com.bobodroid.myapplication.models.datamodels.repository.UserRepository
+import com.bobodroid.myapplication.domain.repository.IUserRepository
 import com.bobodroid.myapplication.models.datamodels.roomDb.LocalUserData
 import com.bobodroid.myapplication.models.datamodels.roomDb.PremiumType
 import com.bobodroid.myapplication.premium.PremiumManager
@@ -30,7 +30,7 @@ import javax.inject.Inject
 class SharedViewModel @Inject constructor(
     private val premiumManager: PremiumManager,
     private val adUseCase: AdUseCase,
-    private val userRepository: UserRepository
+    private val userRepository: IUserRepository
 ) : ViewModel() {
 
     private val _adUiState = MutableStateFlow(AdUiState())

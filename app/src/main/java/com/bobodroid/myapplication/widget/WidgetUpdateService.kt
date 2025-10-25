@@ -14,9 +14,9 @@ import android.util.Log
 import androidx.core.app.NotificationCompat
 import com.bobodroid.myapplication.MainActivity
 import com.bobodroid.myapplication.R
-import com.bobodroid.myapplication.models.datamodels.repository.InvestRepository
+import com.bobodroid.myapplication.domain.repository.IRecordRepository
+import com.bobodroid.myapplication.domain.repository.IUserRepository
 import com.bobodroid.myapplication.models.datamodels.repository.LatestRateRepository
-import com.bobodroid.myapplication.models.datamodels.repository.UserRepository
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.catch
@@ -37,10 +37,10 @@ class WidgetUpdateService : Service() {
     lateinit var latestRateRepository: LatestRateRepository
 
     @Inject
-    lateinit var investRepository: InvestRepository
+    lateinit var recordRepository: IRecordRepository
 
     @Inject
-    lateinit var userRepository: UserRepository
+    lateinit var userRepository: IUserRepository
 
     // Service 전용 CoroutineScope (SupervisorJob 사용)
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)

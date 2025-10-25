@@ -14,6 +14,7 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.unit.dp
 import com.bobodroid.myapplication.components.EmptyRecordView
 import com.bobodroid.myapplication.components.RecordHeader
+import com.bobodroid.myapplication.data.mapper.RecordMapper.toLegacyRecord
 import com.bobodroid.myapplication.models.datamodels.roomDb.CurrencyRecord
 import com.bobodroid.myapplication.models.datamodels.roomDb.CurrencyType
 import com.bobodroid.myapplication.models.viewmodels.CurrencyRecordState
@@ -93,7 +94,7 @@ fun RecordListView(
 
                         RecordListRowView(
                             currencyType = currencyType,
-                            data = record,
+                            data = record.toLegacyRecord(),
                             sellState = record.recordColor!!,
                             groupList = groupList,
                             onEvent = { event ->

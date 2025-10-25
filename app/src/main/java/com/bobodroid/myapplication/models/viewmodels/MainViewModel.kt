@@ -5,8 +5,11 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.bobodroid.myapplication.MainActivity.Companion.TAG
+import com.bobodroid.myapplication.data.mapper.RecordMapper.toLegacyRecord
 import com.bobodroid.myapplication.domain.entity.HoldingStats
+import com.bobodroid.myapplication.domain.entity.RecordEntity
 import com.bobodroid.myapplication.domain.entity.RecordFilterCriteria
+import com.bobodroid.myapplication.domain.repository.IUserRepository
 import com.bobodroid.myapplication.domain.usecase.exchange.CalculateExchangeUseCase
 import com.bobodroid.myapplication.domain.usecase.record.CalculateHoldingStatsUseCase
 import com.bobodroid.myapplication.domain.usecase.record.FilterRecordsUseCase
@@ -14,7 +17,6 @@ import com.bobodroid.myapplication.domain.usecase.record.GroupRecordsByCategoryU
 import com.bobodroid.myapplication.models.datamodels.repository.LatestRateRepository
 import com.bobodroid.myapplication.models.datamodels.repository.Notice
 import com.bobodroid.myapplication.models.datamodels.repository.NoticeRepository
-import com.bobodroid.myapplication.models.datamodels.repository.UserRepository
 import com.bobodroid.myapplication.models.datamodels.roomDb.*
 import com.bobodroid.myapplication.models.datamodels.useCases.RecordUseCase
 import com.bobodroid.myapplication.models.datamodels.useCases.UserUseCases
@@ -42,7 +44,7 @@ import javax.inject.Inject
 @HiltViewModel
 class MainViewModel @Inject constructor(
     private val userUseCases: UserUseCases,
-    private val userRepository: UserRepository,
+    private val userRepository: IUserRepository,
     private val latestRateRepository: LatestRateRepository,
     private val noticeRepository: NoticeRepository,
     private val settingsRepository: SettingsRepository,
@@ -334,7 +336,7 @@ class MainViewModel @Inject constructor(
 
     // ✅ 매도 계산 - 새로운 구조
     private suspend fun sellCalculate(sellRate: String) {
-        val selectedRecord = _recordListUiState.value.selectedRecord as? CurrencyRecord ?: return
+        val selectedRecord = _recordListUiState.value.selectedRecord as? RecordEntity ?: return
         val exchangeMoney = selectedRecord.exchangeMoney ?: return
         val krMoney = selectedRecord.money ?: return
 
@@ -384,9 +386,9 @@ class MainViewModel @Inject constructor(
             }
             is MainEvent.SellRecord -> {
                 viewModelScope.launch {
-                    val sellRecord = _recordListUiState.value.selectedRecord as? CurrencyRecord ?: return@launch
+                    val sellRecord = _recordListUiState.value.selectedRecord as? RecordEntity ?: return@launch
                     recordUseCase.sellCurrencyRecord(
-                        record = sellRecord,
+                        record = sellRecord.toLegacyRecord(),
                         sellDate = _mainUiState.value.selectedDate,
                         sellRate = _recordListUiState.value.sellRate
                     )
@@ -454,9 +456,9 @@ class MainViewModel @Inject constructor(
             }
             is MainEvent.EditBottomSheetEvent.EditSelected -> {
                 viewModelScope.launch {
-                    val currencyRecord = event.record as? CurrencyRecord ?: return@launch
+                    val currencyRecord = event.record as? RecordEntity ?: return@launch
                     recordUseCase.editCurrencyRecord(
-                        record = currencyRecord,
+                        record = currencyRecord.toLegacyRecord(),
                         editDate = _mainUiState.value.selectedDate,
                         editMoney = event.editMoney,
                         editRate = event.editRate
@@ -714,7 +716,7 @@ data class RecordListUiState(
 
 data class CurrencyRecordState<T: ForeignCurrencyRecord>(
     val records: List<T> = emptyList(),
-    val groupedRecords: Map<String, List<T>> = emptyMap(),
+    val groupedRecords: Map<String, List<RecordEntity>> = emptyMap(),
     val groups: List<String> = emptyList(),
     val totalProfit: String = "",
 )

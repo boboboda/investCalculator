@@ -2,11 +2,13 @@ package com.bobodroid.myapplication.models.datamodels.useCases
 
 import android.util.Log
 import com.bobodroid.myapplication.MainActivity.Companion.TAG
+import com.bobodroid.myapplication.data.mapper.RecordMapper.toEntity
+import com.bobodroid.myapplication.data.mapper.RecordMapper.toLegacyRecordList
+import com.bobodroid.myapplication.domain.repository.IRecordRepository
+import com.bobodroid.myapplication.domain.repository.IUserRepository
 import com.bobodroid.myapplication.domain.usecase.exchange.CalculateExchangeUseCase
 import com.bobodroid.myapplication.domain.usecase.record.GroupRecordsByCategoryUseCase
 import com.bobodroid.myapplication.extensions.toBigDecimalWon
-import com.bobodroid.myapplication.models.datamodels.repository.InvestRepository
-import com.bobodroid.myapplication.models.datamodels.repository.UserRepository
 import com.bobodroid.myapplication.models.datamodels.roomDb.*
 import com.bobodroid.myapplication.models.viewmodels.CurrencyRecordState
 import com.bobodroid.myapplication.models.viewmodels.RecordListUiState
@@ -22,8 +24,8 @@ import java.util.UUID
 import javax.inject.Inject
 
 class RecordUseCase @Inject constructor(
-    private val investRepository: InvestRepository,
-    private val userRepository: UserRepository,
+    private val recordRepository: IRecordRepository,
+    private val userRepository: IUserRepository,
     private val backupScheduler: BackupScheduler,
     private val groupRecordsUseCase: GroupRecordsByCategoryUseCase,
     private val calculateExchangeUseCase: CalculateExchangeUseCase
@@ -35,7 +37,7 @@ class RecordUseCase @Inject constructor(
      * 모든 통화의 기록을 가져옴
      */
     fun getAllCurrencyRecords(): Flow<Map<String, CurrencyRecordState<CurrencyRecord>>> {
-        return investRepository.getAllCurrencyRecords()
+        return recordRepository.getAllRecords()
             .distinctUntilChanged()
             .map { records ->
                 // 통화별로 그룹화
@@ -44,8 +46,8 @@ class RecordUseCase @Inject constructor(
                 // 각 통화별로 CurrencyRecordState 생성
                 groupedByCurrency.mapValues { (_, currencyRecords) ->
                     CurrencyRecordState<CurrencyRecord>(
-                        records = currencyRecords,
-                        groupedRecords = groupRecordsUseCase.execute(currencyRecords) { it.categoryName },
+                        records = currencyRecords.toLegacyRecordList(),
+                        groupedRecords = groupRecordsUseCase.executeForEntity(currencyRecords),
                         groups = currencyRecords.map { it.categoryName ?: "미지정" }.distinct()
                     )
                 }
@@ -56,12 +58,12 @@ class RecordUseCase @Inject constructor(
      * 특정 통화의 기록만 가져옴
      */
     fun getRecordsByCurrency(currencyCode: String): Flow<CurrencyRecordState<CurrencyRecord>> {
-        return investRepository.getRecordsByCurrency(currencyCode)
+        return recordRepository.getRecordsByCurrency(currencyCode)
             .distinctUntilChanged()
             .map { records ->
                 CurrencyRecordState<CurrencyRecord>(
-                    records = records,
-                    groupedRecords = groupRecordsUseCase.execute(records) { it.categoryName },
+                    records = records.toLegacyRecordList(),
+                    groupedRecords = groupRecordsUseCase.executeForEntity(records),
                     groups = records.map { it.categoryName ?: "미지정" }.distinct()
                 )
             }
@@ -101,7 +103,7 @@ class RecordUseCase @Inject constructor(
             recordColor = false
         )
 
-        investRepository.addCurrencyRecord(record)
+        recordRepository.addRecord(record.toEntity())
 
         // ✅ 프리미엄 사용자 자동 백업 예약
         scheduleBackupIfPremium()
@@ -134,7 +136,7 @@ class RecordUseCase @Inject constructor(
             exchangeMoney = exchangeMoney
         )
 
-        investRepository.updateCurrencyRecord(editedRecord)
+        recordRepository.updateRecord(editedRecord.toEntity())
 
         // ✅ 프리미엄 사용자 자동 백업 예약
         scheduleBackupIfPremium()
@@ -165,9 +167,9 @@ class RecordUseCase @Inject constructor(
             sellProfit = sellProfit.toString(),
             expectProfit = sellProfit.toString(),
             recordColor = true
-        )
+        ).toEntity()
 
-        investRepository.updateCurrencyRecord(soldRecord)
+        recordRepository.updateRecord(soldRecord)
 
         // ✅ 프리미엄 사용자 자동 백업 예약
         scheduleBackupIfPremium()
@@ -178,7 +180,7 @@ class RecordUseCase @Inject constructor(
      */
     suspend fun updateCurrencyRecordMemo(record: CurrencyRecord, memo: String) {
         val updatedRecord = record.copy(memo = memo)
-        investRepository.updateCurrencyRecord(updatedRecord)
+        recordRepository.updateRecord(updatedRecord.toEntity())
 
         // ✅ 프리미엄 사용자 자동 백업 예약
         scheduleBackupIfPremium()
@@ -188,7 +190,7 @@ class RecordUseCase @Inject constructor(
      * 통합 기록 삭제 (CurrencyRecord 사용)
      */
     suspend fun removeCurrencyRecord(record: CurrencyRecord) {
-        investRepository.deleteCurrencyRecord(record)
+        recordRepository.deleteRecord(record.toEntity())
 
         // ✅ 프리미엄 사용자 자동 백업 예약
         scheduleBackupIfPremium()
@@ -199,7 +201,7 @@ class RecordUseCase @Inject constructor(
      */
     suspend fun cancelSellCurrencyRecord(record: CurrencyRecord) {
         val canceledRecord = record.copyForCancelSell()
-        investRepository.updateCurrencyRecord(canceledRecord)
+        recordRepository.updateRecord(canceledRecord.toEntity())
 
         // ✅ 프리미엄 사용자 자동 백업 예약
         scheduleBackupIfPremium()
@@ -210,7 +212,7 @@ class RecordUseCase @Inject constructor(
      */
     suspend fun updateCurrencyRecordCategory(record: CurrencyRecord, groupName: String) {
         val updatedRecord = record.copy(categoryName = groupName)
-        investRepository.updateCurrencyRecord(updatedRecord)
+        recordRepository.updateRecord(updatedRecord.toEntity())
 
         // ✅ 프리미엄 사용자 자동 백업 예약
         scheduleBackupIfPremium()
@@ -231,7 +233,7 @@ class RecordUseCase @Inject constructor(
      * 통합 수익 갱신 (12개 통화 모두)
      */
     suspend fun refreshAllCurrencyProfits(latestRates: Map<String, String>) {
-        val allRecords = investRepository.getAllCurrencyRecords().first()
+        val allRecords = recordRepository.getAllRecords().first()
 
         allRecords
             .filter { it.recordColor == false } // 보유중인 것만
@@ -255,7 +257,7 @@ class RecordUseCase @Inject constructor(
                     expectProfit = profit
                 )
 
-                investRepository.updateCurrencyRecord(updatedRecord)
+                recordRepository.updateRecord(updatedRecord)
             }
     }
 

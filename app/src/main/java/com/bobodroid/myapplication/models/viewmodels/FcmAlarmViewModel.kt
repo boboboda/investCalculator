@@ -7,11 +7,11 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.bobodroid.myapplication.MainActivity.Companion.TAG
 import com.bobodroid.myapplication.domain.entity.RecordAlertEntity
+import com.bobodroid.myapplication.domain.repository.IRecordRepository
+import com.bobodroid.myapplication.domain.repository.IUserRepository
 import com.bobodroid.myapplication.domain.usecase.notification.CalculateRecordAgeUseCase
 import com.bobodroid.myapplication.domain.usecase.notification.ValidateAlertSettingsUseCase
-import com.bobodroid.myapplication.models.datamodels.repository.InvestRepository
 import com.bobodroid.myapplication.models.datamodels.repository.LatestRateRepository
-import com.bobodroid.myapplication.models.datamodels.repository.UserRepository
 import com.bobodroid.myapplication.models.datamodels.roomDb.*
 import com.bobodroid.myapplication.models.datamodels.service.BackupApi.BackupApi
 import com.bobodroid.myapplication.models.datamodels.service.BackupApi.CreateBackupDto
@@ -39,11 +39,11 @@ import javax.inject.Inject
 
 @HiltViewModel
 class FcmAlarmViewModel @Inject constructor(
-    private val userRepository: UserRepository,
+    private val userRepository: IUserRepository,
     private val fcmUseCases: FcmUseCases,
     private val latestRateRepository: LatestRateRepository,
     private val settingsRepository: SettingsRepository,
-    private val investRepository: InvestRepository,
+    private val iRecordRepository: IRecordRepository,
     private val validateAlertSettingsUseCase: ValidateAlertSettingsUseCase,
     private val calculateRecordAgeUseCase: CalculateRecordAgeUseCase
 ) : ViewModel() {
@@ -413,7 +413,7 @@ class FcmAlarmViewModel @Inject constructor(
             try {
                 _profitAlertLoading.value = true
 
-                val unsoldRecords = investRepository.getUnsoldRecords().first()
+                val unsoldRecords = iRecordRepository.getUnsoldRecords().first()
 
                 Log.d(TAG("FcmAlarmViewModel", "loadRecordsWithAlerts"), "보유중 기록: ${unsoldRecords.size}개")
 
@@ -575,7 +575,7 @@ class FcmAlarmViewModel @Inject constructor(
                 return false
             }
 
-            val allRecords = investRepository.getAllCurrencyRecords().first()
+            val allRecords = iRecordRepository.getAllRecords().first()
 
             Log.d(TAG("FcmAlarmViewModel", "triggerBackup"), "백업 대상 기록: ${allRecords.size}개")
 

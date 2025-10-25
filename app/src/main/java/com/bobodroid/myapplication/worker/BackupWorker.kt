@@ -6,8 +6,9 @@ import android.util.Log
 import androidx.hilt.work.HiltWorker
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
-import com.bobodroid.myapplication.models.datamodels.repository.InvestRepository
-import com.bobodroid.myapplication.models.datamodels.repository.UserRepository
+import com.bobodroid.myapplication.data.mapper.RecordMapper.toLegacyRecordList
+import com.bobodroid.myapplication.domain.repository.IRecordRepository
+import com.bobodroid.myapplication.domain.repository.IUserRepository
 import com.bobodroid.myapplication.models.datamodels.service.BackupApi.BackupApi
 import com.bobodroid.myapplication.models.datamodels.service.BackupApi.BackupMapper
 import com.bobodroid.myapplication.models.datamodels.service.BackupApi.BackupRequest
@@ -25,8 +26,8 @@ import kotlinx.coroutines.flow.first
 class BackupWorker @AssistedInject constructor(
     @Assisted appContext: Context,
     @Assisted workerParams: WorkerParameters,
-    private val userRepository: UserRepository,
-    private val investRepository: InvestRepository
+    private val userRepository: IUserRepository,
+    private val recordRepository: IRecordRepository
 ) : CoroutineWorker(appContext, workerParams) {
 
     companion object {
@@ -68,7 +69,7 @@ class BackupWorker @AssistedInject constructor(
             Log.d(TAG, "🔐 소셜 로그인 확인 (${localUser.socialType})")
 
             // ✅ 4. 모든 투자 기록 가져오기
-            val allRecords = investRepository.getAllCurrencyRecords().first()
+            val allRecords = recordRepository.getAllRecords().first()
             Log.d(TAG, "📊 백업할 기록: ${allRecords.size}개")
 
             if (allRecords.isEmpty()) {
@@ -77,7 +78,7 @@ class BackupWorker @AssistedInject constructor(
             }
 
             // ✅ 5. DTO 변환
-            val recordDtos = BackupMapper.toDtoList(allRecords)
+            val recordDtos = BackupMapper.toDtoList(allRecords.toLegacyRecordList())
 
             // ✅ 6. 백업 요청 생성
             val backupRequest = BackupRequest(

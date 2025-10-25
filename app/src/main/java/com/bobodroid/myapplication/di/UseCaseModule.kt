@@ -2,9 +2,9 @@ package com.bobodroid.myapplication.di
 
 import android.content.Context
 import com.bobodroid.myapplication.billing.BillingClientLifecycle
+import com.bobodroid.myapplication.domain.repository.IRecordRepository
+import com.bobodroid.myapplication.domain.repository.IUserRepository
 import com.bobodroid.myapplication.domain.usecase.record.CalculateHoldingStatsUseCase
-import com.bobodroid.myapplication.models.datamodels.repository.InvestRepository
-import com.bobodroid.myapplication.models.datamodels.repository.UserRepository
 import com.bobodroid.myapplication.models.datamodels.social.SocialLoginManager
 import com.bobodroid.myapplication.models.datamodels.useCases.AccountSwitchUseCase
 import com.bobodroid.myapplication.models.datamodels.useCases.DeleteAllNotificationsUseCase
@@ -53,7 +53,7 @@ object UseCaseModule {
     @Singleton  // LocalExistCheckUseCase를 싱글톤으로 선언
     @Provides
     fun provideLocalExistCheckUseCase(
-        userRepository: UserRepository,
+        userRepository: IUserRepository,
         localIdAddUseCase: LocalIdAddUseCase,
         socialLoginManager: SocialLoginManager
     ): LocalExistCheckUseCase {
@@ -62,7 +62,7 @@ object UseCaseModule {
 
     @Provides
     fun provideLocalIdAddUseCase(
-        userRepository: UserRepository
+        userRepository: IUserRepository
     ): LocalIdAddUseCase {
         return LocalIdAddUseCase(userRepository)
     }
@@ -210,50 +210,50 @@ object UseCaseModule {
     // ✅ 개별 UseCase 제공
     @Provides
     fun provideDeleteUserUseCase(
-        userRepository: UserRepository
+        userRepository: IUserRepository
     ): DeleteUserUseCase = DeleteUserUseCase(userRepository)
 
     @Provides
     fun provideLocalUserUpdate(
-        userRepository: UserRepository
+        userRepository: IUserRepository
     ): LocalUserUpdate = LocalUserUpdate(userRepository)
 
 
     // ✅ 소셜 로그인 개별 UseCase 제공
     @Provides
     fun provideGoogleLoginUseCase(
-        userRepository: UserRepository,
+        userRepository: IUserRepository,
         socialLoginManager: SocialLoginManager
     ): GoogleLoginUseCase = GoogleLoginUseCase(userRepository, socialLoginManager)
 
     @Provides
     fun provideKakaoLoginUseCase(
-        userRepository: UserRepository,
+        userRepository: IUserRepository,
         socialLoginManager: SocialLoginManager
     ): KakaoLoginUseCase = KakaoLoginUseCase(userRepository, socialLoginManager)
 
     @Provides
     fun provideSocialLogoutUseCase(
-        userRepository: UserRepository,
+        userRepository: IUserRepository,
         socialLoginManager: SocialLoginManager
     ): SocialLogoutUseCase = SocialLogoutUseCase(userRepository, socialLoginManager)
 
     @Provides
     fun provideSyncToServerUseCase(
-        userRepository: UserRepository,
-        investRepository: InvestRepository
-    ): SyncToServerUseCase = SyncToServerUseCase(userRepository, investRepository)
+        userRepository: IUserRepository,
+        recordRepository: IRecordRepository
+    ): SyncToServerUseCase = SyncToServerUseCase(userRepository, recordRepository)
 
     @Provides
     fun provideRestoreFromServerUseCase(
-        userRepository: UserRepository,
-        investRepository: InvestRepository
-    ): RestoreFromServerUseCase = RestoreFromServerUseCase(userRepository, investRepository)
+        userRepository: IUserRepository,
+        recordRepository: IRecordRepository
+    ): RestoreFromServerUseCase = RestoreFromServerUseCase(userRepository, recordRepository)
 
 
     @Provides
     fun provideAccountSwitchUseCase(
-        userRepository: UserRepository,
+        userRepository: IUserRepository,
     ): AccountSwitchUseCase = AccountSwitchUseCase(
         userRepository,
     )
@@ -264,7 +264,7 @@ object UseCaseModule {
     fun providePremiumManager(
         @ApplicationContext context: Context,
         userUseCases: UserUseCases,
-        userRepository: UserRepository
+        userRepository: IUserRepository
     ): PremiumManager {
         return PremiumManager(context, userRepository, userUseCases)
     }

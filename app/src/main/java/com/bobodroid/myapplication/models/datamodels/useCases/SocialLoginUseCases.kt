@@ -3,8 +3,10 @@ package com.bobodroid.myapplication.models.datamodels.useCases
 import android.app.Activity
 import android.util.Log
 import com.bobodroid.myapplication.MainActivity.Companion.TAG
-import com.bobodroid.myapplication.models.datamodels.repository.InvestRepository
-import com.bobodroid.myapplication.models.datamodels.repository.UserRepository
+import com.bobodroid.myapplication.data.mapper.RecordMapper.toLegacyEntityList
+import com.bobodroid.myapplication.data.mapper.RecordMapper.toLegacyRecordList
+import com.bobodroid.myapplication.domain.repository.IRecordRepository
+import com.bobodroid.myapplication.domain.repository.IUserRepository
 import com.bobodroid.myapplication.models.datamodels.roomDb.LocalUserData
 import com.bobodroid.myapplication.models.datamodels.roomDb.SocialType
 import com.bobodroid.myapplication.models.datamodels.service.BackupApi.BackupApi
@@ -55,7 +57,7 @@ class AlreadyLinkedException(
 
 
 class GoogleLoginUseCase @Inject constructor(
-    private val userRepository: UserRepository,
+    private val userRepository: IUserRepository,
     private val socialLoginManager: SocialLoginManager
 ) {
     suspend operator fun invoke(
@@ -217,7 +219,7 @@ class GoogleLoginUseCase @Inject constructor(
  * Kakao 로그인 UseCase (계정 발견 로직 추가)
  */
 class KakaoLoginUseCase @Inject constructor(
-    private val userRepository: UserRepository,
+    private val userRepository: IUserRepository,
     private val socialLoginManager: SocialLoginManager
 ) {
     suspend operator fun invoke(
@@ -392,7 +394,7 @@ class AccountFoundException(
  * - 서버 데이터는 유지 (목표환율 등 보존)
  */
 class SocialLogoutUseCase @Inject constructor(
-    private val userRepository: UserRepository,
+    private val userRepository: IUserRepository,
     private val socialLoginManager: SocialLoginManager
 ) {
     suspend operator fun invoke(localUserData: LocalUserData): Result<LocalUserData> {
@@ -446,7 +448,7 @@ class SocialLogoutUseCase @Inject constructor(
  * 소셜 연동 해제 UseCase (새로 추가)
  */
 class UnlinkSocialUseCase @Inject constructor(
-    private val userRepository: UserRepository
+    private val userRepository: IUserRepository
 ) {
     suspend operator fun invoke(localUserData: LocalUserData): Result<Unit> {
         return try {
@@ -494,8 +496,8 @@ class UnlinkSocialUseCase @Inject constructor(
  * 서버 백업 UseCase
  */
 class SyncToServerUseCase @Inject constructor(
-    private val userRepository: UserRepository,
-    private val investRepository: InvestRepository
+    private val userRepository: IUserRepository,
+    private val recordRepository: IRecordRepository
 ) {
     suspend operator fun invoke(localUserData: LocalUserData): Result<LocalUserData> {
         return try {
@@ -506,11 +508,11 @@ class SyncToServerUseCase @Inject constructor(
             Log.d(TAG("SyncToServerUseCase", "invoke"), "서버 백업 시작")
 
             // ✅ 1. 모든 투자 기록 가져오기
-            val allRecords = investRepository.getAllCurrencyRecords().first()
+            val allRecords = recordRepository.getAllRecords().first()
             Log.d(TAG("SyncToServerUseCase", "invoke"), "백업할 기록: ${allRecords.size}개")
 
-            // ✅ 2. CurrencyRecord → CurrencyRecordDto 변환
-            val recordDtos = BackupMapper.toDtoList(allRecords)
+            // ✅ 2. CurrencyRecord → RecordEntityDao 변환
+            val recordDtos = BackupMapper.toDtoList(allRecords.toLegacyRecordList())
 
             // ✅ 3. 백업 요청 생성
             val backupRequest = BackupRequest(
@@ -566,8 +568,8 @@ class SyncToServerUseCase @Inject constructor(
  * 서버에서 데이터 복구 UseCase (완성)
  */
 class RestoreFromServerUseCase @Inject constructor(
-    private val userRepository: UserRepository,
-    private val investRepository: InvestRepository
+    private val userRepository: IUserRepository,
+    private val recordRepository: IRecordRepository
 ) {
     suspend operator fun invoke(
         deviceId: String? = null,
@@ -603,11 +605,11 @@ class RestoreFromServerUseCase @Inject constructor(
             // ✅ 3. 기존 데이터 삭제 (선택적 - 주석 처리 가능)
             // investRepository.deleteAllRecords()
 
-            // ✅ 4. CurrencyRecordDto → CurrencyRecord 변환
+            // ✅ 4. RecordEntityDao → CurrencyRecord 변환
             val records = BackupMapper.fromDtoList(restoreData.currencyRecords)
 
             // ✅ 5. 로컬 DB에 저장
-            investRepository.addCurrencyRecords(records)
+            recordRepository.addRecords(records.toLegacyEntityList())
 
             // ✅ 6. 사용자 정보 업데이트 (lastSyncAt)
             val currentUser = userRepository.userData.first()?.localUserData

@@ -6,7 +6,7 @@ import android.util.Log
 import com.android.billingclient.api.Purchase
 import com.bobodroid.myapplication.MainActivity.Companion.TAG
 import com.bobodroid.myapplication.billing.BillingClientLifecycle
-import com.bobodroid.myapplication.models.datamodels.repository.UserRepository
+import com.bobodroid.myapplication.domain.repository.IUserRepository
 import com.bobodroid.myapplication.models.datamodels.roomDb.LocalUserData
 import com.bobodroid.myapplication.models.datamodels.roomDb.PremiumType
 import com.bobodroid.myapplication.models.datamodels.service.subscriptionApi.RestoreSubscriptionRequest
@@ -36,7 +36,7 @@ import javax.inject.Singleton
 @Singleton
 class PremiumManager @Inject constructor(
     @ApplicationContext private val context: Context,
-    private val userRepository: UserRepository,
+    private val userRepository: IUserRepository,
     private val userUseCases: UserUseCases
 ) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)

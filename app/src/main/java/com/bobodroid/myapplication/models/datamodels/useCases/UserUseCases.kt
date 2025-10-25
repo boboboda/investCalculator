@@ -4,8 +4,8 @@ package com.bobodroid.myapplication.models.datamodels.useCases
 
 import android.util.Log
 import com.bobodroid.myapplication.MainActivity.Companion.TAG
+import com.bobodroid.myapplication.domain.repository.IUserRepository
 import com.bobodroid.myapplication.fcm.FCMTokenEvent
-import com.bobodroid.myapplication.models.datamodels.repository.UserRepository
 import com.bobodroid.myapplication.models.datamodels.roomDb.LocalUserData
 import com.bobodroid.myapplication.models.datamodels.roomDb.SocialType
 import com.bobodroid.myapplication.models.datamodels.roomDb.TargetRates
@@ -37,7 +37,7 @@ class UserUseCases(
  * 로컬 사용자 생성 UseCase
  */
 class LocalIdAddUseCase @Inject constructor(
-    private val userRepository: UserRepository
+    private val userRepository: IUserRepository
 ) {
     suspend operator fun invoke(): LocalUserData {
         val fcmToken = FCMTokenEvent.tokenFlow.filterNotNull().first()
@@ -59,7 +59,7 @@ class LocalIdAddUseCase @Inject constructor(
  * 로컬 사용자 업데이트 UseCase
  */
 class LocalUserUpdate @Inject constructor(
-    private val userRepository: UserRepository
+    private val userRepository: IUserRepository
 ) {
     suspend operator fun invoke(localUserData: LocalUserData) {
         userRepository.localUserUpdate(localUserData)
@@ -75,7 +75,7 @@ class LocalUserUpdate @Inject constructor(
  * 2. 로컬 DB 삭제
  */
 class DeleteUserUseCase @Inject constructor(
-    private val userRepository: UserRepository
+    private val userRepository: IUserRepository
 ) {
     suspend operator fun invoke(localUserData: LocalUserData): Result<Boolean> {
         return try {
@@ -119,7 +119,7 @@ class DeleteUserUseCase @Inject constructor(
  * 로컬 사용자 존재 확인 및 초기화 UseCase
  */
 class LocalExistCheckUseCase @Inject constructor(
-    private val userRepository: UserRepository,
+    private val userRepository: IUserRepository,
     private val localIdAddUseCase: LocalIdAddUseCase,
     private val socialLoginManager: SocialLoginManager
 ) {

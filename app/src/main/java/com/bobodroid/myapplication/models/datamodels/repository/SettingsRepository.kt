@@ -2,7 +2,7 @@ package com.bobodroid.myapplication.models.repository
 
 import android.content.Context
 import android.content.SharedPreferences
-import com.bobodroid.myapplication.models.datamodels.repository.UserRepository
+import com.bobodroid.myapplication.domain.repository.IUserRepository
 import com.bobodroid.myapplication.models.datamodels.roomDb.Currencies
 import com.bobodroid.myapplication.models.datamodels.roomDb.CurrencyType
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -20,7 +20,7 @@ import javax.inject.Singleton
 @Singleton
 class SettingsRepository @Inject constructor(
     @ApplicationContext private val context: Context,
-    private val userRepository: UserRepository
+    private val userRepository: IUserRepository
 ) {
     companion object {
         private const val PREFS_NAME = "app_settings"

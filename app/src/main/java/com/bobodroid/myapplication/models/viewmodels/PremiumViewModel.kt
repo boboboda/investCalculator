@@ -17,6 +17,7 @@ import com.bobodroid.myapplication.models.datamodels.service.subscriptionApi.Res
 import com.bobodroid.myapplication.models.datamodels.service.subscriptionApi.SubscriptionApi
 import com.bobodroid.myapplication.premium.PremiumManager
 import com.bobodroid.myapplication.util.PreferenceUtil
+import com.bobodroid.myapplication.widget.WidgetUpdateHelper
 import com.bobodroid.myapplication.widget.WidgetUpdateService
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -303,7 +304,7 @@ class PremiumViewModel @Inject constructor(
     }
 
     /**
-     * ✅ 실시간 업데이트 토글
+     * ✅ 실시간 업데이트 토글 - 수정됨
      */
     fun toggleRealtimeUpdate(enabled: Boolean) {
         Log.d(TAG("PremiumViewModel", "toggleRealtimeUpdate"), "━━━━━━━━━━━━━━━━━━━━━━━━━━")
@@ -331,6 +332,9 @@ class PremiumViewModel @Inject constructor(
         saveServiceState(true)
         _isServiceRunning.value = true
         WidgetUpdateService.startService(context)
+
+        // ✅ 위젯 즉시 업데이트하여 UI 반영
+        WidgetUpdateHelper.updateAllWidgets(context)
     }
 
     private fun stopRealtimeUpdate() {
@@ -338,28 +342,25 @@ class PremiumViewModel @Inject constructor(
         saveServiceState(false)
         _isServiceRunning.value = false
         WidgetUpdateService.stopService(context)
+
+        // ✅ 위젯 즉시 업데이트하여 UI 반영
+        WidgetUpdateHelper.updateAllWidgets(context)
     }
 
     /**
-     * SharedPreferences 헬퍼
+     * ✅ SharedPreferences 헬퍼 - 수정됨
      */
     private fun getServiceState(): Boolean {
-        return try {
-            preferenceUtil.getServiceRunning()
-        } catch (e: Exception) {
-            val sharedPrefs = context.getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
-            sharedPrefs.getBoolean("service_running", false)
-        }
+        // ✅ String으로 저장된 값 읽기
+        return preferenceUtil.getData("widget_service_running", "false") == "true"
     }
 
     private fun saveServiceState(isRunning: Boolean) {
-        try {
-            preferenceUtil.saveServiceRunning(isRunning)
-        } catch (e: Exception) {
-            val sharedPrefs = context.getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
-            sharedPrefs.edit().putBoolean("service_running", isRunning).apply()
-        }
+        // ✅ String으로 저장
+        preferenceUtil.setData("widget_service_running", if (isRunning) "true" else "false")
+        Log.d(TAG("PremiumViewModel", "saveServiceState"), "저장: widget_service_running = $isRunning")
     }
+
 
     /**
      * 남은 일수 계산

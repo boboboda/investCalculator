@@ -2,6 +2,7 @@ package com.bobodroid.myapplication.di
 
 import android.content.Context
 import com.bobodroid.myapplication.billing.BillingClientLifecycle
+import com.bobodroid.myapplication.domain.usecase.record.CalculateHoldingStatsUseCase
 import com.bobodroid.myapplication.models.datamodels.repository.InvestRepository
 import com.bobodroid.myapplication.models.datamodels.repository.UserRepository
 import com.bobodroid.myapplication.models.datamodels.social.SocialLoginManager
@@ -277,5 +278,12 @@ object UseCaseModule {
         adManager: AdManager
     ): AdUseCase {
         return AdUseCase(userUseCases, premiumManager, adManager)
+    }
+
+
+    // 기록 계산 비지니스 로직
+    @Provides
+    fun provideCalculateHoldingStatsUseCase(): CalculateHoldingStatsUseCase {
+        return CalculateHoldingStatsUseCase()
     }
 }

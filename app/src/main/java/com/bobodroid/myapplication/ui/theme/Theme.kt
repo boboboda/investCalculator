@@ -39,7 +39,7 @@ private val LightColorScheme = lightColorScheme(
 )
 
 @Composable
-fun InverstCalculatorTheme(
+fun InvestCalculatorTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
     dynamicColor: Boolean = true,
     content: @Composable () -> Unit

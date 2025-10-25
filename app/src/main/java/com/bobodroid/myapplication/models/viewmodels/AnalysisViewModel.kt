@@ -5,6 +5,12 @@ import androidx.compose.ui.graphics.Color
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.bobodroid.myapplication.MainActivity.Companion.TAG
+import com.bobodroid.myapplication.domain.entity.PeriodComparisonEntity
+import com.bobodroid.myapplication.domain.entity.RateStatisticsEntity
+import com.bobodroid.myapplication.domain.entity.TrendAnalysisEntity
+import com.bobodroid.myapplication.domain.usecase.analysis.CalculatePeriodComparisonUseCase
+import com.bobodroid.myapplication.domain.usecase.analysis.CalculateRateStatisticsUseCase
+import com.bobodroid.myapplication.domain.usecase.analysis.CalculateTrendAnalysisUseCase
 import com.bobodroid.myapplication.models.datamodels.repository.UserRepository
 import com.bobodroid.myapplication.models.datamodels.roomDb.Currencies
 import com.bobodroid.myapplication.models.datamodels.roomDb.Currency
@@ -33,7 +39,10 @@ import kotlin.math.sqrt
 @HiltViewModel
 class AnalysisViewModel @Inject constructor(
     private val userRepository: UserRepository,
-    private val settingsRepository: SettingsRepository, // ✅ 추가
+    private val settingsRepository: SettingsRepository,
+    private val calculateRateStatisticsUseCase: CalculateRateStatisticsUseCase,
+    private val calculateTrendAnalysisUseCase: CalculateTrendAnalysisUseCase,
+    private val calculatePeriodComparisonUseCase: CalculatePeriodComparisonUseCase// ✅ 추가
 ): ViewModel() {
 
 
@@ -67,23 +76,50 @@ class AnalysisViewModel @Inject constructor(
 
     init {
         viewModelScope.launch(Dispatchers.IO) {
-            // ✅ 모든 기간 데이터 로드
-            loadAllRangeData()
-            loadDailyCharge()
-
-            withContext(Dispatchers.Main) {
-                _analysisUiState.update { currentUiState ->
-                    currentUiState.copy(
-                        selectedRates = _dailyRates.value
-                    )
-                }
+            // ✅ 로딩 시작
+            _analysisUiState.update {
+                it.copy(loadingState = LoadingState.Loading)
             }
 
-            Log.d(TAG("AnalysisViewModel", "init"), "데이터 로드 완료")
-            Log.d(TAG("AnalysisViewModel", "init"), "Daily: ${_dailyRates.value.size}개")
-            Log.d(TAG("AnalysisViewModel", "init"), "Weekly: ${_weeklyRates.value.size}개")
-            Log.d(TAG("AnalysisViewModel", "init"), "Monthly: ${_monthlyRates.value.size}개")
-            Log.d(TAG("AnalysisViewModel", "init"), "Yearly: ${_yearlyRates.value.size}개")
+            try {
+                // ✅ 모든 기간 데이터 로드
+                loadAllRangeData()
+                loadDailyCharge()
+
+                // ✅ 데이터 검증 - 최소한 일간 데이터는 있어야 함
+                if (_dailyRates.value.isEmpty()) {
+                    throw Exception("환율 데이터를 불러올 수 없습니다.\n인터넷 연결을 확인해주세요.")
+                }
+
+                // ✅ 초기 선택된 탭 데이터 설정
+                withContext(Dispatchers.Main) {
+                    _analysisUiState.update { currentUiState ->
+                        currentUiState.copy(
+                            selectedRates = _dailyRates.value,
+                            loadingState = LoadingState.Success
+                        )
+                    }
+                }
+
+                Log.d(TAG("AnalysisViewModel", "init"), "데이터 로드 완료")
+                Log.d(TAG("AnalysisViewModel", "init"), "Daily: ${_dailyRates.value.size}개")
+                Log.d(TAG("AnalysisViewModel", "init"), "Weekly: ${_weeklyRates.value.size}개")
+                Log.d(TAG("AnalysisViewModel", "init"), "Monthly: ${_monthlyRates.value.size}개")
+                Log.d(TAG("AnalysisViewModel", "init"), "Yearly: ${_yearlyRates.value.size}개")
+
+            } catch (error: Exception) {
+                Log.e(TAG("AnalysisViewModel", "init"), "데이터 로드 실패: ${error.message}", error)
+
+                withContext(Dispatchers.Main) {
+                    _analysisUiState.update {
+                        it.copy(
+                            loadingState = LoadingState.Error(
+                                error.message ?: "알 수 없는 오류가 발생했습니다."
+                            )
+                        )
+                    }
+                }
+            }
         }
 
         viewModelScope.launch {
@@ -257,117 +293,65 @@ class AnalysisViewModel @Inject constructor(
     }
 
     // ✨ 통계 계산 - 선택된 탭의 데이터 기준
-    fun calculateStatistics(currencyType: CurrencyType): RateStatistics {
+    fun calculateStatistics(currencyType: CurrencyType): RateStatisticsEntity {
         val rates = _analysisUiState.value.selectedRates
-        if (rates.isEmpty()) return RateStatistics()
+        if (rates.isEmpty()) return RateStatisticsEntity()
 
-        // ✅ ExchangeRate에 이미 needsMultiply 처리된 값이 저장되어 있음
+        // 환율 값 추출
         val values = rates.mapNotNull { rate ->
             rate.getRate(currencyType.code).toFloatOrNull()
         }
 
-        if (values.isEmpty()) return RateStatistics()
+        if (values.isEmpty()) return RateStatisticsEntity()
 
-        val max = values.maxOrNull() ?: 0f
-        val min = values.minOrNull() ?: 0f
-        val average = values.average().toFloat()
-        val volatility = calculateVolatility(values)
-        val range = max - min
-
-        return RateStatistics(
-            max = max,
-            min = min,
-            average = average,
-            volatility = volatility,
-            range = range
-        )
+        // ⭐ UseCase 호출
+        return calculateRateStatisticsUseCase.execute(values)
     }
 
-    private fun calculateVolatility(values: List<Float>): Float {
-        if (values.size < 2) return 0f
-
-        val mean = values.average()
-        val variance = values.map { (it - mean).pow(2) }.average()
-        return sqrt(variance).toFloat()
-    }
 
     // ✅ 추세 분석 - 항상 전체 데이터(1년) 기준
-    fun calculateTrendAnalysis(currencyType: CurrencyType): TrendAnalysis {
-        val rates = _yearlyRates.value
-        if (rates.size < 2) return TrendAnalysis()
+    fun calculateTrendAnalysis(currencyType: CurrencyType): TrendAnalysisEntity {
+        val rates = _yearlyRates.value  // 항상 1년 데이터 사용
+        if (rates.size < 2) return TrendAnalysisEntity()
 
-        // ✅ ExchangeRate에 이미 needsMultiply 처리된 값이 저장되어 있음
+        // 환율 값 추출
         val values = rates.mapNotNull { rate ->
             rate.getRate(currencyType.code).toFloatOrNull()
         }
 
-        if (values.size < 2) return TrendAnalysis()
+        if (values.size < 2) return TrendAnalysisEntity()
 
-        var upDays = 0
-        var downDays = 0
-
-        for (i in 1 until values.size) {
-            when {
-                values[i] > values[i-1] -> upDays++
-                values[i] < values[i-1] -> downDays++
-            }
-        }
-
-        val trend = when {
-            upDays > downDays -> "상승"
-            downDays > upDays -> "하락"
-            else -> "횡보"
-        }
-
-        val trendStrength = if (values.size > 1) {
-            val maxChange = (upDays + downDays).toFloat()
-            if (maxChange > 0) ((kotlin.math.abs(upDays - downDays) / maxChange) * 100).toInt() else 0
-        } else 0
-
-        return TrendAnalysis(
-            trend = trend,
-            upDays = upDays,
-            downDays = downDays,
-            trendStrength = trendStrength
-        )
+        // ⭐ UseCase 호출
+        return calculateTrendAnalysisUseCase.execute(values)
     }
 
     // ✅ 기간별 비교 - 항상 최신 환율 기준 (탭과 무관)
-    fun calculatePeriodComparison(currencyType: CurrencyType): PeriodComparison {
-        // ✅ 최신 환율 사용 (ExchangeRate에 이미 needsMultiply 처리됨)
-        val currentRateStr = when(currencyType) {
-            CurrencyType.USD -> _analysisUiState.value.latestRate.usd
-            CurrencyType.JPY -> _analysisUiState.value.latestRate.jpy
-            else -> "0"
-        }
+    fun calculatePeriodComparison(currencyType: CurrencyType): PeriodComparisonEntity {
+        // 현재 환율
+        val currentRateStr = _analysisUiState.value.latestRate.getRate(currencyType.code)
+        val currentRate = currentRateStr.toFloatOrNull() ?: return PeriodComparisonEntity()
 
-        val currentRate = currentRateStr.toFloatOrNull() ?: 0f
-
-        // ✅ 항상 전체 데이터(1년)에서 비교
         val allRates = _yearlyRates.value
-        if (allRates.isEmpty()) return PeriodComparison()
+        if (allRates.isEmpty()) return PeriodComparisonEntity()
 
+        // 환율 값 추출
         val values = allRates.mapNotNull { rate ->
             rate.getRate(currencyType.code).toFloatOrNull()
         }
 
-        if (values.isEmpty()) return PeriodComparison()
+        if (values.isEmpty()) return PeriodComparisonEntity()
 
-        fun calculateChange(oldValue: Float): String {
-            if (oldValue == 0f) return "0.00%"
-            val change = ((currentRate - oldValue) / oldValue) * 100
-            return String.format("%.2f%%", change)
-        }
+        // 과거 환율 찾기
+        val previousDayRate = if (values.size > 1) values[values.size - 2] else null
+        val weekAgoRate = if (values.size > 7) values[values.size - 8] else null
+        val monthAgoRate = if (values.size > 30) values[values.size - 31] else null
 
-        // ✅ 항상 고정된 기간으로 비교
-        val previousDay = if (values.size > 1) values[values.size - 2] else currentRate
-        val weekAgo = if (values.size >= 7) values[values.size - 7] else currentRate
-        val monthAgo = if (values.size >= 30) values[values.size - 30] else currentRate
-
-        return PeriodComparison(
-            previousDay = calculateChange(previousDay),
-            weekAgo = calculateChange(weekAgo),
-            monthAgo = calculateChange(monthAgo)
+        // ⭐ UseCase 호출
+        return calculatePeriodComparisonUseCase.execute(
+            currentRate = currentRate,
+            previousDayRate = previousDayRate,
+            weekAgoRate = weekAgoRate,
+            monthAgoRate = monthAgoRate
         )
     }
 }
@@ -420,6 +404,7 @@ data class RateRangeCurrency(
 )
 
 data class AnalysisUiState(
+    val loadingState: LoadingState = LoadingState.Loading,
     val selectedRates: List<RateRange> = emptyList(),
     val selectedTabIndex: Int = 0,
     val latestRate: ExchangeRates = ExchangeRates(
@@ -476,3 +461,9 @@ data class PeriodComparison(
     val weekAgo: String = "0.00%",
     val monthAgo: String = "0.00%"
 )
+
+sealed class LoadingState {
+    object Loading : LoadingState()      // 로딩 중
+    object Success : LoadingState()      // 성공
+    data class Error(val message: String) : LoadingState()  // 실패
+}

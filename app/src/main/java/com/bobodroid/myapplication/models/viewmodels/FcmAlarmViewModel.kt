@@ -6,6 +6,9 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.bobodroid.myapplication.MainActivity.Companion.TAG
+import com.bobodroid.myapplication.domain.entity.RecordAlertEntity
+import com.bobodroid.myapplication.domain.usecase.notification.CalculateRecordAgeUseCase
+import com.bobodroid.myapplication.domain.usecase.notification.ValidateAlertSettingsUseCase
 import com.bobodroid.myapplication.models.datamodels.repository.InvestRepository
 import com.bobodroid.myapplication.models.datamodels.repository.LatestRateRepository
 import com.bobodroid.myapplication.models.datamodels.repository.UserRepository
@@ -40,7 +43,9 @@ class FcmAlarmViewModel @Inject constructor(
     private val fcmUseCases: FcmUseCases,
     private val latestRateRepository: LatestRateRepository,
     private val settingsRepository: SettingsRepository,
-    private val investRepository: InvestRepository
+    private val investRepository: InvestRepository,
+    private val validateAlertSettingsUseCase: ValidateAlertSettingsUseCase,
+    private val calculateRecordAgeUseCase: CalculateRecordAgeUseCase
 ) : ViewModel() {
 
     // ==================== 공통 State ====================
@@ -482,34 +487,54 @@ class FcmAlarmViewModel @Inject constructor(
                     return@launch
                 }
 
-                Log.d(TAG("FcmAlarmViewModel", "saveRecordAlerts"), "1단계: 백업 시작")
+                // ⭐ 1. UseCase로 검증
+                val recordAlerts = _recordsWithAlerts.value.map { record ->
+                    RecordAlertEntity(
+                        recordId = record.recordId,
+                        currencyCode = record.currencyCode,
+                        categoryName = record.categoryName,
+                        date = record.date,
+                        money = record.money,
+                        exchangeMoney = record.exchangeMoney,
+                        buyRate = record.buyRate,
+                        profitPercent = record.profitPercent,
+                        enabled = record.enabled
+                    )
+                }
 
-                val backupSuccess = triggerBackup(deviceId.value)
+                val validation = validateAlertSettingsUseCase.validateRecordAlerts(recordAlerts)
 
-                if (!backupSuccess) {
-                    _profitAlertMessage.value = "백업에 실패했습니다. 알림 설정을 저장할 수 없습니다."
+                if (!validation.isValid) {
+                    _profitAlertMessage.value = validation.errorMessage ?: "설정이 올바르지 않습니다"
                     return@launch
                 }
 
-                Log.d(TAG("FcmAlarmViewModel", "saveRecordAlerts"), "백업 완료")
+                // ⭐ 2. 백업 (기존 로직)
+                Log.d(TAG("FcmAlarmViewModel", "saveRecordAlerts"), "1단계: 백업 시작")
+                val backupSuccess = triggerBackup(deviceId.value)
+
+                if (!backupSuccess) {
+                    _profitAlertMessage.value = "백업에 실패했습니다"
+                    return@launch
+                }
+
                 Log.d(TAG("FcmAlarmViewModel", "saveRecordAlerts"), "2단계: 알림 설정 저장 시작")
 
-                // ✅ enabled=true이고 profitPercent가 null이 아닌 것만 필터링
+                // ⭐ 3. 활성화된 알림만 서버로 전송
                 val enabledRecords = _recordsWithAlerts.value.filter {
                     it.enabled && it.profitPercent != null
                 }
 
-                val recordAlerts = enabledRecords.map { record ->
+                val recordAlertDtos = enabledRecords.map { record ->
                     RecordProfitAlert(
                         recordId = record.recordId,
-                        alertPercent = record.profitPercent!!,
-                        alerted = false,
-                        lastAlertedAt = null
+                        alertPercent = record.profitPercent!!.toFloat()
                     )
                 }
 
+                // ⭐ 4. 서버로 전송
                 val request = BatchUpdateRecordAlertsRequest(
-                    recordProfitAlerts = recordAlerts
+                    recordProfitAlerts = recordAlertDtos
                 )
 
                 val response = NotificationApi.service.batchUpdateRecordAlerts(
@@ -519,19 +544,27 @@ class FcmAlarmViewModel @Inject constructor(
 
                 if (response.success) {
                     _saveSuccess.value = true
-                    _profitAlertMessage.value = "알림 설정이 저장되었습니다 (${enabledRecords.size}개)"
-                    Log.d(TAG("FcmAlarmViewModel", "saveRecordAlerts"), "저장 성공: ${recordAlerts.size}개")
+                    _profitAlertMessage.value = "알림 설정이 저장되었습니다"
+                    Log.d(TAG("FcmAlarmViewModel", "saveRecordAlerts"), "저장 완료: ${enabledRecords.size}개")
                 } else {
-                    _profitAlertMessage.value = "알림 설정 저장에 실패했습니다: ${response.message}"
+                    _profitAlertMessage.value = response.message ?: "저장 실패"
                 }
 
             } catch (e: Exception) {
                 Log.e(TAG("FcmAlarmViewModel", "saveRecordAlerts"), "저장 실패", e)
-                _profitAlertMessage.value = "저장 중 오류가 발생했습니다: ${e.message}"
+                _profitAlertMessage.value = "저장에 실패했습니다: ${e.message}"
             } finally {
                 _profitAlertLoading.value = false
             }
         }
+    }
+
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━
+    // ✅ 새로운 함수: 경과 일수 표시
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━
+    fun getRecordAge(buyDate: String): String {
+        val days = calculateRecordAgeUseCase.execute(buyDate)
+        return calculateRecordAgeUseCase.formatAge(days)
     }
 
     private suspend fun triggerBackup(deviceId: String): Boolean {

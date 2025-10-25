@@ -5,12 +5,17 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.bobodroid.myapplication.MainActivity.Companion.TAG
+import com.bobodroid.myapplication.domain.entity.HoldingStats
+import com.bobodroid.myapplication.domain.entity.RecordFilterCriteria
+import com.bobodroid.myapplication.domain.usecase.exchange.CalculateExchangeUseCase
+import com.bobodroid.myapplication.domain.usecase.record.CalculateHoldingStatsUseCase
+import com.bobodroid.myapplication.domain.usecase.record.FilterRecordsUseCase
+import com.bobodroid.myapplication.domain.usecase.record.GroupRecordsByCategoryUseCase
 import com.bobodroid.myapplication.models.datamodels.repository.LatestRateRepository
 import com.bobodroid.myapplication.models.datamodels.repository.Notice
 import com.bobodroid.myapplication.models.datamodels.repository.NoticeRepository
 import com.bobodroid.myapplication.models.datamodels.repository.UserRepository
 import com.bobodroid.myapplication.models.datamodels.roomDb.*
-import com.bobodroid.myapplication.models.datamodels.useCases.CurrencyRecordRequest
 import com.bobodroid.myapplication.models.datamodels.useCases.RecordUseCase
 import com.bobodroid.myapplication.models.datamodels.useCases.UserUseCases
 import com.bobodroid.myapplication.models.repository.SettingsRepository
@@ -43,6 +48,8 @@ class MainViewModel @Inject constructor(
     private val settingsRepository: SettingsRepository,
     private val recordUseCase: RecordUseCase,
     private val premiumManager: PremiumManager,
+    private val calculateHoldingStatsUseCase: CalculateHoldingStatsUseCase,
+    private val calculateExchangeUseCase: CalculateExchangeUseCase,
     @ApplicationContext private val context: Context
 ) : ViewModel() {
 
@@ -243,8 +250,11 @@ class MainViewModel @Inject constructor(
     // ✅ 기록 불러오기 - 새로운 구조
     private fun getRecords() {
         viewModelScope.launch {
+            // ⭐ RecordUseCase가 이미 그룹화까지 완료한 Map을 반환
             recordUseCase.getAllCurrencyRecords().collect { records ->
                 Log.d(TAG("MainViewModel", "getRecords"), "기록불러오기: $records")
+
+                // ⭐ 그대로 사용하면 됨 (추가 처리 불필요)
                 _recordListUiState.update {
                     it.copy(currencyRecords = records)
                 }
@@ -252,114 +262,42 @@ class MainViewModel @Inject constructor(
         }
     }
 
+
     // ✅ 보유중인 외화 통계 계산 - 새로운 구조
     private suspend fun calculateHoldingStats() {
         combine(
             recordListUiState,
             mainUiState
         ) { recordState, mainState ->
-            // ✅ 모든 통화에 대해 통계 계산
-            val statsMap = mutableMapOf<String, CurrencyHoldingInfo>()
 
-            // CurrencyType의 모든 통화를 순회
+            // ⭐ Step 1: 통화별 기록 준비
+            val recordsByType = mutableMapOf<CurrencyType, List<CurrencyRecord>>()
             CurrencyType.values().forEach { currencyType ->
+                // 보유중인 기록만 필터링 (매도 안된 것)
                 val records = recordState.getRecordsByType(currencyType).records
-                    .filter { it.recordColor == false }  // 보유중인 것만
-
-                val currentRate = mainState.recentRate.getRateByCode(currencyType.name) ?: "0"
-
-                if (records.isNotEmpty() && currentRate != "0") {
-                    val stats = calculateCurrencyHolding(
-                        records = records,
-                        currentRate = currentRate,
-                        currencyType = currencyType
-                    )
-                    statsMap[currencyType.name] = stats
-                }
+                    .filter { it.recordColor == false }
+                recordsByType[currencyType] = records
             }
 
-            HoldingStats(currencyStats = statsMap)
+            // ⭐ Step 2: 현재 환율 준비
+            val currentRates = mutableMapOf<String, String>()
+            CurrencyType.values().forEach { currencyType ->
+                currentRates[currencyType.name] =
+                    mainState.recentRate.getRateByCode(currencyType.name) ?: "0"
+            }
+
+            // ⭐ Step 3: UseCase 호출
+            calculateHoldingStatsUseCase.execute(recordsByType, currentRates)
+
         }.collect { stats ->
+            // ⭐ Step 4: UI 상태 업데이트
             _mainUiState.update { it.copy(holdingStats = stats) }
         }
     }
 
-    private fun calculateCurrencyHolding(
-        records: List<CurrencyRecord>,
-        currentRate: String,
-        currencyType: CurrencyType
-    ): CurrencyHoldingInfo {
-        if (records.isEmpty() || currentRate == "0" || currentRate.isEmpty()) {
-            return CurrencyHoldingInfo(hasData = false)
-        }
 
-        try {
-            val totalInvestment = records.sumOf {
-                it.money?.replace(",", "")?.toBigDecimalOrNull() ?: BigDecimal.ZERO
-            }
 
-            val totalHoldingAmount = records.sumOf {
-                it.exchangeMoney?.replace(",", "")?.toBigDecimalOrNull() ?: BigDecimal.ZERO
-            }
 
-            var totalWeightedRate = BigDecimal.ZERO
-            var totalWeight = BigDecimal.ZERO
-
-            records.forEach { record ->
-                val exchangeMoney = record.exchangeMoney?.replace(",", "")?.toBigDecimalOrNull() ?: BigDecimal.ZERO
-                val buyRate = record.buyRate?.replace(",", "")?.toBigDecimalOrNull() ?: BigDecimal.ZERO
-
-                if (exchangeMoney > BigDecimal.ZERO && buyRate > BigDecimal.ZERO) {
-                    totalWeightedRate += buyRate.multiply(exchangeMoney)
-                    totalWeight += exchangeMoney
-                }
-            }
-
-            val averageRate = if (totalWeight > BigDecimal.ZERO) {
-                totalWeightedRate.divide(totalWeight, 2, RoundingMode.HALF_UP)
-            } else {
-                BigDecimal.ZERO
-            }
-
-            // ✅ Currency 객체 사용
-            val currentRateBD = currentRate.replace(",", "").toBigDecimalOrNull() ?: BigDecimal.ZERO
-            val currency = Currencies.fromCurrencyType(currencyType)
-
-            // ✅ Currency의 needsMultiply 속성 활용
-            val expectedProfit = if (currency.needsMultiply) {
-                // JPY, THB 등: 100으로 나눔
-                (totalHoldingAmount.multiply(currentRateBD).divide(BigDecimal(100), 2, RoundingMode.HALF_UP)).minus(totalInvestment)
-            } else {
-                // USD, EUR, GBP 등: 그대로 곱함
-                (totalHoldingAmount.multiply(currentRateBD)).minus(totalInvestment)
-            }
-
-            val profitRate = if (totalInvestment > BigDecimal.ZERO) {
-                (expectedProfit.divide(totalInvestment, 4, RoundingMode.HALF_UP).multiply(BigDecimal(100)))
-                    .setScale(1, RoundingMode.HALF_UP)
-            } else {
-                BigDecimal.ZERO
-            }
-
-            return CurrencyHoldingInfo(
-                averageRate = formatRate(averageRate),
-                currentRate = formatRate(currentRateBD),
-                totalInvestment = formatCurrency(totalInvestment),
-                expectedProfit = formatCurrency(expectedProfit),
-                profitRate = formatProfitRate(profitRate),
-                holdingAmount = formatAmount(totalHoldingAmount, currencyType),
-                hasData = true
-            )
-
-        } catch (e: Exception) {
-            Log.e("MainViewModel", "보유 통계 계산 오류: ${e.message}", e)
-            return CurrencyHoldingInfo(hasData = false)
-        }
-    }
-
-    private fun formatRate(rate: BigDecimal): String {
-        return "%,.2f".format(rate)
-    }
 
     private fun formatCurrency(amount: BigDecimal): String {
         val absAmount = amount.abs()
@@ -371,20 +309,9 @@ class MainViewModel @Inject constructor(
         }
     }
 
-    private fun formatProfitRate(rate: BigDecimal): String {
-        return when {
-            rate > BigDecimal.ZERO -> "+${rate}%"
-            rate < BigDecimal.ZERO -> "${rate}%"
-            else -> "0.0%"
-        }
-    }
 
-    // ✅ 포맷팅: Currency 객체 사용
-    private fun formatAmount(amount: BigDecimal, type: CurrencyType): String {
-        val currency = Currencies.fromCurrencyType(type)
-        val formatted = "%,.2f".format(amount)
-        return "${currency.symbol}$formatted"
-    }
+
+
 
     // ✅ 현재 통화 타입별 기록 가져오기 - 새로운 구조
     fun getCurrentRecordsFlow(): Flow<CurrencyRecordState<CurrencyRecord>> =
@@ -412,7 +339,7 @@ class MainViewModel @Inject constructor(
         val krMoney = selectedRecord.money ?: return
 
         val currency = selectedRecord.getCurrency() ?: return
-        val sellProfit = currency.calculateSellProfit(exchangeMoney, sellRate, krMoney).toString()
+        val sellProfit = calculateExchangeUseCase.calculateSellProfit(currency,exchangeMoney, sellRate, krMoney).toString()
         val sellPercent = recordUseCase.sellPercent(sellProfit, krMoney).toString()
 
         val recordUiUpdateState = _recordListUiState.value.copy(
@@ -792,33 +719,5 @@ data class CurrencyRecordState<T: ForeignCurrencyRecord>(
     val totalProfit: String = "",
 )
 
-data class HoldingStats(
-    // Map으로 모든 통화 관리
-    val currencyStats: Map<String, CurrencyHoldingInfo> = emptyMap()
-) {
-    // 편의 함수: 특정 통화 통계 가져오기
-    fun getStatsByCode(currencyCode: String): CurrencyHoldingInfo {
-        return currencyStats[currencyCode] ?: CurrencyHoldingInfo(hasData = false)
-    }
 
-    fun getStatsByType(type: CurrencyType): CurrencyHoldingInfo {
-        return getStatsByCode(type.name)
-    }
 
-    // 레거시 호환 (기존 코드가 사용)
-    val dollarStats: CurrencyHoldingInfo
-        get() = getStatsByCode("USD")
-
-    val yenStats: CurrencyHoldingInfo
-        get() = getStatsByCode("JPY")
-}
-
-data class CurrencyHoldingInfo(
-    val averageRate: String = "0",
-    val currentRate: String = "0",
-    val totalInvestment: String = "₩0",
-    val expectedProfit: String = "₩0",
-    val profitRate: String = "0.0%",
-    val holdingAmount: String = "0",
-    val hasData: Boolean = false
-)

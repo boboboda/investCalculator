@@ -40,9 +40,8 @@ import com.bobodroid.myapplication.models.viewmodels.MainViewModel
 import com.bobodroid.myapplication.models.viewmodels.SharedViewModel
 import com.bobodroid.myapplication.routes.*
 import com.bobodroid.myapplication.screens.*
-import com.bobodroid.myapplication.test.CurrencyTestRunner
 import com.bobodroid.myapplication.test.Phase2TestRunner
-import com.bobodroid.myapplication.ui.theme.InverstCalculatorTheme
+import com.bobodroid.myapplication.ui.theme.InvestCalculatorTheme
 import com.bobodroid.myapplication.util.AdMob.AdManager
 import com.bobodroid.myapplication.util.PreferenceUtil
 import com.bobodroid.myapplication.widget.WidgetAlarmManager
@@ -120,7 +119,7 @@ class MainActivity : ComponentActivity() {
         Phase2TestRunner.runPhase2Test()
 
         setContent {
-            InverstCalculatorTheme {
+            InvestCalculatorTheme {
                 AppScreen(
                     mainViewModel,
                     sharedViewModel,

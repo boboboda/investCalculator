@@ -1,9 +1,16 @@
 package com.bobodroid.myapplication.models.viewmodels
 
+import FormatUtils.formatCurrency
 import android.app.Activity
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.bobodroid.myapplication.domain.entity.BadgeEntity
+import com.bobodroid.myapplication.domain.entity.InvestmentStatsEntity
+import com.bobodroid.myapplication.domain.entity.MonthlyGoalEntity
+import com.bobodroid.myapplication.domain.usecase.statistics.CalculateBadgesUseCase
+import com.bobodroid.myapplication.domain.usecase.statistics.CalculateInvestmentStatsUseCase
+import com.bobodroid.myapplication.domain.usecase.statistics.CalculateMonthlyGoalUseCase
 import com.bobodroid.myapplication.models.datamodels.repository.InvestRepository
 import com.bobodroid.myapplication.models.datamodels.repository.UserRepository
 import com.bobodroid.myapplication.models.datamodels.roomDb.CurrencyRecord
@@ -22,6 +29,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.math.BigDecimal
@@ -34,7 +42,10 @@ class MyPageViewModel @Inject constructor(
     private val investRepository: InvestRepository,
     private val socialLoginUseCases: SocialLoginUseCases,
     private val userUseCases: UserUseCases,
-    private val accountSwitchUseCase: AccountSwitchUseCase
+    private val accountSwitchUseCase: AccountSwitchUseCase,
+    private val calculateInvestmentStatsUseCase: CalculateInvestmentStatsUseCase,
+    private val calculateMonthlyGoalUseCase: CalculateMonthlyGoalUseCase,
+    private val calculateBadgesUseCase: CalculateBadgesUseCase
 ) : ViewModel() {
 
     val _myPageUiState = MutableStateFlow(MyPageUiState())
@@ -270,59 +281,14 @@ class MyPageViewModel @Inject constructor(
 
 
     private suspend fun calculateInvestmentStats() {
-        combine(
-            investRepository.getAllDollarBuyRecords(),
-            investRepository.getAllYenBuyRecords()
-        ) { dollarRecords, yenRecords ->
-
-            // 기존 계산 로직 그대로 유지
-            Log.d("MyPageViewModel", "달러 기록: ${dollarRecords.size}개, 엔화 기록: ${yenRecords.size}개")
-
-            val totalDollarInvestment = dollarRecords.sumOf {
-                it.money?.replace(",", "")?.toBigDecimalOrNull() ?: BigDecimal.ZERO
+        // ⭐ 12개 통화 모두 가져오기
+        investRepository.getAllCurrencyRecords()
+            .map { records ->
+                // ⭐ UseCase 호출
+                calculateInvestmentStatsUseCase.execute(records)
             }
-            val totalYenInvestment = yenRecords.sumOf {
-                it.money?.replace(",", "")?.toBigDecimalOrNull() ?: BigDecimal.ZERO
-            }
-            val totalInvestment = totalDollarInvestment + totalYenInvestment
-
-            val totalDollarProfit = dollarRecords.sumOf {
-                it.expectProfit?.replace(",", "")?.toBigDecimalOrNull() ?: BigDecimal.ZERO
-            }
-            val totalYenProfit = yenRecords.sumOf {
-                it.expectProfit?.replace(",", "")?.toBigDecimalOrNull() ?: BigDecimal.ZERO
-            }
-            val totalProfit = totalDollarProfit + totalYenProfit
-
-            val profitRate = if (totalInvestment > BigDecimal.ZERO) {
-                (totalProfit.divide(totalInvestment, 4, RoundingMode.HALF_UP) * BigDecimal(100))
-                    .setScale(1, RoundingMode.HALF_UP)
-            } else {
-                BigDecimal.ZERO
-            }
-
-            val totalTrades = dollarRecords.size + yenRecords.size
-            val dollarBuyCount = dollarRecords.filter { it.recordColor == false }.size
-            val yenBuyCount = yenRecords.filter { it.recordColor == false }.size
-            val buyCount = dollarBuyCount + yenBuyCount
-
-            val dollarSellCount = dollarRecords.filter { it.recordColor == true }.size
-            val yenSellCount = yenRecords.filter { it.recordColor == true }.size
-            val sellCount = dollarSellCount + yenSellCount
-
-            Log.d("MyPageViewModel", "총 투자금: $totalInvestment, 예상 수익: $totalProfit, 수익률: $profitRate%")
-
-            InvestmentStats(
-                totalInvestment = formatCurrency(totalInvestment),
-                expectedProfit = formatCurrency(totalProfit),
-                profitRate = formatProfitRate(profitRate),
-                totalTrades = totalTrades,
-                buyCount = buyCount,
-                sellCount = sellCount
-            )
-        }
             .flowOn(Dispatchers.Default)
-            .collectLatest { stats ->  // ← collect를 collectLatest로 변경
+            .collectLatest { stats ->
                 _myPageUiState.update {
                     it.copy(investmentStats = stats)
                 }
@@ -331,16 +297,7 @@ class MyPageViewModel @Inject constructor(
 
 
 
-    // 숫자 포맷팅 (₩10,500,000)
-    private fun formatCurrency(amount: BigDecimal): String {
-        val absAmount = amount.abs()
-        val formatted = "%,.0f".format(absAmount)
-        return when {
-            amount > BigDecimal.ZERO -> "+₩$formatted"
-            amount < BigDecimal.ZERO -> "-₩$formatted"
-            else -> "₩$formatted"
-        }
-    }
+
 
     // 수익률 포맷팅 (+8.2% 또는 -3.5%)
     private fun formatProfitRate(rate: BigDecimal): String {
@@ -437,55 +394,24 @@ class MyPageViewModel @Inject constructor(
 
     private suspend fun calculateGoalProgress() {
         combine(
-            userRepository.userData,
-            investRepository.getAllCurrencyRecords()  // ✅ 통합 메서드 사용
-        ) { userData, allRecords ->
-
+            investRepository.getAllCurrencyRecords(),  // ⭐ 12개 통화
+            userRepository.userData
+        ) { allRecords, userData ->
             val localUser = userData?.localUserData
             val goalAmount = localUser?.monthlyProfitGoal ?: 0L
             val goalMonth = localUser?.goalSetMonth
-
-            if (goalAmount <= 0L) {
-                // 목표가 설정되지 않음
-                return@combine MonthlyGoal(
-                    goalAmount = 0L,
-                    currentAmount = 0L,
-                    progress = 0f,
-                    isSet = false
-                )
-            }
-
-            // 현재 월
             val currentMonth = getCurrentYearMonth()
 
-            // 목표 월과 현재 월이 다르면 초기화 필요
-            if (goalMonth != currentMonth) {
-                // 새 달이 시작되면 목표 리셋 (자동)
-                return@combine MonthlyGoal(
-                    goalAmount = goalAmount,
-                    currentAmount = 0L,
-                    progress = 0f,
-                    isSet = true
-                )
-            }
-
-            // ✅ 이번 달 매도 수익 계산 (기존 함수 이름 사용)
-            val monthlyProfit = calculateMonthlyProfit(allRecords, currentMonth)
-
-            // 달성률 계산
-            val progress = if (goalAmount > 0) {
-                (monthlyProfit.toFloat() / goalAmount.toFloat()).coerceIn(0f, 1f)
-            } else 0f
-
-            MonthlyGoal(
+            // ⭐ UseCase 호출
+            calculateMonthlyGoalUseCase.execute(
+                allRecords = allRecords,
                 goalAmount = goalAmount,
-                currentAmount = monthlyProfit,
-                progress = progress,
-                isSet = true
+                goalMonth = goalMonth,
+                currentMonth = currentMonth
             )
         }
             .flowOn(Dispatchers.Default)
-            .collectLatest { goal ->  // ← collect를 collectLatest로 변경
+            .collectLatest { goal ->
                 _myPageUiState.update {
                     it.copy(monthlyGoal = goal)
                 }
@@ -537,79 +463,13 @@ class MyPageViewModel @Inject constructor(
 
 
     private suspend fun calculateBadges() {
-        combine(
-            investRepository.getAllDollarBuyRecords(),
-            investRepository.getAllYenBuyRecords()
-        ) { dollarRecords, yenRecords ->
-
-            // 기존 로직 그대로 유지
-            val totalTrades = dollarRecords.size + yenRecords.size
-            val sellCount = dollarRecords.count { it.recordColor == true } +
-                    yenRecords.count { it.recordColor == true }
-
-            val totalInvestment = (dollarRecords + yenRecords).sumOf {
-                it.money?.replace(",", "")?.toBigDecimalOrNull()?.toLong() ?: 0L
+        investRepository.getAllCurrencyRecords()  // ⭐ 12개 통화
+            .map { records ->
+                // ⭐ UseCase 호출
+                calculateBadgesUseCase.execute(records)
             }
-
-            val totalProfit = (dollarRecords + yenRecords).sumOf {
-                it.expectProfit?.replace(",", "")?.toBigDecimalOrNull()?.toLong() ?: 0L
-            }
-
-            listOf(
-                BadgeInfo(
-                    type = BadgeType.FIRST_TRADE,
-                    icon = "🎯",
-                    title = "첫 거래",
-                    description = "첫 환전 기록을 생성했습니다",
-                    isUnlocked = totalTrades >= 1,
-                    progress = if (totalTrades >= 1) 100 else 0,
-                    currentValue = totalTrades,
-                    targetValue = 1
-                ),
-                BadgeInfo(
-                    type = BadgeType.TRADER_50,
-                    icon = "📈",
-                    title = "트레이더",
-                    description = "총 50회 거래를 달성했습니다",
-                    isUnlocked = totalTrades >= 50,
-                    progress = ((totalTrades.toFloat() / 50f) * 100).toInt().coerceIn(0, 100),
-                    currentValue = totalTrades,
-                    targetValue = 50
-                ),
-                BadgeInfo(
-                    type = BadgeType.TRADER_100,
-                    icon = "🏆",
-                    title = "마스터 트레이더",
-                    description = "총 100회 거래를 달성했습니다",
-                    isUnlocked = totalTrades >= 100,
-                    progress = ((totalTrades.toFloat() / 100f) * 100).toInt().coerceIn(0, 100),
-                    currentValue = totalTrades,
-                    targetValue = 100
-                ),
-                BadgeInfo(
-                    type = BadgeType.INVESTMENT_1M,
-                    icon = "💰",
-                    title = "백만장자",
-                    description = "총 투자금 100만원을 달성했습니다",
-                    isUnlocked = totalInvestment >= 1_000_000L,
-                    progress = ((totalInvestment.toFloat() / 1_000_000f) * 100).toInt().coerceIn(0, 100),
-                    currentValue = (totalInvestment / 10000).toInt(),
-                    targetValue = 100
-                ),
-                BadgeInfo(
-                    type = BadgeType.INVESTMENT_10M,
-                    icon = "💎",
-                    title = "천만장자",
-                    description = "총 투자금 1,000만원을 달성했습니다",
-                    isUnlocked = totalInvestment >= 10_000_000L,
-                    progress = ((totalInvestment.toFloat() / 10_000_000f) * 100).toInt().coerceIn(0, 100),
-                    currentValue = (totalInvestment / 10000).toInt(),
-                    targetValue = 1000
-                )
-            )
-        }
             .flowOn(Dispatchers.Default)
-            .collectLatest { badges ->  // ← collect를 collectLatest로 변경
+            .collectLatest { badges ->
                 _myPageUiState.update {
                     it.copy(badges = badges)
                 }
@@ -771,15 +631,7 @@ class MyPageViewModel @Inject constructor(
 
 }
 
-// 통계 데이터 클래스
-data class InvestmentStats(
-    val totalInvestment: String = "₩0",
-    val expectedProfit: String = "₩0",
-    val profitRate: String = "0.0%",
-    val totalTrades: Int = 0,
-    val buyCount: Int = 0,
-    val sellCount: Int = 0
-)
+
 
 // 최근 활동 데이터 클래스
 data class RecentActivity(
@@ -791,46 +643,14 @@ data class RecentActivity(
 )
 
 
-// ⭐ 이번 달 목표 데이터 클래스
-data class MonthlyGoal(
-    val goalAmount: Long = 0L,        // 목표 금액
-    val currentAmount: Long = 0L,      // 현재 달성 금액
-    val progress: Float = 0f,          // 달성률 (0.0 ~ 1.0)
-    val isSet: Boolean = false         // 목표 설정 여부
-)
-
-enum class BadgeType {
-    FIRST_TRADE,
-    TRADER_50,
-    TRADER_100,
-    FIRST_PROFIT,
-    PROFIT_RATE_10,
-    PROFIT_RATE_20,
-    INVESTMENT_1M,
-    INVESTMENT_10M,
-    STREAK_7,
-    STREAK_30
-}
-
-data class BadgeInfo(
-    val type: BadgeType,
-    val icon: String,
-    val title: String,
-    val description: String,
-    val isUnlocked: Boolean,
-    val progress: Int,
-    val currentValue: Int,
-    val targetValue: Int
-)
-
 
 // UiState
 data class MyPageUiState(
     val localUser: LocalUserData = LocalUserData(),
-    val investmentStats: InvestmentStats = InvestmentStats(),
+    val investmentStats: InvestmentStatsEntity = InvestmentStatsEntity(),
     val recentActivities: List<RecentActivity> = emptyList(),
-    val monthlyGoal: MonthlyGoal = MonthlyGoal(),
-    val badges: List<BadgeInfo> = emptyList(),
+    val monthlyGoal: MonthlyGoalEntity = MonthlyGoalEntity(),
+    val badges: List<BadgeEntity> = emptyList(),
 
     val foundAccount: AccountFoundInfo? = null,
     val showAccountFoundDialog: Boolean = false,

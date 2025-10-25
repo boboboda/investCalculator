@@ -32,13 +32,15 @@ fun RecordListView(
     scrollState: LazyListState = rememberLazyListState(),
     onEvent: (RecordListEvent) -> Unit
 ) {
-    val buyRecordHistory = currencyRecordState.groupedRecords
     val groupList = currencyRecordState.groups
 
-    val filterRecord = if (hideSellRecordState) {
-        buyRecordHistory.mapValues { it.value.filter { it.recordColor == false } }
+    val displayRecords = if (hideSellRecordState) {
+        // UI에서 간단한 필터링만 수행 (복잡한 로직 아님)
+        currencyRecordState.groupedRecords.mapValues { (_, records) ->
+            records.filter { it.recordColor == false }
+        }
     } else {
-        buyRecordHistory
+        currencyRecordState.groupedRecords
     }
 
     val coroutineScope = rememberCoroutineScope()
@@ -50,7 +52,7 @@ fun RecordListView(
 
 
     // 🎯 기록이 없는지 확인
-    val isEmpty = filterRecord.values.all { it.isEmpty() }
+    val isEmpty = displayRecords.values.all { it.isEmpty() }
 
     Column {
 
@@ -69,7 +71,7 @@ fun RecordListView(
                 state = scrollState,
                 contentPadding = PaddingValues(vertical = 8.dp)
             ) {
-                filterRecord.onEachIndexed { groupIndex: Int, (key, items) ->
+                displayRecords.onEachIndexed { groupIndex: Int, (key, items) ->
                     stickyHeader {
                         RecordHeader(key = key)
                     }
@@ -82,8 +84,8 @@ fun RecordListView(
 
                         var accumulatedCount = 1
                         (0..<groupIndex).forEach { foreachIndex ->
-                            val currentKey = filterRecord.keys.elementAt(foreachIndex)
-                            val elements = filterRecord.getValue(currentKey)
+                            val currentKey = displayRecords.keys.elementAt(foreachIndex)
+                            val elements = displayRecords.getValue(currentKey)
                             accumulatedCount += elements.count()
                         }
 

@@ -19,10 +19,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.bobodroid.myapplication.util.AdMob.BannerAd
 import com.bobodroid.myapplication.components.common.CurrencyDropdown
+import com.bobodroid.myapplication.domain.entity.CurrencyHoldingInfo
 import com.bobodroid.myapplication.models.datamodels.roomDb.CurrencyType
 import com.bobodroid.myapplication.models.viewmodels.AdUiState
 import com.bobodroid.myapplication.models.viewmodels.MainUiState
-import com.bobodroid.myapplication.models.viewmodels.CurrencyHoldingInfo
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

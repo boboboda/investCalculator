@@ -20,57 +20,14 @@ data class Currency(
     val needsMultiply: Boolean,
     val isPremium: Boolean
 ) {
-    /**
-     * 환율 포맷팅 (소수점 처리)
-     */
+
     fun formatRate(rate: String?): String {
         if (rate.isNullOrEmpty() || rate == "0") return "0"
         val value = rate.toFloatOrNull() ?: 0f
         return String.format("%.${scale}f", value)
     }
 
-    /**
-     * 환전 금액 계산
-     * @param money 원화 금액
-     * @param rate 환율
-     * @return 외화 금액
-     */
-    fun calculateExchangeMoney(money: String, rate: String): BigDecimal {
-        return (BigDecimal(money) / BigDecimal(rate))
-            .setScale(20, RoundingMode.HALF_UP)
-    }
 
-    /**
-     * 매도 수익 계산
-     * @param exchangeMoney 외화 금액
-     * @param sellRate 매도 환율
-     * @param krMoney 투자 원화
-     * @return 수익금
-     */
-    fun calculateSellProfit(
-        exchangeMoney: String,
-        sellRate: String,
-        krMoney: String
-    ): BigDecimal {
-        return ((BigDecimal(exchangeMoney) * BigDecimal(sellRate))
-            .setScale(20, RoundingMode.HALF_UP)) - BigDecimal(krMoney)
-    }
-
-    /**
-     * 예상 수익 계산
-     * @param exchangeMoney 외화 금액
-     * @param money 투자 원화
-     * @param latestRate 현재 환율
-     * @return 예상 수익금
-     */
-    fun calculateExpectedProfit(
-        exchangeMoney: String,
-        money: String,
-        latestRate: String
-    ): String {
-        val profit = (BigDecimal(exchangeMoney) * BigDecimal(latestRate)) - BigDecimal(money)
-        return profit.setScale(0, RoundingMode.DOWN).toString()
-    }
 }
 
 /**

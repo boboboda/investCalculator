@@ -39,6 +39,9 @@ import com.bobodroid.myapplication.components.Dialogs.AccountFoundDialog
 import com.bobodroid.myapplication.components.Dialogs.DataRestoreDialog
 import com.bobodroid.myapplication.components.Dialogs.OnboardingTooltipDialog
 import com.bobodroid.myapplication.components.Dialogs.RewardAdInfoDialog
+import com.bobodroid.myapplication.domain.entity.BadgeEntity
+import com.bobodroid.myapplication.domain.entity.InvestmentStatsEntity
+import com.bobodroid.myapplication.domain.entity.MonthlyGoalEntity
 import com.bobodroid.myapplication.models.datamodels.roomDb.LocalUserData
 import com.bobodroid.myapplication.models.datamodels.roomDb.PremiumType
 import com.bobodroid.myapplication.models.viewmodels.*
@@ -307,12 +310,12 @@ fun MyPageScreen(
 fun ImprovedMyPageView(
     myPageRouteAction: RouteAction<MyPageRoute>,
     localUser: LocalUserData,
-    investmentStats: InvestmentStats = InvestmentStats(),
+    investmentStats: InvestmentStatsEntity = InvestmentStatsEntity(),
     recentActivities: List<RecentActivity> = emptyList(),
-    monthlyGoal: MonthlyGoal = MonthlyGoal(),
+    monthlyGoal: MonthlyGoalEntity = MonthlyGoalEntity(),
     onSetGoal: (Long) -> Unit = {},
     showOnboarding: () -> Unit,
-    badges: List<BadgeInfo>,
+    badges: List<BadgeEntity>,
     isPremium: Boolean = false,
     premiumType: PremiumType,
     premiumExpiryDate: String?,
@@ -1090,7 +1093,7 @@ fun ProfileHeader(
 }
 
 @Composable
-fun InvestmentDashboard(stats: InvestmentStats) {
+fun InvestmentDashboard(stats: InvestmentStatsEntity) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -1271,7 +1274,7 @@ fun TradeStatItem(
 
 @Composable
 fun MonthlyGoalSection(
-    goal: MonthlyGoal,
+    goal: MonthlyGoalEntity,
     onSetGoal: (Long) -> Unit
 ) {
     var showGoalDialog by remember { mutableStateOf(false) }
@@ -1856,7 +1859,7 @@ private fun formatActivityDate(dateString: String): String {
 }
 
 @Composable
-fun BadgeSection(badges: List<BadgeInfo>) {
+fun BadgeSection(badges: List<BadgeEntity>) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -1929,7 +1932,7 @@ fun BadgeSection(badges: List<BadgeInfo>) {
 }
 
 @Composable
-fun BadgeItemNew(badge: BadgeInfo) {
+fun BadgeItemNew(badge: BadgeEntity) {
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceBetween,

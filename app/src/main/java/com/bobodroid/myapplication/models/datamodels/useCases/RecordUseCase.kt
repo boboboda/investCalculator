@@ -2,6 +2,8 @@ package com.bobodroid.myapplication.models.datamodels.useCases
 
 import android.util.Log
 import com.bobodroid.myapplication.MainActivity.Companion.TAG
+import com.bobodroid.myapplication.domain.usecase.exchange.CalculateExchangeUseCase
+import com.bobodroid.myapplication.domain.usecase.record.GroupRecordsByCategoryUseCase
 import com.bobodroid.myapplication.extensions.toBigDecimalWon
 import com.bobodroid.myapplication.models.datamodels.repository.InvestRepository
 import com.bobodroid.myapplication.models.datamodels.repository.UserRepository
@@ -22,7 +24,9 @@ import javax.inject.Inject
 class RecordUseCase @Inject constructor(
     private val investRepository: InvestRepository,
     private val userRepository: UserRepository,
-    private val backupScheduler: BackupScheduler
+    private val backupScheduler: BackupScheduler,
+    private val groupRecordsUseCase: GroupRecordsByCategoryUseCase,
+    private val calculateExchangeUseCase: CalculateExchangeUseCase
 ) {
 
     // ===== 새로운 통합 메서드 (12개 통화 지원) =====
@@ -41,7 +45,7 @@ class RecordUseCase @Inject constructor(
                 groupedByCurrency.mapValues { (_, currencyRecords) ->
                     CurrencyRecordState<CurrencyRecord>(
                         records = currencyRecords,
-                        groupedRecords = setGroup(currencyRecords) { it.categoryName },
+                        groupedRecords = groupRecordsUseCase.execute(currencyRecords) { it.categoryName },
                         groups = currencyRecords.map { it.categoryName ?: "미지정" }.distinct()
                     )
                 }
@@ -57,7 +61,7 @@ class RecordUseCase @Inject constructor(
             .map { records ->
                 CurrencyRecordState<CurrencyRecord>(
                     records = records,
-                    groupedRecords = setGroup(records) { it.categoryName },
+                    groupedRecords = groupRecordsUseCase.execute(records) { it.categoryName },
                     groups = records.map { it.categoryName ?: "미지정" }.distinct()
                 )
             }
@@ -77,8 +81,8 @@ class RecordUseCase @Inject constructor(
         val currency = Currencies.findByCode(currencyCode)
             ?: throw IllegalArgumentException("Unknown currency: $currencyCode")
 
-        val exchangeMoney = currency.calculateExchangeMoney(money, inputRate).toString()
-        val expectedProfit = currency.calculateExpectedProfit(exchangeMoney, money, latestRate)
+        val exchangeMoney = calculateExchangeUseCase.calculateExchangeMoney(currency,money, inputRate).toString()
+        val expectedProfit = calculateExchangeUseCase.calculateExpectedProfit(currency,exchangeMoney, money, latestRate)
 
         val record = CurrencyRecord(
             currencyCode = currencyCode,
@@ -113,7 +117,12 @@ class RecordUseCase @Inject constructor(
         editRate: String
     ) {
         val currency = record.getCurrency() ?: return
-        val exchangeMoney = currency.calculateExchangeMoney(editMoney, editRate).toString()
+        val exchangeMoney = calculateExchangeUseCase.calculateExchangeMoney(
+            currency = currency,  // ⭐ 추가
+            money = editMoney,
+            rate = editRate
+        ).toString()
+
 
         val editedRecord = record.copy(
             date = editDate,
@@ -143,7 +152,12 @@ class RecordUseCase @Inject constructor(
         val exchangeMoney = record.exchangeMoney ?: return
         val money = record.money ?: return
 
-        val sellProfit = currency.calculateSellProfit(exchangeMoney, sellRate, money)
+        val sellProfit = calculateExchangeUseCase.calculateSellProfit(
+            currency = currency,  // ⭐ 추가
+            exchangeMoney = exchangeMoney,
+            sellRate = sellRate,
+            krMoney = money
+        )
 
         val soldRecord = record.copy(
             sellDate = sellDate,
@@ -227,7 +241,12 @@ class RecordUseCase @Inject constructor(
 
                 val profit = record.money?.let { m ->
                     record.exchangeMoney?.let { e ->
-                        currency.calculateExpectedProfit(e, m, rate)
+                        calculateExchangeUseCase.calculateExpectedProfit(
+                            currency = currency,  // ⭐ 추가
+                            exchangeMoney = e,
+                            money = m,
+                            latestRate = rate
+                        )
                     }
                 } ?: return@forEach
 
@@ -259,18 +278,18 @@ class RecordUseCase @Inject constructor(
     /**
      * 그룹 설정
      */
-    private fun <T> setGroup(recordList: List<T>, categorySelector: (T) -> String?): Map<String, List<T>> {
-        return recordList.sortedBy {
-            when(it) {
-                is CurrencyRecord -> it.date
-                is DrBuyRecord -> it.date
-                is YenBuyRecord -> it.date
-                else -> null
-            }
-        }.groupBy {
-            categorySelector(it) ?: "미지정"
-        }
-    }
+//    private fun <T> setGroup(recordList: List<T>, categorySelector: (T) -> String?): Map<String, List<T>> {
+//        return recordList.sortedBy {
+//            when(it) {
+//                is CurrencyRecord -> it.date
+//                is DrBuyRecord -> it.date
+//                is YenBuyRecord -> it.date
+//                else -> null
+//            }
+//        }.groupBy {
+//            categorySelector(it) ?: "미지정"
+//        }
+//    }
 
     /**
      * 매도 퍼센트 계산
@@ -297,15 +316,3 @@ class RecordUseCase @Inject constructor(
         }
     }
 }
-
-/**
- * 기록 요청 데이터 클래스 (레거시)
- */
-data class CurrencyRecordRequest(
-    val latestRate: String,
-    val money: String,
-    val inputRate: String,
-    val groupName: String,
-    val date: String,
-    val type: CurrencyType  // USD, JPY
-)

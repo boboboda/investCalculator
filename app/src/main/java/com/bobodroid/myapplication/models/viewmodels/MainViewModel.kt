@@ -12,6 +12,7 @@ import com.bobodroid.myapplication.domain.entity.PremiumType
 import com.bobodroid.myapplication.domain.entity.RecordEntity
 import com.bobodroid.myapplication.domain.entity.RecordFilterCriteria
 import com.bobodroid.myapplication.domain.entity.UserEntity
+import com.bobodroid.myapplication.domain.repository.IExchangeRateRepository
 import com.bobodroid.myapplication.domain.repository.IUserRepository
 import com.bobodroid.myapplication.domain.usecase.exchange.CalculateExchangeUseCase
 import com.bobodroid.myapplication.domain.usecase.record.CalculateHoldingStatsUseCase
@@ -48,7 +49,8 @@ import javax.inject.Inject
 class MainViewModel @Inject constructor(
     private val userUseCases: UserUseCases,
     private val userRepository: IUserRepository,
-    private val latestRateRepository: LatestRateRepository,
+//    private val latestRateRepository: LatestRateRepository,
+    private val exchangeRateRepository: IExchangeRateRepository,
     private val noticeRepository: NoticeRepository,
     private val settingsRepository: SettingsRepository,
     private val recordUseCase: RecordUseCase,
@@ -120,7 +122,7 @@ class MainViewModel @Inject constructor(
 
         viewModelScope.launch {
             Log.d(TAG("MainViewModel", "startInitialData"), "🌐 WebSocket 구독 시작")
-            latestRateRepository.subscribeToExchangeRateUpdates()
+            exchangeRateRepository.subscribeToRateUpdates()
         }
 
         viewModelScope.launch {
@@ -136,35 +138,13 @@ class MainViewModel @Inject constructor(
             calculateHoldingStats()
             Log.d(TAG("MainViewModel", "init"), "보유 통계 계산 시작")
         }
-
-        viewModelScope.launch {
-            Log.d(TAG("MainViewModel", "startInitialData"), "📌 Step 1: localUserExistCheck 시작")
-            localUserExistCheck()
-            Log.d(TAG("MainViewModel", "init"), "✅ 로컬유저 확인완료")
-
-            Log.d(TAG("MainViewModel", "startInitialData"), "📌 Step 2: noticeExistCheck 시작")
-            noticeExistCheck()
-            Log.d(TAG("MainViewModel", "init"), "✅ 공지사항 확인완료")
-
-            Log.d(TAG("MainViewModel", "startInitialData"), "📌 Step 3: noticeDialogState 시작")
-            noticeDialogState()
-            Log.d(TAG("MainViewModel", "init"), "✅ 공지사항 다이얼로그 확인완료")
-
-            Log.d(TAG("MainViewModel", "startInitialData"), "📌 Step 5: fetchInitialLatestRate 시작")
-            latestRateRepository.fetchInitialLatestRate()
-            Log.d(TAG("MainViewModel", "init"), "✅ 초기 최신환율 확인완료")
-
-            Log.d(TAG("MainViewModel", "startInitialData"), "━━━━━━━━━━━━━━━━━━━━━━━━━━")
-            Log.d(TAG("MainViewModel", "startInitialData"), "✨ 모든 초기화 작업 완료!")
-            Log.d(TAG("MainViewModel", "startInitialData"), "━━━━━━━━━━━━━━━━━━━━━━━━━━")
-        }
     }
 
     // ✅ 웹소켓 실시간 데이터 구독
     private suspend fun receivedLatestRate() {
         Log.d(TAG("MainViewModel", "receivedLatestRate"), "🔄 환율 Flow 구독 시작")
 
-        latestRateRepository.latestRateFlow.collect { latestRate ->
+        exchangeRateRepository.latestRate.collect { latestRate ->
             Log.d(TAG("MainViewModel", "receivedLatestRate"), "실시간 데이터 수신: $latestRate")
 
             val uiState = _mainUiState.value.copy(recentRate = latestRate)

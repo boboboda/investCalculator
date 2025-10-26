@@ -1,8 +1,13 @@
 package com.bobodroid.myapplication.data.mapper
 
+import android.util.Log
+import com.bobodroid.myapplication.MainActivity.Companion.TAG
 import com.bobodroid.myapplication.data.local.entity.ExchangeRateDto
 import com.bobodroid.myapplication.domain.entity.ExchangeRateEntity
+import com.bobodroid.myapplication.models.datamodels.roomDb.Currencies
 import org.json.JSONObject
+import java.math.BigDecimal
+import java.math.RoundingMode
 
 /**
  * ExchangeRate Mapper
@@ -10,7 +15,7 @@ import org.json.JSONObject
  * DTO ↔ Entity 변환
  * - ExchangeRateDto (Room, JSON String) → ExchangeRateEntity (Domain, Map)
  * - ExchangeRateEntity (Domain, Map) → ExchangeRateDto (Room, JSON String)
- * - 하위 호환: ExchangeRate → ExchangeRateEntity
+ * - 서버 JSON → ExchangeRateEntity (WebSocket용)
  */
 object ExchangeRateMapper {
 
@@ -54,41 +59,10 @@ object ExchangeRateMapper {
         return this.map { it.toDto() }
     }
 
-    // ===== 하위 호환성 =====
-
-    /**
-     * 기존 ExchangeRate → ExchangeRateEntity
-     * 점진적 마이그레이션을 위한 변환
-     */
-//    fun ExchangeRate.toEntity(): ExchangeRateEntity {
-//        val ratesMap = parseJsonToMap(this.rates)
-//        return ExchangeRateEntity(
-//            id = this.id,
-//            createAt = this.createAt,
-//            rates = ratesMap
-//        )
-//    }
-
-    /**
-     * ExchangeRateEntity → 기존 ExchangeRate
-     * 점진적 마이그레이션을 위한 역변환
-     */
-//    fun ExchangeRateEntity.toLegacyRate(): ExchangeRate {
-//        val ratesJson = mapToJson(this.rates)
-//        return ExchangeRate(
-//            id = this.id,
-//            createAt = this.createAt,
-//            rates = ratesJson
-//        )
-//    }
-
     // ===== 헬퍼 함수 =====
 
     /**
      * JSON String → Map
-     *
-     * @param json JSON 문자열 (예: {"USD":"1300.50","JPY":"944.00"})
-     * @return Map<String, String>
      */
     private fun parseJsonToMap(json: String): Map<String, String> {
         return try {
@@ -101,22 +75,20 @@ object ExchangeRateMapper {
             val keys = jsonObject.keys()
 
             while (keys.hasNext()) {
-                val key = keys.next() as String  // ⭐ 타입 캐스팅
+                val key = keys.next() as String
                 val value = jsonObject.optString(key, "0")
                 map[key] = value
             }
 
             map
         } catch (e: Exception) {
+            Log.e(TAG("ExchangeRateMapper", "parseJsonToMap"), "파싱 실패", e)
             emptyMap()
         }
     }
 
     /**
      * Map → JSON String
-     *
-     * @param map Map<String, String>
-     * @return JSON 문자열 (예: {"USD":"1300.50","JPY":"944.00"})
      */
     private fun mapToJson(map: Map<String, String>): String {
         return try {
@@ -131,19 +103,23 @@ object ExchangeRateMapper {
 
             jsonObject.toString()
         } catch (e: Exception) {
+            Log.e(TAG("ExchangeRateMapper", "mapToJson"), "변환 실패", e)
             "{}"
         }
     }
 
     /**
      * 서버 JSON → Entity 직접 변환 (WebSocket용)
-     *
-     * @param jsonString 서버 JSON (예: {"id":"123","createAt":"2025-10-20","exchangeRates":{"USD":"1300"}})
-     * @return ExchangeRateEntity 또는 null
+     * ⭐ 소수점 반올림 및 포맷팅 적용
      */
     fun fromServerJson(jsonString: String): ExchangeRateEntity? {
         return try {
+            Log.d(TAG("ExchangeRateMapper", "fromServerJson"), "━━━━━━━━━━━━━━━━━━━━━━━━━━")
+            Log.d(TAG("ExchangeRateMapper", "fromServerJson"), "📥 서버 JSON 파싱 시작")
+            Log.d(TAG("ExchangeRateMapper", "fromServerJson"), "원본 JSON: $jsonString")
+
             if (jsonString.isBlank()) {
+                Log.w(TAG("ExchangeRateMapper", "fromServerJson"), "⚠️ 빈 JSON 문자열")
                 return null
             }
 
@@ -152,7 +128,11 @@ object ExchangeRateMapper {
             val createAt = jsonObject.optString("createAt", "N/A")
             val exchangeRates = jsonObject.optJSONObject("exchangeRates")
 
+            Log.d(TAG("ExchangeRateMapper", "fromServerJson"), "ID: $id")
+            Log.d(TAG("ExchangeRateMapper", "fromServerJson"), "생성시간: $createAt")
+
             if (exchangeRates == null) {
+                Log.e(TAG("ExchangeRateMapper", "fromServerJson"), "❌ exchangeRates 객체 없음")
                 return null
             }
 
@@ -160,25 +140,62 @@ object ExchangeRateMapper {
             val keys = exchangeRates.keys()
 
             while (keys.hasNext()) {
-                val key = keys.next() as String  // ⭐ 타입 캐스팅
-                val value = exchangeRates.optString(key, "0")
-                ratesMap[key] = value
+                val currencyCode = keys.next() as String
+                val rawValue = exchangeRates.optString(currencyCode, "0")
+
+                // ⭐ Currency 정보 가져오기
+                val currency = Currencies.findByCode(currencyCode)
+
+                if (currency != null) {
+                    // ⭐ 소수점 포맷팅
+                    val formattedValue = formatRate(rawValue, currency.scale)
+                    ratesMap[currencyCode] = formattedValue
+
+                    Log.d(TAG("ExchangeRateMapper", "fromServerJson"),
+                        "✅ $currencyCode: $rawValue → $formattedValue (scale=${currency.scale})")
+                } else {
+                    // 알 수 없는 통화는 그대로 저장
+                    ratesMap[currencyCode] = rawValue
+                    Log.w(TAG("ExchangeRateMapper", "fromServerJson"),
+                        "⚠️ 알 수 없는 통화: $currencyCode = $rawValue")
+                }
             }
 
-            ExchangeRateEntity(
+            val entity = ExchangeRateEntity(
                 id = id,
                 createAt = createAt,
                 rates = ratesMap
             )
+
+            Log.d(TAG("ExchangeRateMapper", "fromServerJson"), "━━━━━━━━━━━━━━━━━━━━━━━━━━")
+            Log.d(TAG("ExchangeRateMapper", "fromServerJson"), "✨ 파싱 완료!")
+            Log.d(TAG("ExchangeRateMapper", "fromServerJson"), "최종 Entity: $entity")
+            Log.d(TAG("ExchangeRateMapper", "fromServerJson"), "━━━━━━━━━━━━━━━━━━━━━━━━━━")
+
+            entity
         } catch (e: Exception) {
+            Log.e(TAG("ExchangeRateMapper", "fromServerJson"),
+                "❌ JSON 파싱 실패: $jsonString", e)
             null
         }
     }
 
     /**
+     * 환율 값 포맷팅
+     * ⭐ 소수점 자리수에 맞게 반올림
+     */
+    private fun formatRate(value: String, scale: Int): String {
+        return try {
+            val bd = BigDecimal(value)
+            bd.setScale(scale, RoundingMode.HALF_UP).toPlainString()
+        } catch (e: Exception) {
+            Log.e(TAG("ExchangeRateMapper", "formatRate"), "포맷팅 실패: $value", e)
+            "0"
+        }
+    }
+
+    /**
      * Entity → 서버 JSON 형식
-     *
-     * @return 서버 JSON 문자열
      */
     fun ExchangeRateEntity.toServerJson(): String {
         return try {
@@ -194,6 +211,7 @@ object ExchangeRateMapper {
 
             jsonObject.toString()
         } catch (e: Exception) {
+            Log.e(TAG("ExchangeRateMapper", "toServerJson"), "JSON 변환 실패", e)
             "{}"
         }
     }

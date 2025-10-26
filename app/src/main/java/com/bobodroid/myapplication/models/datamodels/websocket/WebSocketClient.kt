@@ -86,13 +86,20 @@ class WebSocketClient @Inject constructor(
         onInsert: suspend (String) -> Unit,
         onInitialData: suspend (String) -> Unit
     ) {
+        Log.d(TAG("WebSocketClient", "recentRateWebReceiveData"), "━━━━━━━━━━━━━━━━━━━━━━━━━━")
+        Log.d(TAG("WebSocketClient", "recentRateWebReceiveData"), "📡 환율 데이터 구독 시작")
+
         initializationComplete.await()
         socket?.let { socket ->
 
             socket.on("latestRate") { args ->
                 scope.launch {
                     val exchangeRatesObject = args[0] as JSONObject
-                    Log.d(TAG("WebSocketClient","latestRate"), "환율 오브젝트: $exchangeRatesObject")
+                    Log.d(TAG("WebSocketClient","latestRate"), "━━━━━━━━━━━━━━━━━━━━━━━━━━")
+                    Log.d(TAG("WebSocketClient","latestRate"), "📊 최신 환율 수신 (latestRate 이벤트)")
+                    Log.d(TAG("WebSocketClient","latestRate"), "수신 시간: ${System.currentTimeMillis()}")
+                    Log.d(TAG("WebSocketClient","latestRate"), "데이터: $exchangeRatesObject")
+                    Log.d(TAG("WebSocketClient","latestRate"), "━━━━━━━━━━━━━━━━━━━━━━━━━━")
                     onInsert(exchangeRatesObject.toString())
                 }
             }
@@ -100,10 +107,18 @@ class WebSocketClient @Inject constructor(
             socket.on("initialData") { args ->
                 scope.launch {
                     val initialDataObject = args[0] as JSONObject
-                    Log.d(TAG("WebSocketClient","initialData"), "초기 데이터: $initialDataObject")
+                    Log.d(TAG("WebSocketClient","initialData"), "━━━━━━━━━━━━━━━━━━━━━━━━━━")
+                    Log.d(TAG("WebSocketClient","initialData"), "🎯 초기 환율 수신 (initialData 이벤트)")
+                    Log.d(TAG("WebSocketClient","initialData"), "수신 시간: ${System.currentTimeMillis()}")
+                    Log.d(TAG("WebSocketClient","initialData"), "데이터: $initialDataObject")
+                    Log.d(TAG("WebSocketClient","initialData"), "━━━━━━━━━━━━━━━━━━━━━━━━━━")
                     onInitialData(initialDataObject.toString())
                 }
             }
+
+            Log.d(TAG("WebSocketClient", "recentRateWebReceiveData"), "✅ 이벤트 리스너 등록 완료")
+        } ?: run {
+            Log.e(TAG("WebSocketClient", "recentRateWebReceiveData"), "❌ 소켓이 null입니다")
         }
     }
 

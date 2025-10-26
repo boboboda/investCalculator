@@ -4,31 +4,23 @@ import com.bobodroid.myapplication.domain.entity.ExchangeRateEntity
 import kotlinx.coroutines.flow.Flow
 
 /**
- * ExchangeRate Repository 인터페이스
- *
- * Domain Layer의 추상화된 환율 데이터 접근 인터페이스
- * - Platform 독립적인 비즈니스 로직 정의
- * - 구현체는 Data Layer에 위치
+ * ExchangeRate Repository 인터페이스 - Entity 버전
  */
 interface IExchangeRateRepository {
 
     /**
-     * 최신 환율 데이터 Flow
+     * 최신 환율 Flow
      */
-    val latestRateFlow: Flow<ExchangeRateEntity>
-
-    /**
-     * REST API로 초기 환율 데이터 가져오기 (12개 통화)
-     */
-    suspend fun fetchInitialRate(): Unit
+    val latestRate: Flow<ExchangeRateEntity>
 
     /**
      * 웹소켓으로 실시간 환율 업데이트 구독
+     * onInitialData가 초기 환율 제공
      */
-    suspend fun subscribeToRateUpdates(): Unit
+    suspend fun subscribeToRateUpdates()
 
     /**
      * 웹소켓 연결 해제
      */
-    fun disconnect(): Unit
+    fun disconnect()
 }

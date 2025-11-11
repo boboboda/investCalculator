@@ -86,13 +86,19 @@ class ExchangeRateWidget : AppWidgetProvider() {
                 val user = userRepository.userData.firstOrNull()?.localUserData
                 val isPremium = user?.isPremium ?: false
 
-                // ✅ 업데이트 주기 표시
-                if (isPremium) {
+                // ✅ SharedPreferences에서 서비스 실행 상태 확인 - 파일명 수정!
+                val isServiceRunning = context.getSharedPreferences("prefs_name", Context.MODE_PRIVATE)
+                    .getString("widget_service_running", "false") == "true"
+
+                // ✅ 업데이트 주기 표시 - 프리미엄 AND 서비스 실행 중일 때만 "실시간"
+                if (isPremium && isServiceRunning) {
                     views.setTextViewText(R.id.widget_update_cycle, "⚡ 실시간")
                     views.setTextColor(R.id.widget_update_cycle, android.graphics.Color.parseColor("#6366F1"))
+                    Log.d("ExchangeRateWidget", "업데이트 주기: 실시간 (프리미엄=$isPremium, 서비스=$isServiceRunning)")
                 } else {
                     views.setTextViewText(R.id.widget_update_cycle, "🔄 5분 주기")
                     views.setTextColor(R.id.widget_update_cycle, android.graphics.Color.parseColor("#10B981"))
+                    Log.d("ExchangeRateWidget", "업데이트 주기: 5분 (프리미엄=$isPremium, 서비스=$isServiceRunning)")
                 }
 
                 val latestRate = latestRateRepository.latestRateFlow.firstOrNull()
@@ -161,7 +167,7 @@ class ExchangeRateWidget : AppWidgetProvider() {
                     views.setTextViewText(R.id.widget_total_profit, formattedProfit)
                     views.setTextColor(R.id.widget_total_profit, profitColor)
 
-                    Log.d("ExchangeRateWidget", "위젯 업데이트: USD=$usdRate, JPY=$jpyRate, 수익=$formattedProfit, 프리미엄=$isPremium")
+                    Log.d("ExchangeRateWidget", "위젯 업데이트: USD=$usdRate, JPY=$jpyRate, 수익=$formattedProfit, 프리미엄=$isPremium, 서비스=$isServiceRunning")
                 } else {
                     views.setTextViewText(R.id.widget_usd_rate, "데이터 없음")
                     views.setTextViewText(R.id.widget_jpy_rate, "데이터 없음")

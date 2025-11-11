@@ -67,23 +67,50 @@ class AnalysisViewModel @Inject constructor(
 
     init {
         viewModelScope.launch(Dispatchers.IO) {
-            // ✅ 모든 기간 데이터 로드
-            loadAllRangeData()
-            loadDailyCharge()
-
-            withContext(Dispatchers.Main) {
-                _analysisUiState.update { currentUiState ->
-                    currentUiState.copy(
-                        selectedRates = _dailyRates.value
-                    )
-                }
+            // ✅ 로딩 시작
+            _analysisUiState.update {
+                it.copy(loadingState = LoadingState.Loading)
             }
 
-            Log.d(TAG("AnalysisViewModel", "init"), "데이터 로드 완료")
-            Log.d(TAG("AnalysisViewModel", "init"), "Daily: ${_dailyRates.value.size}개")
-            Log.d(TAG("AnalysisViewModel", "init"), "Weekly: ${_weeklyRates.value.size}개")
-            Log.d(TAG("AnalysisViewModel", "init"), "Monthly: ${_monthlyRates.value.size}개")
-            Log.d(TAG("AnalysisViewModel", "init"), "Yearly: ${_yearlyRates.value.size}개")
+            try {
+                // ✅ 모든 기간 데이터 로드
+                loadAllRangeData()
+                loadDailyCharge()
+
+                // ✅ 데이터 검증 - 최소한 일간 데이터는 있어야 함
+                if (_dailyRates.value.isEmpty()) {
+                    throw Exception("환율 데이터를 불러올 수 없습니다.\n인터넷 연결을 확인해주세요.")
+                }
+
+                // ✅ 초기 선택된 탭 데이터 설정
+                withContext(Dispatchers.Main) {
+                    _analysisUiState.update { currentUiState ->
+                        currentUiState.copy(
+                            selectedRates = _dailyRates.value,
+                            loadingState = LoadingState.Success
+                        )
+                    }
+                }
+
+                Log.d(TAG("AnalysisViewModel", "init"), "데이터 로드 완료")
+                Log.d(TAG("AnalysisViewModel", "init"), "Daily: ${_dailyRates.value.size}개")
+                Log.d(TAG("AnalysisViewModel", "init"), "Weekly: ${_weeklyRates.value.size}개")
+                Log.d(TAG("AnalysisViewModel", "init"), "Monthly: ${_monthlyRates.value.size}개")
+                Log.d(TAG("AnalysisViewModel", "init"), "Yearly: ${_yearlyRates.value.size}개")
+
+            } catch (error: Exception) {
+                Log.e(TAG("AnalysisViewModel", "init"), "데이터 로드 실패: ${error.message}", error)
+
+                withContext(Dispatchers.Main) {
+                    _analysisUiState.update {
+                        it.copy(
+                            loadingState = LoadingState.Error(
+                                error.message ?: "알 수 없는 오류가 발생했습니다."
+                            )
+                        )
+                    }
+                }
+            }
         }
 
         viewModelScope.launch {
@@ -420,6 +447,7 @@ data class RateRangeCurrency(
 )
 
 data class AnalysisUiState(
+    val loadingState: LoadingState = LoadingState.Loading,
     val selectedRates: List<RateRange> = emptyList(),
     val selectedTabIndex: Int = 0,
     val latestRate: ExchangeRates = ExchangeRates(
@@ -476,3 +504,9 @@ data class PeriodComparison(
     val weekAgo: String = "0.00%",
     val monthAgo: String = "0.00%"
 )
+
+sealed class LoadingState {
+    object Loading : LoadingState()      // 로딩 중
+    object Success : LoadingState()      // 성공
+    data class Error(val message: String) : LoadingState()  // 실패
+}

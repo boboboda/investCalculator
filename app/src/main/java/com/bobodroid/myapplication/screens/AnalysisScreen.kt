@@ -2,6 +2,7 @@ package com.bobodroid.myapplication.screens
 
 import android.util.Log
 import androidx.compose.animation.core.*
+import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -33,7 +34,9 @@ import com.bobodroid.myapplication.components.common.CurrencyDropdown
 import com.bobodroid.myapplication.models.datamodels.roomDb.Currencies
 import com.bobodroid.myapplication.models.datamodels.roomDb.CurrencyType
 import com.bobodroid.myapplication.models.datamodels.roomDb.emoji
+import com.bobodroid.myapplication.models.viewmodels.AnalysisUiState
 import com.bobodroid.myapplication.models.viewmodels.AnalysisViewModel
+import com.bobodroid.myapplication.models.viewmodels.LoadingState
 import com.bobodroid.myapplication.models.viewmodels.RateRangeCurrency
 import com.bobodroid.myapplication.models.viewmodels.SharedViewModel
 import com.bobodroid.myapplication.ui.theme.primaryColor
@@ -108,6 +111,8 @@ fun AnalysisScreen(
     }
 }
 
+// ✅ PremiumChartScreen 수정 버전 (AnalysisScreen.kt에서 기존 함수 대체)
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PremiumChartScreen(
@@ -115,10 +120,48 @@ fun PremiumChartScreen(
     onPremiumRequired: () -> Unit
 ) {
     val analysisUiState by analysisViewModel.analysisUiState.collectAsState()
-    // ✅ ViewModel에서 통화 상태 가져오기 (remember 제거)
     val targetCurrency by analysisViewModel.selectedCurrency.collectAsState()
     val scrollState = rememberScrollState()
 
+    // ✅ 로딩 상태에 따른 UI 분기
+    when (val loadingState = analysisUiState.loadingState) {
+        is LoadingState.Loading -> {
+            // 로딩 중
+            AnalysisLoadingScreen()
+        }
+
+        is LoadingState.Error -> {
+            // 에러 발생
+            AnalysisErrorScreen(
+                errorMessage = loadingState.message,
+                onRetry = { analysisViewModel.refreshData() }
+            )
+        }
+
+        is LoadingState.Success -> {
+            // 데이터 로드 성공 - 실제 컨텐츠 표시
+            SuccessContent(
+                analysisUiState = analysisUiState,
+                targetCurrency = targetCurrency,
+                scrollState = scrollState,
+                analysisViewModel = analysisViewModel,
+                onPremiumRequired = onPremiumRequired
+            )
+        }
+    }
+}
+
+/**
+ * 데이터 로드 성공 시 표시되는 실제 컨텐츠
+ */
+@Composable
+private fun SuccessContent(
+    analysisUiState: AnalysisUiState,
+    targetCurrency: CurrencyType,
+    scrollState: ScrollState,
+    analysisViewModel: AnalysisViewModel,
+    onPremiumRequired: () -> Unit
+) {
     // 데이터 계산
     val statistics = remember(analysisUiState.selectedRates, targetCurrency) {
         analysisViewModel.calculateStatistics(targetCurrency)
@@ -134,8 +177,7 @@ fun PremiumChartScreen(
 
     val rangeRateMapCurrencyType = analysisUiState.selectedRates.mapNotNull { rate ->
         val rawValue = rate.getRate(targetCurrency.code).toFloatOrNull() ?: return@mapNotNull null
-        // ✅ ExchangeRate에 이미 needsMultiply 처리됨 - 추가 처리 불필요
-        val truncated = kotlin.math.floor(rawValue * 100) / 100f  // 소수점 2자리 버림
+        val truncated = kotlin.math.floor(rawValue * 100) / 100f
         RateRangeCurrency(truncated, rate.createAt)
     }
 
@@ -165,13 +207,9 @@ fun PremiumChartScreen(
         }
     }
 
-
-    // 프리미엄
-
-    var showPremiumDialog by remember { mutableStateOf(false) }
-
     val isPremium by analysisViewModel.isPremium.collectAsState()
 
+    var showPremiumDialog by remember { mutableStateOf(false) }
 
     Column(
         modifier = Modifier
@@ -186,9 +224,9 @@ fun PremiumChartScreen(
             changeRate = changeRate,
             changeIcon = changeIcon,
             changeColor = changeColor,
-            isPremium = isPremium,  // ✅ 추가
+            isPremium = isPremium,
             onCurrencyChange = { analysisViewModel.updateSelectedCurrency(it) },
-            onPremiumRequired = onPremiumRequired  // ✅ 추가
+            onPremiumRequired = onPremiumRequired
         )
 
         Spacer(modifier = Modifier.height(16.dp))

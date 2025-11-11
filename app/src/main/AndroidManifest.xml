@@ -12,10 +12,6 @@
     <!-- ✅ BILLING 권한 -->
     <uses-permission android:name="com.android.vending.BILLING" />
 
-    <!-- ✅ AlarmManager 권한 (Android 12+) -->
-    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
-    <uses-permission android:name="android.permission.USE_EXACT_ALARM" />
-
     <!-- 🆕 백그라운드 실행을 위한 추가 권한 -->
     <uses-permission android:name="android.permission.WAKE_LOCK" />
     <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />

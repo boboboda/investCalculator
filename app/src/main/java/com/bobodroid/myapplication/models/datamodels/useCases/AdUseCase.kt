@@ -50,7 +50,7 @@ class AdUseCase @Inject constructor(
             "광고 카운트: ${updatedUser.interstitialAdCount}")
 
         // 5의 배수일 때만 광고 표시
-        if (updatedUser.interstitialAdCount % 2 != 0) {
+        if (updatedUser.interstitialAdCount % 5 != 0) {
             Log.d(TAG("AdUseCase", "showInterstitialAdIfNeeded"),
                 "5의 배수 아님 - 광고 스킵")
             return false
@@ -118,7 +118,7 @@ class AdUseCase @Inject constructor(
 
         // 10회 이상이고 10의 배수일 때만 표시
 //        return user.interstitialAdCount >= 10 && user.interstitialAdCount % 10 == 0
-       return user.interstitialAdCount >= 1
+       return user.interstitialAdCount >= 10
     }
 
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━

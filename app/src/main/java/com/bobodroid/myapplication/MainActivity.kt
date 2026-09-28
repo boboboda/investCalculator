@@ -4,7 +4,6 @@ import android.annotation.SuppressLint
 import android.app.Activity
 import android.content.Intent
 import android.content.pm.PackageManager
-import android.database.sqlite.SQLiteDatabase
 import android.os.Build
 import android.os.Bundle
 import android.util.Log
@@ -22,25 +21,21 @@ import androidx.compose.ui.Modifier
 import androidx.core.content.ContextCompat
 import androidx.core.splashscreen.SplashScreen
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
-import androidx.hilt.work.HiltWorkerFactory
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
-import androidx.work.Configuration
 import com.bobodroid.myapplication.components.Dialogs.GuideDialog
 import com.bobodroid.myapplication.components.MainBottomBar
 import com.bobodroid.myapplication.components.MainTopBar
 import com.bobodroid.myapplication.models.datamodels.social.SocialLoginManager
 import com.bobodroid.myapplication.models.datamodels.useCases.FcmUseCases
-import com.bobodroid.myapplication.models.viewmodels.AnalysisViewModel
 import com.bobodroid.myapplication.models.viewmodels.MainViewModel
 import com.bobodroid.myapplication.models.viewmodels.SharedViewModel
 import com.bobodroid.myapplication.routes.*
 import com.bobodroid.myapplication.screens.*
-import com.bobodroid.myapplication.test.CurrencyTestRunner
 import com.bobodroid.myapplication.test.Phase2TestRunner
 import com.bobodroid.myapplication.ui.theme.InverstCalculatorTheme
 import com.bobodroid.myapplication.util.AdMob.AdManager
@@ -51,8 +46,6 @@ import com.bobodroid.myapplication.widget.WidgetUpdateService
 import com.bobodroid.myapplication.util.result.Result
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
-import java.util.UUID
 import javax.inject.Inject
 
 
@@ -88,7 +81,11 @@ class MainActivity : ComponentActivity() {
 
         super.onCreate(savedInstanceState)
 
-        adManager.preloadAllAds(this)
+        // ✅ deviceId(=유저 로드)를 기다린 뒤 광고 프리로드 (SSV customData로 필요)
+        lifecycleScope.launch {
+            val deviceId = sharedViewModel.getDeviceId()
+            adManager.preloadAllAds(this@MainActivity, deviceId)
+        }
 
         handleIntent(intent)
 
@@ -153,8 +150,6 @@ class MainActivity : ComponentActivity() {
                 WidgetAlarmManager.stopPeriodicUpdate(this@MainActivity)
                 Log.d(TAG("메인", "setupWidgetAutoUpdate"), "✅ 프리미엄 사용자 - WorkManager 중지")
 
-                // ✅ 앱 실행 중에는 서비스 시작하지 않음 (배터리 절약)
-                // 백그라운드로 갈 때만 서비스 시작
                 Log.d(TAG("메인", "setupWidgetAutoUpdate"), "💡 앱 실행 중 - 서비스 시작 안 함 (배터리 절약)")
             } else {
                 // 일반 사용자: WorkManager 시작 (5분 주기)
@@ -168,17 +163,11 @@ class MainActivity : ComponentActivity() {
 
     override fun onStart() {
         super.onStart()
-        Log.w(TAG("메인", "onStart"), "━━━━━━━━━━━━━━━━━━━━━━━━━━")
-        Log.w(TAG("메인", "onStart"), "🟢 onStart 실행 - 앱이 보이기 시작")
-        Log.w(TAG("메인", "onStart"), "━━━━━━━━━━━━━━━━━━━━━━━━━━")
         checkAppPushNotification()
     }
 
     override fun onResume() {
         super.onResume()
-        Log.w(TAG("메인", "onResume"), "━━━━━━━━━━━━━━━━━━━━━━━━━━")
-        Log.w(TAG("메인", "onResume"), "▶️ onResume 실행 - 사용자와 상호작용 가능")
-        Log.w(TAG("메인", "onResume"), "━━━━━━━━━━━━━━━━━━━━━━━━━━")
 
         // 위젯 즉시 업데이트하여 눌림 상태 해제
         WidgetUpdateHelper.updateAllWidgets(this)
@@ -192,9 +181,6 @@ class MainActivity : ComponentActivity() {
     // ✅ 수정된 onStop - 백그라운드 전환 시 서비스 자동 시작
     override fun onStop() {
         super.onStop()
-        Log.w(TAG("메인", "onStop"), "━━━━━━━━━━━━━━━━━━━━━━━━━━")
-        Log.w(TAG("메인", "onStop"), "⏹️ onStop 실행 - 앱이 백그라운드로 이동")
-        Log.w(TAG("메인", "onStop"), "━━━━━━━━━━━━━━━━━━━━━━━━━━")
 
         // 앱 종료 시 위젯 정상화
         WidgetUpdateHelper.updateAllWidgets(this)
@@ -208,22 +194,8 @@ class MainActivity : ComponentActivity() {
     // ✅ 새로 추가: 앱이 포그라운드로 돌아올 때 서비스 종료 (배터리 절약)
     private suspend fun stopServiceIfRunning() {
         try {
-            // 서비스 실행 중인지 확인
             if (isWidgetUpdateServiceRunning()) {
-                Log.d(TAG("메인", "stopServiceIfRunning"), "━━━━━━━━━━━━━━━━━━━━━━━━━━")
-                Log.d(TAG("메인", "stopServiceIfRunning"), "🛑 앱이 포그라운드로 복귀 - 서비스 종료")
-                Log.d(TAG("메인", "stopServiceIfRunning"), "💡 이유: 앱 실행 중에는 서비스 불필요 (배터리 절약)")
-
-                // 서비스 종료
                 WidgetUpdateService.stopService(this)
-
-                // 서비스 상태는 유지 (백그라운드 진입 시 다시 시작하기 위해)
-                // preferenceUtil.setData("widget_service_running", "true") 는 그대로 유지
-
-                Log.d(TAG("메인", "stopServiceIfRunning"), "✅ 서비스 종료 완료")
-                Log.d(TAG("메인", "stopServiceIfRunning"), "━━━━━━━━━━━━━━━━━━━━━━━━━━")
-            } else {
-                Log.d(TAG("메인", "stopServiceIfRunning"), "서비스가 실행 중이지 않음")
             }
         } catch (e: Exception) {
             Log.e(TAG("메인", "stopServiceIfRunning"), "서비스 종료 중 오류", e)
@@ -233,45 +205,26 @@ class MainActivity : ComponentActivity() {
     // ✅ 새로 추가: 백그라운드 전환 시 서비스 체크 및 시작
     private suspend fun checkAndStartServiceForBackground() {
         try {
-            Log.d(TAG("메인", "checkAndStartService"), "━━━━━━━━━━━━━━━━━━━━━━━━━━")
-            Log.d(TAG("메인", "checkAndStartService"), "🔍 백그라운드 서비스 체크 시작")
-
-            // 1. 프리미엄 상태 확인
             val isPremium = mainViewModel.checkPremiumStatus()
-            Log.d(TAG("메인", "checkAndStartService"), "프리미엄 상태: $isPremium")
 
             if (!isPremium) {
-                Log.d(TAG("메인", "checkAndStartService"), "일반 사용자 - 서비스 시작 안 함")
                 return
             }
 
-            // 2. 실시간 업데이트 설정 확인
             val isRealtimeEnabled = preferenceUtil.getData("widget_service_running", "false") == "true"
-            Log.d(TAG("메인", "checkAndStartService"), "실시간 업데이트 설정: $isRealtimeEnabled")
 
             if (!isRealtimeEnabled) {
-                Log.d(TAG("메인", "checkAndStartService"), "실시간 업데이트 비활성화 - 서비스 시작 안 함")
                 return
             }
 
-            // 3. 서비스 실행 중인지 확인
             val isServiceRunning = isWidgetUpdateServiceRunning()
-            Log.d(TAG("메인", "checkAndStartService"), "서비스 실행 상태: $isServiceRunning")
 
             if (isServiceRunning) {
-                Log.d(TAG("메인", "checkAndStartService"), "이미 서비스 실행 중")
                 return
             }
 
-            // 4. 모든 조건 충족 시 서비스 시작
-            Log.d(TAG("메인", "checkAndStartService"), "✅ 모든 조건 충족 - 백그라운드 서비스 시작!")
-            Log.d(TAG("메인", "checkAndStartService"), "💡 백그라운드에서만 서비스 실행 (배터리 최적화)")
             WidgetUpdateService.startService(this)
-
-            // 수동으로 끈 상태 해제
             preferenceUtil.setData("service_manually_disabled", "false")
-
-            Log.d(TAG("메인", "checkAndStartService"), "━━━━━━━━━━━━━━━━━━━━━━━━━━")
 
         } catch (e: Exception) {
             Log.e(TAG("메인", "checkAndStartService"), "서비스 체크 중 오류", e)
@@ -291,16 +244,10 @@ class MainActivity : ComponentActivity() {
 
     override fun onPause() {
         super.onPause()
-        Log.w(TAG("메인", "onPause"), "━━━━━━━━━━━━━━━━━━━━━━━━━━")
-        Log.w(TAG("메인", "onPause"), "⏸️ onPause 실행 - 앱이 일시정지")
-        Log.w(TAG("메인", "onPause"), "━━━━━━━━━━━━━━━━━━━━━━━━━━")
     }
 
     override fun onRestart() {
         super.onRestart()
-        Log.w(TAG("메인", "onRestart"), "━━━━━━━━━━━━━━━━━━━━━━━━━━")
-        Log.w(TAG("메인", "onRestart"), "🔄 onRestart 실행 - 백그라운드에서 복귀")
-        Log.w(TAG("메인", "onRestart"), "━━━━━━━━━━━━━━━━━━━━━━━━━━")
     }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
@@ -316,13 +263,6 @@ class MainActivity : ComponentActivity() {
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         setIntent(intent)
-
-        Log.e(TAG("메인", "onNewIntent"), "━━━━━━━━━━━━━━━━━━━━━━━━━━")
-        Log.e(TAG("메인", "onNewIntent"), "🔔 onNewIntent 호출됨!")
-        Log.e(TAG("메인", "onNewIntent"), "Intent Extras: ${intent.extras}")
-        Log.e(TAG("메인", "onNewIntent"), "NAVIGATE_TO: ${intent.getStringExtra("NAVIGATE_TO")}")
-        Log.e(TAG("메인", "onNewIntent"), "━━━━━━━━━━━━━━━━━━━━━━━━━━")
-
         handleIntent(intent)
     }
 
@@ -330,26 +270,13 @@ class MainActivity : ComponentActivity() {
     private fun handleIntent(intent: Intent?) {
         val navigateTo = intent?.getStringExtra("NAVIGATE_TO")
 
-        // ✅ 알림 클릭으로 앱이 열렸는지 확인
         val fromNotification = intent?.getBooleanExtra("FROM_NOTIFICATION", false) ?: false
         val notificationId = intent?.getStringExtra("NOTIFICATION_ID")
         val notificationType = intent?.getStringExtra("NOTIFICATION_TYPE")
         val recordId = intent?.getStringExtra("RECORD_ID")
         val currency = intent?.getStringExtra("CURRENCY")
 
-        Log.d(TAG("메인", "handleIntent"), "━━━━━━━━━━━━━━━━━━━━━━━━━━")
-        Log.d(TAG("메인", "handleIntent"), "Intent 처리 시작")
-        Log.d(TAG("메인", "handleIntent"), "navigateTo: $navigateTo")
-        Log.d(TAG("메인", "handleIntent"), "fromNotification: $fromNotification")
-        Log.d(TAG("메인", "handleIntent"), "notificationId: $notificationId")
-        Log.d(TAG("메인", "handleIntent"), "notificationType: $notificationType")
-        Log.d(TAG("메인", "handleIntent"), "━━━━━━━━━━━━━━━━━━━━━━━━━━")
-
-        // ✅ 알림 클릭 처리
         if (fromNotification && notificationId != null) {
-            Log.d(TAG("메인", "handleIntent"), "알림 클릭 감지 - markAsClicked 호출")
-
-            // ✅ lifecycleScope에서 호출하고 when으로 결과 처리
             lifecycleScope.launch {
                 when (val result = fcmUseCases.markAsClickedUseCase(notificationId)) {
                     is Result.Success -> {
@@ -359,40 +286,20 @@ class MainActivity : ComponentActivity() {
                         Log.e(TAG("메인", "handleIntent"), "❌ 알림 클릭 처리 실패: ${result.message}")
                     }
                     is Result.Loading -> {
-                        // 로딩 상태
                     }
                 }
             }
 
-            // ✅ 알림 타입에 따라 화면 이동
             when (notificationType) {
-                "RATE_ALERT" -> {
-                    Log.d(TAG("메인", "handleIntent"), "환율 알림 - 알림 화면으로 이동")
-                    // TODO: 알림 화면으로 네비게이션
-                    // navController.navigate("fcm_alarm_screen")
-                }
-                "PROFIT_ALERT" -> {
-                    Log.d(TAG("메인", "handleIntent"), "수익률 알림 - 기록 상세로 이동 (recordId: $recordId)")
-                    // TODO: 해당 기록 상세 화면으로 네비게이션
-                    // navController.navigate("record_detail/$recordId")
-                }
-                "RECORD_AGE" -> {
-                    Log.d(TAG("메인", "handleIntent"), "매수 경과 알림 - 기록 화면으로 이동")
-                    // TODO: 기록 화면으로 네비게이션
-                    // navController.navigate("record_screen")
-                }
-                "DAILY_SUMMARY" -> {
-                    Log.d(TAG("메인", "handleIntent"), "일일 요약 - 마이페이지로 이동")
-                    // TODO: 마이페이지로 네비게이션
-                    // navController.navigate("my_page")
-                }
+                "RATE_ALERT" -> {}
+                "PROFIT_ALERT" -> {}
+                "RECORD_AGE" -> {}
+                "DAILY_SUMMARY" -> {}
             }
         }
 
-        // 기존 네비게이션 처리
         if (navigateTo != null) {
             Log.d(TAG("메인", "handleIntent"), "네비게이션 요청: $navigateTo")
-            // TODO: Compose Navigation으로 전달 필요
         }
     }
 
@@ -421,10 +328,6 @@ class MainActivity : ComponentActivity() {
 
     override fun onDestroy() {
         super.onDestroy()
-        Log.e(TAG("메인", "onDestroy"), "━━━━━━━━━━━━━━━━━━━━━━━━━━")
-        Log.e(TAG("메인", "onDestroy"), "💀 onDestroy 실행 - Activity 완전 소멸!")
-        Log.e(TAG("메인", "onDestroy"), "isFinishing: $isFinishing")
-        Log.e(TAG("메인", "onDestroy"), "━━━━━━━━━━━━━━━━━━━━━━━━━━")
     }
 }
 
@@ -525,6 +428,9 @@ fun InvestNavHost(
                 onNavigateToPremium = {
                     investNavController.navigate(MainRoute.MyPage.routeName!!)
                 },
+                onNavigateToNews = {
+                    investNavController.navigate(MainRoute.News.routeName!!)
+                },
                 sharedViewModel = sharedViewModel
             )
         }
@@ -544,7 +450,10 @@ fun InvestNavHost(
 
         composable(MainRoute.AnalysisScreen.routeName!!) {
             AnalysisScreen(
-                sharedViewModel = sharedViewModel
+                sharedViewModel = sharedViewModel,
+                onNavigateToPremium = {
+                    investNavController.navigate(MyPageRoute.Premium.routeName!!)
+                }
             )
         }
 
@@ -556,6 +465,15 @@ fun InvestNavHost(
                 onPremiumClick = {
                     investNavController.navigate(MyPageRoute.Premium.routeName!!)
                 }
+            )
+        }
+
+        composable(MainRoute.News.routeName!!) {
+            NewsScreen(
+                onBackClick = {
+                    investNavController.popBackStack()
+                },
+                mainViewModel = mainViewModel
             )
         }
     }

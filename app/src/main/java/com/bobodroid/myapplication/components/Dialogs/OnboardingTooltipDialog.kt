@@ -450,7 +450,7 @@ private fun WidgetSettingsPage() {
                 icon = Icons.Rounded.Widgets,
                 iconColor = Color(0xFF6366F1),
                 title = "위젯 추가",
-                description = "홈 화면 길게 누르기 → \n위젯 → 달러 기록 선택"
+                description = "홈 화면 길게 누르기 → \n위젯 → 환테크 기록 선택"
             )
 
             GuideCard(

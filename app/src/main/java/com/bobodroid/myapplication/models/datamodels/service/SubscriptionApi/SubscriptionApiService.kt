@@ -48,7 +48,7 @@ object SubscriptionApi {
 }
 
 /**
- * 구독 API 인터페이스
+ * 구독 + 프리미엄 통합 API 인터페이스
  */
 interface SubscriptionApiService {
 
@@ -87,4 +87,13 @@ interface SubscriptionApiService {
     suspend fun reverifySubscription(
         @Path("deviceId") deviceId: String
     ): BaseSubscriptionResponse
+
+    /**
+     * ✅ 신규: 통합 프리미엄 상태 조회 (구독 + 리워드 광고)
+     * GET /premium/status/:deviceId
+     */
+    @GET("premium/status/{deviceId}")
+    suspend fun getPremiumStatus(
+        @Path("deviceId") deviceId: String
+    ): PremiumStatusResponse
 }

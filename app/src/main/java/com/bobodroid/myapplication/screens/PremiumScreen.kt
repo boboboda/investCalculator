@@ -27,6 +27,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.android.billingclient.api.ProductDetails
 import com.bobodroid.myapplication.BuildConfig
 import com.bobodroid.myapplication.billing.BillingClientLifecycle
+import com.bobodroid.myapplication.components.Dialogs.RewardAdInfoDialog
 import com.bobodroid.myapplication.components.SocialLoginWarningBanner
 import com.bobodroid.myapplication.models.datamodels.roomDb.LocalUserData
 import com.bobodroid.myapplication.models.datamodels.roomDb.PremiumType
@@ -37,12 +38,12 @@ import java.time.Duration
 import java.time.Instant
 
 /**
- * 프리미엄 구독 화면
+ * 프리미엄 화면
  *
- * ViewModel 통합 구조:
- * - SharedViewModel: 전역 프리미엄 상태, 유저 정보, 디버그 기능
- * - PremiumViewModel: 구매 플로우, 서비스 토글
- * - BillingClient: Google Play 구독 관리
+ * ⚠️ 신규 구독 결제 진입점(SubscriptionPlansCard)은 제거됨 — 사업자 이슈로 신규 구독 판매 중단.
+ * 기존 구독자는 서버에서 자연 만료될 때까지 그대로 유지되고, "구독 복원" 카드만 남겨둠
+ * (다른 기기에서 예전에 구매한 구독을 이 기기로 복원하는 용도).
+ * 신규 유저는 리워드 광고로만 프리미엄을 얻을 수 있음.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -57,18 +58,21 @@ fun PremiumScreen(
     val coroutineScope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
 
-
-    // ViewModel 상태
     val uiState by viewModel.uiState.collectAsState()
     val user by sharedViewModel.user.collectAsState()
     val isPremium by sharedViewModel.isPremium.collectAsState()
     val premiumType by sharedViewModel.premiumType.collectAsState()
     val premiumExpiryDate by sharedViewModel.premiumExpiryDate.collectAsState()
+    val adUiState by sharedViewModel.adUiState.collectAsState()
+    val showRewardAdInfo by sharedViewModel.showRewardAdInfo.collectAsState()
 
-    val products = uiState.products
     val isLoading = uiState.isLoading
 
-    // ✅ 이벤트 처리
+    // ✅ 화면 진입 시 서버 기준 최신 프리미엄 상태 재조회 (구독 + 리워드 통합)
+    LaunchedEffect(Unit) {
+        sharedViewModel.refreshPremiumStatus()
+    }
+
     LaunchedEffect(Unit) {
         sharedViewModel.snackbarEvent.collect { message ->
             snackbarHostState.showSnackbar(message)
@@ -101,9 +105,7 @@ fun PremiumScreen(
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // ✅ 소셜 로그인 경고 배너 (필요 시)
             if (!user.socialId.isNullOrEmpty()) {
-                // ✅ 소셜 로그인 안내 (미연동 시에만)
                 val isSocialLinked = user.socialType != "NONE" && !user.socialId.isNullOrEmpty()
                 if (!isSocialLinked) {
                     SocialLoginWarningBanner(
@@ -119,36 +121,36 @@ fun PremiumScreen(
                     premiumType = premiumType,
                     premiumExpiryDate = premiumExpiryDate
                 )
+
+                // ✅ 리워드 프리미엄인 경우, 추가 시청으로 더 연장할 수 있게 카드 유지
+                if (premiumType == PremiumType.REWARD_AD) {
+                    RewardAdCard(
+                        canWatchToday = adUiState.rewardAdState,
+                        onWatchAd = {
+                            // ✅ 바로 광고 호출 대신 확인 다이얼로그부터 (AnalysisScreen.kt와 동일 패턴)
+                            sharedViewModel.showRewardAdDialog()
+                        }
+                    )
+                }
             } else {
                 // ✅ 일반 사용자
                 PremiumHeroCard()
 
-                // ✅ 구독 복원 버튼 (일반 사용자용)
-                RestorePurchaseCard(
-                    onRestoreClick = {
-                        coroutineScope.launch {
-                            viewModel.restorePurchases()
-                        }
+                // ✅ 리워드 광고로 프리미엄 받기 (신규 구독 결제 대신 메인 경로)
+                RewardAdCard(
+                    canWatchToday = adUiState.rewardAdState,
+                    onWatchAd = {
+                        sharedViewModel.showRewardAdDialog()
                     }
                 )
 
-                // 구독 플랜 표시
-                if (products.isNotEmpty()) {
-                    SubscriptionPlansCard(
-                        products = products,
-                        onPlanClick = { product, basePlanId ->
-                            activity?.let { act ->
-                                viewModel.startPurchase(act, product, basePlanId)
-                            }
-                        }
-                    )
-                }
+                // ⚠️ 구독 복원 카드 제거됨 — 실제 구독자가 없어 복원할 대상 자체가 없음
+                // ⚠️ 신규 구독 결제 카드(SubscriptionPlansCard)는 제거됨 — 더 이상 신규 판매 안 함
 
                 PremiumBenefitsCard()
             }
 
 
-            // ✅ 디버그 모드일 때만 테스트 컨트롤 표시
             if (BuildConfig.DEBUG) {
                 TestControlCard(
                     isPremium = isPremium,
@@ -157,7 +159,7 @@ fun PremiumScreen(
                         viewModel.setTestPremiumStatus(enabled)
                     },
                     onRefreshStatus = {
-                        viewModel.refreshPremiumStatus()
+                        sharedViewModel.refreshPremiumStatus()
                     },
                     onGrantTestPremium = { minutes ->
                         sharedViewModel.grantTestPremium(minutes)
@@ -169,20 +171,33 @@ fun PremiumScreen(
             }
         }
     }
+
+    // ✅ 리워드 광고 확인 다이얼로그 (AnalysisScreen.kt와 동일한 다이얼로그 재사용)
+    if (showRewardAdInfo) {
+        RewardAdInfoDialog(
+            onConfirm = {
+                sharedViewModel.showRewardAdAndGrantPremium(context)
+            },
+            onDismiss = {
+                sharedViewModel.closeRewardAdDialog()
+            }
+        )
+    }
 }
 
 /**
- * ✅ 구독 복원 카드 (일반 사용자용)
+ * ✅ 신규: 리워드 광고로 프리미엄 받기/연장하기 카드
  */
 @Composable
-fun RestorePurchaseCard(
-    onRestoreClick: () -> Unit
+fun RewardAdCard(
+    canWatchToday: Boolean,
+    onWatchAd: () -> Unit
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = Color(0xFFF0F9FF)),
-        border = BorderStroke(1.dp, Color(0xFF93C5FD))
+        colors = CardDefaults.cardColors(containerColor = Color(0xFFFFF7ED)),
+        border = BorderStroke(1.dp, Color(0xFFFDBA74))
     ) {
         Column(
             modifier = Modifier
@@ -195,41 +210,45 @@ fun RestorePurchaseCard(
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 Icon(
-                    imageVector = Icons.Rounded.Info,
+                    imageVector = Icons.Rounded.PlayCircle,
                     contentDescription = null,
-                    tint = Color(0xFF3B82F6),
+                    tint = Color(0xFFF97316),
                     modifier = Modifier.size(20.dp)
                 )
                 Text(
-                    text = "이미 구독하셨나요?",
+                    text = "광고 보고 프리미엄 받기",
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Bold,
-                    color = Color(0xFF1E40AF)
+                    color = Color(0xFF9A3412)
                 )
             }
 
             Text(
-                text = "다른 기기에서 구매한 구독을 복원할 수 있습니다.",
+                text = "짧은 광고 한 편이면 프리미엄이 연장됩니다.",
                 fontSize = 14.sp,
-                color = Color(0xFF1E40AF),
+                color = Color(0xFF9A3412),
                 lineHeight = 20.sp
             )
 
             Button(
-                onClick = onRestoreClick,
+                onClick = onWatchAd,
+                enabled = canWatchToday,
                 modifier = Modifier.fillMaxWidth(),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFF3B82F6)
+                    containerColor = Color(0xFFF97316)
                 ),
                 shape = RoundedCornerShape(12.dp)
             ) {
                 Icon(
-                    Icons.Rounded.Restore,
+                    Icons.Rounded.PlayCircle,
                     contentDescription = null,
                     modifier = Modifier.size(18.dp)
                 )
                 Spacer(modifier = Modifier.width(8.dp))
-                Text("구독 복원하기", fontSize = 15.sp)
+                Text(
+                    if (canWatchToday) "광고 보고 프리미엄 받기" else "오늘 시청 횟수를 다 채웠어요",
+                    fontSize = 15.sp
+                )
             }
         }
     }
@@ -262,7 +281,7 @@ fun PremiumActiveCard(
                 contentDescription = null,
                 modifier = Modifier.size(64.dp),
                 tint = when (premiumType) {
-                    PremiumType.SUBSCRIPTION -> Color(0xFFFCD34D)
+                    // ⚠️ SUBSCRIPTION 분기 제거 — 실제 구독자가 없어 도달할 일 없음
                     PremiumType.REWARD_AD -> Color(0xFFF97316)
                     PremiumType.LIFETIME -> Color(0xFF8B5CF6)
                     else -> Color(0xFF6B7280)
@@ -273,8 +292,7 @@ fun PremiumActiveCard(
 
             Text(
                 text = when (premiumType) {
-                    PremiumType.SUBSCRIPTION -> "정기 구독 활성"
-                    PremiumType.REWARD_AD -> "24시간 무료 체험"
+                    PremiumType.REWARD_AD -> "리워드 프리미엄 이용 중"
                     PremiumType.LIFETIME -> "평생 이용권"
                     else -> "프리미엄 활성"
                 },
@@ -285,296 +303,13 @@ fun PremiumActiveCard(
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            if (premiumExpiryDate != null && premiumType != PremiumType.LIFETIME) {
+            if (premiumExpiryDate != null && premiumType == PremiumType.REWARD_AD) {
                 val daysRemaining = calculateDaysRemaining(premiumExpiryDate)
                 Text(
                     text = "남은 기간: ${daysRemaining}일",
                     fontSize = 14.sp,
                     color = Color.White.copy(alpha = 0.9f)
                 )
-            }
-        }
-    }
-}
-
-
-/**
- * 구독 플랜 카드 - 하나의 상품에서 월간/연간 요금제 분리 표시
- */
-@Composable
-fun SubscriptionPlansCard(
-    products: List<ProductDetails>,
-    onPlanClick: (ProductDetails, String) -> Unit  // (product, basePlanId)
-) {
-    Column(
-        modifier = Modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
-    ) {
-        Text(
-            text = "구독 플랜",
-            fontSize = 20.sp,
-            fontWeight = FontWeight.Bold
-        )
-
-        // ✅ recordadvertisementremove 상품 찾기
-        val product = products.find {
-            it.productId == BillingClientLifecycle.PRODUCT_ID
-        }
-
-        product?.let { productDetails ->
-            val offers = productDetails.subscriptionOfferDetails ?: emptyList()
-
-            // ✅ 월간 요금제 찾기
-            val monthlyOffer = offers.find {
-                it.basePlanId == BillingClientLifecycle.BASE_PLAN_MONTHLY
-            }
-
-            // ✅ 연간 요금제 찾기
-            val yearlyOffer = offers.find {
-                it.basePlanId == BillingClientLifecycle.BASE_PLAN_YEARLY
-            }
-
-            // 월간 구독 카드
-            monthlyOffer?.let { offer ->
-                val pricingPhase = offer.pricingPhases.pricingPhaseList.firstOrNull()
-
-                SubscriptionPlanItem(
-                    planType = "월간",
-                    planIcon = Icons.Rounded.CalendarMonth,
-                    planColor = Color(0xFF6366F1),
-                    price = pricingPhase?.formattedPrice ?: "",
-                    renewalText = "매월 자동 갱신",
-                    onPlanClick = {
-                        onPlanClick(productDetails, BillingClientLifecycle.BASE_PLAN_MONTHLY)
-                    }
-                )
-            }
-
-            // 연간 구독 카드 (추천 배지 추가)
-            yearlyOffer?.let { offer ->
-                val pricingPhase = offer.pricingPhases.pricingPhaseList.firstOrNull()
-                val yearlyPrice = pricingPhase?.priceAmountMicros?.div(1_000_000.0) ?: 0.0
-                val monthlyPrice = yearlyPrice / 12
-                val discount = if (monthlyOffer != null) {
-                    val monthlyAmount = monthlyOffer.pricingPhases.pricingPhaseList.firstOrNull()
-                        ?.priceAmountMicros?.div(1_000_000.0) ?: 0.0
-                    if (monthlyAmount > 0) {
-                        ((1 - (monthlyPrice / monthlyAmount)) * 100).toInt()
-                    } else 0
-                } else 0
-
-                SubscriptionPlanItemYearly(
-                    planType = "연간",
-                    planIcon = Icons.Rounded.CalendarToday,
-                    planColor = Color(0xFFF59E0B),
-                    price = pricingPhase?.formattedPrice ?: "",
-                    monthlyEquivalent = "월 ${String.format("%.0f", monthlyPrice)}원",
-                    discount = if (discount > 0) "$discount% 할인" else null,
-                    renewalText = "매년 자동 갱신",
-                    onPlanClick = {
-                        onPlanClick(productDetails, BillingClientLifecycle.BASE_PLAN_YEARLY)
-                    }
-                )
-            }
-        } ?: run {
-            Text(
-                text = "구독 상품을 불러오는 중...",
-                color = Color.Gray,
-                modifier = Modifier.padding(16.dp)
-            )
-        }
-    }
-}
-
-/**
- * 구독 플랜 아이템 (월간용)
- */
-@Composable
-private fun SubscriptionPlanItem(
-    planType: String,
-    planIcon: ImageVector,
-    planColor: Color,
-    price: String,
-    renewalText: String,
-    onPlanClick: () -> Unit
-) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White)
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(20.dp)
-        ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(
-                    imageVector = planIcon,
-                    contentDescription = null,
-                    modifier = Modifier.size(24.dp),
-                    tint = planColor
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    text = planType,
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.Bold
-                )
-            }
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            Row(
-                verticalAlignment = Alignment.Bottom
-            ) {
-                Text(
-                    text = price,
-                    fontSize = 28.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = planColor
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    text = "/ 월",
-                    fontSize = 16.sp,
-                    color = Color.Gray,
-                    modifier = Modifier.padding(bottom = 4.dp)
-                )
-            }
-
-            Spacer(modifier = Modifier.height(4.dp))
-
-            Text(
-                text = renewalText,
-                fontSize = 14.sp,
-                color = Color.Gray
-            )
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            Button(
-                onClick = onPlanClick,
-                modifier = Modifier.fillMaxWidth(),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = planColor
-                )
-            ) {
-                Text("구독하기", fontSize = 16.sp)
-            }
-        }
-    }
-}
-
-/**
- * 구독 플랜 아이템 (연간용 - 추천 배지 포함)
- */
-@Composable
-private fun SubscriptionPlanItemYearly(
-    planType: String,
-    planIcon: ImageVector,
-    planColor: Color,
-    price: String,
-    monthlyEquivalent: String,
-    discount: String?,
-    renewalText: String,
-    onPlanClick: () -> Unit
-) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
-        border = BorderStroke(2.dp, planColor)
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(20.dp)
-        ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(
-                        imageVector = planIcon,
-                        contentDescription = null,
-                        modifier = Modifier.size(24.dp),
-                        tint = planColor
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        text = planType,
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.Bold
-                    )
-                }
-
-                // 추천 배지
-                if (discount != null) {
-                    Surface(
-                        shape = RoundedCornerShape(8.dp),
-                        color = planColor
-                    ) {
-                        Text(
-                            text = discount,
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = Color.White,
-                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
-                        )
-                    }
-                }
-            }
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            Row(
-                verticalAlignment = Alignment.Bottom
-            ) {
-                Text(
-                    text = price,
-                    fontSize = 28.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = planColor
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    text = "/ 년",
-                    fontSize = 16.sp,
-                    color = Color.Gray,
-                    modifier = Modifier.padding(bottom = 4.dp)
-                )
-            }
-
-            Spacer(modifier = Modifier.height(4.dp))
-
-            Text(
-                text = monthlyEquivalent,
-                fontSize = 14.sp,
-                color = planColor,
-                fontWeight = FontWeight.Medium
-            )
-
-            Spacer(modifier = Modifier.height(2.dp))
-
-            Text(
-                text = renewalText,
-                fontSize = 14.sp,
-                color = Color.Gray
-            )
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            Button(
-                onClick = onPlanClick,
-                modifier = Modifier.fillMaxWidth(),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = planColor
-                )
-            ) {
-                Text("구독하기", fontSize = 16.sp)
             }
         }
     }
@@ -627,9 +362,6 @@ fun PremiumHeroCard() {
     }
 }
 
-/**
- * 프리미엄 혜택 카드
- */
 /**
  * 프리미엄 혜택 카드 - 전체 혜택 표시
  */
@@ -739,7 +471,6 @@ fun TestControlCard(
 
             HorizontalDivider(color = Color(0xFFFECACA))
 
-            // 현재 상태 표시
             Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 Text(
                     text = "현재 상태: ${if (isPremium) "✅ 프리미엄" else "❌ 일반"}",
@@ -763,7 +494,6 @@ fun TestControlCard(
 
             HorizontalDivider(color = Color(0xFFFECACA))
 
-            // 버튼들
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -828,4 +558,3 @@ private fun calculateDaysRemaining(expiryDate: String): Int {
         0
     }
 }
-

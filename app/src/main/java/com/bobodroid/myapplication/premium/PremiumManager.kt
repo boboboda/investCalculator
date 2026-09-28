@@ -26,10 +26,11 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 /**
- * 프리미엄 상태 관리자 - 완전판 (월간/연간 구독 지원)
+ * 프리미엄 상태 관리자
  * - 앱 시작 시 구독 상태 확인 및 서버 동기화
  * - BillingClient 구매 이벤트 감시
  * - 서버 검증 자동 처리
+ * - ✅ 통합 프리미엄 상태(구독 + 리워드 광고)는 refreshUnifiedPremiumStatus()가 담당
  * - UserRepository(DB) 자동 업데이트
  * - 주기적 만료 확인
  */
@@ -46,7 +47,6 @@ class PremiumManager @Inject constructor(
     }
 
     companion object {
-        // ✅ 하위 호환성을 위한 상수 유지
         @Deprecated("Use BillingClientLifecycle constants instead")
         private const val PRODUCT_ID = "recordadvertisementremove"
         private const val SYNC_INTERVAL_MS = 3_600_000L // 1시간
@@ -54,7 +54,7 @@ class PremiumManager @Inject constructor(
 
     init {
         Log.d(TAG("PremiumManager", "init"), "━━━━━━━━━━━━━━━━━━━━━━━━━━")
-        Log.d(TAG("PremiumManager", "init"), "프리미엄 관리자 시작 (월간/연간 구독 지원)")
+        Log.d(TAG("PremiumManager", "init"), "프리미엄 관리자 시작")
 
         // ✅ 구매 완료 콜백 등록
         billingClient.setOnPurchaseCallback { purchase ->
@@ -63,10 +63,11 @@ class PremiumManager @Inject constructor(
             }
         }
 
-        // ✅ 앱 시작 시 구독 상태 동기화
+        // ✅ 앱 시작 시 동기화 (구독 + 통합 상태)
         scope.launch {
             delay(1000) // BillingClient 초기화 대기
             syncPremiumStatus()
+            refreshUnifiedPremiumStatus() // ✅ 신규: 리워드 프리미엄도 서버 기준으로 확인
             startPeriodicSync()
         }
     }
@@ -75,44 +76,30 @@ class PremiumManager @Inject constructor(
      * ✅ 구매 완료 처리 - 서버 검증 및 DB 업데이트
      */
     private suspend fun handlePurchase(purchase: Purchase) {
-        Log.d(TAG("PremiumManager", "handlePurchase"), "━━━━━━━━━━━━━━━━━━━━━━━━━━")
-        Log.d(TAG("PremiumManager", "handlePurchase"), "구매 처리 시작")
-        Log.d(TAG("PremiumManager", "handlePurchase"), "제품: ${purchase.products}")
-
         val user = userRepository.userData.value?.localUserData ?: run {
             Log.e(TAG("PremiumManager", "handlePurchase"), "사용자 데이터 없음")
             return
         }
 
-        // ✅ 구매한 제품 ID 추출 (월간 or 연간)
         val productId = purchase.products.firstOrNull() ?: run {
             Log.e(TAG("PremiumManager", "handlePurchase"), "제품 ID 없음")
             return
         }
 
-        Log.d(TAG("PremiumManager", "handlePurchase"), "구매 제품 ID: $productId")
-
         try {
-            // 서버에 영수증 검증 요청
             val request = VerifyPurchaseRequest(
                 deviceId = user.id.toString(),
-                productId = productId,  // ✅ 실제 구매한 제품 ID 전달
+                productId = productId,
                 basePlanId = extractBasePlanId(purchase),
                 purchaseToken = purchase.purchaseToken,
                 packageName = purchase.packageName,
-                socialId = user.socialId,  // ✅ 소셜 정보 추가
-                socialType = user.socialType  // ✅ 소셜 정보 추가
+                socialId = user.socialId,
+                socialType = user.socialType
             )
-
-            Log.d(TAG("PremiumManager", "handlePurchase"), "서버 검증 요청: $request")
 
             val response = SubscriptionApi.service.verifyPurchase(request)
 
             if (response.success && response.data != null) {
-                Log.d(TAG("PremiumManager", "handlePurchase"), "서버 검증 성공")
-                Log.d(TAG("PremiumManager", "handlePurchase"), "만료일: ${response.data.expiryTime}")
-
-                // DB 업데이트
                 val updatedUser = user.copy(
                     premiumType = "SUBSCRIPTION",
                     premiumExpiryDate = response.data.expiryTime,
@@ -134,17 +121,14 @@ class PremiumManager @Inject constructor(
 
     /**
      * ✅ 구독 상태 동기화 (앱 시작 시 / 주기적) - SUBSCRIPTION만 처리
+     * (Play Billing 클라이언트를 직접 조회하는 경로 — 리워드는 refreshUnifiedPremiumStatus()가 담당)
      */
     suspend fun syncPremiumStatus() {
-        Log.d(TAG("PremiumManager", "syncPremiumStatus"), "━━━━━━━━━━━━━━━━━━━━━━━━━━")
-        Log.d(TAG("PremiumManager", "syncPremiumStatus"), "구독 상태 동기화 시작")
-
         val user = userRepository.userData.value?.localUserData ?: run {
             Log.e(TAG("PremiumManager", "syncPremiumStatus"), "사용자 데이터 없음")
             return
         }
 
-        // ✅ SUBSCRIPTION만 처리 (REWARD_AD, EVENT는 SharedViewModel이 처리)
         if (user.premiumType != "SUBSCRIPTION" && user.premiumType != "NONE") {
             Log.d(TAG("PremiumManager", "syncPremiumStatus"),
                 "SUBSCRIPTION이 아님 (${user.premiumType}) - 동기화 건너뜀")
@@ -164,18 +148,11 @@ class PremiumManager @Inject constructor(
                             val productId = purchase.products.firstOrNull() ?: ""
                             Log.d(TAG("PremiumManager", "syncPremiumStatus"), "활성 구독 발견: $productId")
 
-                            // 서버 상태 확인
                             try {
                                 val response =
                                     SubscriptionApi.service.getSubscriptionStatus(user.id.toString())
 
                                 if (response.success && response.data.isPremium) {
-                                    Log.d(
-                                        TAG("PremiumManager", "syncPremiumStatus"),
-                                        "서버 구독 확인 - 만료일: ${response.data.expiryTime}"
-                                    )
-
-                                    // ✅ 중복 업데이트 방지
                                     if (shouldUpdateUser(user, "SUBSCRIPTION", response.data.expiryTime)) {
                                         val updatedUser = user.copy(
                                             premiumType = "SUBSCRIPTION",
@@ -184,21 +161,14 @@ class PremiumManager @Inject constructor(
                                         )
                                         userUseCases.localUserUpdate(updatedUser)
                                         Log.d(TAG("PremiumManager", "syncPremiumStatus"), "✅ DB 업데이트 완료")
-                                    } else {
-                                        Log.d(TAG("PremiumManager", "syncPremiumStatus"), "DB 이미 최신 상태 - 업데이트 생략")
                                     }
                                 } else {
-                                    // 서버에는 없는데 로컬에 있음 → 서버 재검증 요청
-                                    Log.d(TAG("PremiumManager", "syncPremiumStatus"), "서버 재검증 요청")
                                     SubscriptionApi.service.reverifySubscription(user.id.toString())
                                 }
                             } catch (e: Exception) {
                                 Log.e(TAG("PremiumManager", "syncPremiumStatus"), "서버 확인 실패", e)
                             }
                         } else {
-                            Log.d(TAG("PremiumManager", "syncPremiumStatus"), "활성 구독 없음")
-
-                            // DB에 구독이 있으면 만료 처리
                             if (user.premiumType == "SUBSCRIPTION") {
                                 expireSubscription(user)
                             }
@@ -209,8 +179,68 @@ class PremiumManager @Inject constructor(
         } catch (e: Exception) {
             Log.e(TAG("PremiumManager", "syncPremiumStatus"), "동기화 실패", e)
         }
+    }
 
-        Log.d(TAG("PremiumManager", "syncPremiumStatus"), "━━━━━━━━━━━━━━━━━━━━━━━━━━")
+    /**
+     * ✅ 통합 프리미엄 상태 동기화 (구독 + 리워드 광고)
+     * - 구독/리워드 상관없이 서버가 최종 판정한 결과로 로컬 DB를 갱신
+     * - 리워드 광고 시청 직후, 그리고 주기적 동기화에서 호출
+     */
+    suspend fun refreshUnifiedPremiumStatus() {
+        Log.d(TAG("PremiumManager", "refreshUnifiedPremiumStatus"), "통합 프리미엄 상태 동기화 시작")
+
+        val user = userRepository.userData.value?.localUserData ?: run {
+            Log.e(TAG("PremiumManager", "refreshUnifiedPremiumStatus"), "사용자 데이터 없음")
+            return
+        }
+
+        try {
+            val response = SubscriptionApi.service.getPremiumStatus(user.id.toString())
+
+            if (!response.success) {
+                Log.w(TAG("PremiumManager", "refreshUnifiedPremiumStatus"), "서버 응답 실패")
+                return
+            }
+
+            val data = response.data
+
+            if (data.isPremium && data.premiumType != "NONE") {
+                if (shouldUpdateUser(user, data.premiumType, data.expiryTime)) {
+                    val updatedUser = user.copy(
+                        premiumType = data.premiumType,
+                        premiumExpiryDate = data.expiryTime,
+                        premiumGrantedBy = if (data.premiumType == "REWARD_AD") "reward" else "subscription",
+                        isPremium = true
+                    )
+                    userUseCases.localUserUpdate(updatedUser)
+                    Log.d(
+                        TAG("PremiumManager", "refreshUnifiedPremiumStatus"),
+                        "✅ DB 업데이트 완료: ${data.premiumType}, 만료일: ${data.expiryTime}"
+                    )
+                } else {
+                    Log.d(TAG("PremiumManager", "refreshUnifiedPremiumStatus"), "DB 이미 최신 상태")
+                }
+            } else {
+                if (user.premiumType != "NONE") {
+                    val clearedUser = user.copy(
+                        premiumType = "NONE",
+                        premiumExpiryDate = null,
+                        isPremium = false
+                    )
+                    userUseCases.localUserUpdate(clearedUser)
+                    Log.d(TAG("PremiumManager", "refreshUnifiedPremiumStatus"), "🔴 서버 기준 프리미엄 없음 - 로컬 초기화")
+                }
+            }
+
+            data.rewardAd?.let { rewardInfo ->
+                Log.d(
+                    TAG("PremiumManager", "refreshUnifiedPremiumStatus"),
+                    "오늘 리워드 시청: ${rewardInfo.todayRewardCount}/${rewardInfo.dailyRewardCap}"
+                )
+            }
+        } catch (e: Exception) {
+            Log.e(TAG("PremiumManager", "refreshUnifiedPremiumStatus"), "동기화 실패", e)
+        }
     }
 
 
@@ -222,28 +252,15 @@ class PremiumManager @Inject constructor(
         newPremiumType: String,
         newExpiryDate: String?
     ): Boolean {
-        // 타입이 다르면 업데이트 필요
-        if (user.premiumType != newPremiumType) {
-            return true
-        }
-
-        // 만료일이 다르면 업데이트 필요
-        if (user.premiumExpiryDate != newExpiryDate) {
-            return true
-        }
-
-        // isPremium 상태가 다르면 업데이트 필요
+        if (user.premiumType != newPremiumType) return true
+        if (user.premiumExpiryDate != newExpiryDate) return true
         val shouldBePremium = newPremiumType != "NONE"
-        if (user.isPremium != shouldBePremium) {
-            return true
-        }
-
-        // 모두 같으면 업데이트 불필요
+        if (user.isPremium != shouldBePremium) return true
         return false
     }
 
     /**
-     * ✅ 주기적 동기화 (1시간마다)
+     * ✅ 주기적 동기화 (1시간마다) — 구독 + 통합 상태 둘 다 확인
      */
     private fun startPeriodicSync() {
         scope.launch {
@@ -251,33 +268,17 @@ class PremiumManager @Inject constructor(
                 delay(SYNC_INTERVAL_MS)
                 Log.d(TAG("PremiumManager", "periodicSync"), "주기적 동기화 실행")
                 syncPremiumStatus()
+                refreshUnifiedPremiumStatus()
             }
         }
     }
 
     /**
-     * 프리미엄 만료 처리
-     */
-    /**
      * ✅ 구독 만료 처리 (SUBSCRIPTION 전용)
      */
     private suspend fun expireSubscription(user: LocalUserData) {
-        Log.d(TAG("PremiumManager", "expireSubscription"), "구독 만료 처리 시작")
-
-        // ✅ 이미 만료 상태면 중복 실행 방지
-        if (user.premiumType == "NONE" && user.premiumExpiryDate == null) {
-            Log.d(TAG("PremiumManager", "expireSubscription"), "이미 만료 상태 - 건너뜀")
-            return
-        }
-
-        // ✅ SUBSCRIPTION이 아니면 처리하지 않음
-        if (user.premiumType != "SUBSCRIPTION") {
-            Log.w(TAG("PremiumManager", "expireSubscription"),
-                "SUBSCRIPTION이 아님 (${user.premiumType}) - 건너뜀")
-            return
-        }
-
-        Log.d(TAG("PremiumManager", "expireSubscription"), "구독 만료 처리 진행")
+        if (user.premiumType == "NONE" && user.premiumExpiryDate == null) return
+        if (user.premiumType != "SUBSCRIPTION") return
 
         val updatedUser = user.copy(
             premiumType = "NONE",
@@ -293,12 +294,10 @@ class PremiumManager @Inject constructor(
      * 프리미엄 상태 확인 (우선순위: LIFETIME > SUBSCRIPTION > EVENT > REWARD_AD > NONE)
      */
     fun checkPremiumStatus(user: LocalUserData): PremiumType {
-        // LIFETIME은 만료 없음
         if (user.premiumType == "LIFETIME") {
             return PremiumType.LIFETIME
         }
 
-        // 만료 날짜 확인
         val expiryDate = user.premiumExpiryDate
         if (expiryDate.isNullOrEmpty()) {
             return PremiumType.NONE
@@ -312,13 +311,10 @@ class PremiumManager @Inject constructor(
             return PremiumType.NONE
         }
 
-        // 만료 확인
         if (now.isAfter(expiry)) {
-            Log.d(TAG("PremiumManager", "checkPremiumStatus"), "프리미엄 만료: ${user.premiumType}")
             return PremiumType.NONE
         }
 
-        // 타입 반환
         return when (user.premiumType) {
             "SUBSCRIPTION" -> PremiumType.SUBSCRIPTION
             "EVENT" -> PremiumType.EVENT
@@ -328,10 +324,9 @@ class PremiumManager @Inject constructor(
     }
 
     /**
-     * ✅ 프리미엄 상태 새로고침 (외부 호출용)
+     * ✅ 프리미엄 상태 새로고침 (외부 호출용 - 구독 전용 경로)
      */
     suspend fun refreshPremiumStatus() {
-        Log.d(TAG("PremiumManager", "refreshPremiumStatus"), "프리미엄 상태 새로고침 요청")
         syncPremiumStatus()
     }
 
@@ -340,20 +335,11 @@ class PremiumManager @Inject constructor(
      */
     suspend fun updateUserPremiumStatus(isPremium: Boolean) {
         try {
-            val currentUser = userRepository.userData.value?.localUserData ?: run {
-                Log.e(TAG("PremiumManager", "updateUserPremiumStatus"), "사용자 데이터 없음")
-                return
-            }
+            val currentUser = userRepository.userData.value?.localUserData ?: return
 
-            // isPremium 상태가 바뀐 경우만 업데이트
             if (currentUser.isPremium != isPremium) {
                 val updatedUser = currentUser.copy(isPremium = isPremium)
                 userRepository.localUserUpdate(updatedUser)
-
-                Log.d(
-                    TAG("PremiumManager", "updateUserPremiumStatus"),
-                    "✅ DB 업데이트 완료: isPremium = $isPremium"
-                )
             }
         } catch (e: Exception) {
             Log.e(TAG("PremiumManager", "updateUserPremiumStatus"), "DB 업데이트 실패", e)
@@ -364,7 +350,6 @@ class PremiumManager @Inject constructor(
      * ✅ 테스트용: 프리미엄 상태 강제 설정 (디버그 빌드에서만)
      */
     suspend fun setTestPremiumStatus(isPremium: Boolean) {
-        Log.d(TAG("PremiumManager", "setTestPremiumStatus"), "테스트 프리미엄 상태: $isPremium")
         updateUserPremiumStatus(isPremium)
     }
 
@@ -383,8 +368,6 @@ class PremiumManager @Inject constructor(
         )
 
         userUseCases.localUserUpdate(updatedUser)
-        Log.d(TAG("PremiumManager", "grantTestPremium"), "✅ 테스트 프리미엄 지급: ${minutes}분 후 만료")
-
         return true
     }
 
@@ -395,30 +378,24 @@ class PremiumManager @Inject constructor(
         return try {
             val json = org.json.JSONObject(purchase.originalJson)
             val basePlanId = json.optString("basePlanId", "")
-
-            Log.d(TAG("PremiumManager", "extractBasePlanId"), "추출된 basePlanId: $basePlanId")
-
-            // ✅ basePlanId가 없으면 기본값 반환
-            if (basePlanId.isEmpty()) {
-                "monthly-basic"
-            } else {
-                basePlanId
-            }
+            if (basePlanId.isEmpty()) "monthly-basic" else basePlanId
         } catch (e: Exception) {
-            Log.e(TAG("PremiumManager", "extractBasePlanId"), "BasePlanId 추출 실패", e)
             "monthly-basic"
         }
     }
 
 
     /**
-     * 리워드 광고로 24시간 프리미엄 지급
+     * ⚠️ 레거시: 리워드 광고로 24시간 프리미엄 로컬 즉시 지급
+     * ✅ 새 흐름(SSV)에서는 더 이상 호출되지 않아야 함 — AdUseCase.showRewardAdAndGrantPremium()은
+     *    이제 이 함수 대신 refreshUnifiedPremiumStatus()로 서버 상태를 반영함
+     * 완전히 안 쓰이는 게 확인되면 삭제해도 무방
      */
+    @Deprecated("서버 SSV 기반 흐름과 어긋남 - refreshUnifiedPremiumStatus() 사용 권장")
     suspend fun grantRewardPremium(user: LocalUserData): Boolean {
         val today = Instant.now().truncatedTo(ChronoUnit.DAYS).toString()
 
         if (user.lastRewardDate == today) {
-            Log.d(TAG("PremiumManager", "grantRewardPremium"), "오늘 이미 리워드 사용")
             return false
         }
 
@@ -435,13 +412,11 @@ class PremiumManager @Inject constructor(
         )
 
         userUseCases.localUserUpdate(updatedUser)
-        Log.d(TAG("PremiumManager", "grantRewardPremium"), "✅ 24시간 프리미엄 지급")
-
         return true
     }
 
     /**
-     * 오늘 리워드 광고 사용 가능 여부
+     * 오늘 리워드 광고 사용 가능 여부 (로컬 1차 체크용 — 최종 판단은 서버)
      */
     fun canUseRewardAdToday(user: LocalUserData): Boolean {
         val today = Instant.now().truncatedTo(ChronoUnit.DAYS).toString()
@@ -450,7 +425,7 @@ class PremiumManager @Inject constructor(
 
 
     /**
-     * ✅ 프리미엄 남은 초 계산 (public으로 변경 - SharedViewModel에서 사용)
+     * ✅ 프리미엄 남은 초 계산
      */
     fun getRemainingSeconds(user: LocalUserData): Long {
         val expiryDate = user.premiumExpiryDate ?: return 0L
@@ -471,14 +446,6 @@ class PremiumManager @Inject constructor(
      */
     fun isExpiringWithinHour(user: LocalUserData): Boolean {
         val remaining = getRemainingSeconds(user)
-        return remaining in 1..3600  // 1초~1시간 사이
+        return remaining in 1..3600
     }
-
-
-
-
-
-
-
-
 }

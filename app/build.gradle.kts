@@ -1,4 +1,5 @@
 import java.util.Properties
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
     alias(libs.plugins.android.application)
@@ -8,9 +9,8 @@ plugins {
     alias(libs.plugins.hilt.android)
     alias(libs.plugins.google.services)
     alias(libs.plugins.compose.compiler)
+    alias(libs.plugins.ksp)
 }
-
-// Properties 파일 로드를 위한 함수
 fun loadProperties(): Properties {
     val properties = Properties()
     val localPropertiesFile = rootProject.file("local.properties")
@@ -34,14 +34,14 @@ android {
     val properties = loadProperties()
 
     namespace = "com.bobodroid.myapplication"
-    compileSdk = 35
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "com.bobodroid.myapplication"
         minSdk = 26
-        targetSdk = 35
-        versionCode = 48
-        versionName = "27.1.4"
+        targetSdk = 36
+        versionCode = 53
+        versionName = "27.2.5"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
         vectorDrawables {
@@ -132,9 +132,9 @@ android {
         targetCompatibility = JavaVersion.VERSION_18
     }
 
-    kotlinOptions {
-        jvmTarget = "18"
-    }
+    // ⚠️ 기존 kotlinOptions { jvmTarget = "18" } 블록 제거함
+    // Kotlin 2.x부터 이 문법이 에러로 처리되어, 아래 kotlin { compilerOptions { ... } } 블록으로 대체
+    // (이 블록은 android { } 바깥, 파일 최하단 쪽에 별도로 있음)
 
     buildFeatures {
         compose = true
@@ -148,6 +148,13 @@ android {
         resources {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
         }
+    }
+}
+
+// ✅ 신규: Kotlin 2.x 방식의 컴파일러 옵션 설정 (android { } 블록 밖, 최상위)
+kotlin {
+    compilerOptions {
+        jvmTarget.set(JvmTarget.JVM_18)
     }
 }
 
@@ -184,8 +191,9 @@ dependencies {
     implementation(libs.accompanist.navigation.animation)
 
     // Room
+    // ⚠️ room-ktx 제거함 — Room 2.6.0부터 ktx 기능이 room-runtime 본체에 합쳐져서
+    //    2.8.5에서는 별도 room-ktx 아티팩트가 없을 가능성이 높음 (Firebase ktx와 같은 문제 방지)
     implementation(libs.room.runtime)
-    implementation(libs.room.ktx)
     annotationProcessor(libs.room.compiler)
     kapt(libs.room.compiler)
 
@@ -202,19 +210,17 @@ dependencies {
     // Firebase
     implementation(platform(libs.firebase.bom))
     implementation(libs.firebase.firestore)
-    implementation(libs.firebase.firestore.ktx)
     implementation(libs.firebase.database)
     implementation(libs.firebase.messaging)
-    implementation(libs.firebase.messaging.ktx)
     implementation(libs.firebase.analytics)
-    implementation(libs.firebase.analytics.ktx)
+
 
     // Network
     implementation(libs.retrofit)
     implementation(libs.retrofit.converter.moshi)
     implementation(libs.moshi)
     implementation(libs.moshi.kotlin)
-    kapt(libs.moshi.kotlin.codegen)
+    ksp(libs.moshi.kotlin.codegen)
     implementation(platform(libs.okhttp.bom))
     implementation(libs.okhttp)
     implementation(libs.okhttp.logging.interceptor)

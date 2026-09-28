@@ -17,7 +17,7 @@ import androidx.compose.ui.window.Dialog
 /**
  * 프리미엄 유도 팝업
  * - 전면 광고 3회마다 표시
- * - 24시간 무료 프리미엄 유도
+ * - ✅ 리워드 광고로 프리미엄 연장 유도 (기존 "24시간 고정" 문구에서 변경)
  */
 @Composable
 fun PremiumPromptDialog(
@@ -84,7 +84,7 @@ fun PremiumPromptDialog(
                 // 버튼 영역
                 // ━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-                // 메인 버튼 (24시간 무료 체험)
+                // 메인 버튼 (광고 보고 프리미엄 받기)
                 Button(
                     onClick = onWatchAd,
                     modifier = Modifier
@@ -96,7 +96,7 @@ fun PremiumPromptDialog(
                     )
                 ) {
                     Text(
-                        text = "💎 24시간 무료 체험",
+                        text = "💎 광고 보고 프리미엄 받기",
                         fontSize = 16.sp,
                         fontWeight = FontWeight.Bold
                     )

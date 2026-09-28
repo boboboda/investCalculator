@@ -2,10 +2,10 @@
 
 [versions]
 # --- Plugins ---
-androidGradlePlugin = "8.6.0"
-kotlin = "2.0.0"
-googleServices = "4.4.2"
-hiltAndroid = "2.51.1"
+androidGradlePlugin = "8.6.1"
+kotlin = "2.2.21"
+googleServices = "4.5.0"
+hiltAndroid = "2.58"
 
 # --- AndroidX ---
 androidxCore = "1.13.1"
@@ -14,7 +14,7 @@ androidxActivity = "1.9.0"
 androidxAppCompat = "1.7.0"
 androidxConstraintLayout = "2.1.4"
 androidxNavigation = "2.7.7"
-androidxRoom = "2.6.1"
+androidxRoom = "2.8.5"
 androidxSplash = "1.0.1"
 androidxWork = "2.9.0"  # ✅ WorkManager 추가
 
@@ -30,17 +30,20 @@ androidxEspresso = "3.5.1"
 
 # --- Google ---
 materialDesign = "1.12.0"
-playServicesAdsLite = "23.0.0"
+playServicesAdsLite = "24.8.0"
 firebaseCrashlytics = "2.10.1"
-firebaseBom = "33.0.0"
+firebaseBom = "34.17.0"
 
 # --- Kotlinx ---
 coroutines = "1.8.1"
 
 # --- Hilt ---
 hiltCompiler = "1.2.0"
-hiltAndroidTesting = "2.51.1"
+hiltAndroidTesting = "2.58"
 hiltWork = "1.1.0"
+
+# --- KSP (Moshi codegen용) ---
+ksp = "2.3.3"
 
 # --- Network ---
 retrofit = "2.11.0"
@@ -52,7 +55,7 @@ accompanistNavigation = "0.34.0"
 billingKtx = "8.0.0"
 socketIo = "2.1.0"
 mpAndroidChart = "v3.1.0"
-roomRuntimeAndroid = "2.6.1"
+roomRuntimeAndroid = "2.8.5"
 
 # ✅ 소셜 로그인
 playServicesAuth = "21.0.0"
@@ -163,3 +166,4 @@ kotlin-parcelize = { id = "org.jetbrains.kotlin.plugin.parcelize", version.ref =
 hilt-android = { id = "com.google.dagger.hilt.android", version.ref = "hiltAndroid" }
 google-services = { id = "com.google.gms.google-services", version.ref = "googleServices" }
 compose-compiler = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
+ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }

@@ -7,11 +7,14 @@ import com.bobodroid.myapplication.models.datamodels.roomDb.LocalUserData
 import com.bobodroid.myapplication.models.datamodels.roomDb.PremiumType
 import com.bobodroid.myapplication.models.datamodels.useCases.UserUseCases
 import com.bobodroid.myapplication.premium.PremiumManager
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.suspendCancellableCoroutine
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Date
 import java.util.GregorianCalendar
 import javax.inject.Inject
+import kotlin.coroutines.resume
 
 class AdUseCase @Inject constructor(
     private val userUseCases: UserUseCases,
@@ -19,8 +22,13 @@ class AdUseCase @Inject constructor(
     private val adManager: AdManager  // ← AdManager 주입
 ) {
 
+    companion object {
+        // SSV 콜백이 서버에 도착하는 데 걸리는 시간에 대한 여유. 필요시 조정
+        private const val SSV_SYNC_DELAY_MS = 3000L
+    }
+
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━
-    // 전면 광고 (통합 로직)
+    // 전면 광고 (통합 로직) — 변경 없음
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━
 
     /**
@@ -83,7 +91,6 @@ class AdUseCase @Inject constructor(
      * 전면 광고 표시 여부 확인
      */
     fun shouldShowInterstitialAd(user: LocalUserData): Boolean {
-        // 프리미엄 사용자는 광고 안 보여줌
         if (premiumManager.checkPremiumStatus(user) != PremiumType.NONE) {
             return false
         }
@@ -108,28 +115,24 @@ class AdUseCase @Inject constructor(
     }
 
     /**
-     * 프리미엄 유도 팝업 표시 조건 (10회 이상 & 10의 배수)
+     * 프리미엄 유도 팝업 표시 조건 (10회 이상)
      */
     fun shouldShowPremiumPrompt(user: LocalUserData): Boolean {
-        // 프리미엄 사용자는 팝업 안 보여줌
         if (premiumManager.checkPremiumStatus(user) != PremiumType.NONE) {
             return false
         }
-
-        // 10회 이상이고 10의 배수일 때만 표시
-//        return user.interstitialAdCount >= 10 && user.interstitialAdCount % 10 == 0
-       return user.interstitialAdCount >= 10
+        return user.interstitialAdCount >= 10
     }
 
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━
-    // 리워드 광고 (통합 로직)
+    // 리워드 광고 (통합 로직) — ✅ 여기가 이번에 바뀐 핵심 함수
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━
 
     /**
      * 리워드 광고 표시 (모든 로직 통합)
-     * - 하루 1회 체크
-     * - 광고 표시
-     * - 24시간 프리미엄 지급
+     * - 하루 캡 1차 체크(로컬, UX용 — 최종 판단은 서버 SSV)
+     * - 광고가 "실제로 끝까지 재생됐는지" 콜백이 올 때까지 대기
+     * - ⚠️ 로컬 즉시 지급 없음 — SSV가 서버에 도착할 시간을 기다린 뒤 서버 상태 재조회
      *
      * @return 성공 여부
      */
@@ -140,7 +143,7 @@ class AdUseCase @Inject constructor(
         onAlreadyUsed: () -> Unit = {},
         onAdFailed: () -> Unit = {}
     ): Boolean {
-        // 오늘 이미 사용했는지 확인
+        // 1차 체크 (로컬, 버튼 비활성화 등 UX 용도)
         if (!premiumManager.canUseRewardAdToday(user)) {
             Log.d(TAG("AdUseCase", "showRewardAdAndGrantPremium"), "오늘 이미 리워드 사용함")
             onAlreadyUsed()
@@ -149,35 +152,52 @@ class AdUseCase @Inject constructor(
 
         Log.d(TAG("AdUseCase", "showRewardAdAndGrantPremium"), "리워드 광고 표시 시도")
 
-        // 광고 표시
-        adManager.showRewardAd(
-            context = context,
-            onRewarded = {
-                // 광고 시청 완료 → 24시간 프리미엄 지급
-                Log.d(TAG("AdUseCase", "showRewardAdAndGrantPremium"), "광고 시청 완료 - 프리미엄 지급")
-                onSuccess()
-            },
-            onAdFailed = {
-                Log.d(TAG("AdUseCase", "showRewardAdAndGrantPremium"), "광고 로드 실패")
-                onAdFailed()
-            }
-        )
+        // ✅ 광고를 "실제로 끝까지 봤는지" 콜백이 올 때까지 기다림
+        val earnedReward = suspendCancellableCoroutine<Boolean> { cont ->
+            var rewarded = false
 
-        // 24시간 프리미엄 지급
-        return premiumManager.grantRewardPremium(user)
+            adManager.showRewardAd(
+                context = context,
+                deviceId = user.id.toString(),
+                onRewarded = {
+                    rewarded = true
+                },
+                onAdClosed = {
+                    if (cont.isActive) cont.resume(rewarded)
+                },
+                onAdFailed = {
+                    if (cont.isActive) cont.resume(false)
+                }
+            )
+        }
+
+        if (!earnedReward) {
+            Log.d(TAG("AdUseCase", "showRewardAdAndGrantPremium"), "광고 미완료 - 지급 없음")
+            onAdFailed()
+            return false
+        }
+
+        Log.d(TAG("AdUseCase", "showRewardAdAndGrantPremium"), "광고 시청 완료 - SSV 도착 대기 후 서버 재조회")
+
+        // SSV 콜백이 Google → 우리 서버로 도착할 시간을 잠깐 기다림
+        delay(SSV_SYNC_DELAY_MS)
+
+        // ⚠️ 로컬에서 직접 프리미엄을 지급하지 않고, 서버의 최종 판정을 그대로 반영
+        premiumManager.refreshUnifiedPremiumStatus()
+
+        onSuccess()
+        return true
     }
 
     /**
      * 리워드 광고 표시 여부 확인
      */
     suspend fun processRewardAdState(user: LocalUserData): Boolean {
-        // 프리미엄 사용자는 광고 안 보여줌
         if (premiumManager.checkPremiumStatus(user) != PremiumType.NONE) {
             return false
         } else {
             return true
         }
-
     }
 
     /**
@@ -191,23 +211,25 @@ class AdUseCase @Inject constructor(
     }
 
     /**
-     * 리워드 광고 시청 완료 → 24시간 프리미엄 지급 (레거시)
+     * ⚠️⚠️ 확인 필요: 리워드 광고 시청 완료 → 프리미엄 지급 (레거시)
+     * 이 함수가 여전히 어딘가에서 호출되고 있다면, showRewardAdAndGrantPremium과 달리
+     * 로컬에서 직접 grantRewardPremium()을 호출하고 있어서 새 구조(서버 SSV 기준)와
+     * 어긋납니다. 호출하는 곳이 있는지 확인해주세요 — 없으면 삭제 대상입니다.
      */
+    @Deprecated("서버 SSV 기반 흐름과 어긋남 - showRewardAdAndGrantPremium 사용 권장")
     suspend fun onRewardAdWatched(user: LocalUserData): Boolean {
-        Log.d(TAG("AdUseCase", "onRewardAdWatched"), "리워드 광고 시청 완료")
+        Log.d(TAG("AdUseCase", "onRewardAdWatched"), "리워드 광고 시청 완료 (레거시 경로)")
 
-        // 오늘 이미 사용했는지 확인
         if (!premiumManager.canUseRewardAdToday(user)) {
             Log.d(TAG("AdUseCase", "onRewardAdWatched"), "오늘 이미 리워드 사용함")
             return false
         }
 
-        // 24시간 프리미엄 지급
         return premiumManager.grantRewardPremium(user)
     }
 
     /**
-     * 30회 리워드 광고 시청 시 특별 혜택 제공 조건
+     * 30회 리워드 광고 시청 시 특별 혜택 제공 조건 — 변경 없음
      */
     fun shouldOfferSpecialDiscount(user: LocalUserData): Boolean {
         return user.totalRewardCount >= 30 &&
@@ -215,14 +237,10 @@ class AdUseCase @Inject constructor(
     }
 
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━
-    // 배너 광고
+    // 배너 광고 — 변경 없음
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-    /**
-     * 배너 광고 표시 상태 확인
-     */
     fun bannerAdState(user: LocalUserData): Boolean {
-        // 프리미엄 사용자는 광고 안 보여줌
         if (premiumManager.checkPremiumStatus(user) != PremiumType.NONE) {
             return false
         } else {
@@ -230,9 +248,6 @@ class AdUseCase @Inject constructor(
         }
     }
 
-    /**
-     * 배너 광고 제거 딜레이
-     */
     suspend fun deleteBannerDelayDate(user: LocalUserData, todayDate: String): Boolean {
         Log.d(TAG("AdUseCase", "deleteBannerDelayDate"), "날짜 연기 신청")
 
@@ -250,12 +265,9 @@ class AdUseCase @Inject constructor(
     }
 
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━
-    // 유틸리티
+    // 유틸리티 — 변경 없음
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-    /**
-     * 날짜 연기 계산
-     */
     private fun delayDate(inputDate: String, delayDay: Int): String? {
         val dateFormat = SimpleDateFormat("yyyy-MM-dd")
         val date: Date? = dateFormat.parse(inputDate)

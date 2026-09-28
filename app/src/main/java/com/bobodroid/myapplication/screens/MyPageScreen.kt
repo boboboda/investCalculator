@@ -66,6 +66,13 @@ fun MyPageScreen(
     val premiumExpiryDate by sharedViewModel.premiumExpiryDate.collectAsState()
     val showRewardAdInfo by sharedViewModel.showRewardAdInfo.collectAsState()
 
+    // ✅ 신규: sharedViewModel의 스낵바 이벤트 구독 — 이게 빠져있어서 리워드 광고 실패 안내가 안 뜨고 있었음
+    LaunchedEffect(Unit) {
+        sharedViewModel.snackbarEvent.collect { message ->
+            mainScreenSnackBarHostState.showSnackbar(message)
+        }
+    }
+
 
     val myPageRouteAction = remember {
         RouteAction<MyPageRoute>(navController, MyPageRoute.SelectView.routeName)
@@ -99,11 +106,6 @@ fun MyPageScreen(
                     }
                 )
             }
-
-            // ============================================
-// MyPageScreen.kt 수정 코드
-// AccountManageView 부분 - 백업 정보 전달
-// ============================================
 
             composable(MyPageRoute.AccountManage.routeName!!) {
                 val uiState by myPageViewModel.myPageUiState.collectAsState()
@@ -146,8 +148,8 @@ fun MyPageScreen(
                 // ✅ 데이터 복원 다이얼로그 - 백업 정보 전달
                 if (uiState.showDataRestoreDialog) {
                     DataRestoreDialog(
-                        recordCount = uiState.backupInfo?.recordCount ?: 0,  // ✅ 백업 기록 수
-                        lastBackupAt = uiState.backupInfo?.lastBackupAt,      // ✅ 마지막 백업 시간
+                        recordCount = uiState.backupInfo?.recordCount ?: 0,
+                        lastBackupAt = uiState.backupInfo?.lastBackupAt,
                         onRestoreData = {
                             myPageViewModel.restoreBackupData { resultMessage ->
                                 coroutineScope.launch {
@@ -267,13 +269,10 @@ fun MyPageScreen(
                 PremiumScreen(
                     onBackClick = { myPageRouteAction.goBack() },
                     onAccountManageClick = {
-                        // ✅ 계정 관리 화면으로 이동
                         myPageRouteAction.navTo(MyPageRoute.AccountManage)
                     }
                 )
             }
-
-            // ✅ CustomerServiceCenter 라우트 제거 - 바로 WebActivity로 이동
         }
 
         SnackbarHost(
@@ -301,8 +300,6 @@ fun MyPageScreen(
     }
 }
 
-// app/src/main/java/com/bobodroid/myapplication/screens/MyPageScreen.kt 중 ImprovedMyPageView 수정
-
 @Composable
 fun ImprovedMyPageView(
     myPageRouteAction: RouteAction<MyPageRoute>,
@@ -320,7 +317,6 @@ fun ImprovedMyPageView(
 ) {
     val context = LocalContext.current
 
-    // ✅ 소셜 로그인 필수 다이얼로그 상태 추가
     var showSocialLoginRequiredDialog by remember { mutableStateOf(false) }
 
     LazyColumn(
@@ -328,7 +324,6 @@ fun ImprovedMyPageView(
             .fillMaxSize()
             .background(Color(0xFFF8F9FA))
     ) {
-        // 프로필 헤더
         item {
             ProfileHeader(
                 localUser = localUser,
@@ -336,24 +331,14 @@ fun ImprovedMyPageView(
             )
         }
 
-        // 프리미엄 구매/상태 카드
         item {
             PremiumPurchaseCard(
                 isPremium = isPremium,
                 premiumType = premiumType,
                 premiumExpiryDate = premiumExpiryDate,
                 onPurchaseClick = {
-                    // ✅ 소셜 로그인 체크
-                    val isSocialLoggedIn = !localUser.socialId.isNullOrEmpty() &&
-                            !localUser.socialType.isNullOrEmpty()
-
-                    if (isSocialLoggedIn) {
-                        // 로그인 되어있으면 프리미엄 화면으로 이동
-                        myPageRouteAction.navTo(MyPageRoute.Premium)
-                    } else {
-                        // 로그인 안 되어있으면 다이얼로그 표시
-                        showSocialLoginRequiredDialog = true
-                    }
+                    // ✅ 리워드 광고는 deviceId 기준이라 로그인이 필요 없음 — 바로 이동
+                    myPageRouteAction.navTo(MyPageRoute.Premium)
                 },
                 onSettingsClick = {
                     myPageRouteAction.navTo(MyPageRoute.Premium)
@@ -364,12 +349,10 @@ fun ImprovedMyPageView(
             )
         }
 
-        // 투자 현황 대시보드
         item {
             InvestmentDashboard(stats = investmentStats)
         }
 
-        // 이번 달 목표
         item {
             MonthlyGoalSection(
                 goal = monthlyGoal,
@@ -377,12 +360,10 @@ fun ImprovedMyPageView(
             )
         }
 
-        // 최근 활동
         item {
             RecentActivitySection(activities = recentActivities)
         }
 
-        // 나의 뱃지
         item {
             BadgeSection(badges = badges)
         }
@@ -391,7 +372,6 @@ fun ImprovedMyPageView(
             Spacer(modifier = Modifier.height(32.dp))
         }
 
-        // 설정 메뉴
         item {
             SettingSection(
                 onAccountManageClick = { myPageRouteAction.navTo(MyPageRoute.AccountManage) },
@@ -402,7 +382,7 @@ fun ImprovedMyPageView(
                     ContextCompat.startActivity(context, webPostIntent, null)
                 },
                 onWidgetSettingsClick = { myPageRouteAction.navTo(MyPageRoute.WidgetSettings) },
-                onHelpClick = showOnboarding  // ✅ 새로 추가
+                onHelpClick = showOnboarding
             )
         }
 
@@ -410,7 +390,6 @@ fun ImprovedMyPageView(
             Spacer(modifier = Modifier.height(32.dp))
         }
 
-        // 일반 사용자에게만 프리미엄 혜택 상세 표시
         if (!isPremium) {
             item {
                 PremiumBenefitsDetailCard()
@@ -421,13 +400,11 @@ fun ImprovedMyPageView(
             Spacer(modifier = Modifier.height(32.dp))
         }
 
-        // 디버그 카드...
         if (BuildConfig.DEBUG) {
             // ... 기존 디버그 코드
         }
     }
 
-    // ✅ 소셜 로그인 필수 다이얼로그
     if (showSocialLoginRequiredDialog) {
         SocialLoginRequiredDialog(
             onDismiss = { showSocialLoginRequiredDialog = false },
@@ -439,9 +416,6 @@ fun ImprovedMyPageView(
     }
 }
 
-/**
- * ✅ 소셜 로그인 필수 다이얼로그
- */
 @Composable
 fun SocialLoginRequiredDialog(
     onDismiss: () -> Unit,
@@ -479,7 +453,6 @@ fun SocialLoginRequiredDialog(
 
                 Spacer(modifier = Modifier.height(8.dp))
 
-                // 혜택 안내
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -556,12 +529,11 @@ fun PremiumPurchaseCard(
         shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(
             containerColor = when {
-                // ✅ 중요: isPremium을 먼저 체크
-                !isPremium -> Color(0xFF6366F1)  // 무료 사용자 (파란색)
-                premiumType == PremiumType.REWARD_AD -> Color(0xFFFEF3C7)  // 리워드 (노란색)
-                premiumType == PremiumType.SUBSCRIPTION -> Color(0xFFFDE68A)  // 구독 (금색)
-                premiumType == PremiumType.EVENT || premiumType == PremiumType.LIFETIME -> Color(0xFFDDD6FE)  // 이벤트/평생 (보라색)
-                else -> Color(0xFF6366F1)  // 기본 (파란색)
+                !isPremium -> Color(0xFF6366F1)
+                premiumType == PremiumType.REWARD_AD -> Color(0xFFFEF3C7)
+                premiumType == PremiumType.SUBSCRIPTION -> Color(0xFFFDE68A)
+                premiumType == PremiumType.EVENT || premiumType == PremiumType.LIFETIME -> Color(0xFFDDD6FE)
+                else -> Color(0xFF6366F1)
             }
         ),
         elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
@@ -590,19 +562,18 @@ fun PremiumActiveContent(
     premiumExpiryDate: String?,
     onSettingsClick: () -> Unit
 ) {
-    // ✅ 타입별 색상 정의
     val iconColor = when (premiumType) {
-        PremiumType.REWARD_AD -> Color(0xFFF59E0B)  // 주황색
-        PremiumType.SUBSCRIPTION -> Color(0xFFEAB308)  // 금색
-        PremiumType.EVENT, PremiumType.LIFETIME -> Color(0xFF8B5CF6)  // 보라색
-        else -> Color(0xFF6366F1)  // 파란색
+        PremiumType.REWARD_AD -> Color(0xFFF59E0B)
+        PremiumType.SUBSCRIPTION -> Color(0xFFEAB308)
+        PremiumType.EVENT, PremiumType.LIFETIME -> Color(0xFF8B5CF6)
+        else -> Color(0xFF6366F1)
     }
 
     val textColor = when (premiumType) {
-        PremiumType.REWARD_AD -> Color(0xFF92400E)  // 진한 갈색
-        PremiumType.SUBSCRIPTION -> Color(0xFF78350F)  // 진한 금색
-        PremiumType.EVENT, PremiumType.LIFETIME -> Color(0xFF5B21B6)  // 진한 보라색
-        else -> Color(0xFF1E40AF)  // 진한 파란색
+        PremiumType.REWARD_AD -> Color(0xFF92400E)
+        PremiumType.SUBSCRIPTION -> Color(0xFF78350F)
+        PremiumType.EVENT, PremiumType.LIFETIME -> Color(0xFF5B21B6)
+        else -> Color(0xFF1E40AF)
     }
 
     Column(
@@ -619,7 +590,6 @@ fun PremiumActiveContent(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                // 타입별 아이콘
                 Icon(
                     imageVector = when (premiumType) {
                         PremiumType.REWARD_AD -> Icons.Rounded.PlayCircle
@@ -634,10 +604,10 @@ fun PremiumActiveContent(
                 )
 
                 Column {
-                    // 타입별 제목
+                    // ⚠️ REWARD_AD 타이틀: "24시간 무료 체험 중" → 일반화된 문구로 변경
                     Text(
                         text = when (premiumType) {
-                            PremiumType.REWARD_AD -> "24시간 무료 체험 중"
+                            PremiumType.REWARD_AD -> "리워드 프리미엄 이용 중"
                             PremiumType.SUBSCRIPTION -> "프리미엄 구독 중"
                             PremiumType.EVENT -> "이벤트 프리미엄"
                             PremiumType.LIFETIME -> "평생 프리미엄"
@@ -648,7 +618,6 @@ fun PremiumActiveContent(
                         color = textColor
                     )
 
-                    // 만료 시간 표시
                     if (premiumType == PremiumType.REWARD_AD || premiumType == PremiumType.SUBSCRIPTION) {
                         premiumExpiryDate?.let { expiry ->
                             val remainingTime = calculateRemainingTime(expiry)
@@ -750,13 +719,14 @@ fun PremiumPromotionContent(
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 Column(horizontalAlignment = Alignment.Start) {
+                    // ⚠️ "광고 보고 24시간 무료" / "하루 1회 가능" → 새 정책 문구로 변경
                     Text(
-                        text = "광고 보고 24시간 무료",
+                        text = "광고 보고 프리미엄 받기",
                         fontWeight = FontWeight.Bold,
                         fontSize = 15.sp
                     )
                     Text(
-                        text = "하루 1회 가능",
+                        text = "1회 시청 시 3일 연장 (하루 최대 2회)",
                         fontSize = 12.sp,
                         color = Color.White.copy(alpha = 0.8f)
                     )
@@ -766,7 +736,7 @@ fun PremiumPromotionContent(
 
         Spacer(modifier = Modifier.height(12.dp))
 
-        // 구독 버튼
+        // ⚠️ 신규 구독 결제가 더 이상 없으므로 문구를 "자세히 보기"로 변경
         Button(
             onClick = onPurchaseClick,
             modifier = Modifier.fillMaxWidth(),
@@ -788,7 +758,7 @@ fun PremiumPromotionContent(
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
-                    text = "프리미엄 구독하기",
+                    text = "프리미엄 자세히 보기",
                     fontWeight = FontWeight.Bold,
                     fontSize = 15.sp
                 )
@@ -2000,18 +1970,13 @@ fun BadgeItemNew(badge: BadgeInfo) {
     }
 }
 
-// ============================================
-// MyPageScreen.kt 수정
-// SettingSection 함수 - 도움말 항목 추가
-// ============================================
-
 @Composable
 fun SettingSection(
     onAccountManageClick: () -> Unit,
     onCloudServiceClick: () -> Unit,
     onCustomerServiceClick: () -> Unit,
     onWidgetSettingsClick: () -> Unit,
-    onHelpClick: () -> Unit  // ✅ 새로 추가
+    onHelpClick: () -> Unit
 ) {
     Card(
         modifier = Modifier
@@ -2043,7 +2008,6 @@ fun SettingSection(
                 onClick = onCloudServiceClick
             )
             HorizontalDivider(color = Color(0xFFE5E7EB))
-            // ✅ 도움말/사용법 항목 추가
             SettingItem(
                 icon = Icons.Rounded.Info,
                 title = "도움말/사용법",

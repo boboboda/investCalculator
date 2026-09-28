@@ -58,7 +58,7 @@ class SharedViewModel @Inject constructor(
 
     // 만료 체크
 
-    // 만료 체크 (REWARD_AD, EVENT만)
+    // 만료 체크 (REWARD_AD, EVENT만 — 로컬 캐시 기준 즉시 UI 반영용, 서버 진실은 PremiumManager가 주기 동기화)
     private fun startPremiumExpiryMonitoring() {
         viewModelScope.launch {
             while (true) {
@@ -90,9 +90,9 @@ class SharedViewModel @Inject constructor(
 
                     userRepository.localUserUpdate(expiredUser)
 
-                    // ✅ 타입별 메시지 구분
+                    // ✅ 타입별 메시지 구분 (REWARD_AD: 더 이상 "24시간 고정"이 아니므로 문구 일반화)
                     val message = when (user.premiumType) {
-                        "REWARD_AD" -> "⏰ 24시간 무료 체험이 만료되었습니다"
+                        "REWARD_AD" -> "⏰ 리워드 프리미엄이 만료되었습니다"
                         "EVENT" -> "⏰ 이벤트 프리미엄이 만료되었습니다"
                         else -> "⏰ 프리미엄이 만료되었습니다"
                     }
@@ -124,11 +124,6 @@ class SharedViewModel @Inject constructor(
             started = SharingStarted.Eagerly,
             initialValue = false
         )
-
-    /**
-     * 프리미엄 타입 (REWARD_AD, SUBSCRIPTION 등 구분)
-     */
-    // SharedViewModel.kt
 
     /**
      * 프리미엄 타입 (자동 만료 처리 포함)
@@ -279,36 +274,15 @@ class SharedViewModel @Inject constructor(
      * 프리미엄 유도 팝업 닫기 및 리워드 광고 다이얼로그 열기
      */
     fun closePremiumPromptAndShowRewardDialog() {
-        Log.d(TAG("SharedViewModel", "closePremiumPromptAndShowRewardDialog"), "━━━━━━━━━━━━━━━━━━━━━━━━━━")
-        Log.d(TAG("SharedViewModel", "closePremiumPromptAndShowRewardDialog"),
-            "📤 PremiumPrompt 닫기 시작")
-        Log.d(TAG("SharedViewModel", "closePremiumPromptAndShowRewardDialog"),
-            "현재 PremiumPrompt 상태: ${_showPremiumPrompt.value}")
-
         _showPremiumPrompt.value = false
-
-        Log.d(TAG("SharedViewModel", "closePremiumPromptAndShowRewardDialog"),
-            "✅ PremiumPrompt 닫힘: ${_showPremiumPrompt.value}")
-        Log.d(TAG("SharedViewModel", "closePremiumPromptAndShowRewardDialog"),
-            "📥 RewardAdInfo 열기 시작")
-        Log.d(TAG("SharedViewModel", "closePremiumPromptAndShowRewardDialog"),
-            "현재 RewardAdInfo 상태: ${_showRewardAdInfo.value}")
-
         _showRewardAdInfo.value = true
-
-        Log.d(TAG("SharedViewModel", "closePremiumPromptAndShowRewardDialog"),
-            "✅ RewardAdInfo 열림: ${_showRewardAdInfo.value}")
-        Log.d(TAG("SharedViewModel", "closePremiumPromptAndShowRewardDialog"), "━━━━━━━━━━━━━━━━━━━━━━━━━━")
     }
 
     /**
      * 프리미엄 유도 팝업 닫기
      */
     fun closePremiumPrompt() {
-        Log.d(TAG("SharedViewModel", "closePremiumPrompt"), "프리미엄 유도 팝업 닫기")
-        Log.d(TAG("SharedViewModel", "closePremiumPrompt"), "이전 상태: ${_showPremiumPrompt.value}")
         _showPremiumPrompt.value = false
-        Log.d(TAG("SharedViewModel", "closePremiumPrompt"), "현재 상태: ${_showPremiumPrompt.value}")
     }
 
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -338,27 +312,23 @@ class SharedViewModel @Inject constructor(
                 onSuccess = {
                     Log.d(TAG("SharedViewModel", "showRewardAdAndGrantPremium"),
                         "✨ 리워드 광고 시청 완료 - 프리미엄 지급 성공")
-                    _snackbarEvent.trySend("✨ 24시간 프리미엄이 활성화되었습니다!")
+                    // ⚠️ 실제 연장 일수는 캡에 따라 달라질 수 있어 고정 숫자를 안 박음
+                    _snackbarEvent.trySend("✨ 프리미엄이 연장되었습니다!")
                 },
                 onAlreadyUsed = {
                     Log.d(TAG("SharedViewModel", "showRewardAdAndGrantPremium"),
                         "⚠️ 오늘 이미 리워드 사용함")
-                    _snackbarEvent.trySend("오늘은 이미 리워드 광고를 시청하셨습니다")
+                    _snackbarEvent.trySend("오늘은 리워드 시청 횟수를 다 채우셨습니다")
                 },
                 onAdFailed = {
                     Log.d(TAG("SharedViewModel", "showRewardAdAndGrantPremium"),
                         "❌ 광고 로드 실패")
-                    _snackbarEvent.trySend("광고를 불러올 수 없습니다. 잠시 후 다시 시도해주세요.")
+                    _snackbarEvent.trySend("현재 시청 가능한 광고가 없습니다. 잠시 후 다시 시도해주세요.")
                 }
             )
 
             // 다이얼로그 닫기
-            Log.d(TAG("SharedViewModel", "showRewardAdAndGrantPremium"),
-                "📤 RewardAdInfo 다이얼로그 닫기")
             _showRewardAdInfo.value = false
-            Log.d(TAG("SharedViewModel", "showRewardAdAndGrantPremium"),
-                "✅ RewardAdInfo 닫힘: ${_showRewardAdInfo.value}")
-            Log.d(TAG("SharedViewModel", "showRewardAdAndGrantPremium"), "━━━━━━━━━━━━━━━━━━━━━━━━━━")
         }
     }
 
@@ -366,35 +336,18 @@ class SharedViewModel @Inject constructor(
      * 리워드 광고 다이얼로그 열기
      */
     fun showRewardAdDialog() {
-        Log.d(TAG("SharedViewModel", "showRewardAdDialog"), "━━━━━━━━━━━━━━━━━━━━━━━━━━")
-        Log.d(TAG("SharedViewModel", "showRewardAdDialog"), "리워드 광고 다이얼로그 열기 호출됨")
-        Log.d(TAG("SharedViewModel", "showRewardAdDialog"), "이전 상태: ${_showRewardAdInfo.value}")
         _showRewardAdInfo.value = true
-        Log.d(TAG("SharedViewModel", "showRewardAdDialog"), "현재 상태: ${_showRewardAdInfo.value}")
-        Log.d(TAG("SharedViewModel", "showRewardAdDialog"), "━━━━━━━━━━━━━━━━━━━━━━━━━━")
     }
 
     /**
      * 리워드 광고 다이얼로그 닫기
      */
     fun closeRewardAdDialog() {
-        Log.d(TAG("SharedViewModel", "closeRewardAdDialog"), "리워드 광고 다이얼로그 닫기")
-        Log.d(TAG("SharedViewModel", "closeRewardAdDialog"), "이전 상태: ${_showRewardAdInfo.value}")
         _showRewardAdInfo.value = false
-        Log.d(TAG("SharedViewModel", "closeRewardAdDialog"), "현재 상태: ${_showRewardAdInfo.value}")
     }
 
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━
-    // 배너 광고
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-    /**
-     * 배너 광고 제거 연기
-     */
-    // TODO: 필요 시 구현
-
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━
-    // 프리미엄 만료 체크
+    // 프리미엄 만료 체크 / 서버 재조회
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━
 
     /**
@@ -417,6 +370,24 @@ class SharedViewModel @Inject constructor(
         }
     }
 
+    /**
+     * ✅ 신규: 유저 데이터가 로드될 때까지 기다렸다가 deviceId 반환
+     * - MainActivity.onCreate()에서 광고 프리로드 시 deviceId가 필요해서 추가
+     */
+    suspend fun getDeviceId(): String {
+        return userRepository.userData.filterNotNull().first().localUserData.id.toString()
+    }
+
+    /**
+     * ✅ 신규: 서버 기준으로 프리미엄 상태 재조회 (구독 + 리워드 통합)
+     * - 프리미엄 화면 진입 시 등, 최신 상태를 확실히 보여줘야 할 때 호출
+     */
+    fun refreshPremiumStatus() {
+        viewModelScope.launch {
+            premiumManager.refreshUnifiedPremiumStatus()
+        }
+    }
+
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━
     // 유틸리티
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -435,30 +406,17 @@ class SharedViewModel @Inject constructor(
     }
 
     fun resetAdCounts() {
-        Log.d(TAG("SharedViewModel", "resetAdCounts"), "━━━━━━━━━━━━━━━━━━━━━━━━━━")
-        Log.d(TAG("SharedViewModel", "resetAdCounts"), "광고 카운트 초기화 시작")
-
         viewModelScope.launch {
-            val user = userRepository.userData.value?.localUserData ?: run {
-                Log.w(TAG("SharedViewModel", "resetAdCounts"), "❌ 사용자 데이터 없음")
-                return@launch
-            }
+            val user = userRepository.userData.value?.localUserData ?: return@launch
 
-            Log.d(TAG("SharedViewModel", "resetAdCounts"),
-                "현재 카운트 - 전면: ${user.interstitialAdCount}, 리워드 사용: ${user.dailyRewardUsed}")
-
-            // 모든 광고 관련 카운트 초기화
+            // 모든 광고 관련 카운트 초기화 (로컬 1차 체크용 필드 — 최종 판단은 서버)
             val resetUser = user.copy(
-                interstitialAdCount = 0,           // 전면 광고 카운트
-                lastRewardDate = null,              // 리워드 마지막 사용 날짜
-                dailyRewardUsed = false             // 오늘 리워드 사용 여부
+                interstitialAdCount = 0,
+                lastRewardDate = null,
+                dailyRewardUsed = false
             )
 
             userRepository.localUserUpdate(resetUser)
-
-            Log.d(TAG("SharedViewModel", "resetAdCounts"), "✅ 광고 카운트 초기화 완료")
-            Log.d(TAG("SharedViewModel", "resetAdCounts"), "━━━━━━━━━━━━━━━━━━━━━━━━━━")
-
             _snackbarEvent.trySend("🔧 광고 카운트가 초기화되었습니다")
         }
     }

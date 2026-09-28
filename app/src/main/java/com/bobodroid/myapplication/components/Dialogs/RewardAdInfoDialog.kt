@@ -16,7 +16,7 @@ import androidx.compose.ui.window.Dialog
 /**
  * 리워드 광고 안내 다이얼로그
  * - 광고 시청 전 혜택 설명
- * - 24시간 프리미엄 안내
+ * - ✅ 프리미엄 3일 연장 안내 (기존 "24시간 고정" 문구에서 변경)
  */
 @Composable
 fun RewardAdInfoDialog(
@@ -50,7 +50,7 @@ fun RewardAdInfoDialog(
                 )
 
                 Text(
-                    text = "24시간 무료 프리미엄",
+                    text = "프리미엄 3일 연장",
                     fontSize = 20.sp,
                     fontWeight = FontWeight.Bold,
                     textAlign = TextAlign.Center,
@@ -62,7 +62,7 @@ fun RewardAdInfoDialog(
                 // 설명 텍스트
                 // ━━━━━━━━━━━━━━━━━━━━━━━━━━
                 Text(
-                    text = "광고 시청으로\n24시간 동안 프리미엄 기능을\n무료로 이용하세요!",
+                    text = "광고 한 편 시청으로\n프리미엄이 3일 연장됩니다!",
                     fontSize = 15.sp,
                     textAlign = TextAlign.Center,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -83,9 +83,10 @@ fun RewardAdInfoDialog(
                         .padding(16.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    InfoItem(text = "✓ 하루 1회 가능")
+                    InfoItem(text = "✓ 1회 시청 시 3일 연장")
+                    InfoItem(text = "✓ 하루 최대 2회 시청 가능")
+                    InfoItem(text = "✓ 최대 9일까지 연장 가능")
                     InfoItem(text = "✓ 모든 광고 제거")
-                    InfoItem(text = "✓ 프리미엄 기능 사용")
                 }
 
                 Spacer(modifier = Modifier.height(24.dp))
@@ -110,7 +111,7 @@ fun RewardAdInfoDialog(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            text = "📺 광고 보고 받기",
+                            text = "📺 광고 보고 3일 연장받기",
                             fontSize = 16.sp,
                             fontWeight = FontWeight.Bold
                         )

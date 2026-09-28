@@ -30,9 +30,10 @@ class AdManager @Inject constructor() {
 
     /**
      * 리워드 광고 로드
+     * ✅ deviceId 추가 — SSV customData로 실어서 서버가 누구에게 지급할지 식별
      */
-    fun loadRewardedAd(context: Context) {
-        loadRewardedAdvertisement(context, onReadyAd = {
+    fun loadRewardedAd(context: Context, deviceId: String) {
+        loadRewardedAdvertisement(context, deviceId, onReadyAd = {
             _isRewardAdReady.value = it
             Log.d(TAG("AdManager", "loadRewardedAd"), "리워드 광고 준비: $it")
         })
@@ -87,11 +88,13 @@ class AdManager @Inject constructor() {
 
     /**
      * 리워드 광고 표시
-     * @param onRewarded 광고 시청 완료 후 보상 지급 시 호출
-     * @param onAdClosed 광고가 닫힌 후 호출 (보상 여부 무관)
+     * ✅ deviceId 추가 — 시청 후 다음 광고 재로드 시에도 필요
+     * ✅ onRewarded는 "실제로 끝까지 봐서 보상 조건을 채웠을 때"만 호출 (기존 버그 수정)
+     * @param onAdClosed 광고가 닫힌 후 호출 (보상 여부 무관, 항상 호출됨)
      */
     fun showRewardAd(
         context: Context,
+        deviceId: String,
         onRewarded: () -> Unit = {},
         onAdClosed: () -> Unit = {},
         onAdFailed: () -> Unit = {}
@@ -100,27 +103,32 @@ class AdManager @Inject constructor() {
             Log.w(TAG("AdManager", "showRewardAd"), "리워드 광고가 준비되지 않음")
             onAdFailed()
             // 광고 준비 안 되어도 다음 번을 위해 로드
-            loadRewardedAd(context)
+            loadRewardedAd(context, deviceId)
             return
         }
 
         Log.d(TAG("AdManager", "showRewardAd"), "리워드 광고 표시 시작")
 
-        showRewardedAdvertisement(context) {
-            // 광고가 닫힌 후
-            _isRewardAdReady.value = false
+        showRewardedAdvertisement(
+            context = context,
+            onUserEarnedReward = {
+                // ✅ 실제로 끝까지 봤을 때만 호출됨 — 진짜 "보상 획득" 신호
+                Log.d(TAG("AdManager", "showRewardAd"), "✅ 보상 조건 충족")
+                onRewarded()
+            },
+            onAdDismissed = {
+                // 광고가 닫힌 후 (끝까지 봤든 중간에 껐든 항상 호출)
+                _isRewardAdReady.value = false
 
-            Log.d(TAG("AdManager", "showRewardAd"), "리워드 광고 닫힘")
+                Log.d(TAG("AdManager", "showRewardAd"), "리워드 광고 닫힘")
 
-            // 다음 광고 미리 로드
-            loadRewardedAd(context)
+                // 다음 광고 미리 로드
+                loadRewardedAd(context, deviceId)
 
-            // 보상 지급
-            onRewarded()
-
-            // 닫힘 콜백
-            onAdClosed()
-        }
+                // 닫힘 콜백
+                onAdClosed()
+            }
+        )
     }
 
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -129,10 +137,11 @@ class AdManager @Inject constructor() {
 
     /**
      * 앱 시작 시 모든 광고 미리 로드
+     * ✅ deviceId 추가
      */
-    fun preloadAllAds(context: Context) {
+    fun preloadAllAds(context: Context, deviceId: String) {
         loadInterstitialAd(context)
-        loadRewardedAd(context)
+        loadRewardedAd(context, deviceId)
         Log.d(TAG("AdManager", "preloadAllAds"), "모든 광고 로드 시작")
     }
 }

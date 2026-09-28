@@ -217,7 +217,7 @@ fun PermissionGuideDialog(
                                     verticalArrangement = Arrangement.Center
                                 ) {
                                     Text(
-                                        text = "달러 기록 알림을 클릭해주세요",
+                                        text = "환테크 기록 알림을 클릭해주세요",
                                         fontSize = 15.sp,
                                         fontWeight = FontWeight.Medium,
                                         lineHeight = 25.sp

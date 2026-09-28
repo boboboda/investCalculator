@@ -107,3 +107,31 @@ data class RestoreSubscriptionData(
     val socialId: String? = null,
     val socialType: String? = null
 )
+
+// ==================== ✅ 신규: 통합 프리미엄 상태 ====================
+
+/**
+ * 통합 프리미엄 상태 조회 응답 (GET /premium/status/:deviceId)
+ * 구독 + 리워드 광고를 서버가 합쳐서 판정한 결과
+ */
+@JsonClass(generateAdapter = true)
+data class PremiumStatusResponse(
+    val success: Boolean,
+    val data: PremiumStatusData
+)
+
+@JsonClass(generateAdapter = true)
+data class PremiumStatusData(
+    val deviceId: String,
+    val isPremium: Boolean,
+    val premiumType: String, // "SUBSCRIPTION" | "REWARD_AD" | "NONE"
+    val expiryTime: String? = null,
+    val daysRemaining: Int? = null,
+    val rewardAd: RewardAdInfo? = null
+)
+
+@JsonClass(generateAdapter = true)
+data class RewardAdInfo(
+    val todayRewardCount: Int,
+    val dailyRewardCap: Int
+)

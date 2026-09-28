@@ -37,7 +37,7 @@ fun MainTopBar() {
         Spacer(modifier = Modifier.width(10.dp))
 
         AutoSizeText(
-            value = "달러 기록",
+            value = "환테크 기록",
             fontSize = 18.sp,
             fontWeight = FontWeight.Bold,
             maxLines = 1,

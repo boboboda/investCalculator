@@ -24,6 +24,7 @@ sealed class MainRoute(
     data object AnalysisScreen: MainRoute("Analysis", "분석", 3, iconResId = R.drawable.baseline_bar_chart_24)
     data object MyPage: MainRoute("MyPage", "마이페이지", 4, iconResId = R.drawable.user, subRoutes = listOf("CreateUser", "CustomerServiceCenter", "CloudService"))
     object NotificationSettings: MainRoute("NotificationSettings", "알림 설정")
+    object News: MainRoute("News", "뉴스")
 
 
     object CreateUser: MainRoute("CreateUser", "유저생성")

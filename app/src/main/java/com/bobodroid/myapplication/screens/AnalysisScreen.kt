@@ -45,6 +45,7 @@ import com.bobodroid.myapplication.ui.theme.primaryColor
 fun AnalysisScreen(
     analysisViewModel: AnalysisViewModel = hiltViewModel(),
     sharedViewModel: SharedViewModel,
+    onNavigateToPremium: () -> Unit = {} // ✅ 신규: 프리미엄 화면 이동 콜백
 ) {
 
 
@@ -53,6 +54,14 @@ fun AnalysisScreen(
     val showRewardAdInfo by sharedViewModel.showRewardAdInfo.collectAsState()
 
     val context = LocalContext.current
+
+    // ✅ 신규: 스낵바 상태 + 구독 — 이게 없어서 "광고 없음" 안내가 안 뜨고 있었음
+    val snackbarHostState = remember { SnackbarHostState() }
+    LaunchedEffect(Unit) {
+        sharedViewModel.snackbarEvent.collect { message ->
+            snackbarHostState.showSnackbar(message)
+        }
+    }
 
     LaunchedEffect(Unit) {
         if (!isPremium) {
@@ -72,7 +81,16 @@ fun AnalysisScreen(
     Box(modifier = Modifier.fillMaxSize()) {
         PremiumChartScreen(
             analysisViewModel = analysisViewModel,
-            onPremiumRequired = { showPremiumDialog = true }
+            onPremiumRequired = { showPremiumDialog = true },
+            onNavigateToPremium = onNavigateToPremium // ✅ 하위로 전달
+        )
+
+        // ✅ 신규: 스낵바 표시 위치
+        SnackbarHost(
+            hostState = snackbarHostState,
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .padding(bottom = 20.dp)
         )
 
         // ✅ 프리미엄 다이얼로그
@@ -81,7 +99,7 @@ fun AnalysisScreen(
                 onDismiss = { showPremiumDialog = false },
                 onPurchaseClick = {
                     showPremiumDialog = false
-                    // 프리미엄 화면으로 이동 (구현 필요)
+                    onNavigateToPremium() // ✅ 프리미엄 화면으로 이동
                 }
             )
         }
@@ -111,13 +129,12 @@ fun AnalysisScreen(
     }
 }
 
-// ✅ PremiumChartScreen 수정 버전 (AnalysisScreen.kt에서 기존 함수 대체)
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PremiumChartScreen(
     analysisViewModel: AnalysisViewModel,
-    onPremiumRequired: () -> Unit
+    onPremiumRequired: () -> Unit,
+    onNavigateToPremium: () -> Unit = {} // ✅ 신규
 ) {
     val analysisUiState by analysisViewModel.analysisUiState.collectAsState()
     val targetCurrency by analysisViewModel.selectedCurrency.collectAsState()
@@ -145,7 +162,8 @@ fun PremiumChartScreen(
                 targetCurrency = targetCurrency,
                 scrollState = scrollState,
                 analysisViewModel = analysisViewModel,
-                onPremiumRequired = onPremiumRequired
+                onPremiumRequired = onPremiumRequired,
+                onNavigateToPremium = onNavigateToPremium // ✅ 전달
             )
         }
     }
@@ -160,7 +178,8 @@ private fun SuccessContent(
     targetCurrency: CurrencyType,
     scrollState: ScrollState,
     analysisViewModel: AnalysisViewModel,
-    onPremiumRequired: () -> Unit
+    onPremiumRequired: () -> Unit,
+    onNavigateToPremium: () -> Unit = {} // ✅ 신규
 ) {
     // 데이터 계산
     val statistics = remember(analysisUiState.selectedRates, targetCurrency) {
@@ -269,7 +288,7 @@ private fun SuccessContent(
                 onDismiss = { showPremiumDialog = false },
                 onPurchaseClick = {
                     showPremiumDialog = false
-                    // 프리미엄 화면으로 이동 (구현 필요)
+                    onNavigateToPremium() // ✅ 프리미엄 화면으로 이동
                 }
             )
         }

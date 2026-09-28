@@ -45,6 +45,7 @@ import com.bobodroid.myapplication.components.Dialogs.OnboardingTooltipDialog
 import com.bobodroid.myapplication.components.Dialogs.PremiumPromptDialog
 import com.bobodroid.myapplication.components.Dialogs.PremiumRequiredDialog
 import com.bobodroid.myapplication.components.Dialogs.RewardAdInfoDialog
+import com.bobodroid.myapplication.components.mainComponents.AnimatedNewsChip
 import com.bobodroid.myapplication.components.mainComponents.GroupChangeBottomSheet
 import com.bobodroid.myapplication.models.viewmodels.SharedViewModel
 import com.bobodroid.myapplication.util.PreferenceUtil
@@ -56,10 +57,12 @@ fun MainScreen(
     mainViewModel: MainViewModel,
     sharedViewModel: SharedViewModel,
     activity: Activity,
-    onNavigateToPremium: () -> Unit
+    onNavigateToPremium: () -> Unit,
+    onNavigateToNews: () -> Unit
 ) {
     val mainUiState by mainViewModel.mainUiState.collectAsState()
     val adUiState by sharedViewModel.adUiState.collectAsState()
+    val latestNews by mainViewModel.latestNews.collectAsState()
 
     val isPremium by sharedViewModel.isPremium.collectAsState()
 
@@ -101,6 +104,9 @@ fun MainScreen(
     var hideSellRecordState by remember { mutableStateOf(false) }
     val records by mainViewModel.getCurrentRecordsFlow().collectAsState(CurrencyRecordState())
     val focusManager = LocalFocusManager.current
+
+
+
 
     LaunchedEffect(key1 = Unit, block = {
         coroutineScope.launch {
@@ -156,6 +162,14 @@ fun MainScreen(
                 isCollapsed = isHeaderCollapsed,
                 onToggleClick = { isHeaderCollapsed = !isHeaderCollapsed },
                 isPremium = isPremium
+            )
+
+
+            AnimatedNewsChip(
+                newsTitles = latestNews.map { it.title },
+                onClick = {
+                   onNavigateToNews()
+                }
             )
 
             Column(

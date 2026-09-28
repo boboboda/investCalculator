@@ -6,9 +6,11 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.bobodroid.myapplication.MainActivity.Companion.TAG
 import com.bobodroid.myapplication.models.datamodels.repository.LatestRateRepository
+import com.bobodroid.myapplication.models.datamodels.repository.NewsRepository
 import com.bobodroid.myapplication.models.datamodels.repository.Notice
 import com.bobodroid.myapplication.models.datamodels.repository.NoticeRepository
 import com.bobodroid.myapplication.models.datamodels.repository.UserRepository
+import com.bobodroid.myapplication.models.datamodels.response.NewsItem
 import com.bobodroid.myapplication.models.datamodels.roomDb.*
 import com.bobodroid.myapplication.models.datamodels.useCases.CurrencyRecordRequest
 import com.bobodroid.myapplication.models.datamodels.useCases.RecordUseCase
@@ -43,9 +45,12 @@ class MainViewModel @Inject constructor(
     private val settingsRepository: SettingsRepository,
     private val recordUseCase: RecordUseCase,
     private val premiumManager: PremiumManager,
+    private val newsRepository: NewsRepository,
     @ApplicationContext private val context: Context
 ) : ViewModel() {
 
+    private val _latestNews = MutableStateFlow<List<NewsItem>>(emptyList())
+    val latestNews: StateFlow<List<NewsItem>> = _latestNews.asStateFlow()
 
 
     private val _mainUiState = MutableStateFlow(MainUiState())
@@ -85,6 +90,8 @@ class MainViewModel @Inject constructor(
         Log.e(TAG("MainViewModel", "init"), "━━━━━━━━━━━━━━━━━━━━━━━━━━")
 
         startInitialData()
+
+        loadLatestNews()
 
         viewModelScope.launch {
             settingsRepository.selectedCurrency.collect { currency ->
@@ -704,6 +711,21 @@ class MainViewModel @Inject constructor(
     fun closeNotice() {
         val uiState = _noticeUiState.value.copy(showNoticeDialog = false, noticeState = false)
         _noticeUiState.value = uiState
+    }
+
+    // 뉴스
+
+    private fun loadLatestNews() {
+        viewModelScope.launch {
+            newsRepository.getLatestNews(5).collect { result ->
+                result.onSuccess { news ->
+                    Log.d(TAG("MainViewModel", "loadLatestNews"), "✅ ${news.size}개 뉴스 로드")
+                    _latestNews.value = news
+                }.onFailure { error ->
+                    Log.e(TAG("MainViewModel", "loadLatestNews"), "❌ 뉴스 로드 실패", error)
+                }
+            }
+        }
     }
 
     override fun onCleared() {

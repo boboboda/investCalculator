@@ -8,6 +8,7 @@ import androidx.lifecycle.viewModelScope
 import com.bobodroid.myapplication.MainActivity.Companion.TAG
 import com.bobodroid.myapplication.models.datamodels.repository.InvestRepository
 import com.bobodroid.myapplication.models.datamodels.repository.LatestRateRepository
+import com.bobodroid.myapplication.models.datamodels.repository.SettingsRepository
 import com.bobodroid.myapplication.models.datamodels.repository.UserRepository
 import com.bobodroid.myapplication.models.datamodels.roomDb.*
 import com.bobodroid.myapplication.models.datamodels.service.BackupApi.BackupApi
@@ -26,7 +27,6 @@ import com.bobodroid.myapplication.models.datamodels.service.notificationApi.Rec
 import com.bobodroid.myapplication.models.datamodels.service.notificationApi.RecordWithAlert
 import com.bobodroid.myapplication.models.datamodels.service.notificationApi.UpdateNotificationSettingsRequest
 import com.bobodroid.myapplication.models.datamodels.useCases.FcmUseCases
-import com.bobodroid.myapplication.models.repository.SettingsRepository
 import com.bobodroid.myapplication.util.result.onError
 import com.bobodroid.myapplication.util.result.onSuccess
 import dagger.hilt.android.lifecycle.HiltViewModel

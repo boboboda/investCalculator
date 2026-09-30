@@ -11,6 +11,7 @@ import retrofit2.converter.moshi.MoshiConverterFactory
 import retrofit2.http.Body
 import retrofit2.http.DELETE
 import retrofit2.http.GET
+import retrofit2.http.PATCH
 import retrofit2.http.POST
 import retrofit2.http.Path
 import retrofit2.http.Query
@@ -134,5 +135,18 @@ interface UserApiService {
         @Path("deviceId") deviceId: String
     ): UserResponse
 
+
+    // ✅ 통화별 스프레드 설정 업데이트
+    @PATCH("user/{deviceId}/spread")
+    suspend fun updateSpreadSetting(
+        @Path("deviceId") deviceId: String,
+        @Body request: SpreadSettingRequest
+    ): SpreadSettingResponse
+
+    // ✅ 전체 스프레드 설정 조회
+    @GET("user/{deviceId}/spread")
+    suspend fun getSpreadSettings(
+        @Path("deviceId") deviceId: String
+    ): SpreadSettingsListResponse
 
 }

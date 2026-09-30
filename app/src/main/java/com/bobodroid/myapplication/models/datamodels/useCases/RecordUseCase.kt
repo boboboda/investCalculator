@@ -4,6 +4,7 @@ import android.util.Log
 import com.bobodroid.myapplication.MainActivity.Companion.TAG
 import com.bobodroid.myapplication.extensions.toBigDecimalWon
 import com.bobodroid.myapplication.models.datamodels.repository.InvestRepository
+import com.bobodroid.myapplication.models.datamodels.repository.SettingsRepository
 import com.bobodroid.myapplication.models.datamodels.repository.UserRepository
 import com.bobodroid.myapplication.models.datamodels.roomDb.*
 import com.bobodroid.myapplication.models.viewmodels.CurrencyRecordState
@@ -22,6 +23,7 @@ import javax.inject.Inject
 class RecordUseCase @Inject constructor(
     private val investRepository: InvestRepository,
     private val userRepository: UserRepository,
+    private val settingsRepository: SettingsRepository, // ✅ 추가: 매도 스프레드 반영용
     private val backupScheduler: BackupScheduler
 ) {
 
@@ -215,6 +217,8 @@ class RecordUseCase @Inject constructor(
 
     /**
      * 통합 수익 갱신 (12개 통화 모두)
+     * ✅ 수정: 상단바(holdingStats)와 동일하게 "매도 스프레드가 반영된 환율" 기준으로 계산해서
+     *   카드에 표시되는 예상수익과 상단바 예상수익이 항상 일치하도록 함
      */
     suspend fun refreshAllCurrencyProfits(latestRates: Map<String, String>) {
         val allRecords = investRepository.getAllCurrencyRecords().first()
@@ -225,9 +229,18 @@ class RecordUseCase @Inject constructor(
                 val currency = record.getCurrency() ?: return@forEach
                 val rate = latestRates[record.currencyCode] ?: return@forEach
 
+                // ✅ 추가: 통화별 매도 스프레드 % 조회
+                val currencyType = CurrencyType.entries.find { it.name == record.currencyCode }
+                val sellSpreadPercent = currencyType?.let { settingsRepository.getSellSpreadPercent(it) } ?: 0.0
+
+                // ✅ 추가: 매도 스프레드를 차감한 환율로 보정 (calculateCurrencyHolding()과 동일 공식)
+                val rateBD = rate.replace(",", "").toBigDecimalOrNull() ?: return@forEach
+                val sellFactor = BigDecimal.ONE.subtract(BigDecimal(sellSpreadPercent).divide(BigDecimal(100)))
+                val adjustedRate = rateBD.multiply(sellFactor).setScale(4, RoundingMode.HALF_UP).toString()
+
                 val profit = record.money?.let { m ->
                     record.exchangeMoney?.let { e ->
-                        currency.calculateExpectedProfit(e, m, rate)
+                        currency.calculateExpectedProfit(e, m, adjustedRate)
                     }
                 } ?: return@forEach
 

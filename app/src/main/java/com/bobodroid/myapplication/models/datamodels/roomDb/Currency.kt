@@ -71,6 +71,34 @@ data class Currency(
         val profit = (BigDecimal(exchangeMoney) * BigDecimal(latestRate)) - BigDecimal(money)
         return profit.setScale(0, RoundingMode.DOWN).toString()
     }
+
+    /**
+     * 스프레드 적용된 "살 때" 가격 계산
+     * @param midRate 실시간 기준환율 (스프레드 적용 전)
+     * @param buySpreadPercent 매수 스프레드 % (ex. 0.75 → +0.75%)
+     * @return 실제 살 때 가격
+     */
+    fun applyBuySpread(midRate: String, buySpreadPercent: Double): BigDecimal {
+        val mid = BigDecimal(midRate)
+        val multiplier = BigDecimal.ONE.add(
+            BigDecimal(buySpreadPercent).divide(BigDecimal(100), 10, RoundingMode.HALF_UP)
+        )
+        return (mid * multiplier).setScale(scale, RoundingMode.HALF_UP)
+    }
+
+    /**
+     * 스프레드 적용된 "팔 때" 가격 계산
+     * @param midRate 실시간 기준환율 (스프레드 적용 전)
+     * @param sellSpreadPercent 매도 스프레드 % (ex. 0.75 → -0.75%)
+     * @return 실제 팔 때 가격
+     */
+    fun applySellSpread(midRate: String, sellSpreadPercent: Double): BigDecimal {
+        val mid = BigDecimal(midRate)
+        val multiplier = BigDecimal.ONE.subtract(
+            BigDecimal(sellSpreadPercent).divide(BigDecimal(100), 10, RoundingMode.HALF_UP)
+        )
+        return (mid * multiplier).setScale(scale, RoundingMode.HALF_UP)
+    }
 }
 
 /**
@@ -291,6 +319,6 @@ enum class CurrencyType(val code: String, val koreanName: String) {
     NZD("NZD", "뉴질랜드 달러"),
     CNY("CNY", "위안"),
     HKD("HKD", "홍콩 달러"),
-//    TWD("TWD", "대만 달러"),
+    //    TWD("TWD", "대만 달러"),
     SGD("SGD", "싱가포르 달러")
 }

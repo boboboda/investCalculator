@@ -45,6 +45,8 @@ sealed class MyPageRoute(
     data object CloudService: MyPageRoute("CloudService", "클라우드")
     data object WidgetSettings: MyPageRoute("WidgetSettings", "위젯 설정") // ✅ 추가
     data object Premium: MyPageRoute("Premium", "프리미엄") // ✅ 추가
+    // routes/InvestRouteAction.kt — MyPageRoute sealed class 안에 추가
+    data object SpreadSettings: MyPageRoute("SpreadSettings", "환율 스프레드 설정") // ✅ 추가
 }
 
 

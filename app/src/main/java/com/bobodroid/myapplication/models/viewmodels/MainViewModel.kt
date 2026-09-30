@@ -6,16 +6,14 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.bobodroid.myapplication.MainActivity.Companion.TAG
 import com.bobodroid.myapplication.models.datamodels.repository.LatestRateRepository
-import com.bobodroid.myapplication.models.datamodels.repository.NewsRepository
 import com.bobodroid.myapplication.models.datamodels.repository.Notice
 import com.bobodroid.myapplication.models.datamodels.repository.NoticeRepository
+import com.bobodroid.myapplication.models.datamodels.repository.SettingsRepository
 import com.bobodroid.myapplication.models.datamodels.repository.UserRepository
-import com.bobodroid.myapplication.models.datamodels.response.NewsItem
 import com.bobodroid.myapplication.models.datamodels.roomDb.*
 import com.bobodroid.myapplication.models.datamodels.useCases.CurrencyRecordRequest
 import com.bobodroid.myapplication.models.datamodels.useCases.RecordUseCase
 import com.bobodroid.myapplication.models.datamodels.useCases.UserUseCases
-import com.bobodroid.myapplication.models.repository.SettingsRepository
 import com.bobodroid.myapplication.premium.PremiumManager
 import com.bobodroid.myapplication.screens.MainEvent
 import com.bobodroid.myapplication.screens.PopupEvent
@@ -45,12 +43,9 @@ class MainViewModel @Inject constructor(
     private val settingsRepository: SettingsRepository,
     private val recordUseCase: RecordUseCase,
     private val premiumManager: PremiumManager,
-    private val newsRepository: NewsRepository,
     @ApplicationContext private val context: Context
 ) : ViewModel() {
 
-    private val _latestNews = MutableStateFlow<List<NewsItem>>(emptyList())
-    val latestNews: StateFlow<List<NewsItem>> = _latestNews.asStateFlow()
 
 
     private val _mainUiState = MutableStateFlow(MainUiState())
@@ -91,12 +86,51 @@ class MainViewModel @Inject constructor(
 
         startInitialData()
 
-        loadLatestNews()
-
         viewModelScope.launch {
             settingsRepository.selectedCurrency.collect { currency ->
                 _mainUiState.update { it.copy(selectedCurrencyType = currency) }
+                refreshSpreadBadge() // ✅ 추가: 통화 바뀔 때마다 배지 갱신
             }
+        }
+    }
+
+    // ✅ 추가: 스프레드 배지 텍스트 갱신
+    //   - 마이페이지 스프레드 설정 화면에서 돌아왔을 때도 호출 (SharedPreferences는 Flow가 아니라서 수동 갱신 필요)
+    fun refreshSpreadBadge() {
+        val currency = _mainUiState.value.selectedCurrencyType
+        val hasCustom = settingsRepository.hasCustomSpread(currency)
+        val buyPercent = settingsRepository.getBuySpreadPercent(currency)
+        val sellPercent = settingsRepository.getSellSpreadPercent(currency)
+
+        // ✅ 추가: 펼쳤을 때 보여줄 실제 매수/매도 환율 계산 (현재가 기준)
+        val currentRate = _mainUiState.value.recentRate.getRateByCode(currency.name)
+        val currentRateBD = currentRate?.replace(",", "")?.toBigDecimalOrNull()
+
+        val buyRateText: String
+        val sellRateText: String
+        if (currentRateBD != null && currentRateBD > BigDecimal.ZERO) {
+            val buyFactor = BigDecimal.ONE.add(BigDecimal(buyPercent).divide(BigDecimal(100)))
+            val sellFactor = BigDecimal.ONE.subtract(BigDecimal(sellPercent).divide(BigDecimal(100)))
+            buyRateText = formatRate(currentRateBD.multiply(buyFactor).setScale(2, RoundingMode.HALF_UP))
+            sellRateText = formatRate(currentRateBD.multiply(sellFactor).setScale(2, RoundingMode.HALF_UP))
+        } else {
+            buyRateText = "-"
+            sellRateText = "-"
+        }
+
+        _mainUiState.update {
+            it.copy(
+                spreadBadgeApplied = hasCustom,
+                // ✅ 수정: 매수/매도 %가 같아도 항상 "합산"해서 하나의 숫자로 표시 (이전엔 ± 특수표기로 빠져서 합산이 안 됨)
+                spreadBadgeText = when {
+                    !hasCustom -> "스프레드 미반영"
+                    else -> "스프레드 %.2f%% 적용".format(buyPercent + sellPercent)
+                },
+                spreadBuyPercent = buyPercent,
+                spreadSellPercent = sellPercent,
+                spreadBuyRate = buyRateText,
+                spreadSellRate = sellRateText
+            )
         }
     }
 
@@ -167,6 +201,10 @@ class MainViewModel @Inject constructor(
 
             reFreshProfit()
             Log.d(TAG("MainViewModel", "receivedLatestRate"), "환율 업데이트 → 수익 자동 재계산 완료")
+
+            // ✅ 추가: recentRate가 갱신되어야 매수/매도 스프레드 적용 환율을 계산할 수 있으므로,
+            //    환율이 갱신될 때마다 배지도 같이 갱신 (안 그러면 매수/매도 환율이 "-"로 계속 남아있음)
+            refreshSpreadBadge()
 
             WidgetUpdateHelper.updateAllWidgets(context)
             Log.d(TAG("MainViewModel", "receivedLatestRate"),
@@ -276,10 +314,14 @@ class MainViewModel @Inject constructor(
                 val currentRate = mainState.recentRate.getRateByCode(currencyType.name) ?: "0"
 
                 if (records.isNotEmpty() && currentRate != "0") {
+                    // ✅ 수정: 실제로 팔 때 받는 돈은 매도 스프레드가 반영된 환율 기준이어야 하므로
+                    //   보유 수익 계산에 통화별 매도 스프레드 %를 함께 전달
+                    val sellSpreadPercent = settingsRepository.getSellSpreadPercent(currencyType)
                     val stats = calculateCurrencyHolding(
                         records = records,
                         currentRate = currentRate,
-                        currencyType = currencyType
+                        currencyType = currencyType,
+                        sellSpreadPercent = sellSpreadPercent
                     )
                     statsMap[currencyType.name] = stats
                 }
@@ -294,7 +336,8 @@ class MainViewModel @Inject constructor(
     private fun calculateCurrencyHolding(
         records: List<CurrencyRecord>,
         currentRate: String,
-        currencyType: CurrencyType
+        currencyType: CurrencyType,
+        sellSpreadPercent: Double = 0.0 // ✅ 추가: 매도 스프레드 반영용
     ): CurrencyHoldingInfo {
         if (records.isEmpty() || currentRate == "0" || currentRate.isEmpty()) {
             return CurrencyHoldingInfo(hasData = false)
@@ -332,13 +375,18 @@ class MainViewModel @Inject constructor(
             val currentRateBD = currentRate.replace(",", "").toBigDecimalOrNull() ?: BigDecimal.ZERO
             val currency = Currencies.fromCurrencyType(currencyType)
 
+            // ✅ 수정: 지금 판다고 가정했을 때 실제로 받는 돈은 매도 스프레드가 반영된 환율이므로
+            //   수익 계산은 mid rate가 아니라 "매도환율" 기준으로 계산
+            val sellFactor = BigDecimal.ONE.subtract(BigDecimal(sellSpreadPercent).divide(BigDecimal(100)))
+            val sellRateBD = currentRateBD.multiply(sellFactor).setScale(4, RoundingMode.HALF_UP)
+
             // ✅ Currency의 needsMultiply 속성 활용
             val expectedProfit = if (currency.needsMultiply) {
                 // JPY, THB 등: 100으로 나눔
-                (totalHoldingAmount.multiply(currentRateBD).divide(BigDecimal(100), 2, RoundingMode.HALF_UP)).minus(totalInvestment)
+                (totalHoldingAmount.multiply(sellRateBD).divide(BigDecimal(100), 2, RoundingMode.HALF_UP)).minus(totalInvestment)
             } else {
                 // USD, EUR, GBP 등: 그대로 곱함
-                (totalHoldingAmount.multiply(currentRateBD)).minus(totalInvestment)
+                (totalHoldingAmount.multiply(sellRateBD)).minus(totalInvestment)
             }
 
             val profitRate = if (totalInvestment > BigDecimal.ZERO) {
@@ -351,6 +399,7 @@ class MainViewModel @Inject constructor(
             return CurrencyHoldingInfo(
                 averageRate = formatRate(averageRate),
                 currentRate = formatRate(currentRateBD),
+                sellRate = formatRate(sellRateBD), // ✅ 추가: 수익 계산에 사용된 매도환율
                 totalInvestment = formatCurrency(totalInvestment),
                 expectedProfit = formatCurrency(expectedProfit),
                 profitRate = formatProfitRate(profitRate),
@@ -478,6 +527,12 @@ class MainViewModel @Inject constructor(
             }
             MainEvent.ShowAddBottomSheet -> {
                 _mainUiState.update { it.copy(showAddBottomSheet = true) }
+            }
+            MainEvent.ShowDashboardBottomSheet -> {
+                _mainUiState.update { it.copy(showDashboardBottomSheet = true) }
+            }
+            MainEvent.HideDashboardBottomSheet -> {
+                _mainUiState.update { it.copy(showDashboardBottomSheet = false) }
             }
             is MainEvent.SnackBarEvent -> {
                 viewModelScope.launch {
@@ -713,20 +768,8 @@ class MainViewModel @Inject constructor(
         _noticeUiState.value = uiState
     }
 
-    // 뉴스
 
-    private fun loadLatestNews() {
-        viewModelScope.launch {
-            newsRepository.getLatestNews(5).collect { result ->
-                result.onSuccess { news ->
-                    Log.d(TAG("MainViewModel", "loadLatestNews"), "✅ ${news.size}개 뉴스 로드")
-                    _latestNews.value = news
-                }.onFailure { error ->
-                    Log.e(TAG("MainViewModel", "loadLatestNews"), "❌ 뉴스 로드 실패", error)
-                }
-            }
-        }
-    }
+
 
     override fun onCleared() {
         super.onCleared()
@@ -758,7 +801,14 @@ data class MainUiState (
     val showDatePickerDialog: Boolean = false,
     val showDateRangeDialog: Boolean = false,
     val showGroupChangeBottomSheet: Boolean = false,
-    val holdingStats: HoldingStats = HoldingStats()
+    val showDashboardBottomSheet: Boolean = false,
+    val holdingStats: HoldingStats = HoldingStats(),
+    val spreadBadgeText: String = "스프레드 미반영", // ✅ 추가
+    val spreadBadgeApplied: Boolean = false,         // ✅ 추가
+    val spreadBuyPercent: Double = 0.0,               // ✅ 추가: 펼침 뷰용 매수 스프레드 %
+    val spreadSellPercent: Double = 0.0,              // ✅ 추가: 펼침 뷰용 매도 스프레드 %
+    val spreadBuyRate: String = "-",                  // ✅ 추가: 스프레드 반영 매수 환율
+    val spreadSellRate: String = "-"                  // ✅ 추가: 스프레드 반영 매도 환율
 )
 
 data class NoticeUiState(
@@ -838,6 +888,7 @@ data class HoldingStats(
 data class CurrencyHoldingInfo(
     val averageRate: String = "0",
     val currentRate: String = "0",
+    val sellRate: String = "0", // ✅ 추가: 수익 계산에 사용된 매도(팔 때) 환율
     val totalInvestment: String = "₩0",
     val expectedProfit: String = "₩0",
     val profitRate: String = "0.0%",

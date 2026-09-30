@@ -29,7 +29,6 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.bobodroid.myapplication.components.Dialogs.GuideDialog
 import com.bobodroid.myapplication.components.MainBottomBar
-import com.bobodroid.myapplication.components.MainTopBar
 import com.bobodroid.myapplication.models.datamodels.social.SocialLoginManager
 import com.bobodroid.myapplication.models.datamodels.useCases.FcmUseCases
 import com.bobodroid.myapplication.models.viewmodels.MainViewModel
@@ -380,9 +379,9 @@ fun InvestAppScreen(
                 mainRouteBackStack = mainBackStack.value,
                 mainViewModel = mainViewModel)
         },
-        topBar = {
-            MainTopBar()
-        }
+        // ✅ MainTopBar 제거: 하단 탭에서 이미 현재 화면이 드러나므로 상단 타이틀바가 불필요하다고 판단
+
+        contentWindowInsets = WindowInsets(0, 0, 0, 0)
     ) { paddingValues ->
         Box(
             modifier = Modifier
@@ -391,6 +390,7 @@ fun InvestAppScreen(
         ) {
             InvestNavHost(
                 investNavController = investNavController,
+                mainRouteAction = mainRouteAction, // ✅ 추가
                 mainViewModel = mainViewModel,
                 activity = activity,
                 sharedViewModel = sharedViewModel
@@ -415,6 +415,7 @@ fun InvestAppScreen(
 @Composable
 fun InvestNavHost(
     investNavController: NavHostController,
+    mainRouteAction: RouteAction<MainRoute>, // ✅ 추가
     startRouter: MainRoute = MainRoute.Main,
     sharedViewModel: SharedViewModel,
     mainViewModel: MainViewModel,
@@ -426,10 +427,18 @@ fun InvestNavHost(
                 mainViewModel = mainViewModel,
                 activity = activity,
                 onNavigateToPremium = {
-                    investNavController.navigate(MainRoute.MyPage.routeName!!)
+                    // ✅ 하단 탭과 동일하게 launchSingleTop + restoreState 적용된 이동 함수 사용
+                    //    (기존: investNavController.navigate(...) 를 직접 호출 → 마이페이지가 백스택에 계속 쌓이고
+                    //     하단 "기록" 탭이 정상 동작 안 하던 원인)
+                    mainRouteAction.navTo(MainRoute.MyPage)
                 },
                 onNavigateToNews = {
                     investNavController.navigate(MainRoute.News.routeName!!)
+                },
+                // ✅ 추가: 스프레드 배지 클릭 → 마이페이지(스프레드 설정)로 이동
+                //    onNavigateToPremium과 같은 목적지지만, 프리미엄 안내와 별개의 진입점이라 파라미터 분리
+                onNavigateToMyPage = {
+                    mainRouteAction.navTo(MainRoute.MyPage)
                 },
                 sharedViewModel = sharedViewModel
             )
@@ -453,7 +462,9 @@ fun InvestNavHost(
                 sharedViewModel = sharedViewModel,
                 onNavigateToPremium = {
                     investNavController.navigate(MyPageRoute.Premium.routeName!!)
-                }
+                },
+                onNavigateToNews = { investNavController.navigate(MainRoute.News.routeName!!) } // 추가
+
             )
         }
 
@@ -470,10 +481,7 @@ fun InvestNavHost(
 
         composable(MainRoute.News.routeName!!) {
             NewsScreen(
-                onBackClick = {
-                    investNavController.popBackStack()
-                },
-                mainViewModel = mainViewModel
+                onBackClick = { investNavController.popBackStack() }
             )
         }
     }

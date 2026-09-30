@@ -32,7 +32,6 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import com.bobodroid.myapplication.BuildConfig
 import com.bobodroid.myapplication.WebActivity
 import com.bobodroid.myapplication.billing.BillingClientLifecycle
 import com.bobodroid.myapplication.components.Dialogs.AccountFoundDialog
@@ -273,6 +272,14 @@ fun MyPageScreen(
                     }
                 )
             }
+
+            composable(MyPageRoute.SpreadSettings.routeName!!) {
+                SpreadSettingsScreen(
+                    onBackClick = { myPageRouteAction.goBack() },
+                    isPremium = uiState.localUser.isPremium,
+                    onPremiumRequired = { myPageRouteAction.navTo(MyPageRoute.Premium) }
+                )
+            }
         }
 
         SnackbarHost(
@@ -381,6 +388,7 @@ fun ImprovedMyPageView(
                     webPostIntent.putExtra("url", "https://cobusil.vercel.app/release/postBoard/dollarRecord")
                     ContextCompat.startActivity(context, webPostIntent, null)
                 },
+                onSpreadSettingsClick = { myPageRouteAction.navTo(MyPageRoute.SpreadSettings) }, // ✅ 추가
                 onWidgetSettingsClick = { myPageRouteAction.navTo(MyPageRoute.WidgetSettings) },
                 onHelpClick = showOnboarding
             )
@@ -400,9 +408,9 @@ fun ImprovedMyPageView(
             Spacer(modifier = Modifier.height(32.dp))
         }
 
-        if (BuildConfig.DEBUG) {
-            // ... 기존 디버그 코드
-        }
+//        if (BuildConfig.DEBUG) {
+//            // ... 기존 디버그 코드
+//        }
     }
 
     if (showSocialLoginRequiredDialog) {
@@ -1976,6 +1984,7 @@ fun SettingSection(
     onCloudServiceClick: () -> Unit,
     onCustomerServiceClick: () -> Unit,
     onWidgetSettingsClick: () -> Unit,
+    onSpreadSettingsClick: () -> Unit, // ✅ 추가
     onHelpClick: () -> Unit
 ) {
     Card(
@@ -1992,6 +2001,14 @@ fun SettingSection(
                 title = "위젯 설정",
                 subtitle = "실시간 업데이트 설정",
                 onClick = onWidgetSettingsClick
+            )
+            HorizontalDivider(color = Color(0xFFE5E7EB))
+            SettingItem(
+                icon = Icons.Rounded.CompareArrows,
+                title = "환율 스프레드 설정",
+                subtitle = "통화별 살 때·팔 때 스프레드 반영",
+                onClick = onSpreadSettingsClick,
+                badgeText = "NEW"
             )
             HorizontalDivider(color = Color(0xFFE5E7EB))
             SettingItem(
@@ -2030,7 +2047,8 @@ fun SettingItem(
     icon: ImageVector,
     title: String,
     subtitle: String,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    badgeText: String? = null // ✅ 추가
 ) {
     Row(
         modifier = Modifier
@@ -2051,12 +2069,31 @@ fun SettingItem(
                 modifier = Modifier.size(24.dp)
             )
             Column {
-                Text(
-                    text = title,
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.Medium,
-                    color = Color(0xFF1F2937)
-                )
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    Text(
+                        text = title,
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = Color(0xFF1F2937)
+                    )
+                    badgeText?.let {
+                        Surface(
+                            shape = RoundedCornerShape(6.dp),
+                            color = Color(0xFF6152D9)
+                        ) {
+                            Text(
+                                text = it,
+                                fontSize = 9.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color.White,
+                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                            )
+                        }
+                    }
+                }
                 Text(
                     text = subtitle,
                     fontSize = 12.sp,

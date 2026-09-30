@@ -47,6 +47,7 @@ import com.bobodroid.myapplication.components.Dialogs.PremiumRequiredDialog
 import com.bobodroid.myapplication.components.Dialogs.RewardAdInfoDialog
 import com.bobodroid.myapplication.components.mainComponents.AnimatedNewsChip
 import com.bobodroid.myapplication.components.mainComponents.GroupChangeBottomSheet
+import com.bobodroid.myapplication.components.mainComponents.MainDashboardBottomSheetContent
 import com.bobodroid.myapplication.models.viewmodels.SharedViewModel
 import com.bobodroid.myapplication.util.PreferenceUtil
 
@@ -58,11 +59,11 @@ fun MainScreen(
     sharedViewModel: SharedViewModel,
     activity: Activity,
     onNavigateToPremium: () -> Unit,
-    onNavigateToNews: () -> Unit
+    onNavigateToNews: () -> Unit,
+    onNavigateToMyPage: () -> Unit
 ) {
     val mainUiState by mainViewModel.mainUiState.collectAsState()
     val adUiState by sharedViewModel.adUiState.collectAsState()
-    val latestNews by mainViewModel.latestNews.collectAsState()
 
     val isPremium by sharedViewModel.isPremium.collectAsState()
 
@@ -88,13 +89,14 @@ fun MainScreen(
     var thankShowingDialog by remember { mutableStateOf(false) }
     val listScrollState = rememberLazyListState()
 
+    val dashboardSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+
+
     val context = LocalContext.current
     val preferenceUtil = remember { PreferenceUtil(context) }
     var showOnboarding by remember {
         mutableStateOf(preferenceUtil.getData("onboarding_completed", "false") == "false")
     }
-
-    var isHeaderCollapsed by rememberSaveable { mutableStateOf(true) }
 
     //프리미엄
     var showPremiumDialog by remember { mutableStateOf(false) }
@@ -104,6 +106,7 @@ fun MainScreen(
     var hideSellRecordState by remember { mutableStateOf(false) }
     val records by mainViewModel.getCurrentRecordsFlow().collectAsState(CurrencyRecordState())
     val focusManager = LocalFocusManager.current
+    var sortAscending by remember { mutableStateOf(true) }
 
 
 
@@ -115,6 +118,12 @@ fun MainScreen(
             bottomRefreshPadding.value = 0
         }
     })
+
+    // ✅ 수정: 화면에 다시 들어올 때마다 스프레드 배지 갱신 (마이페이지 스프레드 설정에서 돌아왔을 때 즉시 반영)
+    //   기존 DisposableEffect(onDispose)는 "화면을 떠날 때" 실행돼서 갱신이 늦었음 -> LaunchedEffect로 교체
+    LaunchedEffect(key1 = Unit) {
+        mainViewModel.refreshSpreadBadge()
+    }
 
     LaunchedEffect(key1 = true) {
         mainViewModel.mainSnackBarState.collect { message ->
@@ -151,26 +160,10 @@ fun MainScreen(
             MainHeader(
                 mainUiState = mainUiState,
                 adUiState = adUiState,
-                updateCurrentForeignCurrency = { currency ->
-                    mainViewModel.updateCurrentForeignCurrency(currency)
-                },
-                onPremiumRequired = {
-                    showPremiumDialog = true  // ✅ 토스트 대신 다이얼로그 표시
-                },
-                hideSellRecordState = hideSellRecordState,
-                onHide = { hideSellRecordState = it },
-                isCollapsed = isHeaderCollapsed,
-                onToggleClick = { isHeaderCollapsed = !isHeaderCollapsed },
-                isPremium = isPremium
+                onExpandClick = { mainViewModel.handleMainEvent(MainEvent.ShowDashboardBottomSheet) },
+                onSpreadBadgeClick = onNavigateToMyPage
             )
 
-
-            AnimatedNewsChip(
-                newsTitles = latestNews.map { it.title },
-                onClick = {
-                   onNavigateToNews()
-                }
-            )
 
             Column(
                 Modifier
@@ -178,9 +171,13 @@ fun MainScreen(
                     .addFocusCleaner(focusManager)
             ) {
                 RecordListView(
-                    mainUiState.selectedCurrencyType,
-                    records,
+                    currencyType = mainUiState.selectedCurrencyType,
+                    currencyRecordState = records,
                     hideSellRecordState = hideSellRecordState,
+                    onHideSellRecordChange = { hideSellRecordState = it },
+                    sortAscending = sortAscending,
+                    onSortToggle = { sortAscending = !sortAscending },
+                    holdingStats = mainUiState.holdingStats.getStatsByCode(mainUiState.selectedCurrencyType.code),
                     scrollState = listScrollState,
                     onEvent = { event ->
                         when (event) {
@@ -280,6 +277,33 @@ fun MainScreen(
                     }
                 )
             }
+
+            if (mainUiState.showDashboardBottomSheet) {
+                ModalBottomSheet(
+                    sheetState = dashboardSheetState,
+                    onDismissRequest = {
+                        coroutineScope.launch {
+                            dashboardSheetState.hide()
+                            mainViewModel.handleMainEvent(MainEvent.HideDashboardBottomSheet)
+                        }
+                    }
+                ) {
+                    MainDashboardBottomSheetContent(
+                        mainUiState = mainUiState,
+                        updateCurrentForeignCurrency = { currency -> mainViewModel.updateCurrentForeignCurrency(currency) },
+                        isPremium = isPremium,
+                        onPremiumRequired = { showPremiumDialog = true },
+                        onSpreadBadgeClick = {
+                            coroutineScope.launch {
+                                dashboardSheetState.hide()
+                                mainViewModel.handleMainEvent(MainEvent.HideDashboardBottomSheet)
+                                onNavigateToMyPage()
+                            }
+                        }
+                    )
+                }
+            }
+
 
             // Dialogs
             if (mainUiState.showDatePickerDialog) {
@@ -476,6 +500,8 @@ sealed class MainEvent {
     data object HideDateRangeDialog : MainEvent()
     data object ShowDateRangeDialog : MainEvent()
     data object HideGroupChangeBottomSheet : MainEvent()
+    data object ShowDashboardBottomSheet : MainEvent()
+    data object HideDashboardBottomSheet : MainEvent()
 
     sealed class BottomSheetEvent : MainEvent() {
         data class OnRecordAdd(val money: String, val rate: String, val group: String) : BottomSheetEvent()

@@ -22,6 +22,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.bobodroid.myapplication.models.datamodels.response.NewsItem
+import com.bobodroid.myapplication.models.viewmodels.AnalysisViewModel
 import com.bobodroid.myapplication.models.viewmodels.MainViewModel
 import java.text.SimpleDateFormat
 import java.util.*
@@ -30,10 +31,10 @@ import java.util.*
 @Composable
 fun NewsScreen(
     onBackClick: () -> Unit,
-    mainViewModel: MainViewModel = hiltViewModel()
+    analysisViewModel: AnalysisViewModel = hiltViewModel()
 ) {
     val context = LocalContext.current
-    val latestNews by mainViewModel.latestNews.collectAsState()
+    val latestNews by analysisViewModel.latestNews.collectAsState()
 
     var isLoading by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf<String?>(null) }

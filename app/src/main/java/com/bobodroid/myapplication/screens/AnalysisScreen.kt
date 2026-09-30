@@ -31,23 +31,31 @@ import com.bobodroid.myapplication.components.Dialogs.PremiumRequiredDialog
 import com.bobodroid.myapplication.components.Dialogs.RewardAdInfoDialog
 import com.bobodroid.myapplication.components.chart.ExchangeRateChart
 import com.bobodroid.myapplication.components.common.CurrencyDropdown
+import com.bobodroid.myapplication.components.mainComponents.AnimatedNewsChip
 import com.bobodroid.myapplication.models.datamodels.roomDb.Currencies
 import com.bobodroid.myapplication.models.datamodels.roomDb.CurrencyType
 import com.bobodroid.myapplication.models.datamodels.roomDb.emoji
 import com.bobodroid.myapplication.models.viewmodels.AnalysisUiState
 import com.bobodroid.myapplication.models.viewmodels.AnalysisViewModel
+import com.bobodroid.myapplication.models.viewmodels.DailyChangeDistribution
+import com.bobodroid.myapplication.models.viewmodels.HighLowDistance
 import com.bobodroid.myapplication.models.viewmodels.LoadingState
+import com.bobodroid.myapplication.models.viewmodels.LongTermPosition
+import com.bobodroid.myapplication.models.viewmodels.PeriodAverage
 import com.bobodroid.myapplication.models.viewmodels.RateRangeCurrency
 import com.bobodroid.myapplication.models.viewmodels.SharedViewModel
+import com.bobodroid.myapplication.models.viewmodels.SpreadRates
+import com.bobodroid.myapplication.models.viewmodels.TargetRateInfo
+import com.bobodroid.myapplication.models.viewmodels.YearlyAverageStreak
 import com.bobodroid.myapplication.ui.theme.primaryColor
 
 @Composable
 fun AnalysisScreen(
     analysisViewModel: AnalysisViewModel = hiltViewModel(),
     sharedViewModel: SharedViewModel,
-    onNavigateToPremium: () -> Unit = {} // ✅ 신규: 프리미엄 화면 이동 콜백
+    onNavigateToPremium: () -> Unit = {},
+    onNavigateToNews: () -> Unit = {}
 ) {
-
 
     val isPremium by sharedViewModel.isPremium.collectAsState()
     val showPremiumPrompt by sharedViewModel.showPremiumPrompt.collectAsState()
@@ -55,7 +63,6 @@ fun AnalysisScreen(
 
     val context = LocalContext.current
 
-    // ✅ 신규: 스낵바 상태 + 구독 — 이게 없어서 "광고 없음" 안내가 안 뜨고 있었음
     val snackbarHostState = remember { SnackbarHostState() }
     LaunchedEffect(Unit) {
         sharedViewModel.snackbarEvent.collect { message ->
@@ -65,13 +72,10 @@ fun AnalysisScreen(
 
     LaunchedEffect(Unit) {
         if (!isPremium) {
-            // ✅ ViewModel이 UseCase 호출 → UseCase가 AdManager 호출
             sharedViewModel.showInterstitialAdIfNeeded(context)
         }
     }
 
-
-    // ✅ 프리미엄 다이얼로그 상태 추가
     var showPremiumDialog by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
@@ -82,10 +86,10 @@ fun AnalysisScreen(
         PremiumChartScreen(
             analysisViewModel = analysisViewModel,
             onPremiumRequired = { showPremiumDialog = true },
-            onNavigateToPremium = onNavigateToPremium // ✅ 하위로 전달
+            onNavigateToPremium = onNavigateToPremium,
+            onNavigateToNews = onNavigateToNews
         )
 
-        // ✅ 신규: 스낵바 표시 위치
         SnackbarHost(
             hostState = snackbarHostState,
             modifier = Modifier
@@ -93,13 +97,12 @@ fun AnalysisScreen(
                 .padding(bottom = 20.dp)
         )
 
-        // ✅ 프리미엄 다이얼로그
         if (showPremiumDialog) {
             PremiumRequiredDialog(
                 onDismiss = { showPremiumDialog = false },
                 onPurchaseClick = {
                     showPremiumDialog = false
-                    onNavigateToPremium() // ✅ 프리미엄 화면으로 이동
+                    onNavigateToPremium()
                 }
             )
         }
@@ -115,7 +118,6 @@ fun AnalysisScreen(
             )
         }
 
-        // 리워드 광고 안내 팝업
         if (showRewardAdInfo) {
             RewardAdInfoDialog(
                 onConfirm = {
@@ -134,21 +136,19 @@ fun AnalysisScreen(
 fun PremiumChartScreen(
     analysisViewModel: AnalysisViewModel,
     onPremiumRequired: () -> Unit,
-    onNavigateToPremium: () -> Unit = {} // ✅ 신규
+    onNavigateToPremium: () -> Unit = {},
+    onNavigateToNews: () -> Unit = {}
 ) {
     val analysisUiState by analysisViewModel.analysisUiState.collectAsState()
     val targetCurrency by analysisViewModel.selectedCurrency.collectAsState()
     val scrollState = rememberScrollState()
 
-    // ✅ 로딩 상태에 따른 UI 분기
     when (val loadingState = analysisUiState.loadingState) {
         is LoadingState.Loading -> {
-            // 로딩 중
             AnalysisLoadingScreen()
         }
 
         is LoadingState.Error -> {
-            // 에러 발생
             AnalysisErrorScreen(
                 errorMessage = loadingState.message,
                 onRetry = { analysisViewModel.refreshData() }
@@ -156,14 +156,14 @@ fun PremiumChartScreen(
         }
 
         is LoadingState.Success -> {
-            // 데이터 로드 성공 - 실제 컨텐츠 표시
             SuccessContent(
                 analysisUiState = analysisUiState,
                 targetCurrency = targetCurrency,
                 scrollState = scrollState,
                 analysisViewModel = analysisViewModel,
                 onPremiumRequired = onPremiumRequired,
-                onNavigateToPremium = onNavigateToPremium // ✅ 전달
+                onNavigateToPremium = onNavigateToPremium,
+                onNavigateToNews = onNavigateToNews
             )
         }
     }
@@ -179,19 +179,43 @@ private fun SuccessContent(
     scrollState: ScrollState,
     analysisViewModel: AnalysisViewModel,
     onPremiumRequired: () -> Unit,
-    onNavigateToPremium: () -> Unit = {} // ✅ 신규
+    onNavigateToPremium: () -> Unit = {},
+    onNavigateToNews: () -> Unit = {}
 ) {
-    // 데이터 계산
     val statistics = remember(analysisUiState.selectedRates, targetCurrency) {
         analysisViewModel.calculateStatistics(targetCurrency)
     }
 
-    val trendAnalysis = remember(analysisUiState.selectedRates, targetCurrency) {
-        analysisViewModel.calculateTrendAnalysis(targetCurrency)
-    }
-
     val periodComparison = remember(analysisUiState.selectedRates, targetCurrency) {
         analysisViewModel.calculatePeriodComparison(targetCurrency)
+    }
+
+    val longTermPosition = remember(analysisUiState.latestRate, targetCurrency) {
+        analysisViewModel.calculateLongTermPosition(targetCurrency)
+    }
+
+    val highLowDistance = remember(analysisUiState.latestRate, targetCurrency) {
+        analysisViewModel.calculateHighLowDistance(targetCurrency)
+    }
+
+    val periodAverages = remember(analysisUiState.latestRate, targetCurrency) {
+        analysisViewModel.calculatePeriodAverages(targetCurrency)
+    }
+
+    val yearlyStreak = remember(targetCurrency) {
+        analysisViewModel.calculateYearlyAverageStreak(targetCurrency)
+    }
+
+    val dailyDistribution = remember(targetCurrency) {
+        analysisViewModel.calculateDailyChangeDistribution(targetCurrency)
+    }
+
+    val spreadRates = remember(analysisUiState.latestRate, targetCurrency) {
+        analysisViewModel.calculateSpreadRates(targetCurrency)
+    }
+
+    val targetRateInfo = remember(analysisUiState.latestRate, targetCurrency) {
+        analysisViewModel.calculateTargetRateInfo(targetCurrency)
     }
 
     val rangeRateMapCurrencyType = analysisUiState.selectedRates.mapNotNull { rate ->
@@ -200,19 +224,16 @@ private fun SuccessContent(
         RateRangeCurrency(truncated, rate.createAt)
     }
 
-    // ✅ 선택된 통화의 최신 환율 가져오기
     val latestRate = run {
         val rawValue = analysisUiState.latestRate.getRate(targetCurrency.code).toFloatOrNull() ?: 0f
         String.format("%.2f", rawValue)
     }
 
-    // ✅ 선택된 통화의 변화량 가져오기
     val changeRate = run {
         val rawValue = analysisUiState.change.getChange(targetCurrency.code).toFloatOrNull() ?: 0f
         String.format("%.2f", rawValue)
     }
 
-    // ✅ 변화 아이콘/색상 동적 계산
     val (changeIcon, changeColor) = remember(changeRate) {
         try {
             val change = changeRate.toDouble()
@@ -227,6 +248,7 @@ private fun SuccessContent(
     }
 
     val isPremium by analysisViewModel.isPremium.collectAsState()
+    val latestNews by analysisViewModel.latestNews.collectAsState()
 
     var showPremiumDialog by remember { mutableStateOf(false) }
 
@@ -236,7 +258,6 @@ private fun SuccessContent(
             .background(Color(0xFFF9FAFB))
             .verticalScroll(scrollState)
     ) {
-        // 🎨 현재 환율 헤더
         CurrentRateHeader(
             currency = targetCurrency,
             latestRate = latestRate,
@@ -245,20 +266,28 @@ private fun SuccessContent(
             changeColor = changeColor,
             isPremium = isPremium,
             onCurrencyChange = { analysisViewModel.updateSelectedCurrency(it) },
-            onPremiumRequired = onPremiumRequired
+            onPremiumRequired = onPremiumRequired,
+            spreadRates = spreadRates
+        )
+
+        AnimatedNewsChip(
+            newsTitles = latestNews.map { it.title },
+            onClick = onNavigateToNews
         )
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // 📊 통계 카드 섹션
+        // 📊 통계 분석 (최고/최저/평균 → 최고·최저가 대비 → 평균 대비 위치 → 변동폭 → 연속일수)
         StatisticsCardsSection(
             statistics = statistics,
-            currency = targetCurrency
+            currency = targetCurrency,
+            highLowDistance = highLowDistance,
+            periodAverages = periodAverages,
+            yearlyStreak = yearlyStreak
         )
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // 📈 차트 섹션
         ChartSection(
             data = rangeRateMapCurrencyType,
             selectedTabIndex = analysisUiState.selectedTabIndex,
@@ -267,15 +296,18 @@ private fun SuccessContent(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // 🔍 인사이트 섹션
-        InsightsSection(
-            trendAnalysis = trendAnalysis,
-            statistics = statistics
-        )
+        LongTermPositionSection(longTermPosition = longTermPosition)
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // 📊 기간별 비교 섹션
+        TargetRateSection(targetRateInfo = targetRateInfo)
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        DailyDistributionSection(distribution = dailyDistribution)
+
+        Spacer(modifier = Modifier.height(16.dp))
+
         PeriodComparisonSection(
             periodComparison = periodComparison,
             latestRate = latestRate
@@ -288,7 +320,7 @@ private fun SuccessContent(
                 onDismiss = { showPremiumDialog = false },
                 onPurchaseClick = {
                     showPremiumDialog = false
-                    onNavigateToPremium() // ✅ 프리미엄 화면으로 이동
+                    onNavigateToPremium()
                 }
             )
         }
@@ -302,13 +334,12 @@ fun CurrentRateHeader(
     changeRate: String,
     changeIcon: Char,
     changeColor: Color,
-    isPremium: Boolean,                              // ✅ 추가
-    onCurrencyChange: (CurrencyType) -> Boolean,     // ✅ Boolean 반환으로 변경
-    onPremiumRequired: () -> Unit                    // ✅ 추가
+    isPremium: Boolean,
+    onCurrencyChange: (CurrencyType) -> Boolean,
+    onPremiumRequired: () -> Unit,
+    spreadRates: SpreadRates = SpreadRates()
 ) {
     var expanded by remember { mutableStateOf(false) }
-
-
 
     Box(
         modifier = Modifier
@@ -324,7 +355,6 @@ fun CurrentRateHeader(
             .padding(24.dp)
     ) {
         Column {
-            // 통화 선택 버튼
             CurrencyDropdown(
                 selectedCurrency = currency,
                 updateCurrentForeignCurrency = onCurrencyChange,
@@ -336,7 +366,6 @@ fun CurrentRateHeader(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // 현재 환율
             Row(
                 verticalAlignment = Alignment.Bottom
             ) {
@@ -356,7 +385,6 @@ fun CurrentRateHeader(
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            // 변화량
             Row(
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -378,6 +406,37 @@ fun CurrentRateHeader(
                     modifier = Modifier.padding(start = 8.dp)
                 )
             }
+
+            if (spreadRates.applied) {
+                Spacer(modifier = Modifier.height(12.dp))
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(10.dp))
+                        .background(Color.White.copy(alpha = 0.15f))
+                        .padding(horizontal = 12.dp, vertical = 10.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Column {
+                        Text(text = "매수", fontSize = 12.sp, color = Color.White.copy(alpha = 0.7f))
+                        Text(
+                            text = "${spreadRates.buyRate}원",
+                            fontSize = 15.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White
+                        )
+                    }
+                    Column(horizontalAlignment = Alignment.End) {
+                        Text(text = "매도", fontSize = 12.sp, color = Color.White.copy(alpha = 0.7f))
+                        Text(
+                            text = "${spreadRates.sellRate}원",
+                            fontSize = 15.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White
+                        )
+                    }
+                }
+            }
         }
     }
 }
@@ -385,7 +444,10 @@ fun CurrentRateHeader(
 @Composable
 fun StatisticsCardsSection(
     statistics: com.bobodroid.myapplication.models.viewmodels.RateStatistics,
-    currency: CurrencyType
+    currency: CurrencyType,
+    highLowDistance: HighLowDistance,
+    periodAverages: List<PeriodAverage>,
+    yearlyStreak: YearlyAverageStreak
 ) {
     Column(
         modifier = Modifier
@@ -400,6 +462,7 @@ fun StatisticsCardsSection(
             modifier = Modifier.padding(bottom = 12.dp)
         )
 
+        // 1. 최고 / 최저 / 평균
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(12.dp)
@@ -431,7 +494,17 @@ fun StatisticsCardsSection(
 
         Spacer(modifier = Modifier.height(12.dp))
 
-        // 변동폭 카드
+        // 2. 최고가 대비 / 최저가 대비 (1년 고정)
+        HighLowDistanceSection(highLowDistance)
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        // 3. 평균 대비 현재 위치 (1일/7일/3개월/1년)
+        PeriodAverageSection(periodAverages)
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        // 4. 변동폭 카드
         Card(
             modifier = Modifier.fillMaxWidth(),
             colors = CardDefaults.cardColors(
@@ -487,6 +560,160 @@ fun StatisticsCardsSection(
                     )
                 }
             }
+        }
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        // 5. 1년 평균 대비 연속일수
+        YearlyStreakSection(yearlyStreak)
+    }
+}
+
+@Composable
+private fun HighLowDistanceSection(highLowDistance: HighLowDistance) {
+    if (!highLowDistance.hasData) return
+
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        DistanceCard(
+            modifier = Modifier.weight(1f),
+            title = "최고가 대비",
+            subLabel = "1년 최고 ${String.format("%.2f", highLowDistance.highRate)}원",
+            diff = highLowDistance.diffFromHigh,
+            diffPercent = highLowDistance.diffFromHighPercent,
+            color = Color(0xFF3B82F6)
+        )
+        DistanceCard(
+            modifier = Modifier.weight(1f),
+            title = "최저가 대비",
+            subLabel = "1년 최저 ${String.format("%.2f", highLowDistance.lowRate)}원",
+            diff = highLowDistance.diffFromLow,
+            diffPercent = highLowDistance.diffFromLowPercent,
+            color = Color(0xFFEF4444)
+        )
+    }
+}
+
+@Composable
+private fun DistanceCard(
+    modifier: Modifier = Modifier,
+    title: String,
+    subLabel: String,
+    diff: Float,
+    diffPercent: Float,
+    color: Color
+) {
+    Card(
+        modifier = modifier,
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    ) {
+        Column(modifier = Modifier.padding(14.dp)) {
+            Text(text = title, fontSize = 13.sp, color = Color(0xFF6B7280))
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                text = "${if (diff >= 0) "+" else ""}${String.format("%.2f", diff)}원",
+                fontSize = 17.sp,
+                fontWeight = FontWeight.Bold,
+                color = color
+            )
+            Text(
+                text = "${if (diffPercent >= 0) "+" else ""}${String.format("%.2f", diffPercent)}%",
+                fontSize = 13.sp,
+                color = color
+            )
+            Spacer(modifier = Modifier.height(6.dp))
+            Text(text = subLabel, fontSize = 11.sp, color = Color(0xFF9CA3AF))
+        }
+    }
+}
+
+@Composable
+private fun PeriodAverageSection(periodAverages: List<PeriodAverage>) {
+    if (periodAverages.isEmpty()) return
+
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Text(
+                text = "평균 대비 현재 위치",
+                fontSize = 14.sp,
+                fontWeight = FontWeight.Bold,
+                color = Color(0xFF1F2937),
+                modifier = Modifier.padding(bottom = 10.dp)
+            )
+            periodAverages.forEachIndexed { index, item ->
+                PeriodAverageRow(item)
+                if (index != periodAverages.lastIndex) {
+                    Spacer(modifier = Modifier.height(10.dp))
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun PeriodAverageRow(item: PeriodAverage) {
+    val color = if (item.diff >= 0) Color(0xFFEF4444) else Color(0xFF3B82F6)
+
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Column {
+            Text(text = "${item.label} 평균", fontSize = 13.sp, color = Color(0xFF6B7280))
+            Text(
+                text = "${String.format("%.2f", item.averageRate)}원",
+                fontSize = 14.sp,
+                color = Color(0xFF1F2937)
+            )
+        }
+        Text(
+            text = "${if (item.diff >= 0) "+" else ""}${String.format("%.2f", item.diff)}원 (${if (item.diffPercent >= 0) "+" else ""}${String.format("%.2f", item.diffPercent)}%)",
+            fontSize = 14.sp,
+            fontWeight = FontWeight.Bold,
+            color = color
+        )
+    }
+}
+
+@Composable
+private fun YearlyStreakSection(streak: YearlyAverageStreak) {
+    if (!streak.hasData || streak.streakDays == 0) return
+
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(
+                if (streak.streakDays > 0) Icons.Rounded.TrendingUp else Icons.Rounded.TrendingDown,
+                contentDescription = null,
+                tint = if (streak.streakDays > 0) Color(0xFFEF4444) else Color(0xFF3B82F6),
+                modifier = Modifier.size(24.dp)
+            )
+            Spacer(modifier = Modifier.width(12.dp))
+            Text(
+                text = if (streak.streakDays > 0)
+                    "1년 평균 대비 ${streak.streakDays}일 연속 상회 중"
+                else
+                    "1년 평균 대비 ${-streak.streakDays}일 연속 하회 중",
+                fontSize = 15.sp,
+                fontWeight = FontWeight.Bold,
+                color = Color(0xFF1F2937)
+            )
         }
     }
 }
@@ -623,143 +850,134 @@ fun PeriodTabRow(
 }
 
 @Composable
-fun InsightsSection(
-    trendAnalysis: com.bobodroid.myapplication.models.viewmodels.TrendAnalysis,
-    statistics: com.bobodroid.myapplication.models.viewmodels.RateStatistics
-) {
+fun LongTermPositionSection(longTermPosition: LongTermPosition) {
+    if (longTermPosition.threeMonthPercentile == null && longTermPosition.oneYearPercentile == null) return
+
     Column(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp)
     ) {
         Text(
-            text = "🔍 분석 인사이트 (최근 1년 기준)",
+            text = "📐 장기 포지션",
             fontSize = 20.sp,
             fontWeight = FontWeight.Bold,
             color = Color(0xFF1F2937),
             modifier = Modifier.padding(bottom = 12.dp)
         )
 
-        // 추세 분석 카드
         Card(
             modifier = Modifier.fillMaxWidth(),
-            colors = CardDefaults.cardColors(
-                containerColor = Color.White
-            ),
+            colors = CardDefaults.cardColors(containerColor = Color.White),
             elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
         ) {
-            Column(
-                modifier = Modifier.padding(16.dp)
-            ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.padding(bottom = 12.dp)
-                ) {
-                    Icon(
-                        when(trendAnalysis.trend) {
-                            "상승" -> Icons.Rounded.TrendingUp
-                            "하락" -> Icons.Rounded.TrendingDown
-                            else -> Icons.Rounded.TrendingFlat
-                        },
-                        contentDescription = null,
-                        tint = when(trendAnalysis.trend) {
-                            "상승" -> Color(0xFFEF4444)
-                            "하락" -> Color(0xFF3B82F6)
-                            else -> Color(0xFF6B7280)
-                        },
-                        modifier = Modifier.size(28.dp)
-                    )
-                    Spacer(modifier = Modifier.width(12.dp))
-                    Text(
-                        text = "현재 추세: ${trendAnalysis.trend}",
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color(0xFF1F2937)
-                    )
+            Column(modifier = Modifier.padding(16.dp)) {
+                longTermPosition.threeMonthPercentile?.let {
+                    PositionBar(label = "3개월", percentile = it)
+                    if (longTermPosition.oneYearPercentile != null) {
+                        Spacer(modifier = Modifier.height(16.dp))
+                    }
                 }
-
-                Divider(color = Color(0xFFE5E7EB))
-
-                Spacer(modifier = Modifier.height(12.dp))
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    InsightItem(
-                        label = "상승일",
-                        value = "${trendAnalysis.upDays}일",
-                        color = Color(0xFFEF4444)
-                    )
-                    InsightItem(
-                        label = "하락일",
-                        value = "${trendAnalysis.downDays}일",
-                        color = Color(0xFF3B82F6)
-                    )
-                    InsightItem(
-                        label = "추세 강도",
-                        value = "${trendAnalysis.trendStrength}%",
-                        color = Color(0xFF8B5CF6)
-                    )
+                longTermPosition.oneYearPercentile?.let {
+                    PositionBar(label = "1년", percentile = it)
                 }
             }
         }
+    }
+}
 
-        Spacer(modifier = Modifier.height(12.dp))
+@Composable
+private fun PositionBar(label: String, percentile: Float) {
+    Column {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Text(text = label, fontSize = 14.sp, color = Color(0xFF6B7280))
+            Text(
+                text = "${percentile.toInt()}%",
+                fontSize = 14.sp,
+                fontWeight = FontWeight.Bold,
+                color = Color(0xFF6366F1)
+            )
+        }
+        Spacer(modifier = Modifier.height(6.dp))
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(10.dp)
+                .clip(RoundedCornerShape(5.dp))
+                .background(Color(0xFFE5E7EB))
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth(fraction = (percentile / 100f).coerceIn(0f, 1f))
+                    .fillMaxHeight()
+                    .clip(RoundedCornerShape(5.dp))
+                    .background(
+                        Brush.horizontalGradient(
+                            colors = listOf(Color(0xFF3B82F6), Color(0xFFEF4444))
+                        )
+                    )
+            )
+        }
+        Spacer(modifier = Modifier.height(4.dp))
+        Text(
+            text = when {
+                percentile >= 80f -> "구간 내 상단권 (최고가에 근접)"
+                percentile <= 20f -> "구간 내 하단권 (최저가에 근접)"
+                else -> "구간 내 중간권"
+            },
+            fontSize = 12.sp,
+            color = Color(0xFF9CA3AF)
+        )
+    }
+}
 
-        // 변동성 분석 카드
+@Composable
+fun TargetRateSection(targetRateInfo: TargetRateInfo) {
+    if (!targetRateInfo.hasTargets) return
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp)
+    ) {
+        Text(
+            text = "🎯 목표환율 대비",
+            fontSize = 20.sp,
+            fontWeight = FontWeight.Bold,
+            color = Color(0xFF1F2937),
+            modifier = Modifier.padding(bottom = 12.dp)
+        )
+
         Card(
             modifier = Modifier.fillMaxWidth(),
-            colors = CardDefaults.cardColors(
-                containerColor = Color.White
-            ),
+            colors = CardDefaults.cardColors(containerColor = Color.White),
             elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
         ) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = "💡 변동성 평가",
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color(0xFF1F2937),
-                        modifier = Modifier.padding(bottom = 4.dp)
+            Column(modifier = Modifier.padding(16.dp)) {
+                targetRateInfo.nearestHighRate?.let { highRate ->
+                    TargetRateRow(
+                        label = "오름 목표",
+                        targetRate = highRate,
+                        diffPercent = targetRateInfo.highDiffPercent,
+                        icon = Icons.Rounded.TrendingUp,
+                        color = Color(0xFFEF4444)
                     )
-                    Text(
-                        text = when {
-                            statistics.volatility < 5 -> "안정적인 구간입니다"
-                            statistics.volatility < 15 -> "보통 변동성입니다"
-                            else -> "높은 변동성 주의"
-                        },
-                        fontSize = 14.sp,
-                        color = Color(0xFF6B7280)
-                    )
+                    if (targetRateInfo.nearestLowRate != null) {
+                        Spacer(modifier = Modifier.height(12.dp))
+                        Divider(color = Color(0xFFE5E7EB))
+                        Spacer(modifier = Modifier.height(12.dp))
+                    }
                 }
-
-                Box(
-                    modifier = Modifier
-                        .size(60.dp)
-                        .clip(RoundedCornerShape(30.dp))
-                        .background(
-                            when {
-                                statistics.volatility < 5 -> Color(0xFF10B981)
-                                statistics.volatility < 15 -> Color(0xFFF59E0B)
-                                else -> Color(0xFFEF4444)
-                            }.copy(alpha = 0.2f)
-                        ),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = when {
-                            statistics.volatility < 5 -> "🟢"
-                            statistics.volatility < 15 -> "🟡"
-                            else -> "🔴"
-                        },
-                        fontSize = 28.sp
+                targetRateInfo.nearestLowRate?.let { lowRate ->
+                    TargetRateRow(
+                        label = "내림 목표",
+                        targetRate = lowRate,
+                        diffPercent = targetRateInfo.lowDiffPercent,
+                        icon = Icons.Rounded.TrendingDown,
+                        color = Color(0xFF3B82F6)
                     )
                 }
             }
@@ -768,24 +986,113 @@ fun InsightsSection(
 }
 
 @Composable
-fun InsightItem(
+private fun TargetRateRow(
     label: String,
-    value: String,
+    targetRate: Int,
+    diffPercent: Float?,
+    icon: ImageVector,
     color: Color
 ) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Icon(icon, contentDescription = null, tint = color, modifier = Modifier.size(20.dp))
+            Spacer(modifier = Modifier.width(12.dp))
+            Column {
+                Text(text = label, fontSize = 13.sp, color = Color(0xFF6B7280))
+                Text(
+                    text = "${targetRate}원",
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFF1F2937)
+                )
+            }
+        }
+        diffPercent?.let {
+            Text(
+                text = if (it >= 0) "+${String.format("%.2f", it)}%" else "${String.format("%.2f", it)}%",
+                fontSize = 15.sp,
+                fontWeight = FontWeight.Bold,
+                color = color
+            )
+        }
+    }
+}
+
+@Composable
+fun DailyDistributionSection(distribution: DailyChangeDistribution) {
+    if (distribution.totalCount == 0) return
+
     Column(
-        horizontalAlignment = Alignment.CenterHorizontally
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp)
     ) {
         Text(
-            text = value,
+            text = "📶 일별 변동 분포 (최근 1년)",
             fontSize = 20.sp,
             fontWeight = FontWeight.Bold,
-            color = color
+            color = Color(0xFF1F2937),
+            modifier = Modifier.padding(bottom = 12.dp)
         )
+
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            colors = CardDefaults.cardColors(containerColor = Color.White),
+            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        ) {
+            Column(modifier = Modifier.padding(16.dp)) {
+                DistributionBarRow(label = "5원↑하락", count = distribution.bigDownCount, total = distribution.totalCount, color = Color(0xFF1D4ED8))
+                DistributionBarRow(label = "3~5원 하락", count = distribution.downCount, total = distribution.totalCount, color = Color(0xFF60A5FA))
+                DistributionBarRow(label = "보합(±3원)", count = distribution.flatCount, total = distribution.totalCount, color = Color(0xFF9CA3AF))
+                DistributionBarRow(label = "3~5원 상승", count = distribution.upCount, total = distribution.totalCount, color = Color(0xFFF87171))
+                DistributionBarRow(label = "5원↑상승", count = distribution.bigUpCount, total = distribution.totalCount, color = Color(0xFFB91C1C))
+            }
+        }
+    }
+}
+
+@Composable
+private fun DistributionBarRow(label: String, count: Int, total: Int, color: Color) {
+    val fraction = if (total > 0) count.toFloat() / total.toFloat() else 0f
+
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 6.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
         Text(
             text = label,
             fontSize = 12.sp,
-            color = Color(0xFF6B7280)
+            color = Color(0xFF6B7280),
+            modifier = Modifier.width(72.dp)
+        )
+        Box(
+            modifier = Modifier
+                .weight(1f)
+                .height(14.dp)
+                .clip(RoundedCornerShape(4.dp))
+                .background(Color(0xFFF3F4F6))
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth(fraction = fraction.coerceIn(0f, 1f))
+                    .fillMaxHeight()
+                    .clip(RoundedCornerShape(4.dp))
+                    .background(color)
+            )
+        }
+        Spacer(modifier = Modifier.width(8.dp))
+        Text(
+            text = "${count}일",
+            fontSize = 12.sp,
+            fontWeight = FontWeight.Bold,
+            color = Color(0xFF1F2937),
+            modifier = Modifier.width(36.dp)
         )
     }
 }

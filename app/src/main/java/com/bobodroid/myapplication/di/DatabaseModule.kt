@@ -58,4 +58,11 @@ object DatabaseModule {
     fun provideCurrencyRecordDao(database: InvestDatabase): CurrencyRecordDao {
         return database.currencyRecordDao()
     }
+
+
+    @Provides
+    @Singleton
+    fun provideBacktestHistoryDao(database: InvestDatabase): BacktestHistoryDao {
+        return database.backtestHistoryDao()
+    }
 }

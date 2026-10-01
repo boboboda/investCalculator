@@ -11,11 +11,12 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlin.math.roundToLong
 
 /**
  * 앱 전역 설정 관리
  * - 선택된 통화
- * - 통화별 매수/매도 스프레드
+ * - 통화별 매수/매도 스프레드 (원 단위)
  * - 기타 사용자 설정
  */
 @Singleton
@@ -28,13 +29,14 @@ class SettingsRepository @Inject constructor(
         private const val KEY_SELECTED_CURRENCY = "selected_currency"
         private const val DEFAULT_CURRENCY = "USD"
 
-        // ✅ 스프레드 설정 키 prefix
-        private const val KEY_SPREAD_BUY_PREFIX = "spread_buy_"
-        private const val KEY_SPREAD_SELL_PREFIX = "spread_sell_"
+        // ✅ 스프레드(원) 설정 키 prefix
+        //   기존 % 값(spread_buy_, spread_sell_)과 키를 분리해서 옛 값이 원 단위로 읽히지 않게 함
+        private const val KEY_SPREAD_BUY_PREFIX = "spread_won_buy_"
+        private const val KEY_SPREAD_SELL_PREFIX = "spread_won_sell_"
 
-        // ✅ 서버 스키마 기본값과 동일 (50/50 분할 기준)
-        private const val DEFAULT_BUY_SPREAD_PERCENT = 0.75
-        private const val DEFAULT_SELL_SPREAD_PERCENT = 0.75
+        // ✅ 서버 스키마 기본값과 동일 (0원 = 스프레드 미반영)
+        private const val DEFAULT_BUY_SPREAD_WON = 0.0
+        private const val DEFAULT_SELL_SPREAD_WON = 0.0
     }
 
     private val prefs: SharedPreferences =
@@ -55,8 +57,6 @@ class SettingsRepository @Inject constructor(
             CurrencyType.USD  // 잘못된 값이면 기본값
         }
     }
-
-
 
     /**
      * 통화 선택 변경
@@ -87,56 +87,54 @@ class SettingsRepository @Inject constructor(
         setSelectedCurrency(CurrencyType.USD)
     }
 
-    // ==================== 통화별 매수/매도 스프레드 설정 ====================
+    // ==================== 통화별 매수/매도 스프레드 설정 (원 단위) ====================
+    //   JPY, THB는 앱에 표시되는 100단위 기준 환율에 더해지는 원 값
+    //   Float 오차(0.1 → 0.10000000149)를 피하려고 문자열로 저장
 
     /**
-     * 매수(살 때) 스프레드 % 조회
+     * 매수(살 때) 스프레드(원) 조회
      */
-    fun getBuySpreadPercent(currency: CurrencyType): Double {
-        return prefs.getFloat(
-            KEY_SPREAD_BUY_PREFIX + currency.name,
-            DEFAULT_BUY_SPREAD_PERCENT.toFloat()
-        ).toDouble()
+    fun getBuySpreadWon(currency: CurrencyType): Double {
+        return prefs.getString(KEY_SPREAD_BUY_PREFIX + currency.name, null)
+            ?.toDoubleOrNull() ?: DEFAULT_BUY_SPREAD_WON
     }
 
     /**
-     * 매도(팔 때) 스프레드 % 조회
+     * 매도(팔 때) 스프레드(원) 조회
      */
-    fun getSellSpreadPercent(currency: CurrencyType): Double {
-        return prefs.getFloat(
-            KEY_SPREAD_SELL_PREFIX + currency.name,
-            DEFAULT_SELL_SPREAD_PERCENT.toFloat()
-        ).toDouble()
+    fun getSellSpreadWon(currency: CurrencyType): Double {
+        return prefs.getString(KEY_SPREAD_SELL_PREFIX + currency.name, null)
+            ?.toDoubleOrNull() ?: DEFAULT_SELL_SPREAD_WON
     }
 
     /**
-     * 매수(살 때) 스프레드 % 저장
+     * 매수(살 때) 스프레드(원) 저장 (소수 둘째 자리까지)
      * @return 저장 성공 여부
      */
-    fun setBuySpreadPercent(currency: CurrencyType, percent: Double): Boolean {
-        if (percent < 0) return false
+    fun setBuySpreadWon(currency: CurrencyType, won: Double): Boolean {
+        if (won < 0) return false
 
         prefs.edit()
-            .putFloat(KEY_SPREAD_BUY_PREFIX + currency.name, percent.toFloat())
+            .putString(KEY_SPREAD_BUY_PREFIX + currency.name, won.roundTo2().toString())
             .apply()
         return true
     }
 
     /**
-     * 매도(팔 때) 스프레드 % 저장
+     * 매도(팔 때) 스프레드(원) 저장 (소수 둘째 자리까지)
      * @return 저장 성공 여부
      */
-    fun setSellSpreadPercent(currency: CurrencyType, percent: Double): Boolean {
-        if (percent < 0) return false
+    fun setSellSpreadWon(currency: CurrencyType, won: Double): Boolean {
+        if (won < 0) return false
 
         prefs.edit()
-            .putFloat(KEY_SPREAD_SELL_PREFIX + currency.name, percent.toFloat())
+            .putString(KEY_SPREAD_SELL_PREFIX + currency.name, won.roundTo2().toString())
             .apply()
         return true
     }
 
     /**
-     * 통화별 스프레드 설정 초기화 (기본값 50/50 복원)
+     * 통화별 스프레드 설정 초기화 (0원 = 미반영 복원)
      */
     fun resetSpread(currency: CurrencyType) {
         prefs.edit()
@@ -153,4 +151,6 @@ class SettingsRepository @Inject constructor(
         return prefs.contains(KEY_SPREAD_BUY_PREFIX + currency.name) ||
                 prefs.contains(KEY_SPREAD_SELL_PREFIX + currency.name)
     }
+
+    private fun Double.roundTo2(): Double = (this * 100).roundToLong() / 100.0
 }

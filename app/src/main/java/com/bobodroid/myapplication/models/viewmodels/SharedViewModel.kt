@@ -45,6 +45,19 @@ class SharedViewModel @Inject constructor(
     private val _snackbarEvent = Channel<String>(Channel.BUFFERED)
     val snackbarEvent = _snackbarEvent.receiveAsFlow()
 
+    // ✅ 추가: 마이페이지를 특정 하위 화면으로 바로 열기 위한 일회성 요청
+    //    (예: 메인 스프레드 배지 → 마이페이지 목록을 거치지 않고 스프레드 설정으로 직행)
+    private val _myPageStartRoute = MutableStateFlow<String?>(null)
+    val myPageStartRoute = _myPageStartRoute.asStateFlow()
+
+    fun requestMyPageRoute(routeName: String) {
+        _myPageStartRoute.value = routeName
+    }
+
+    fun consumeMyPageRoute() {
+        _myPageStartRoute.value = null
+    }
+
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━
     // ✅ 이제 init 블록 (필드 초기화 후)
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━

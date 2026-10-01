@@ -37,6 +37,7 @@ import com.bobodroid.myapplication.models.datamodels.service.notificationApi.Not
 import com.bobodroid.myapplication.models.datamodels.service.notificationApi.NotificationStats
 import com.bobodroid.myapplication.models.viewmodels.FcmAlarmViewModel
 import com.bobodroid.myapplication.models.viewmodels.SharedViewModel
+import com.bobodroid.myapplication.models.viewmodels.SpreadRateInfo
 import java.text.NumberFormat
 import java.text.SimpleDateFormat
 import java.util.Locale
@@ -69,6 +70,12 @@ fun FcmAlarmScreen(
     val stats by viewModel.notificationStats.collectAsState()
     val alarmUiState by viewModel.alarmUiState.collectAsState()
     val selectedCurrency by viewModel.selectedCurrency.collectAsState()
+    val spreadInfo by viewModel.spreadRateInfo.collectAsState()
+
+    // 마이페이지에서 스프레드 변경 후 돌아왔을 때 최신 값 반영
+    LaunchedEffect(Unit) {
+        viewModel.refreshSpread()
+    }
 
     var selectedTab by remember { mutableStateOf(AlarmTab.RATE_ALERT) }
     var showPremiumDialog by remember { mutableStateOf(false) }
@@ -153,8 +160,10 @@ fun FcmAlarmScreen(
                 targetRateData = targetRateData,
                 selectedCurrency = selectedCurrency,
                 currentRate = alarmUiState.recentRate.getRateByCode(selectedCurrency.code) ?: "0.00",
+                spreadInfo = spreadInfo,
                 onDeleteRate = viewModel::deleteTargetRate,
-                onAddRate = viewModel::addTargetRate
+                onAddRate = viewModel::addTargetRate,
+                onSpreadSettingsClick = onNavigateToSettings
             )
 
             AlarmTab.PROFIT_ALERT -> {
@@ -317,8 +326,10 @@ fun TargetRateTab(
     targetRateData: TargetRates,
     selectedCurrency: CurrencyType,
     currentRate: String,
+    spreadInfo: SpreadRateInfo,
     onDeleteRate: (Rate, RateType) -> Unit,
-    onAddRate: (Rate, RateType) -> Unit
+    onAddRate: (Rate, RateType) -> Unit,
+    onSpreadSettingsClick: () -> Unit
 ) {
     var selectedDirection by remember { mutableStateOf(RateDirection.HIGH) }
     var showAddDialog by remember { mutableStateOf(false) }
@@ -421,6 +432,15 @@ fun TargetRateTab(
                     )
                 }
             }
+        }
+
+        // ✅ 스프레드 반영 기준 환율
+        item {
+            SpreadBasisCard(
+                direction = selectedDirection,
+                spreadInfo = spreadInfo,
+                onSpreadSettingsClick = onSpreadSettingsClick
+            )
         }
 
         // ✅ 목표환율 리스트
@@ -1814,6 +1834,105 @@ fun PremiumLockScreen() {
                 fontSize = 14.sp,
                 color = Color(0xFF6B7280)
             )
+        }
+    }
+}
+
+// ==================== 스프레드 반영 기준 환율 카드 ====================
+
+private fun formatWon(value: Double): String =
+    if (value % 1.0 == 0.0) String.format(Locale.KOREA, "%,.0f", value)
+    else String.format(Locale.KOREA, "%,.2f", value)
+
+@Composable
+fun SpreadBasisCard(
+    direction: RateDirection,
+    spreadInfo: SpreadRateInfo,
+    onSpreadSettingsClick: () -> Unit
+) {
+    val isHigh = direction == RateDirection.HIGH
+    val accent = if (isHigh) Color(0xFFEF4444) else Color(0xFF3B82F6)
+    val basisRate = if (isHigh) spreadInfo.sellBasisRate else spreadInfo.buyBasisRate
+    val spreadWon = if (isHigh) spreadInfo.sellSpreadWon else spreadInfo.buySpreadWon
+
+    Card(
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        shape = RoundedCornerShape(16.dp),
+        elevation = CardDefaults.cardElevation(2.dp),
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column {
+                    Text(
+                        text = if (isHigh) "팔 때 기준 환율" else "살 때 기준 환율",
+                        fontSize = 13.sp,
+                        color = Color(0xFF6B7280)
+                    )
+                    Text(
+                        text = basisRate?.let { "${formatWon(it)}원" } ?: "-",
+                        fontSize = 22.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = accent
+                    )
+                }
+
+                if (spreadInfo.hasSpread) {
+                    Surface(
+                        shape = RoundedCornerShape(8.dp),
+                        color = accent.copy(alpha = 0.1f)
+                    ) {
+                        Text(
+                            text = "스프레드 적용",
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = accent,
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                        )
+                    }
+                }
+            }
+
+            if (spreadInfo.hasSpread) {
+                Text(
+                    text = if (isHigh)
+                        "현재 환율 − 매도 스프레드 ${formatWon(spreadWon)}원"
+                    else
+                        "현재 환율 + 매수 스프레드 ${formatWon(spreadWon)}원",
+                    fontSize = 12.sp,
+                    color = Color(0xFF6B7280)
+                )
+                Text(
+                    text = "이 기준 환율이 목표환율에 닿으면 알림이 울립니다.",
+                    fontSize = 12.sp,
+                    color = Color(0xFF9CA3AF)
+                )
+            } else {
+                Text(
+                    text = "스프레드가 설정되지 않아 현재 환율 기준으로 알림이 울립니다.",
+                    fontSize = 12.sp,
+                    color = Color(0xFF6B7280)
+                )
+                TextButton(
+                    onClick = onSpreadSettingsClick,
+                    contentPadding = PaddingValues(0.dp)
+                ) {
+                    Text(
+                        text = "스프레드 설정하기",
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            }
         }
     }
 }

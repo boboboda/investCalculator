@@ -30,6 +30,9 @@ sealed class MainRoute(
     object CreateUser: MainRoute("CreateUser", "유저생성")
     object CustomerServiceCenter: MainRoute("CustomerServiceCenter", "고객센터")
     object CloudService: MainRoute("CloudService", "클라우드")
+
+    // ✅ 신규: 환테크 백테스트 시뮬레이터 진입점
+    data object Backtest: MainRoute("Backtest", "백테스트")
 }
 
 sealed class MyPageRoute(
@@ -45,10 +48,21 @@ sealed class MyPageRoute(
     data object CloudService: MyPageRoute("CloudService", "클라우드")
     data object WidgetSettings: MyPageRoute("WidgetSettings", "위젯 설정") // ✅ 추가
     data object Premium: MyPageRoute("Premium", "프리미엄") // ✅ 추가
-    // routes/InvestRouteAction.kt — MyPageRoute sealed class 안에 추가
     data object SpreadSettings: MyPageRoute("SpreadSettings", "환율 스프레드 설정") // ✅ 추가
 }
 
+// ✅ 신규: 백테스트 화면 내부(Input/Result/History) 라우트 — BacktestScreen 자체 NavHost에서 사용
+sealed class BacktestRoute(
+    override val routeName: String? = null,
+    override val title: String? = null,
+    override val selectValue: Int? = null,
+    override val iconResId: Int? = null,
+    override val subRoutes: List<String> = emptyList()
+): Route {
+    data object Input: BacktestRoute("BacktestInput", "백테스트 입력")
+    data object Result: BacktestRoute("BacktestResult", "백테스트 결과")
+    data object History: BacktestRoute("BacktestHistory", "백테스트 기록")
+}
 
 
 // 메인 관련 화면 라우트 액션
@@ -98,8 +112,3 @@ class RouteAction<T : Route>(
         navHostController.navigate("${route.routeName}/$nestedRoute")
     }
 }
-
-
-
-
-

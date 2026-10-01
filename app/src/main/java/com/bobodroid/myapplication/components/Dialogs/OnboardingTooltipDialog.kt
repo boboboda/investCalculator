@@ -4,6 +4,8 @@ import androidx.compose.animation.core.*
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
@@ -37,17 +39,21 @@ fun OnboardingTooltipDialog(
         onDismissRequest = onDismiss,
         properties = DialogProperties(usePlatformDefaultWidth = false)
     ) {
-        Box(
+        // ✅ 화면 크기에 맞춰 카드 최대 높이를 제한 (작은 화면에서 잘리지 않도록)
+        BoxWithConstraints(
             modifier = Modifier
                 .fillMaxSize()
                 .background(Color.Black.copy(alpha = 0.7f))
-                .padding(24.dp),
+                .systemBarsPadding()
+                .padding(horizontal = 20.dp, vertical = 24.dp),
             contentAlignment = Alignment.Center
         ) {
+            val cardMaxHeight = minOf(maxHeight, 720.dp)
+
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .wrapContentHeight(),
+                    .heightIn(max = cardMaxHeight),
                 shape = RoundedCornerShape(24.dp),
                 colors = CardDefaults.cardColors(containerColor = Color.White),
                 elevation = CardDefaults.cardElevation(8.dp)
@@ -55,26 +61,26 @@ fun OnboardingTooltipDialog(
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(32.dp),
+                        .padding(horizontal = 20.dp, vertical = 20.dp),
                     horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(24.dp)
+                    verticalArrangement = Arrangement.spacedBy(14.dp)
                 ) {
-                    // 헤더
+                    // 헤더 (고정)
                     Icon(
                         imageVector = Icons.Rounded.Info,
                         contentDescription = null,
                         tint = Color(0xFF6366F1),
-                        modifier = Modifier.size(48.dp)
+                        modifier = Modifier.size(40.dp)
                     )
 
                     Text(
                         text = "앱 사용 가이드",
-                        fontSize = 24.sp,
+                        fontSize = 22.sp,
                         fontWeight = FontWeight.Bold,
                         color = Color(0xFF1F2937)
                     )
 
-                    // 페이지 인디케이터
+                    // 페이지 인디케이터 (고정)
                     Row(
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
                         verticalAlignment = Alignment.CenterVertically
@@ -82,7 +88,7 @@ fun OnboardingTooltipDialog(
                         repeat(3) { index ->
                             Box(
                                 modifier = Modifier
-                                    .size(if (pagerState.currentPage == index) 24.dp else 8.dp)
+                                    .size(if (pagerState.currentPage == index) 24.dp else 8.dp, 8.dp)
                                     .clip(CircleShape)
                                     .background(
                                         if (pagerState.currentPage == index)
@@ -94,12 +100,12 @@ fun OnboardingTooltipDialog(
                         }
                     }
 
-                    // 페이저
+                    // 페이저: 남는 높이를 차지하고, 각 페이지 내용은 넘치면 스크롤
                     HorizontalPager(
                         state = pagerState,
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(400.dp)
+                            .weight(1f)
                     ) { page ->
                         when (page) {
                             0 -> RecordAddPage()
@@ -169,7 +175,10 @@ fun OnboardingTooltipDialog(
                     }
 
                     // 건너뛰기 버튼
-                    TextButton(onClick = onDismiss) {
+                    TextButton(
+                        onClick = onDismiss,
+                        modifier = Modifier.height(36.dp)
+                    ) {
                         Text(
                             text = "건너뛰기",
                             fontSize = 13.sp,
@@ -189,10 +198,11 @@ fun OnboardingTooltipDialog(
 private fun RecordAddPage() {
     Column(
         modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp),
+            .fillMaxWidth()
+            .verticalScroll(rememberScrollState())
+            .padding(horizontal = 4.dp, vertical = 8.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(20.dp)
+        verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         // 타이틀
         Text(
@@ -271,10 +281,11 @@ private fun SwipeFeaturesPage() {
 
     Column(
         modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp),
+            .fillMaxWidth()
+            .verticalScroll(rememberScrollState())
+            .padding(horizontal = 4.dp, vertical = 8.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(20.dp)
+        verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         // 타이틀
         Text(
@@ -418,10 +429,11 @@ private fun SwipeFeaturesPage() {
 private fun WidgetSettingsPage() {
     Column(
         modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp),
+            .fillMaxWidth()
+            .verticalScroll(rememberScrollState())
+            .padding(horizontal = 4.dp, vertical = 8.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(20.dp)
+        verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         // 타이틀
         Text(

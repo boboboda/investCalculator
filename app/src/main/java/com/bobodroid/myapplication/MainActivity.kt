@@ -35,6 +35,7 @@ import com.bobodroid.myapplication.models.viewmodels.MainViewModel
 import com.bobodroid.myapplication.models.viewmodels.SharedViewModel
 import com.bobodroid.myapplication.routes.*
 import com.bobodroid.myapplication.screens.*
+import com.bobodroid.myapplication.screens.backtest.BacktestScreen
 import com.bobodroid.myapplication.test.Phase2TestRunner
 import com.bobodroid.myapplication.ui.theme.InverstCalculatorTheme
 import com.bobodroid.myapplication.util.AdMob.AdManager
@@ -427,18 +428,18 @@ fun InvestNavHost(
                 mainViewModel = mainViewModel,
                 activity = activity,
                 onNavigateToPremium = {
-                    // ✅ 하단 탭과 동일하게 launchSingleTop + restoreState 적용된 이동 함수 사용
-                    //    (기존: investNavController.navigate(...) 를 직접 호출 → 마이페이지가 백스택에 계속 쌓이고
-                    //     하단 "기록" 탭이 정상 동작 안 하던 원인)
                     mainRouteAction.navTo(MainRoute.MyPage)
                 },
                 onNavigateToNews = {
                     investNavController.navigate(MainRoute.News.routeName!!)
                 },
-                // ✅ 추가: 스프레드 배지 클릭 → 마이페이지(스프레드 설정)로 이동
-                //    onNavigateToPremium과 같은 목적지지만, 프리미엄 안내와 별개의 진입점이라 파라미터 분리
                 onNavigateToMyPage = {
+                    // ✅ 수정: 스프레드 설정으로 직행하도록 요청 후 마이페이지 탭으로 이동
+                    sharedViewModel.requestMyPageRoute(MyPageRoute.SpreadSettings.routeName!!)
                     mainRouteAction.navTo(MainRoute.MyPage)
+                },
+                onNavigateToBacktest = {
+                    investNavController.navigate(MainRoute.Backtest.routeName!!)
                 },
                 sharedViewModel = sharedViewModel
             )
@@ -454,7 +455,12 @@ fun InvestNavHost(
         }
 
         composable(MainRoute.MyPage.routeName!!) {
-            MyPageScreen(sharedViewModel = sharedViewModel)
+            MyPageScreen(
+                sharedViewModel = sharedViewModel,
+                onNavigateToBacktest = {
+                    investNavController.navigate(MainRoute.Backtest.routeName!!)
+                }
+            )
         }
 
         composable(MainRoute.AnalysisScreen.routeName!!) {
@@ -482,6 +488,15 @@ fun InvestNavHost(
         composable(MainRoute.News.routeName!!) {
             NewsScreen(
                 onBackClick = { investNavController.popBackStack() }
+            )
+        }
+
+        // ✅ 신규: 환테크 백테스트 시뮬레이터 (자체 내부 NavHost — MyPageScreen과 동일 패턴)
+        composable(MainRoute.Backtest.routeName!!) {
+            BacktestScreen(
+                onBackClick = {
+                    investNavController.navigateUp()
+                }
             )
         }
     }

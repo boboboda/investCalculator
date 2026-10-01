@@ -4,34 +4,26 @@ import androidx.room.AutoMigration
 import androidx.room.Database
 import androidx.room.RoomDatabase
 
-/**
- * 투자 기록 데이터베이스
- * - LocalUserData: 사용자 정보 (UUID)
- * - ExchangeRate: 환율 정보 (UUID)
- * - CurrencyRecord: 통합 외화 기록 (UUID)
- *
- * Version 32: lastSyncAt 필드 추가
- * Version 33: interstitialAdCount 필드 추가 (전면 광고 카운트)
- * Version 34: 프리미엄 & 광고 확장 필드 추가
- *            - premiumType, premiumExpiryDate, premiumGrantedBy, premiumGrantedAt
- *            - dailyRewardUsed, lastRewardDate, totalRewardCount
- */
+
 @Database(
     entities = [
         LocalUserData::class,
         ExchangeRate::class,
-        CurrencyRecord::class
+        CurrencyRecord::class,
+        BacktestHistoryEntity::class
     ],
-    version = 34,
+    version = 35,
     exportSchema = true,
     autoMigrations = [
         AutoMigration(from = 31, to = 32),
         AutoMigration(from = 32, to = 33),
-        AutoMigration(from = 33, to = 34)
+        AutoMigration(from = 33, to = 34),
+        AutoMigration(from = 34, to = 35)
     ]
 )
 abstract class InvestDatabase : RoomDatabase() {
     abstract fun localUserDao(): LocalUserDatabaseDao
     abstract fun exchangeRateDao(): ExchangeRateDataBaseDao
     abstract fun currencyRecordDao(): CurrencyRecordDao
+    abstract fun backtestHistoryDao(): BacktestHistoryDao
 }

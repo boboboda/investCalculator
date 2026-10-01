@@ -94,25 +94,26 @@ class MainViewModel @Inject constructor(
         }
     }
 
-    // ✅ 추가: 스프레드 배지 텍스트 갱신
+    // ✅ 스프레드 배지 텍스트 갱신
     //   - 마이페이지 스프레드 설정 화면에서 돌아왔을 때도 호출 (SharedPreferences는 Flow가 아니라서 수동 갱신 필요)
     fun refreshSpreadBadge() {
         val currency = _mainUiState.value.selectedCurrencyType
         val hasCustom = settingsRepository.hasCustomSpread(currency)
-        val buyPercent = settingsRepository.getBuySpreadPercent(currency)
-        val sellPercent = settingsRepository.getSellSpreadPercent(currency)
+        val buyWon = settingsRepository.getBuySpreadWon(currency)
+        val sellWon = settingsRepository.getSellSpreadWon(currency)
 
-        // ✅ 추가: 펼쳤을 때 보여줄 실제 매수/매도 환율 계산 (현재가 기준)
+        // 펼쳤을 때 보여줄 실제 매수/매도 환율 계산 (현재가 기준, 원 단위 가감)
         val currentRate = _mainUiState.value.recentRate.getRateByCode(currency.name)
         val currentRateBD = currentRate?.replace(",", "")?.toBigDecimalOrNull()
 
         val buyRateText: String
         val sellRateText: String
         if (currentRateBD != null && currentRateBD > BigDecimal.ZERO) {
-            val buyFactor = BigDecimal.ONE.add(BigDecimal(buyPercent).divide(BigDecimal(100)))
-            val sellFactor = BigDecimal.ONE.subtract(BigDecimal(sellPercent).divide(BigDecimal(100)))
-            buyRateText = formatRate(currentRateBD.multiply(buyFactor).setScale(2, RoundingMode.HALF_UP))
-            sellRateText = formatRate(currentRateBD.multiply(sellFactor).setScale(2, RoundingMode.HALF_UP))
+            val buyRate = currentRateBD.add(BigDecimal.valueOf(buyWon))
+            val sellRate = currentRateBD.subtract(BigDecimal.valueOf(sellWon))
+                .max(BigDecimal.ZERO)
+            buyRateText = formatRate(buyRate.setScale(2, RoundingMode.HALF_UP))
+            sellRateText = formatRate(sellRate.setScale(2, RoundingMode.HALF_UP))
         } else {
             buyRateText = "-"
             sellRateText = "-"
@@ -121,13 +122,13 @@ class MainViewModel @Inject constructor(
         _mainUiState.update {
             it.copy(
                 spreadBadgeApplied = hasCustom,
-                // ✅ 수정: 매수/매도 %가 같아도 항상 "합산"해서 하나의 숫자로 표시 (이전엔 ± 특수표기로 빠져서 합산이 안 됨)
+                // 매수/매도 원 단위를 합산해서 하나의 숫자로 표시
                 spreadBadgeText = when {
                     !hasCustom -> "스프레드 미반영"
-                    else -> "스프레드 %.2f%% 적용".format(buyPercent + sellPercent)
+                    else -> "스프레드 %.2f원 적용".format(buyWon + sellWon)
                 },
-                spreadBuyPercent = buyPercent,
-                spreadSellPercent = sellPercent,
+                spreadBuyWon = buyWon,
+                spreadSellWon = sellWon,
                 spreadBuyRate = buyRateText,
                 spreadSellRate = sellRateText
             )
@@ -316,12 +317,12 @@ class MainViewModel @Inject constructor(
                 if (records.isNotEmpty() && currentRate != "0") {
                     // ✅ 수정: 실제로 팔 때 받는 돈은 매도 스프레드가 반영된 환율 기준이어야 하므로
                     //   보유 수익 계산에 통화별 매도 스프레드 %를 함께 전달
-                    val sellSpreadPercent = settingsRepository.getSellSpreadPercent(currencyType)
+                    val sellSpreadWon = settingsRepository.getSellSpreadWon(currencyType)
                     val stats = calculateCurrencyHolding(
                         records = records,
                         currentRate = currentRate,
                         currencyType = currencyType,
-                        sellSpreadPercent = sellSpreadPercent
+                        sellSpreadWon = sellSpreadWon
                     )
                     statsMap[currencyType.name] = stats
                 }
@@ -337,7 +338,7 @@ class MainViewModel @Inject constructor(
         records: List<CurrencyRecord>,
         currentRate: String,
         currencyType: CurrencyType,
-        sellSpreadPercent: Double = 0.0 // ✅ 추가: 매도 스프레드 반영용
+        sellSpreadWon: Double = 0.0 // 매도 스프레드(원) 반영용
     ): CurrencyHoldingInfo {
         if (records.isEmpty() || currentRate == "0" || currentRate.isEmpty()) {
             return CurrencyHoldingInfo(hasData = false)
@@ -377,8 +378,10 @@ class MainViewModel @Inject constructor(
 
             // ✅ 수정: 지금 판다고 가정했을 때 실제로 받는 돈은 매도 스프레드가 반영된 환율이므로
             //   수익 계산은 mid rate가 아니라 "매도환율" 기준으로 계산
-            val sellFactor = BigDecimal.ONE.subtract(BigDecimal(sellSpreadPercent).divide(BigDecimal(100)))
-            val sellRateBD = currentRateBD.multiply(sellFactor).setScale(4, RoundingMode.HALF_UP)
+            val sellRateBD = currentRateBD
+                .subtract(BigDecimal.valueOf(sellSpreadWon))
+                .max(BigDecimal.ZERO)
+                .setScale(4, RoundingMode.HALF_UP)
 
             // ✅ Currency의 needsMultiply 속성 활용
             val expectedProfit = if (currency.needsMultiply) {
@@ -805,8 +808,8 @@ data class MainUiState (
     val holdingStats: HoldingStats = HoldingStats(),
     val spreadBadgeText: String = "스프레드 미반영", // ✅ 추가
     val spreadBadgeApplied: Boolean = false,         // ✅ 추가
-    val spreadBuyPercent: Double = 0.0,               // ✅ 추가: 펼침 뷰용 매수 스프레드 %
-    val spreadSellPercent: Double = 0.0,              // ✅ 추가: 펼침 뷰용 매도 스프레드 %
+    val spreadBuyWon: Double = 0.0,                   // 펼침 뷰용 매수 스프레드(원)
+    val spreadSellWon: Double = 0.0,                  // 펼침 뷰용 매도 스프레드(원)
     val spreadBuyRate: String = "-",                  // ✅ 추가: 스프레드 반영 매수 환율
     val spreadSellRate: String = "-"                  // ✅ 추가: 스프레드 반영 매도 환율
 )

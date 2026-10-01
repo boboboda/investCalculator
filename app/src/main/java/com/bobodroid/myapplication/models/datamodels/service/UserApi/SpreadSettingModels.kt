@@ -5,8 +5,8 @@ import com.squareup.moshi.JsonClass
 @JsonClass(generateAdapter = true)
 data class SpreadSettingRequest(
     val currency: String,
-    val buySpreadPercent: Double,
-    val sellSpreadPercent: Double
+    val buySpreadWon: Double,
+    val sellSpreadWon: Double
 )
 
 @JsonClass(generateAdapter = true)
@@ -26,8 +26,8 @@ data class SpreadSettingResponseData(
 
 @JsonClass(generateAdapter = true)
 data class SpreadSettingJson(
-    val buySpreadPercent: Double? = null,
-    val sellSpreadPercent: Double? = null
+    val buySpreadWon: Double? = null,
+    val sellSpreadWon: Double? = null
 )
 
 @JsonClass(generateAdapter = true)

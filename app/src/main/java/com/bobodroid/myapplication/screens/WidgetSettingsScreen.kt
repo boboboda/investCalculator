@@ -61,8 +61,11 @@ fun WidgetSettingsScreen(
     }
 
     Scaffold(
+        // ✅ 상태바 여백은 AppScreen에서 이미 적용 → 화면 쪽 중복 인셋 제거
+        contentWindowInsets = WindowInsets(0, 0, 0, 0),
         topBar = {
             TopAppBar(
+                windowInsets = WindowInsets(0, 0, 0, 0),
                 title = { Text("위젯 설정") },
                 navigationIcon = {
                     IconButton(onClick = onBackClick) {
@@ -623,4 +626,3 @@ fun WidgetPremiumPromotionCard(onUpgradeClick: () -> Unit) {
         }
     }
 }
-

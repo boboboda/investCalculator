@@ -509,18 +509,18 @@ class AnalysisViewModel @Inject constructor(
         )
     }
 
-    // ✅ 매수/매도 스프레드 적용 환율 (헤더 표시용)
+    // ✅ 매수/매도 스프레드 적용 환율 (헤더 표시용, 원 단위 가감)
     fun calculateSpreadRates(currencyType: CurrencyType): SpreadRates {
         if (!settingsRepository.hasCustomSpread(currencyType)) return SpreadRates()
 
-        val currentRate = _analysisUiState.value.latestRate.getRate(currencyType.code).toFloatOrNull()
+        val currentRate = _analysisUiState.value.latestRate.getRate(currencyType.code).toDoubleOrNull()
             ?: return SpreadRates()
 
-        val buySpreadPercent = settingsRepository.getBuySpreadPercent(currencyType)
-        val sellSpreadPercent = settingsRepository.getSellSpreadPercent(currencyType)
+        val buySpreadWon = settingsRepository.getBuySpreadWon(currencyType)
+        val sellSpreadWon = settingsRepository.getSellSpreadWon(currencyType)
 
-        val buyRate = currentRate * (1f + (buySpreadPercent / 100.0).toFloat())
-        val sellRate = currentRate * (1f - (sellSpreadPercent / 100.0).toFloat())
+        val buyRate = currentRate + buySpreadWon
+        val sellRate = (currentRate - sellSpreadWon).coerceAtLeast(0.0)
 
         return SpreadRates(
             buyRate = String.format("%.2f", buyRate),

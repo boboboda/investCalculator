@@ -1,0 +1,411 @@
+{
+  "formatVersion": 1,
+  "database": {
+    "version": 35,
+    "identityHash": "1b1e9fb8acdcc7df0a7eabbd7729712f",
+    "entities": [
+      {
+        "tableName": "LocalUserData_table",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` BLOB NOT NULL, `social_id` TEXT DEFAULT '', `social_type` TEXT NOT NULL DEFAULT 'NONE', `email` TEXT DEFAULT '', `nickname` TEXT DEFAULT '', `profile_url` TEXT DEFAULT '', `is_synced` INTEGER NOT NULL DEFAULT 0, `fcm_Token` TEXT DEFAULT '', `is_premium` INTEGER NOT NULL DEFAULT 0, `premium_type` TEXT NOT NULL DEFAULT 'NONE', `premium_expiry_date` TEXT DEFAULT '', `premium_granted_by` TEXT DEFAULT '', `premium_granted_at` TEXT DEFAULT '', `rate_Reset_Count` INTEGER, `rate_Ad_Count` INTEGER, `user_Reset_Date` TEXT DEFAULT '', `reward_ad_Showing_date` TEXT DEFAULT '', `daily_reward_used` INTEGER NOT NULL DEFAULT 0, `last_reward_date` TEXT DEFAULT '', `total_reward_count` INTEGER NOT NULL DEFAULT 0, `interstitial_ad_count` INTEGER NOT NULL DEFAULT 0, `reFresh_CreateAt` TEXT DEFAULT '', `user_Show_Notice_Date` TEXT DEFAULT '', `dr_Buy_Spread` INTEGER, `dr_Sell_Spread` INTEGER, `yen_Buy_Spread` INTEGER, `yen_Sell_Spread` INTEGER, `monthly_profit_goal` INTEGER NOT NULL DEFAULT 0, `goal_set_month` TEXT DEFAULT '', `last_sync_at` TEXT DEFAULT '', PRIMARY KEY(`id`))",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "BLOB",
+            "notNull": true
+          },
+          {
+            "fieldPath": "socialId",
+            "columnName": "social_id",
+            "affinity": "TEXT",
+            "defaultValue": "''"
+          },
+          {
+            "fieldPath": "socialType",
+            "columnName": "social_type",
+            "affinity": "TEXT",
+            "notNull": true,
+            "defaultValue": "'NONE'"
+          },
+          {
+            "fieldPath": "email",
+            "columnName": "email",
+            "affinity": "TEXT",
+            "defaultValue": "''"
+          },
+          {
+            "fieldPath": "nickname",
+            "columnName": "nickname",
+            "affinity": "TEXT",
+            "defaultValue": "''"
+          },
+          {
+            "fieldPath": "profileUrl",
+            "columnName": "profile_url",
+            "affinity": "TEXT",
+            "defaultValue": "''"
+          },
+          {
+            "fieldPath": "isSynced",
+            "columnName": "is_synced",
+            "affinity": "INTEGER",
+            "notNull": true,
+            "defaultValue": "0"
+          },
+          {
+            "fieldPath": "fcmToken",
+            "columnName": "fcm_Token",
+            "affinity": "TEXT",
+            "defaultValue": "''"
+          },
+          {
+            "fieldPath": "isPremium",
+            "columnName": "is_premium",
+            "affinity": "INTEGER",
+            "notNull": true,
+            "defaultValue": "0"
+          },
+          {
+            "fieldPath": "premiumType",
+            "columnName": "premium_type",
+            "affinity": "TEXT",
+            "notNull": true,
+            "defaultValue": "'NONE'"
+          },
+          {
+            "fieldPath": "premiumExpiryDate",
+            "columnName": "premium_expiry_date",
+            "affinity": "TEXT",
+            "defaultValue": "''"
+          },
+          {
+            "fieldPath": "premiumGrantedBy",
+            "columnName": "premium_granted_by",
+            "affinity": "TEXT",
+            "defaultValue": "''"
+          },
+          {
+            "fieldPath": "premiumGrantedAt",
+            "columnName": "premium_granted_at",
+            "affinity": "TEXT",
+            "defaultValue": "''"
+          },
+          {
+            "fieldPath": "rateResetCount",
+            "columnName": "rate_Reset_Count",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "rateAdCount",
+            "columnName": "rate_Ad_Count",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "userResetDate",
+            "columnName": "user_Reset_Date",
+            "affinity": "TEXT",
+            "defaultValue": "''"
+          },
+          {
+            "fieldPath": "rewardAdShowingDate",
+            "columnName": "reward_ad_Showing_date",
+            "affinity": "TEXT",
+            "defaultValue": "''"
+          },
+          {
+            "fieldPath": "dailyRewardUsed",
+            "columnName": "daily_reward_used",
+            "affinity": "INTEGER",
+            "notNull": true,
+            "defaultValue": "0"
+          },
+          {
+            "fieldPath": "lastRewardDate",
+            "columnName": "last_reward_date",
+            "affinity": "TEXT",
+            "defaultValue": "''"
+          },
+          {
+            "fieldPath": "totalRewardCount",
+            "columnName": "total_reward_count",
+            "affinity": "INTEGER",
+            "notNull": true,
+            "defaultValue": "0"
+          },
+          {
+            "fieldPath": "interstitialAdCount",
+            "columnName": "interstitial_ad_count",
+            "affinity": "INTEGER",
+            "notNull": true,
+            "defaultValue": "0"
+          },
+          {
+            "fieldPath": "reFreshCreateAt",
+            "columnName": "reFresh_CreateAt",
+            "affinity": "TEXT",
+            "defaultValue": "''"
+          },
+          {
+            "fieldPath": "userShowNoticeDate",
+            "columnName": "user_Show_Notice_Date",
+            "affinity": "TEXT",
+            "defaultValue": "''"
+          },
+          {
+            "fieldPath": "drBuySpread",
+            "columnName": "dr_Buy_Spread",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "drSellSpread",
+            "columnName": "dr_Sell_Spread",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "yenBuySpread",
+            "columnName": "yen_Buy_Spread",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "yenSellSpread",
+            "columnName": "yen_Sell_Spread",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "monthlyProfitGoal",
+            "columnName": "monthly_profit_goal",
+            "affinity": "INTEGER",
+            "notNull": true,
+            "defaultValue": "0"
+          },
+          {
+            "fieldPath": "goalSetMonth",
+            "columnName": "goal_set_month",
+            "affinity": "TEXT",
+            "defaultValue": "''"
+          },
+          {
+            "fieldPath": "lastSyncAt",
+            "columnName": "last_sync_at",
+            "affinity": "TEXT",
+            "defaultValue": "''"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        }
+      },
+      {
+        "tableName": "exchangeRate_table",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `createAt` TEXT NOT NULL DEFAULT 'N/A', `rates` TEXT NOT NULL, PRIMARY KEY(`id`))",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "createAt",
+            "columnName": "createAt",
+            "affinity": "TEXT",
+            "notNull": true,
+            "defaultValue": "'N/A'"
+          },
+          {
+            "fieldPath": "rates",
+            "columnName": "rates",
+            "affinity": "TEXT",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        }
+      },
+      {
+        "tableName": "currency_records",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` BLOB NOT NULL, `currency_code` TEXT NOT NULL, `date` TEXT, `sell_date` TEXT, `money` TEXT, `rate` TEXT, `buy_rate` TEXT, `sell_rate` TEXT, `profit` TEXT, `sell_profit` TEXT, `expect_profit` TEXT, `exchange_money` TEXT, `record_color` INTEGER, `category_name` TEXT, `memo` TEXT, PRIMARY KEY(`id`))",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "BLOB",
+            "notNull": true
+          },
+          {
+            "fieldPath": "currencyCode",
+            "columnName": "currency_code",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "date",
+            "columnName": "date",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "sellDate",
+            "columnName": "sell_date",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "money",
+            "columnName": "money",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "rate",
+            "columnName": "rate",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "buyRate",
+            "columnName": "buy_rate",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "sellRate",
+            "columnName": "sell_rate",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "profit",
+            "columnName": "profit",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "sellProfit",
+            "columnName": "sell_profit",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "expectProfit",
+            "columnName": "expect_profit",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "exchangeMoney",
+            "columnName": "exchange_money",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "recordColor",
+            "columnName": "record_color",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "categoryName",
+            "columnName": "category_name",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "memo",
+            "columnName": "memo",
+            "affinity": "TEXT"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        }
+      },
+      {
+        "tableName": "backtest_history",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` BLOB NOT NULL, `created_at` INTEGER NOT NULL, `currency_type` TEXT NOT NULL, `period_months` INTEGER NOT NULL, `invest_strategy` TEXT NOT NULL, `requested_start_rate` REAL NOT NULL, `principal` REAL NOT NULL, `realized_profit_won` REAL NOT NULL, `profit_rate_percent` REAL NOT NULL, `buy_count` INTEGER NOT NULL, `sell_count` INTEGER NOT NULL, `response_json` TEXT NOT NULL, PRIMARY KEY(`id`))",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "BLOB",
+            "notNull": true
+          },
+          {
+            "fieldPath": "createdAt",
+            "columnName": "created_at",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "currencyType",
+            "columnName": "currency_type",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "periodMonths",
+            "columnName": "period_months",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "investStrategy",
+            "columnName": "invest_strategy",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "requestedStartRate",
+            "columnName": "requested_start_rate",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "principal",
+            "columnName": "principal",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "realizedProfitWon",
+            "columnName": "realized_profit_won",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "profitRatePercent",
+            "columnName": "profit_rate_percent",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "buyCount",
+            "columnName": "buy_count",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "sellCount",
+            "columnName": "sell_count",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "responseJson",
+            "columnName": "response_json",
+            "affinity": "TEXT",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        }
+      }
+    ],
+    "setupQueries": [
+      "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '1b1e9fb8acdcc7df0a7eabbd7729712f')"
+    ]
+  }
+}

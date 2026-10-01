@@ -60,7 +60,8 @@ fun MainScreen(
     activity: Activity,
     onNavigateToPremium: () -> Unit,
     onNavigateToNews: () -> Unit,
-    onNavigateToMyPage: () -> Unit
+    onNavigateToMyPage: () -> Unit,
+    onNavigateToBacktest: () -> Unit   // ✅ 신규 추가
 ) {
     val mainUiState by mainViewModel.mainUiState.collectAsState()
     val adUiState by sharedViewModel.adUiState.collectAsState()
@@ -161,7 +162,8 @@ fun MainScreen(
                 mainUiState = mainUiState,
                 adUiState = adUiState,
                 onExpandClick = { mainViewModel.handleMainEvent(MainEvent.ShowDashboardBottomSheet) },
-                onSpreadBadgeClick = onNavigateToMyPage
+                onSpreadBadgeClick = onNavigateToMyPage,
+                onNavigateToBacktest = onNavigateToBacktest   // ✅ 신규 추가
             )
 
 

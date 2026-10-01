@@ -17,8 +17,8 @@ import javax.inject.Inject
 
 data class SpreadSettingsUiState(
     val selectedCurrency: CurrencyType = CurrencyType.USD,
-    val buySpreadPercent: Double = 0.75,
-    val sellSpreadPercent: Double = 0.75,
+    val buySpreadWon: Double = 0.0,
+    val sellSpreadWon: Double = 0.0,
     val hasCustomSpread: Boolean = false,
     val isSaving: Boolean = false,
     val saveResultMessage: String? = null
@@ -43,19 +43,19 @@ class SpreadSettingsViewModel @Inject constructor(
     fun loadCurrency(currency: CurrencyType) {
         _uiState.value = _uiState.value.copy(
             selectedCurrency = currency,
-            buySpreadPercent = settingsRepository.getBuySpreadPercent(currency),
-            sellSpreadPercent = settingsRepository.getSellSpreadPercent(currency),
+            buySpreadWon = settingsRepository.getBuySpreadWon(currency),
+            sellSpreadWon = settingsRepository.getSellSpreadWon(currency),
             hasCustomSpread = settingsRepository.hasCustomSpread(currency),
             saveResultMessage = null
         )
     }
 
     fun updateBuySpread(value: Double) {
-        _uiState.value = _uiState.value.copy(buySpreadPercent = value)
+        _uiState.value = _uiState.value.copy(buySpreadWon = value)
     }
 
     fun updateSellSpread(value: Double) {
-        _uiState.value = _uiState.value.copy(sellSpreadPercent = value)
+        _uiState.value = _uiState.value.copy(sellSpreadWon = value)
     }
 
     /**
@@ -65,9 +65,9 @@ class SpreadSettingsViewModel @Inject constructor(
         val state = _uiState.value
         val currency = state.selectedCurrency
 
-        // ✅ 로컬 저장 (Step 3에서 만든 함수)
-        val savedBuy = settingsRepository.setBuySpreadPercent(currency, state.buySpreadPercent)
-        val savedSell = settingsRepository.setSellSpreadPercent(currency, state.sellSpreadPercent)
+        // ✅ 로컬 저장
+        val savedBuy = settingsRepository.setBuySpreadWon(currency, state.buySpreadWon)
+        val savedSell = settingsRepository.setSellSpreadWon(currency, state.sellSpreadWon)
 
         if (!savedBuy || !savedSell) {
             _uiState.value = state.copy(saveResultMessage = "저장에 실패했습니다.")
@@ -93,8 +93,8 @@ class SpreadSettingsViewModel @Inject constructor(
                     deviceId = deviceId,
                     request = SpreadSettingRequest(
                         currency = currency.code,
-                        buySpreadPercent = state.buySpreadPercent,
-                        sellSpreadPercent = state.sellSpreadPercent
+                        buySpreadWon = settingsRepository.getBuySpreadWon(currency),
+                        sellSpreadWon = settingsRepository.getSellSpreadWon(currency)
                     )
                 )
                 _uiState.value = _uiState.value.copy(

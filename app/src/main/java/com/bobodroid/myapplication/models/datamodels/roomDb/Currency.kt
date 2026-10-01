@@ -75,29 +75,25 @@ data class Currency(
     /**
      * 스프레드 적용된 "살 때" 가격 계산
      * @param midRate 실시간 기준환율 (스프레드 적용 전)
-     * @param buySpreadPercent 매수 스프레드 % (ex. 0.75 → +0.75%)
+     * @param buySpreadWon 매수 스프레드(원) (ex. 0.5 → +0.5원)
      * @return 실제 살 때 가격
      */
-    fun applyBuySpread(midRate: String, buySpreadPercent: Double): BigDecimal {
-        val mid = BigDecimal(midRate)
-        val multiplier = BigDecimal.ONE.add(
-            BigDecimal(buySpreadPercent).divide(BigDecimal(100), 10, RoundingMode.HALF_UP)
-        )
-        return (mid * multiplier).setScale(scale, RoundingMode.HALF_UP)
+    fun applyBuySpread(midRate: String, buySpreadWon: Double): BigDecimal {
+        return BigDecimal(midRate)
+            .add(BigDecimal.valueOf(buySpreadWon))
+            .setScale(scale, RoundingMode.HALF_UP)
     }
 
     /**
      * 스프레드 적용된 "팔 때" 가격 계산
      * @param midRate 실시간 기준환율 (스프레드 적용 전)
-     * @param sellSpreadPercent 매도 스프레드 % (ex. 0.75 → -0.75%)
+     * @param sellSpreadWon 매도 스프레드(원) (ex. 0.5 → -0.5원)
      * @return 실제 팔 때 가격
      */
-    fun applySellSpread(midRate: String, sellSpreadPercent: Double): BigDecimal {
-        val mid = BigDecimal(midRate)
-        val multiplier = BigDecimal.ONE.subtract(
-            BigDecimal(sellSpreadPercent).divide(BigDecimal(100), 10, RoundingMode.HALF_UP)
-        )
-        return (mid * multiplier).setScale(scale, RoundingMode.HALF_UP)
+    fun applySellSpread(midRate: String, sellSpreadWon: Double): BigDecimal {
+        return BigDecimal(midRate)
+            .subtract(BigDecimal.valueOf(sellSpreadWon))
+            .setScale(scale, RoundingMode.HALF_UP)
     }
 }
 

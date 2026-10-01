@@ -1,6 +1,5 @@
 package com.bobodroid.myapplication.components.mainComponents
 
-import androidx.compose.animation.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -18,7 +17,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.bobodroid.myapplication.util.AdMob.BannerAd
 import com.bobodroid.myapplication.components.common.CurrencyDropdown
 import com.bobodroid.myapplication.models.datamodels.roomDb.CurrencyType
 import com.bobodroid.myapplication.models.viewmodels.AdUiState
@@ -35,6 +33,7 @@ fun MainHeader(
     adUiState: AdUiState,
     onExpandClick: () -> Unit,
     onSpreadBadgeClick: () -> Unit = {},
+    onNavigateToBacktest: () -> Unit = {},   // ✅ 신규 추가
 ) {
     val rate = mainUiState.recentRate.getRateByCode(mainUiState.selectedCurrencyType.name) ?: "0"
 
@@ -119,23 +118,12 @@ fun MainHeader(
             color = Color(0xFFE5E7EB)
         )
 
-        // 광고
-        AnimatedVisibility(
-            visible = adUiState.bannerAdState,
-            enter = fadeIn() + expandVertically(),
-            exit = fadeOut() + shrinkVertically()
-        ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(Color.White)
-                    .padding(vertical = 8.dp),
-                verticalArrangement = Arrangement.Center,
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                BannerAd()
-            }
-        }
+        // ✅ 환테크 시뮬레이터 배너 ↔ 광고를 같은 자리에서 교대로 노출
+        // (진입 시 시뮬레이터 배너 먼저 5초 → 광고로 전환 25초 → 이후 반복, 오른쪽 아래 버튼으로 수동 전환 가능)
+        RotatingBannerAdSlot(
+            onNavigateToBacktest = onNavigateToBacktest,
+            adVisible = adUiState.bannerAdState
+        )
     }
 }
 
@@ -318,7 +306,7 @@ fun MainDashboardBottomSheetContent(
                                 fontSize = 11.sp
                             )
                             Text(
-                                text = "%.2f%%".format(mainUiState.spreadBuyPercent),
+                                text = "+%.2f원".format(mainUiState.spreadBuyWon),
                                 color = Color.White.copy(alpha = 0.9f),
                                 fontSize = 11.sp,
                                 fontWeight = FontWeight.SemiBold
@@ -346,7 +334,7 @@ fun MainDashboardBottomSheetContent(
                                 fontSize = 11.sp
                             )
                             Text(
-                                text = "%.2f%%".format(mainUiState.spreadSellPercent),
+                                text = "-%.2f원".format(mainUiState.spreadSellWon),
                                 color = Color.White.copy(alpha = 0.9f),
                                 fontSize = 11.sp,
                                 fontWeight = FontWeight.SemiBold

@@ -34,6 +34,8 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.bobodroid.myapplication.WebActivity
 import com.bobodroid.myapplication.billing.BillingClientLifecycle
+import com.bobodroid.myapplication.components.BacktestBannerCard
+import com.bobodroid.myapplication.components.BacktestBannerCardCompact
 import com.bobodroid.myapplication.components.Dialogs.AccountFoundDialog
 import com.bobodroid.myapplication.components.Dialogs.DataRestoreDialog
 import com.bobodroid.myapplication.components.Dialogs.OnboardingTooltipDialog
@@ -53,7 +55,8 @@ import java.time.temporal.ChronoUnit
 @Composable
 fun MyPageScreen(
     sharedViewModel: SharedViewModel,
-    myPageViewModel: MyPageViewModel = hiltViewModel()
+    myPageViewModel: MyPageViewModel = hiltViewModel(),
+    onNavigateToBacktest: () -> Unit    // ✅ 신규 추가
 ) {
     val coroutineScope = rememberCoroutineScope()
     val context = LocalContext.current
@@ -102,7 +105,8 @@ fun MyPageScreen(
                     premiumExpiryDate = premiumExpiryDate,
                     showRewardDialog = {
                         sharedViewModel.showRewardAdDialog()
-                    }
+                    },
+                    onNavigateToBacktest = onNavigateToBacktest
                 )
             }
 
@@ -282,6 +286,16 @@ fun MyPageScreen(
             }
         }
 
+        // ✅ 추가: 메인(스프레드 배지 등)에서 요청한 하위 화면으로 바로 이동
+        val startRoute by sharedViewModel.myPageStartRoute.collectAsState()
+        LaunchedEffect(startRoute) {
+            val route = startRoute ?: return@LaunchedEffect
+            navController.navigate(route) {
+                launchSingleTop = true
+            }
+            sharedViewModel.consumeMyPageRoute()
+        }
+
         SnackbarHost(
             hostState = mainScreenSnackBarHostState,
             modifier = Modifier.padding(bottom = 20.dp)
@@ -321,6 +335,7 @@ fun ImprovedMyPageView(
     premiumType: PremiumType,
     premiumExpiryDate: String?,
     showRewardDialog: () -> Unit,
+    onNavigateToBacktest: () -> Unit,   // ✅ 신규 추가
 ) {
     val context = LocalContext.current
 
@@ -339,20 +354,11 @@ fun ImprovedMyPageView(
         }
 
         item {
-            PremiumPurchaseCard(
-                isPremium = isPremium,
-                premiumType = premiumType,
-                premiumExpiryDate = premiumExpiryDate,
-                onPurchaseClick = {
-                    // ✅ 리워드 광고는 deviceId 기준이라 로그인이 필요 없음 — 바로 이동
-                    myPageRouteAction.navTo(MyPageRoute.Premium)
-                },
-                onSettingsClick = {
-                    myPageRouteAction.navTo(MyPageRoute.Premium)
-                },
-                onWatchRewardAd = {
-                    showRewardDialog()
-                }
+            BacktestBannerCardCompact(
+                onClick = onNavigateToBacktest,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 20.dp, vertical = 7.dp)
             )
         }
 
@@ -374,6 +380,25 @@ fun ImprovedMyPageView(
         item {
             BadgeSection(badges = badges)
         }
+
+        // ✅ 프리미엄 구매/상태 카드 (배지 아래로 이동)
+        item {
+            PremiumPurchaseCard(
+                isPremium = isPremium,
+                premiumType = premiumType,
+                premiumExpiryDate = premiumExpiryDate,
+                onPurchaseClick = {
+                    myPageRouteAction.navTo(MyPageRoute.Premium)
+                },
+                onSettingsClick = {
+                    myPageRouteAction.navTo(MyPageRoute.Premium)
+                },
+                onWatchRewardAd = {
+                    showRewardDialog()
+                }
+            )
+        }
+
 
         item {
             Spacer(modifier = Modifier.height(32.dp))

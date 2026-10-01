@@ -49,5 +49,4 @@ object AppModule {
             userRepository
         )
     }
-
 }

@@ -89,6 +89,41 @@ class FcmAlarmViewModel @Inject constructor(
     private val _alarmUiState = MutableStateFlow(AlarmUiState())
     val alarmUiState = _alarmUiState.asStateFlow()
 
+    // ==================== 스프레드 반영 기준 환율 ====================
+    // ⚠️ 반드시 _alarmUiState 선언보다 아래에 둘 것 (초기화 순서)
+
+    private val spreadRefresh = MutableStateFlow(0)
+
+    val spreadRateInfo: StateFlow<SpreadRateInfo> = combine(
+        selectedCurrency,
+        _alarmUiState,
+        spreadRefresh
+    ) { currency, uiState, _ ->
+        val midRate = uiState.recentRate
+            .getRateByCode(currency.code)
+            ?.replace(",", "")
+            ?.toDoubleOrNull()
+
+        val buy = settingsRepository.getBuySpreadWon(currency)
+        val sell = settingsRepository.getSellSpreadWon(currency)
+
+        SpreadRateInfo(
+            buySpreadWon = buy,
+            sellSpreadWon = sell,
+            buyBasisRate = midRate?.plus(buy),
+            sellBasisRate = midRate?.minus(sell)
+        )
+    }.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = SpreadRateInfo()
+    )
+
+    // 마이페이지에서 스프레드를 바꾸고 돌아왔을 때 다시 읽기
+    fun refreshSpread() {
+        spreadRefresh.value += 1
+    }
+
     private val _isLoading = MutableStateFlow(false)
     val isLoading = _isLoading.asStateFlow()
 
@@ -699,3 +734,13 @@ class FcmAlarmViewModel @Inject constructor(
 data class AlarmUiState(
     val recentRate: ExchangeRate = ExchangeRate()
 )
+
+data class SpreadRateInfo(
+    val buySpreadWon: Double = 0.0,
+    val sellSpreadWon: Double = 0.0,
+    val buyBasisRate: Double? = null,   // 살 때 기준 = 현재 환율 + 매수 스프레드
+    val sellBasisRate: Double? = null   // 팔 때 기준 = 현재 환율 - 매도 스프레드
+) {
+    val hasSpread: Boolean
+        get() = buySpreadWon > 0.0 || sellSpreadWon > 0.0
+}

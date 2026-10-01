@@ -229,14 +229,17 @@ class RecordUseCase @Inject constructor(
                 val currency = record.getCurrency() ?: return@forEach
                 val rate = latestRates[record.currencyCode] ?: return@forEach
 
-                // ✅ 추가: 통화별 매도 스프레드 % 조회
+                // 통화별 매도 스프레드(원) 조회
                 val currencyType = CurrencyType.entries.find { it.name == record.currencyCode }
-                val sellSpreadPercent = currencyType?.let { settingsRepository.getSellSpreadPercent(it) } ?: 0.0
+                val sellSpreadWon = currencyType?.let { settingsRepository.getSellSpreadWon(it) } ?: 0.0
 
-                // ✅ 추가: 매도 스프레드를 차감한 환율로 보정 (calculateCurrencyHolding()과 동일 공식)
+                // 매도 스프레드(원)를 뺀 환율로 보정 (calculateCurrencyHolding()과 동일 공식)
                 val rateBD = rate.replace(",", "").toBigDecimalOrNull() ?: return@forEach
-                val sellFactor = BigDecimal.ONE.subtract(BigDecimal(sellSpreadPercent).divide(BigDecimal(100)))
-                val adjustedRate = rateBD.multiply(sellFactor).setScale(4, RoundingMode.HALF_UP).toString()
+                val adjustedRate = rateBD
+                    .subtract(BigDecimal.valueOf(sellSpreadWon))
+                    .max(BigDecimal.ZERO)
+                    .setScale(4, RoundingMode.HALF_UP)
+                    .toString()
 
                 val profit = record.money?.let { m ->
                     record.exchangeMoney?.let { e ->

@@ -40,8 +40,8 @@ android {
         applicationId = "com.bobodroid.myapplication"
         minSdk = 26
         targetSdk = 36
-        versionCode = 54
-        versionName = "28.1.1"
+        versionCode = 55
+        versionName = "28.1.2"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
         vectorDrawables {
@@ -62,6 +62,9 @@ android {
         buildConfigField("String", "REWARD_FRONT_AD_KEY", "\"${getPropertyValue(properties, "reward_font_ad_key", "default_value")}\"")
         buildConfigField("String", "REWARD_TARGET_FONT_AD_KEY", "\"${getPropertyValue(properties, "reward_target_font_ad_key", "default_value")}\"")
         buildConfigField("String", "KAKAO_APP_KEY", "\"${getPropertyValue(properties, "kakao_app_key", "")}\"")
+
+        // 테스트 도구용 키 — 기본은 빈 값(릴리즈 포함), 디버그 빌드에서만 local.properties 값으로 덮어씀
+        buildConfigField("String", "DEBUG_PREMIUM_KEY", "\"\"")
 
         manifestPlaceholders["KAKAO_APP_KEY"] = getPropertyValue(properties, "kakao_app_key", "")
     }
@@ -95,7 +98,8 @@ android {
         }
 
         debug {
-            // 디버그 설정
+            // 테스트 도구 서버 연동 키 (local.properties 의 debug_premium_key)
+            buildConfigField("String", "DEBUG_PREMIUM_KEY", "\"${getPropertyValue(properties, "debug_premium_key", "")}\"")
         }
     }
 

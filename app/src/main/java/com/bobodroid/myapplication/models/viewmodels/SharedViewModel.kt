@@ -4,6 +4,7 @@ import android.content.Context
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.bobodroid.myapplication.BuildConfig
 import com.bobodroid.myapplication.MainActivity.Companion.TAG
 import com.bobodroid.myapplication.models.datamodels.repository.UserRepository
 import com.bobodroid.myapplication.models.datamodels.roomDb.LocalUserData
@@ -36,11 +37,24 @@ class SharedViewModel @Inject constructor(
     private val _adUiState = MutableStateFlow(AdUiState())
     val adUiState = _adUiState.asStateFlow()
 
+    // 서버 기준 오늘 리워드 시청 횟수 / 하루 캡
+    val rewardAdInfo = premiumManager.rewardAdInfo
+
     private val _showPremiumPrompt = MutableStateFlow(false)
     val showPremiumPrompt = _showPremiumPrompt.asStateFlow()
 
     private val _showRewardAdInfo = MutableStateFlow(false)
     val showRewardAdInfo = _showRewardAdInfo.asStateFlow()
+
+    // 광고 재생 중 여부 (중복 호출 방지)
+    private var isAdFlowRunning = false
+
+    // 리워드 광고 시청 시작 ~ 서버 반영 완료까지 (시청 버튼 비활성화 / 진행 표시용)
+    private val _isRewardProcessing = MutableStateFlow(false)
+    val isRewardProcessing = _isRewardProcessing.asStateFlow()
+
+    private fun isAdDialogBusy(): Boolean =
+        isAdFlowRunning || _showPremiumPrompt.value || _showRewardAdInfo.value
 
     private val _snackbarEvent = Channel<String>(Channel.BUFFERED)
     val snackbarEvent = _snackbarEvent.receiveAsFlow()
@@ -64,7 +78,6 @@ class SharedViewModel @Inject constructor(
 
     init {
         Log.d(TAG("SharedViewModel", "init"), "SharedViewModel 초기화")
-        observeAdStates()
         startPremiumExpiryMonitoring()
     }
 
@@ -203,12 +216,15 @@ class SharedViewModel @Inject constructor(
      */
     private fun observeAdStates() {
         viewModelScope.launch {
-            userRepository.userData.collect { userData ->
+            // 사용자 데이터 또는 서버 시청 횟수 정보가 바뀔 때마다 갱신
+            combine(userRepository.userData, premiumManager.rewardAdInfo) { userData, _ ->
+                userData
+            }.collect { userData ->
                 val user = userData?.localUserData ?: return@collect
                 val todayDate = getCurrentDate()
 
-                // 리워드 광고 표시 가능 여부
-                val canShowRewardAd = adUseCase.processRewardAdState(user)
+                // 리워드 광고 시청 가능 여부 (서버 기준 하루 캡 반영)
+                val canShowRewardAd = premiumManager.canUseRewardAdToday(user)
 
                 // 배너 광고 표시 여부
                 val shouldShowBanner = adUseCase.bannerAdState(user)
@@ -254,10 +270,13 @@ class SharedViewModel @Inject constructor(
 
     /**
      * 전면 광고 표시 (UseCase에 위임)
+     * - 다이얼로그 또는 다른 광고가 진행 중이면 건너뜀
      */
     fun showInterstitialAdIfNeeded(context: Context) {
-        Log.d(TAG("SharedViewModel", "showInterstitialAdIfNeeded"), "━━━━━━━━━━━━━━━━━━━━━━━━━━")
-        Log.d(TAG("SharedViewModel", "showInterstitialAdIfNeeded"), "전면 광고 표시 시도")
+        if (isAdDialogBusy()) {
+            Log.d(TAG("SharedViewModel", "showInterstitialAdIfNeeded"), "다이얼로그/광고 진행 중 - 건너뜀")
+            return
+        }
 
         viewModelScope.launch {
             val user = userRepository.userData.value?.localUserData ?: run {
@@ -265,22 +284,30 @@ class SharedViewModel @Inject constructor(
                 return@launch
             }
 
-            Log.d(TAG("SharedViewModel", "showInterstitialAdIfNeeded"),
-                "✅ 사용자 데이터 확인 완료 - ID: ${user.id}")
-
-            // UseCase에 모든 로직 위임
-            adUseCase.showInterstitialAdIfNeeded(
-                context = context,
-                user = user,
-                onPremiumPromptNeeded = {
-                    Log.d(TAG("SharedViewModel", "showInterstitialAdIfNeeded"),
-                        "🎯 프리미엄 유도 팝업 트리거됨")
-                    _showPremiumPrompt.value = true
-                    Log.d(TAG("SharedViewModel", "showInterstitialAdIfNeeded"),
-                        "📊 _showPremiumPrompt 설정: ${_showPremiumPrompt.value}")
-                }
-            )
+            isAdFlowRunning = true
+            try {
+                adUseCase.showInterstitialAdIfNeeded(
+                    context = context,
+                    user = user,
+                    onPremiumPromptNeeded = {
+                        Log.d(TAG("SharedViewModel", "showInterstitialAdIfNeeded"),
+                            "🎯 프리미엄 유도 팝업 트리거됨")
+                        _showPremiumPrompt.value = true
+                    }
+                )
+            } finally {
+                isAdFlowRunning = false
+            }
         }
+    }
+
+    /**
+     * 프리미엄 필요 화면(잠금 기능)에서 호출하는 단일 진입점
+     * - 구독 화면으로 이동하지 않고 리워드 안내 다이얼로그만 연다
+     */
+    fun requestPremiumUnlock() {
+        if (isAdDialogBusy()) return
+        _showRewardAdInfo.value = true
     }
 
     /**
@@ -304,44 +331,41 @@ class SharedViewModel @Inject constructor(
 
     /**
      * 리워드 광고 표시 및 프리미엄 지급 (UseCase에 위임)
+     * - 다이얼로그를 먼저 닫고 광고 재생, 중복 호출 차단
      */
     fun showRewardAdAndGrantPremium(context: Context) {
-        Log.d(TAG("SharedViewModel", "showRewardAdAndGrantPremium"), "━━━━━━━━━━━━━━━━━━━━━━━━━━")
-        Log.d(TAG("SharedViewModel", "showRewardAdAndGrantPremium"), "리워드 광고 표시 및 프리미엄 지급 시작")
+        if (isAdFlowRunning) return
+
+        isAdFlowRunning = true
+        _isRewardProcessing.value = true
+        _showRewardAdInfo.value = false
+        _showPremiumPrompt.value = false
 
         viewModelScope.launch {
-            val user = userRepository.userData.value?.localUserData ?: run {
-                Log.w(TAG("SharedViewModel", "showRewardAdAndGrantPremium"), "❌ 사용자 데이터 없음")
-                return@launch
-            }
-
-            Log.d(TAG("SharedViewModel", "showRewardAdAndGrantPremium"),
-                "✅ 사용자 데이터 확인 완료")
-
-            // UseCase에 모든 로직 위임
-            adUseCase.showRewardAdAndGrantPremium(
-                context = context,
-                user = user,
-                onSuccess = {
-                    Log.d(TAG("SharedViewModel", "showRewardAdAndGrantPremium"),
-                        "✨ 리워드 광고 시청 완료 - 프리미엄 지급 성공")
-                    // ⚠️ 실제 연장 일수는 캡에 따라 달라질 수 있어 고정 숫자를 안 박음
-                    _snackbarEvent.trySend("✨ 프리미엄이 연장되었습니다!")
-                },
-                onAlreadyUsed = {
-                    Log.d(TAG("SharedViewModel", "showRewardAdAndGrantPremium"),
-                        "⚠️ 오늘 이미 리워드 사용함")
-                    _snackbarEvent.trySend("오늘은 리워드 시청 횟수를 다 채우셨습니다")
-                },
-                onAdFailed = {
-                    Log.d(TAG("SharedViewModel", "showRewardAdAndGrantPremium"),
-                        "❌ 광고 로드 실패")
-                    _snackbarEvent.trySend("현재 시청 가능한 광고가 없습니다. 잠시 후 다시 시도해주세요.")
+            try {
+                val user = userRepository.userData.value?.localUserData ?: run {
+                    Log.w(TAG("SharedViewModel", "showRewardAdAndGrantPremium"), "❌ 사용자 데이터 없음")
+                    return@launch
                 }
-            )
 
-            // 다이얼로그 닫기
-            _showRewardAdInfo.value = false
+                adUseCase.showRewardAdAndGrantPremium(
+                    context = context,
+                    user = user,
+                    onSuccess = {
+                        // ⚠️ 실제 연장 일수는 캡에 따라 달라질 수 있어 고정 숫자를 안 박음
+                        _snackbarEvent.trySend("✨ 프리미엄이 연장되었습니다!")
+                    },
+                    onAlreadyUsed = {
+                        _snackbarEvent.trySend("오늘은 리워드 시청 횟수를 다 채우셨습니다")
+                    },
+                    onAdFailed = {
+                        _snackbarEvent.trySend("현재 시청 가능한 광고가 없습니다. 잠시 후 다시 시도해주세요.")
+                    }
+                )
+            } finally {
+                isAdFlowRunning = false
+                _isRewardProcessing.value = false
+            }
         }
     }
 
@@ -349,7 +373,7 @@ class SharedViewModel @Inject constructor(
      * 리워드 광고 다이얼로그 열기
      */
     fun showRewardAdDialog() {
-        _showRewardAdInfo.value = true
+        requestPremiumUnlock()
     }
 
     /**
@@ -410,28 +434,44 @@ class SharedViewModel @Inject constructor(
         return dateFormat.format(Date())
     }
 
-    // 테스트용 (디버그)
-    fun grantTestPremium(minutes: Int = 1) {
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━
+    // 테스트 도구 (디버그 빌드 전용 — 서버와 동기화)
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+    private fun runDebugAction(label: String, action: suspend () -> Pair<Boolean, String>) {
+        if (!BuildConfig.DEBUG) return
         viewModelScope.launch {
-            premiumManager.grantTestPremium(user.value, minutes)
-            Log.d("MyPageViewModel", "✅ 테스트 프리미엄 지급: ${minutes}분 후 만료")
+            val (ok, message) = action()
+            _snackbarEvent.trySend(if (ok) "🔧 $label 완료" else "🔧 $label 실패: $message")
         }
     }
 
-    fun resetAdCounts() {
-        viewModelScope.launch {
-            val user = userRepository.userData.value?.localUserData ?: return@launch
+    /** 서버의 리워드 프리미엄 초기화 */
+    fun debugResetPremium() = runDebugAction("프리미엄 초기화") {
+        premiumManager.debugResetPremium()
+    }
 
-            // 모든 광고 관련 카운트 초기화 (로컬 1차 체크용 필드 — 최종 판단은 서버)
-            val resetUser = user.copy(
-                interstitialAdCount = 0,
-                lastRewardDate = null,
-                dailyRewardUsed = false
+    /** 서버의 하루 리워드 시청 횟수 초기화 (+ 로컬 전면광고 카운트 초기화) */
+    fun debugResetDailyAdCount() = runDebugAction("하루 광고 횟수 초기화") {
+        val result = premiumManager.debugResetDailyReward()
+
+        // 서버 반영 후 최신 로컬 값 기준으로 전면광고 카운트와 1차 체크 필드 초기화
+        val user = userRepository.userData.value?.localUserData
+        if (user != null) {
+            userRepository.localUserUpdate(
+                user.copy(
+                    interstitialAdCount = 0,
+                    lastRewardDate = null,
+                    dailyRewardUsed = false
+                )
             )
-
-            userRepository.localUserUpdate(resetUser)
-            _snackbarEvent.trySend("🔧 광고 카운트가 초기화되었습니다")
         }
+        result
+    }
+
+    /** 서버에 N분 후 만료 프리미엄 지급 */
+    fun debugGrantPremium(minutes: Int = 1) = runDebugAction("프리미엄 ${minutes}분 지급") {
+        premiumManager.debugGrantPremium(minutes)
     }
 }
 

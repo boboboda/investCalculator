@@ -68,8 +68,6 @@ fun MainScreen(
 
     val isPremium by sharedViewModel.isPremium.collectAsState()
 
-    val showPremiumPrompt by sharedViewModel.showPremiumPrompt.collectAsState()
-    val showRewardAdInfo by sharedViewModel.showRewardAdInfo.collectAsState()
 
 
     val recordListUiState by mainViewModel.recordListUiState.collectAsState()
@@ -395,28 +393,6 @@ fun MainScreen(
                 )
             }
 
-            if (showPremiumPrompt) {
-                PremiumPromptDialog(
-                    onWatchAd = {
-                        sharedViewModel.closePremiumPromptAndShowRewardDialog()
-                    },
-                    onDismiss = {
-                        sharedViewModel.closePremiumPrompt()
-                    }
-                )
-            }
-
-            // 리워드 광고 안내 팝업
-            if (showRewardAdInfo) {
-                RewardAdInfoDialog(
-                    onConfirm = {
-                        sharedViewModel.showRewardAdAndGrantPremium(context)
-                    },
-                    onDismiss = {
-                        sharedViewModel.closeRewardAdDialog()
-                    }
-                )
-            }
 
 
         }

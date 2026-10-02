@@ -67,19 +67,23 @@ class AdUseCase @Inject constructor(
         Log.d(TAG("AdUseCase", "showInterstitialAdIfNeeded"),
             "5의 배수 - 전면 광고 표시 시도")
 
-        // 광고 표시
-        adManager.showInterstitialAd(
-            context = context,
-            onAdShown = {
-                Log.d(TAG("AdUseCase", "showInterstitialAdIfNeeded"), "광고 표시 완료")
-            },
-            onAdFailed = {
-                Log.d(TAG("AdUseCase", "showInterstitialAdIfNeeded"), "광고 실패")
-            }
-        )
+        // ✅ 전면 광고가 닫히거나 실패할 때까지 대기
+        val adShown = suspendCancellableCoroutine<Boolean> { cont ->
+            adManager.showInterstitialAd(
+                context = context,
+                onAdShown = {
+                    Log.d(TAG("AdUseCase", "showInterstitialAdIfNeeded"), "광고 표시 완료")
+                    if (cont.isActive) cont.resume(true)
+                },
+                onAdFailed = {
+                    Log.d(TAG("AdUseCase", "showInterstitialAdIfNeeded"), "광고 실패")
+                    if (cont.isActive) cont.resume(false)
+                }
+            )
+        }
 
-        // 10회 이상일 때 프리미엄 유도 팝업
-        if (shouldShowPremiumPrompt(updatedUser)) {
+        // ✅ 광고가 실제로 끝난 뒤에만 유도 팝업 (광고 실패 시에는 팝업도 생략)
+        if (adShown && shouldShowPremiumPrompt(updatedUser)) {
             onPremiumPromptNeeded()
             return true
         }

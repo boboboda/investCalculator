@@ -4,12 +4,16 @@ package com.bobodroid.myapplication.premium
 import android.content.Context
 import android.util.Log
 import com.android.billingclient.api.Purchase
+import com.bobodroid.myapplication.BuildConfig
 import com.bobodroid.myapplication.MainActivity.Companion.TAG
 import com.bobodroid.myapplication.billing.BillingClientLifecycle
 import com.bobodroid.myapplication.models.datamodels.repository.UserRepository
 import com.bobodroid.myapplication.models.datamodels.roomDb.LocalUserData
 import com.bobodroid.myapplication.models.datamodels.roomDb.PremiumType
+import com.bobodroid.myapplication.models.datamodels.service.subscriptionApi.DebugActionResponse
+import com.bobodroid.myapplication.models.datamodels.service.subscriptionApi.DebugGrantRequest
 import com.bobodroid.myapplication.models.datamodels.service.subscriptionApi.RestoreSubscriptionRequest
+import com.bobodroid.myapplication.models.datamodels.service.subscriptionApi.RewardAdInfo
 import com.bobodroid.myapplication.models.datamodels.service.subscriptionApi.SubscriptionApi
 import com.bobodroid.myapplication.models.datamodels.service.subscriptionApi.VerifyPurchaseRequest
 import com.bobodroid.myapplication.models.datamodels.useCases.UserUseCases
@@ -18,9 +22,14 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.time.Instant
+import java.time.LocalDate
+import java.time.ZoneId
 import java.time.temporal.ChronoUnit
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -41,6 +50,15 @@ class PremiumManager @Inject constructor(
     private val userUseCases: UserUseCases
 ) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+
+    // ✅ 서버가 알려준 "오늘 리워드 시청 횟수 / 하루 캡" (서버 값이 진실, 앱은 표시와 1차 체크에만 사용)
+    private val _rewardAdInfo = MutableStateFlow<RewardAdInfo?>(null)
+    val rewardAdInfo: StateFlow<RewardAdInfo?> = _rewardAdInfo.asStateFlow()
+
+    // rewardAdInfo 를 받은 날짜(KST) — 날짜가 바뀌면 오래된 값으로 시청을 막지 않기 위함
+    private var rewardInfoDate: LocalDate? = null
+
+    private fun todayKst(): LocalDate = LocalDate.now(ZoneId.of("Asia/Seoul"))
 
     private val billingClient: BillingClientLifecycle by lazy {
         BillingClientLifecycle.getInstance(context)
@@ -204,6 +222,10 @@ class PremiumManager @Inject constructor(
 
             val data = response.data
 
+            // ✅ 오늘 리워드 시청 횟수 / 하루 캡 저장
+            _rewardAdInfo.value = data.rewardAd
+            rewardInfoDate = todayKst()
+
             if (data.isPremium && data.premiumType != "NONE") {
                 if (shouldUpdateUser(user, data.premiumType, data.expiryTime)) {
                     val updatedUser = user.copy(
@@ -221,7 +243,7 @@ class PremiumManager @Inject constructor(
                     Log.d(TAG("PremiumManager", "refreshUnifiedPremiumStatus"), "DB 이미 최신 상태")
                 }
             } else {
-                if (user.premiumType != "NONE") {
+                if (user.premiumType != "NONE" || user.isPremium) {
                     val clearedUser = user.copy(
                         premiumType = "NONE",
                         premiumExpiryDate = null,
@@ -419,10 +441,56 @@ class PremiumManager @Inject constructor(
      * 오늘 리워드 광고 사용 가능 여부 (로컬 1차 체크용 — 최종 판단은 서버)
      */
     fun canUseRewardAdToday(user: LocalUserData): Boolean {
-        val today = Instant.now().truncatedTo(ChronoUnit.DAYS).toString()
-        return user.lastRewardDate != today
+        val info = _rewardAdInfo.value ?: return true
+        // 서버 정보를 받은 날짜가 오늘(KST)이 아니면 최신값이 아니므로 막지 않고 서버 판정에 맡김
+        if (rewardInfoDate != todayKst()) return true
+        return info.todayRewardCount < info.dailyRewardCap
     }
 
+
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━
+    // 테스트 도구 (디버그 빌드 전용) — 서버 값을 직접 바꾼 뒤 로컬에 반영
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+    private suspend fun runDebugRequest(
+        request: suspend (deviceId: String, key: String) -> DebugActionResponse
+    ): Pair<Boolean, String> {
+        if (!BuildConfig.DEBUG) return false to "디버그 빌드에서만 사용할 수 있습니다"
+
+        val key = BuildConfig.DEBUG_PREMIUM_KEY
+        if (key.isBlank()) return false to "local.properties 에 debug_premium_key 가 없습니다"
+
+        val user = userRepository.userData.value?.localUserData
+            ?: return false to "사용자 데이터 없음"
+
+        return try {
+            val response = request(user.id.toString(), key)
+            if (!response.success) {
+                false to (response.message ?: "서버 처리 실패")
+            } else {
+                // 서버가 바뀐 값을 로컬 DB와 시청 횟수 정보에 반영
+                refreshUnifiedPremiumStatus()
+                true to "완료"
+            }
+        } catch (e: Exception) {
+            Log.e(TAG("PremiumManager", "runDebugRequest"), "테스트 도구 서버 호출 실패", e)
+            false to "서버 호출 실패: ${e.message}"
+        }
+    }
+
+    /** 서버의 리워드 프리미엄 만료일 제거 + 로컬 반영 */
+    suspend fun debugResetPremium(): Pair<Boolean, String> =
+        runDebugRequest { id, key -> SubscriptionApi.service.debugResetPremium(id, key) }
+
+    /** 서버의 오늘 리워드 시청 횟수 0으로 초기화 + 로컬 반영 */
+    suspend fun debugResetDailyReward(): Pair<Boolean, String> =
+        runDebugRequest { id, key -> SubscriptionApi.service.debugResetDailyReward(id, key) }
+
+    /** 서버에 N분 후 만료 프리미엄 지급 + 로컬 반영 */
+    suspend fun debugGrantPremium(minutes: Int): Pair<Boolean, String> =
+        runDebugRequest { id, key ->
+            SubscriptionApi.service.debugGrantPremium(id, key, DebugGrantRequest(minutes))
+        }
 
     /**
      * ✅ 프리미엄 남은 초 계산

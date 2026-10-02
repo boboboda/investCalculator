@@ -19,6 +19,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -27,7 +28,6 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.android.billingclient.api.ProductDetails
 import com.bobodroid.myapplication.BuildConfig
 import com.bobodroid.myapplication.billing.BillingClientLifecycle
-import com.bobodroid.myapplication.components.Dialogs.RewardAdInfoDialog
 import com.bobodroid.myapplication.components.SocialLoginWarningBanner
 import com.bobodroid.myapplication.models.datamodels.roomDb.LocalUserData
 import com.bobodroid.myapplication.models.datamodels.roomDb.PremiumType
@@ -64,7 +64,7 @@ fun PremiumScreen(
     val premiumType by sharedViewModel.premiumType.collectAsState()
     val premiumExpiryDate by sharedViewModel.premiumExpiryDate.collectAsState()
     val adUiState by sharedViewModel.adUiState.collectAsState()
-    val showRewardAdInfo by sharedViewModel.showRewardAdInfo.collectAsState()
+    val rewardAdInfo by sharedViewModel.rewardAdInfo.collectAsState()
 
     val isLoading = uiState.isLoading
 
@@ -80,9 +80,12 @@ fun PremiumScreen(
     }
 
     Scaffold(
+        // ✅ 상태바 여백은 AppScreen 에서 이미 적용됨 → 이중 적용 방지
+        contentWindowInsets = WindowInsets(0, 0, 0, 0),
         snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
+                windowInsets = WindowInsets(0, 0, 0, 0),
                 title = { Text("프리미엄") },
                 navigationIcon = {
                     IconButton(onClick = onBackClick) {
@@ -126,6 +129,8 @@ fun PremiumScreen(
                 if (premiumType == PremiumType.REWARD_AD) {
                     RewardAdCard(
                         canWatchToday = adUiState.rewardAdState,
+                        todayCount = rewardAdInfo?.todayRewardCount,
+                        dailyCap = rewardAdInfo?.dailyRewardCap,
                         onWatchAd = {
                             // ✅ 바로 광고 호출 대신 확인 다이얼로그부터 (AnalysisScreen.kt와 동일 패턴)
                             sharedViewModel.showRewardAdDialog()
@@ -139,6 +144,8 @@ fun PremiumScreen(
                 // ✅ 리워드 광고로 프리미엄 받기 (신규 구독 결제 대신 메인 경로)
                 RewardAdCard(
                     canWatchToday = adUiState.rewardAdState,
+                    todayCount = rewardAdInfo?.todayRewardCount,
+                    dailyCap = rewardAdInfo?.dailyRewardCap,
                     onWatchAd = {
                         sharedViewModel.showRewardAdDialog()
                     }
@@ -155,33 +162,15 @@ fun PremiumScreen(
                 TestControlCard(
                     isPremium = isPremium,
                     user = user,
-                    onTogglePremium = { enabled ->
-                        viewModel.setTestPremiumStatus(enabled)
-                    },
-                    onRefreshStatus = {
-                        sharedViewModel.refreshPremiumStatus()
-                    },
-                    onGrantTestPremium = { minutes ->
-                        sharedViewModel.grantTestPremium(minutes)
-                    },
-                    onResetAdCounts = {
-                        sharedViewModel.resetAdCounts()
-                    }
+                    rewardCount = rewardAdInfo?.todayRewardCount,
+                    rewardCap = rewardAdInfo?.dailyRewardCap,
+                    onResetPremium = { sharedViewModel.debugResetPremium() },
+                    onResetDailyAdCount = { sharedViewModel.debugResetDailyAdCount() },
+                    onGrantPremium = { sharedViewModel.debugGrantPremium(1) },
+                    onRefreshStatus = { sharedViewModel.refreshPremiumStatus() }
                 )
             }
         }
-    }
-
-    // ✅ 리워드 광고 확인 다이얼로그 (AnalysisScreen.kt와 동일한 다이얼로그 재사용)
-    if (showRewardAdInfo) {
-        RewardAdInfoDialog(
-            onConfirm = {
-                sharedViewModel.showRewardAdAndGrantPremium(context)
-            },
-            onDismiss = {
-                sharedViewModel.closeRewardAdDialog()
-            }
-        )
     }
 }
 
@@ -191,7 +180,9 @@ fun PremiumScreen(
 @Composable
 fun RewardAdCard(
     canWatchToday: Boolean,
-    onWatchAd: () -> Unit
+    onWatchAd: () -> Unit,
+    todayCount: Int? = null,
+    dailyCap: Int? = null
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -229,6 +220,15 @@ fun RewardAdCard(
                 color = Color(0xFF9A3412),
                 lineHeight = 20.sp
             )
+
+            if (todayCount != null && dailyCap != null) {
+                Text(
+                    text = "오늘 시청 $todayCount / $dailyCap 회",
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = Color(0xFFC2410C)
+                )
+            }
 
             Button(
                 onClick = onWatchAd,
@@ -428,120 +428,171 @@ fun PremiumBenefitsCard() {
 }
 
 /**
- * ✅ 디버그 컨트롤 카드
+ * ✅ 개발자 도구 카드 (디버그 빌드 전용)
+ * - 모든 버튼은 서버 값을 직접 바꾼 뒤 앱에 반영함
  */
 @Composable
 fun TestControlCard(
     isPremium: Boolean,
     user: LocalUserData,
-    onTogglePremium: (Boolean) -> Unit,
-    onRefreshStatus: () -> Unit,
-    onGrantTestPremium: (Int) -> Unit,
-    onResetAdCounts: () -> Unit
+    rewardCount: Int?,
+    rewardCap: Int?,
+    onResetPremium: () -> Unit,
+    onResetDailyAdCount: () -> Unit,
+    onGrantPremium: () -> Unit,
+    onRefreshStatus: () -> Unit
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = Color(0xFFFEF2F2)),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        colors = CardDefaults.cardColors(containerColor = Color(0xFF111827))
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(20.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+            verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(
-                    imageVector = Icons.Rounded.BugReport,
-                    contentDescription = null,
-                    modifier = Modifier.size(24.dp),
-                    tint = Color(0xFFDC2626)
-                )
-
-                Spacer(modifier = Modifier.width(8.dp))
-
-                Text(
-                    text = "🔧 테스트 도구 (개발자 전용)",
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color(0xFF991B1B)
-                )
-            }
-
-            HorizontalDivider(color = Color(0xFFFECACA))
-
-            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                Text(
-                    text = "현재 상태: ${if (isPremium) "✅ 프리미엄" else "❌ 일반"}",
-                    fontSize = 14.sp,
-                    color = Color(0xFF7F1D1D),
-                    fontWeight = FontWeight.SemiBold
-                )
-                Text(
-                    text = "타입: ${user.premiumType}",
-                    fontSize = 12.sp,
-                    color = Color(0xFF991B1B)
-                )
-                user.premiumExpiryDate?.let {
-                    Text(
-                        text = "만료: $it",
-                        fontSize = 12.sp,
-                        color = Color(0xFF991B1B)
-                    )
-                }
-            }
-
-            HorizontalDivider(color = Color(0xFFFECACA))
-
+            // 헤더
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Button(
-                    onClick = { onTogglePremium(!isPremium) },
-                    modifier = Modifier.weight(1f),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = if (isPremium) Color(0xFFEF4444) else Color(0xFF10B981)
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Rounded.BugReport,
+                        contentDescription = null,
+                        modifier = Modifier.size(20.dp),
+                        tint = Color(0xFFFBBF24)
                     )
+                    Text(
+                        text = "개발자 도구",
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White
+                    )
+                }
+
+                Surface(
+                    shape = RoundedCornerShape(6.dp),
+                    color = Color(0xFF374151)
                 ) {
                     Text(
-                        text = if (isPremium) "비활성화" else "활성화",
-                        fontSize = 13.sp
+                        text = "DEBUG · 서버 연동",
+                        fontSize = 11.sp,
+                        fontFamily = FontFamily.Monospace,
+                        color = Color(0xFFFBBF24),
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
                     )
                 }
-
-                Button(
-                    onClick = onRefreshStatus,
-                    modifier = Modifier.weight(1f),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = Color(0xFF3B82F6)
-                    )
-                ) {
-                    Text("새로고침", fontSize = 13.sp)
-                }
             }
 
-            Button(
-                onClick = { onGrantTestPremium(1) },
-                modifier = Modifier.fillMaxWidth(),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFFF59E0B)
-                )
+            // 현재 상태
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(Color(0xFF1F2937), RoundedCornerShape(12.dp))
+                    .padding(14.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                Text("1분 후 만료 프리미엄 지급", fontSize = 13.sp)
+                DevStatusRow(
+                    label = "상태",
+                    value = if (isPremium) "프리미엄" else "일반",
+                    valueColor = if (isPremium) Color(0xFF34D399) else Color(0xFF9CA3AF)
+                )
+                DevStatusRow(label = "타입", value = user.premiumType)
+                DevStatusRow(label = "만료", value = user.premiumExpiryDate ?: "-")
+                DevStatusRow(
+                    label = "오늘 리워드",
+                    value = if (rewardCount != null && rewardCap != null) "$rewardCount / $rewardCap" else "-"
+                )
             }
 
+            // 프리미엄 초기화
             Button(
-                onClick = onResetAdCounts,
-                modifier = Modifier.fillMaxWidth(),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFF8B5CF6)
-                )
+                onClick = onResetPremium,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(48.dp),
+                shape = RoundedCornerShape(12.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFEF4444))
             ) {
-                Text("광고 카운트 초기화", fontSize = 13.sp)
+                Icon(Icons.Rounded.RestartAlt, contentDescription = null, modifier = Modifier.size(18.dp))
+                Spacer(modifier = Modifier.width(8.dp))
+                Text("프리미엄 초기화", fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
             }
+
+            // 하루 광고 횟수 초기화
+            Button(
+                onClick = onResetDailyAdCount,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(48.dp),
+                shape = RoundedCornerShape(12.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF3B82F6))
+            ) {
+                Icon(Icons.Rounded.Replay, contentDescription = null, modifier = Modifier.size(18.dp))
+                Spacer(modifier = Modifier.width(8.dp))
+                Text("하루 광고 횟수 초기화", fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
+            }
+
+            // 테스트 프리미엄 지급
+            OutlinedButton(
+                onClick = onGrantPremium,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(48.dp),
+                shape = RoundedCornerShape(12.dp),
+                border = BorderStroke(1.dp, Color(0xFF4B5563))
+            ) {
+                Text("1분 프리미엄 지급", fontSize = 14.sp, color = Color(0xFFE5E7EB))
+            }
+
+            TextButton(
+                onClick = onRefreshStatus,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text("서버 상태 새로고침", fontSize = 13.sp, color = Color(0xFF9CA3AF))
+            }
+
+            Text(
+                text = "하루 광고 횟수 초기화는 리워드 시청 횟수(서버)와 전면광고 카운트(앱)를 함께 0으로 되돌립니다.",
+                fontSize = 12.sp,
+                lineHeight = 17.sp,
+                color = Color(0xFF6B7280)
+            )
         }
+    }
+}
+
+@Composable
+private fun DevStatusRow(
+    label: String,
+    value: String,
+    valueColor: Color = Color.White
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            text = label,
+            fontSize = 13.sp,
+            color = Color(0xFF9CA3AF)
+        )
+        Text(
+            text = value,
+            fontSize = 13.sp,
+            fontFamily = FontFamily.Monospace,
+            color = valueColor,
+            textAlign = TextAlign.End,
+            modifier = Modifier.padding(start = 16.dp)
+        )
     }
 }
 

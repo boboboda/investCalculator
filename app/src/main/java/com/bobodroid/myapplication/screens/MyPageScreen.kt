@@ -39,7 +39,6 @@ import com.bobodroid.myapplication.components.BacktestBannerCardCompact
 import com.bobodroid.myapplication.components.Dialogs.AccountFoundDialog
 import com.bobodroid.myapplication.components.Dialogs.DataRestoreDialog
 import com.bobodroid.myapplication.components.Dialogs.OnboardingTooltipDialog
-import com.bobodroid.myapplication.components.Dialogs.RewardAdInfoDialog
 import com.bobodroid.myapplication.models.datamodels.roomDb.LocalUserData
 import com.bobodroid.myapplication.models.datamodels.roomDb.PremiumType
 import com.bobodroid.myapplication.models.viewmodels.*
@@ -66,7 +65,6 @@ fun MyPageScreen(
 
     val premiumType by sharedViewModel.premiumType.collectAsState()
     val premiumExpiryDate by sharedViewModel.premiumExpiryDate.collectAsState()
-    val showRewardAdInfo by sharedViewModel.showRewardAdInfo.collectAsState()
 
     // ✅ 신규: sharedViewModel의 스낵바 이벤트 구독 — 이게 빠져있어서 리워드 광고 실패 안내가 안 뜨고 있었음
     LaunchedEffect(Unit) {
@@ -270,6 +268,7 @@ fun MyPageScreen(
 
             composable(MyPageRoute.Premium.routeName!!) {
                 PremiumScreen(
+                    sharedViewModel = sharedViewModel,   // ✅ 앱 전역(액티비티) 인스턴스 전달 — 다이얼로그 Host와 같은 상태를 보도록
                     onBackClick = { myPageRouteAction.goBack() },
                     onAccountManageClick = {
                         myPageRouteAction.navTo(MyPageRoute.AccountManage)
@@ -304,18 +303,6 @@ fun MyPageScreen(
         if (showOnboarding) {
             OnboardingTooltipDialog(
                 onDismiss = { showOnboarding = false }
-            )
-        }
-
-        // 리워드 광고 안내 팝업
-        if (showRewardAdInfo) {
-            RewardAdInfoDialog(
-                onConfirm = {
-                    sharedViewModel.showRewardAdAndGrantPremium(context)
-                },
-                onDismiss = {
-                    sharedViewModel.closeRewardAdDialog()
-                }
             )
         }
     }

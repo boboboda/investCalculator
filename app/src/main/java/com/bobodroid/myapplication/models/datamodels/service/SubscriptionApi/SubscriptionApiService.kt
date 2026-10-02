@@ -96,4 +96,39 @@ interface SubscriptionApiService {
     suspend fun getPremiumStatus(
         @Path("deviceId") deviceId: String
     ): PremiumStatusResponse
+
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━
+    // 디버그(테스트 도구) 전용 — 서버에 DEBUG_PREMIUM_KEY 가 설정된 경우에만 동작
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+    /**
+     * 리워드 프리미엄 초기화
+     * POST /reward-premium/debug/reset/:deviceId
+     */
+    @POST("reward-premium/debug/reset/{deviceId}")
+    suspend fun debugResetPremium(
+        @Path("deviceId") deviceId: String,
+        @Header("x-debug-key") debugKey: String
+    ): DebugActionResponse
+
+    /**
+     * 하루 리워드 시청 횟수 초기화
+     * POST /reward-premium/debug/reset-daily/:deviceId
+     */
+    @POST("reward-premium/debug/reset-daily/{deviceId}")
+    suspend fun debugResetDailyReward(
+        @Path("deviceId") deviceId: String,
+        @Header("x-debug-key") debugKey: String
+    ): DebugActionResponse
+
+    /**
+     * N분 후 만료 테스트 프리미엄 지급
+     * POST /reward-premium/debug/grant/:deviceId
+     */
+    @POST("reward-premium/debug/grant/{deviceId}")
+    suspend fun debugGrantPremium(
+        @Path("deviceId") deviceId: String,
+        @Header("x-debug-key") debugKey: String,
+        @Body request: DebugGrantRequest
+    ): DebugActionResponse
 }

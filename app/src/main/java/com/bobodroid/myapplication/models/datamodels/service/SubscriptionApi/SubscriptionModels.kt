@@ -135,3 +135,22 @@ data class RewardAdInfo(
     val todayRewardCount: Int,
     val dailyRewardCap: Int
 )
+
+// ==================== 디버그(테스트 도구) 전용 ====================
+
+/**
+ * 테스트 프리미엄 지급 요청 (N분 후 만료)
+ */
+@JsonClass(generateAdapter = true)
+data class DebugGrantRequest(
+    val minutes: Int
+)
+
+/**
+ * 테스트 도구 API 공통 응답
+ */
+@JsonClass(generateAdapter = true)
+data class DebugActionResponse(
+    val success: Boolean,
+    val message: String? = null
+)

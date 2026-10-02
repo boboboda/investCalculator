@@ -28,6 +28,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.bobodroid.myapplication.components.Dialogs.GuideDialog
+import com.bobodroid.myapplication.components.Dialogs.PremiumAdDialogHost
 import com.bobodroid.myapplication.components.MainBottomBar
 import com.bobodroid.myapplication.models.datamodels.social.SocialLoginManager
 import com.bobodroid.myapplication.models.datamodels.useCases.FcmUseCases
@@ -397,6 +398,9 @@ fun InvestAppScreen(
                 sharedViewModel = sharedViewModel
             )
 
+            // ✅ 프리미엄 유도 / 리워드 안내 다이얼로그는 여기서만 표시
+            PremiumAdDialogHost(sharedViewModel = sharedViewModel)
+
             if(guideDialog) {
                 GuideDialog(onDismissRequest = {
                     guideDialog = it
@@ -428,7 +432,7 @@ fun InvestNavHost(
                 mainViewModel = mainViewModel,
                 activity = activity,
                 onNavigateToPremium = {
-                    mainRouteAction.navTo(MainRoute.MyPage)
+                    sharedViewModel.requestPremiumUnlock()
                 },
                 onNavigateToNews = {
                     investNavController.navigate(MainRoute.News.routeName!!)
@@ -467,7 +471,7 @@ fun InvestNavHost(
             AnalysisScreen(
                 sharedViewModel = sharedViewModel,
                 onNavigateToPremium = {
-                    investNavController.navigate(MyPageRoute.Premium.routeName!!)
+                    sharedViewModel.requestPremiumUnlock()
                 },
                 onNavigateToNews = { investNavController.navigate(MainRoute.News.routeName!!) } // 추가
 
@@ -480,7 +484,7 @@ fun InvestNavHost(
                     investNavController.navigateUp()
                 },
                 onPremiumClick = {
-                    investNavController.navigate(MyPageRoute.Premium.routeName!!)
+                    sharedViewModel.requestPremiumUnlock()
                 }
             )
         }

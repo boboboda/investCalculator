@@ -58,8 +58,6 @@ fun AnalysisScreen(
 ) {
 
     val isPremium by sharedViewModel.isPremium.collectAsState()
-    val showPremiumPrompt by sharedViewModel.showPremiumPrompt.collectAsState()
-    val showRewardAdInfo by sharedViewModel.showRewardAdInfo.collectAsState()
 
     val context = LocalContext.current
 
@@ -107,27 +105,6 @@ fun AnalysisScreen(
             )
         }
 
-        if (showPremiumPrompt) {
-            PremiumPromptDialog(
-                onWatchAd = {
-                    sharedViewModel.closePremiumPromptAndShowRewardDialog()
-                },
-                onDismiss = {
-                    sharedViewModel.closePremiumPrompt()
-                }
-            )
-        }
-
-        if (showRewardAdInfo) {
-            RewardAdInfoDialog(
-                onConfirm = {
-                    sharedViewModel.showRewardAdAndGrantPremium(context)
-                },
-                onDismiss = {
-                    sharedViewModel.closeRewardAdDialog()
-                }
-            )
-        }
     }
 }
 

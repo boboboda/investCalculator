@@ -11,6 +11,8 @@ import com.bobodroid.myapplication.models.datamodels.repository.NoticeRepository
 import com.bobodroid.myapplication.models.datamodels.repository.SettingsRepository
 import com.bobodroid.myapplication.models.datamodels.repository.UserRepository
 import com.bobodroid.myapplication.models.datamodels.roomDb.*
+import com.bobodroid.myapplication.models.datamodels.service.BackupApi.BackupNoticeManager
+import com.bobodroid.myapplication.models.datamodels.service.BackupApi.BackupNoticeStatus
 import com.bobodroid.myapplication.models.datamodels.useCases.CurrencyRecordRequest
 import com.bobodroid.myapplication.models.datamodels.useCases.RecordUseCase
 import com.bobodroid.myapplication.models.datamodels.useCases.UserUseCases
@@ -43,10 +45,16 @@ class MainViewModel @Inject constructor(
     private val settingsRepository: SettingsRepository,
     private val recordUseCase: RecordUseCase,
     private val premiumManager: PremiumManager,
+    private val backupNoticeManager: BackupNoticeManager,
     @ApplicationContext private val context: Context
 ) : ViewModel() {
 
 
+    // 백업이 되고 있지 않은 상태 (하단 탭 점 표시용)
+    val backupNoticeStatus: StateFlow<BackupNoticeStatus> = backupNoticeManager.status
+
+    // 기록 저장 직후 백업 안내 배너 표시 이벤트
+    val backupPromptEvents: SharedFlow<Unit> = backupNoticeManager.promptEvents
 
     private val _mainUiState = MutableStateFlow(MainUiState())
     val mainUiState = _mainUiState.asStateFlow()

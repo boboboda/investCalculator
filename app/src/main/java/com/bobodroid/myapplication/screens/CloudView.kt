@@ -27,11 +27,12 @@ import com.bobodroid.myapplication.routes.RouteAction
 import kotlinx.coroutines.launch
 
 /**
- * 클라우드 백업 화면 (완전 개선 버전)
+ * 클라우드 백업 화면
  * - 소셜 로그인 상태 확인
  * - 마지막 백업 시간 표시
- * - 수동 백업/복구 버튼
- * - 프리미엄 사용자는 자동 백업 안내
+ * - 소셜 로그인 연동 사용자 전체 자동 백업
+ * - 서버 기록과 달라 자동 백업이 보류되면 복구/덮어쓰기 안내
+ * - 지금 백업 / 복구 버튼
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -47,9 +48,18 @@ fun CloudView(
     // ✅ 소셜 로그인 상태 확인
     val isSocialLinked = localUser.socialType != "NONE" && !localUser.socialId.isNullOrEmpty()
 
-    // ✅ 프리미엄 상태 확인
-    val myPageUiState by myPageViewModel.myPageUiState.collectAsState()
-    val isPremium = myPageUiState.localUser.isPremium
+    // ✅ 서버에 이 기기에 없는 기록이 있어 자동 백업이 보류된 상태
+    val backupHeld by myPageViewModel.backupHeld.collectAsState()
+    var showOverwriteConfirm by remember { mutableStateOf(false) }
+
+    val showMessage: (String) -> Unit = { message ->
+        coroutineScope.launch {
+            snackbarHostState.showSnackbar(
+                message = message,
+                duration = SnackbarDuration.Short
+            )
+        }
+    }
 
     Scaffold(
         // ✅ 상태바 여백은 AppScreen에서 이미 적용 → 화면 쪽 중복 인셋 제거
@@ -103,50 +113,149 @@ fun CloudView(
             // ✅ 백업 상태 카드
             BackupStatusCard(
                 isSocialLinked = isSocialLinked,
-                isPremium = isPremium,
+                backupHeld = backupHeld,
                 lastSyncAt = localUser.lastSyncAt
             )
+
+            // ✅ 자동 백업 보류 안내 (서버 기록을 지우지 않도록 사용자가 선택)
+            if (isSocialLinked && backupHeld) {
+                BackupHeldCard(
+                    onRestoreClick = {
+                        coroutineScope.launch {
+                            myPageViewModel.restoreFromServer { message -> showMessage(message) }
+                        }
+                    },
+                    onOverwriteClick = { showOverwriteConfirm = true }
+                )
+            }
 
             // ✅ 백업 기능 카드 (수정됨)
             if (isSocialLinked) {
                 BackupActionsCard(
                     onBackupClick = {
                         coroutineScope.launch {
-                            myPageViewModel.syncToServer { message ->
-                                coroutineScope.launch {
-                                    snackbarHostState.showSnackbar(
-                                        message = message,
-                                        duration = SnackbarDuration.Short
-                                    )
-                                }
-                            }
+                            myPageViewModel.syncToServer { message -> showMessage(message) }
                         }
                     },
                     onRestoreClick = {
                         coroutineScope.launch {
-                            myPageViewModel.restoreFromServer { message ->
-                                coroutineScope.launch {
-                                    snackbarHostState.showSnackbar(
-                                        message = message,
-                                        duration = SnackbarDuration.Short
-                                    )
-                                }
-                            }
+                            myPageViewModel.restoreFromServer { message -> showMessage(message) }
                         }
-                    },
-                    isPremium = isPremium
+                    }
                 )
             }
 
             // ✅ 백업 안내 카드
             BackupInfoCard()
 
-            // ✅ 프리미엄 안내 (일반 사용자만)
-            if (!isPremium && isSocialLinked) {
-                PremiumBackupPromotionCard(
-                    onUpgradeClick = {
-                        routeAction.navTo(MyPageRoute.Premium)
+        }
+    }
+
+    // ✅ 덮어쓰기 확인 (서버 기록이 이 기기 기록으로 바뀌므로 반드시 한 번 더 확인)
+    if (showOverwriteConfirm) {
+        AlertDialog(
+            onDismissRequest = { showOverwriteConfirm = false },
+            title = { Text("이 기기 기록으로 덮어쓸까요?") },
+            text = {
+                Text("서버에 저장된 기록이 이 기기의 기록으로 바뀝니다. 서버에는 덮어쓰기 직전 상태가 1개 보관됩니다.")
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        showOverwriteConfirm = false
+                        coroutineScope.launch {
+                            myPageViewModel.syncToServer(force = true) { message -> showMessage(message) }
+                        }
                     }
+                ) {
+                    Text("덮어쓰기", color = Color(0xFFDC2626))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showOverwriteConfirm = false }) {
+                    Text("취소")
+                }
+            }
+        )
+    }
+}
+
+/**
+ * 자동 백업 보류 안내 카드
+ * 서버에 이 기기에 없는 기록이 있을 때 표시된다.
+ */
+@Composable
+fun BackupHeldCard(
+    onRestoreClick: () -> Unit,
+    onOverwriteClick: () -> Unit
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = Color(0xFFFEF3C7)
+        )
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(20.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Rounded.Warning,
+                    contentDescription = null,
+                    tint = Color(0xFFD97706),
+                    modifier = Modifier.size(22.dp)
+                )
+                Text(
+                    text = "자동 백업을 잠시 멈췄어요",
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFF92400E)
+                )
+            }
+
+            Text(
+                text = "서버에 이 기기에 없는 기록이 있어요. 기록이 사라지지 않도록 어떻게 할지 선택해 주세요.",
+                fontSize = 13.sp,
+                lineHeight = 18.sp,
+                color = Color(0xFF92400E)
+            )
+
+            Button(
+                onClick = onRestoreClick,
+                modifier = Modifier.fillMaxWidth(),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color(0xFF6366F1)
+                ),
+                shape = RoundedCornerShape(12.dp)
+            ) {
+                Text(
+                    text = "서버 기록 불러오기",
+                    fontSize = 15.sp,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.padding(vertical = 4.dp)
+                )
+            }
+
+            OutlinedButton(
+                onClick = onOverwriteClick,
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp),
+                colors = ButtonDefaults.outlinedButtonColors(
+                    contentColor = Color(0xFF92400E)
+                )
+            ) {
+                Text(
+                    text = "이 기기 기록으로 덮어쓰기",
+                    fontSize = 15.sp,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.padding(vertical = 4.dp)
                 )
             }
         }
@@ -159,7 +268,7 @@ fun CloudView(
 @Composable
 fun BackupStatusCard(
     isSocialLinked: Boolean,
-    isPremium: Boolean,
+    backupHeld: Boolean,
     lastSyncAt: String?
 ) {
     Card(
@@ -198,8 +307,16 @@ fun BackupStatusCard(
             // 백업 타입
             StatusRow(
                 label = "백업 방식",
-                value = if (isPremium) "자동 백업 (실시간)" else "수동 백업",
-                valueColor = if (isPremium) Color(0xFF10B981) else Color(0xFF6B7280)
+                value = when {
+                    !isSocialLinked -> "소셜 로그인 필요"
+                    backupHeld -> "보류됨 (확인 필요)"
+                    else -> "자동 백업"
+                },
+                valueColor = when {
+                    !isSocialLinked -> Color(0xFF6B7280)
+                    backupHeld -> Color(0xFFD97706)
+                    else -> Color(0xFF10B981)
+                }
             )
 
             // 마지막 백업 시간
@@ -255,8 +372,7 @@ fun StatusRow(
 @Composable
 fun BackupActionsCard(
     onBackupClick: () -> Unit,
-    onRestoreClick: () -> Unit,
-    isPremium: Boolean
+    onRestoreClick: () -> Unit
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -279,7 +395,7 @@ fun BackupActionsCard(
                 color = Color(0xFF1F2937)
             )
 
-            // 수동 백업 버튼
+            // 지금 백업 버튼
             Button(
                 onClick = onBackupClick,
                 modifier = Modifier.fillMaxWidth(),
@@ -300,7 +416,7 @@ fun BackupActionsCard(
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
-                        text = if (isPremium) "지금 백업하기" else "수동 백업",
+                        text = "지금 백업하기",
                         fontSize = 16.sp,
                         fontWeight = FontWeight.Bold
                     )
@@ -376,8 +492,8 @@ fun BackupInfoCard() {
 
             BackupInfoItem("소셜 로그인 연동 시 서버에 안전하게 백업됩니다")
             BackupInfoItem("기기 변경, 앱 재설치 시에도 데이터 복구 가능")
-            BackupInfoItem("프리미엄 사용자는 실시간 자동 백업 지원")
-            BackupInfoItem("일반 사용자는 수동으로 백업해야 합니다")
+            BackupInfoItem("기록을 추가, 수정, 삭제하면 1분 안에 자동으로 백업됩니다")
+            BackupInfoItem("서버 기록과 달라지면 자동 백업을 멈추고 어떻게 할지 물어봅니다")
         }
     }
 }
@@ -401,86 +517,6 @@ fun BackupInfoItem(text: String) {
             lineHeight = 18.sp,
             modifier = Modifier.weight(1f)
         )
-    }
-}
-
-/**
- * 프리미엄 백업 홍보 카드
- */
-@Composable
-fun PremiumBackupPromotionCard(
-    onUpgradeClick: () -> Unit
-) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = Color(0xFF6366F1)
-        ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(24.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Icon(
-                imageVector = Icons.Rounded.Star,
-                contentDescription = null,
-                modifier = Modifier.size(48.dp),
-                tint = Color(0xFFFBBF24)
-            )
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            Text(
-                text = "프리미엄으로\n자동 백업 사용하기",
-                fontSize = 18.sp,
-                fontWeight = FontWeight.Bold,
-                color = Color.White,
-                textAlign = androidx.compose.ui.text.style.TextAlign.Center
-            )
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            Text(
-                text = "수동 백업의 번거로움 없이\n실시간으로 자동 백업됩니다",
-                fontSize = 13.sp,
-                color = Color.White.copy(alpha = 0.9f),
-                textAlign = androidx.compose.ui.text.style.TextAlign.Center
-            )
-
-            Spacer(modifier = Modifier.height(20.dp))
-
-            Button(
-                onClick = onUpgradeClick,
-                modifier = Modifier.fillMaxWidth(),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = Color.White,
-                    contentColor = Color(0xFF6366F1)
-                ),
-                shape = RoundedCornerShape(12.dp)
-            ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.Center,
-                    modifier = Modifier.padding(vertical = 4.dp)
-                ) {
-                    Icon(
-                        imageVector = Icons.Rounded.Star,
-                        contentDescription = null,
-                        modifier = Modifier.size(20.dp)
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        text = "프리미엄 알아보기",
-                        fontSize = 15.sp,
-                        fontWeight = FontWeight.Bold
-                    )
-                }
-            }
-        }
     }
 }
 

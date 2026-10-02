@@ -8,6 +8,9 @@ import com.bobodroid.myapplication.models.datamodels.repository.InvestRepository
 import com.bobodroid.myapplication.models.datamodels.repository.UserRepository
 import com.bobodroid.myapplication.models.datamodels.roomDb.CurrencyRecord
 import com.bobodroid.myapplication.models.datamodels.roomDb.LocalUserData
+import com.bobodroid.myapplication.models.datamodels.service.BackupApi.BackupNoticeManager
+import com.bobodroid.myapplication.models.datamodels.service.BackupApi.BackupNoticeStatus
+import com.bobodroid.myapplication.models.datamodels.service.BackupApi.BackupSyncPrefs
 import com.bobodroid.myapplication.models.datamodels.useCases.AccountFoundException
 import com.bobodroid.myapplication.models.datamodels.useCases.AccountSwitchUseCase
 import com.bobodroid.myapplication.models.datamodels.useCases.DeleteUserUseCase
@@ -18,6 +21,7 @@ import com.bobodroid.myapplication.util.result.onSuccess
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
@@ -34,11 +38,19 @@ class MyPageViewModel @Inject constructor(
     private val investRepository: InvestRepository,
     private val socialLoginUseCases: SocialLoginUseCases,
     private val userUseCases: UserUseCases,
-    private val accountSwitchUseCase: AccountSwitchUseCase
+    private val accountSwitchUseCase: AccountSwitchUseCase,
+    private val backupSyncPrefs: BackupSyncPrefs,
+    backupNoticeManager: BackupNoticeManager
 ) : ViewModel() {
 
     val _myPageUiState = MutableStateFlow(MyPageUiState())
     val myPageUiState = _myPageUiState.asStateFlow()
+
+    // 서버에 이 기기에 없는 기록이 있어 자동 백업이 보류된 상태 (클라우드 백업 화면 안내용)
+    val backupHeld: StateFlow<Boolean> = backupSyncPrefs.held
+
+    // 백업이 되고 있지 않은 상태 (마이페이지 클라우드 백업 배지용)
+    val backupNoticeStatus: StateFlow<BackupNoticeStatus> = backupNoticeManager.status
 
     init {
         // ✅ userData collect는 별도 코루틴
@@ -197,11 +209,15 @@ class MyPageViewModel @Inject constructor(
     }
 
 
-    fun syncToServer(result: (String) -> Unit) {
+    /**
+     * @param force true이면 서버 기록이 이 기기와 달라도 이 기기 기록으로 덮어쓴다
+     *              (사용자가 화면에서 덮어쓰기를 확인한 경우에만 사용)
+     */
+    fun syncToServer(force: Boolean = false, result: (String) -> Unit) {
         viewModelScope.launch {
             val localUser = _myPageUiState.value.localUser
 
-            socialLoginUseCases.syncToServer(localUser)
+            socialLoginUseCases.syncToServer(localUser, force)
                 .onSuccess { updatedUser, message ->
                     Log.d("MyPageViewModel", "백업 성공")
 

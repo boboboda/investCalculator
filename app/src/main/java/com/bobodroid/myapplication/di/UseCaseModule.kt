@@ -4,6 +4,8 @@ import android.content.Context
 import com.bobodroid.myapplication.billing.BillingClientLifecycle
 import com.bobodroid.myapplication.models.datamodels.repository.InvestRepository
 import com.bobodroid.myapplication.models.datamodels.repository.UserRepository
+import com.bobodroid.myapplication.models.datamodels.service.BackupApi.BackupSyncManager
+import com.bobodroid.myapplication.models.datamodels.service.BackupApi.BackupSyncPrefs
 import com.bobodroid.myapplication.models.datamodels.social.SocialLoginManager
 import com.bobodroid.myapplication.models.datamodels.useCases.AccountSwitchUseCase
 import com.bobodroid.myapplication.models.datamodels.useCases.DeleteAllNotificationsUseCase
@@ -240,14 +242,15 @@ object UseCaseModule {
     @Provides
     fun provideSyncToServerUseCase(
         userRepository: UserRepository,
-        investRepository: InvestRepository
-    ): SyncToServerUseCase = SyncToServerUseCase(userRepository, investRepository)
+        backupSyncManager: BackupSyncManager
+    ): SyncToServerUseCase = SyncToServerUseCase(userRepository, backupSyncManager)
 
     @Provides
     fun provideRestoreFromServerUseCase(
         userRepository: UserRepository,
-        investRepository: InvestRepository
-    ): RestoreFromServerUseCase = RestoreFromServerUseCase(userRepository, investRepository)
+        investRepository: InvestRepository,
+        backupSyncPrefs: BackupSyncPrefs
+    ): RestoreFromServerUseCase = RestoreFromServerUseCase(userRepository, investRepository, backupSyncPrefs)
 
 
     @Provides

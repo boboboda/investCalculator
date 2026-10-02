@@ -11,9 +11,8 @@ import com.bobodroid.myapplication.models.datamodels.repository.LatestRateReposi
 import com.bobodroid.myapplication.models.datamodels.repository.SettingsRepository
 import com.bobodroid.myapplication.models.datamodels.repository.UserRepository
 import com.bobodroid.myapplication.models.datamodels.roomDb.*
-import com.bobodroid.myapplication.models.datamodels.service.BackupApi.BackupApi
-import com.bobodroid.myapplication.models.datamodels.service.BackupApi.CreateBackupDto
-import com.bobodroid.myapplication.models.datamodels.service.BackupApi.CurrencyRecordDto
+import com.bobodroid.myapplication.models.datamodels.service.BackupApi.BackupOutcome
+import com.bobodroid.myapplication.models.datamodels.service.BackupApi.BackupSyncManager
 import com.bobodroid.myapplication.models.datamodels.service.UserApi.Rate
 import com.bobodroid.myapplication.models.datamodels.service.notificationApi.BatchUpdateRecordAlertsRequest
 import com.bobodroid.myapplication.models.datamodels.service.notificationApi.ChannelSettings
@@ -40,7 +39,8 @@ class FcmAlarmViewModel @Inject constructor(
     private val fcmUseCases: FcmUseCases,
     private val latestRateRepository: LatestRateRepository,
     private val settingsRepository: SettingsRepository,
-    private val investRepository: InvestRepository
+    private val investRepository: InvestRepository,
+    private val backupSyncManager: BackupSyncManager
 ) : ViewModel() {
 
     // ==================== 공통 State ====================
@@ -569,58 +569,34 @@ class FcmAlarmViewModel @Inject constructor(
         }
     }
 
+    /**
+     * 수익률 알림 저장 전에 서버 기록을 최신으로 맞춘다.
+     * 전송은 BackupSyncManager를 거치므로 서버 기록을 덮어쓰는 위험이 없다.
+     * (소셜 로그인 없이도 deviceId 기준으로 백업)
+     */
     private suspend fun triggerBackup(deviceId: String): Boolean {
-        return try {
-            val currentUserData = userRepository.userData.filterNotNull().first()
-            val localUser = currentUserData.localUserData ?: run {
-                Log.e(TAG("FcmAlarmViewModel", "triggerBackup"), "사용자 정보 없음")
-                return false
-            }
-
-            val allRecords = investRepository.getAllCurrencyRecords().first()
-
-            Log.d(TAG("FcmAlarmViewModel", "triggerBackup"), "백업 대상 기록: ${allRecords.size}개")
-
-            val currencyRecords = allRecords.map { record ->
-                CurrencyRecordDto(
-                    id = record.id.toString(),
-                    currencyCode = record.currencyCode,
-                    date = record.date ?: "",
-                    money = record.money ?: "0",
-                    rate = record.rate ?: "0",
-                    buyRate = record.buyRate ?: "0",
-                    exchangeMoney = record.exchangeMoney ?: "0",
-                    profit = record.profit ?: "0",
-                    expectProfit = record.expectProfit ?: "0",
-                    categoryName = record.categoryName ?: "",
-                    memo = record.memo ?: "",
-                    sellRate = record.sellRate,
-                    sellProfit = record.sellProfit,
-                    sellDate = record.sellDate,
-                    recordColor = record.recordColor ?: false
-                )
-            }
-
-            val backupDto = CreateBackupDto(
-                deviceId = deviceId,
-                socialId = localUser.socialId,
-                socialType = localUser.socialType,
-                currencyRecords = currencyRecords
-            )
-
-            val backupResponse = BackupApi.backupService.createBackupWithDto(backupDto)
-
-            if (backupResponse.success) {
-                Log.d(TAG("FcmAlarmViewModel", "triggerBackup"), "백업 성공: ${allRecords.size}개")
+        return when (val outcome = backupSyncManager.backup(requireSocialLogin = false)) {
+            is BackupOutcome.Success -> {
+                Log.d(TAG("FcmAlarmViewModel", "triggerBackup"), "백업 성공: ${outcome.recordCount}개")
                 true
-            } else {
-                Log.e(TAG("FcmAlarmViewModel", "triggerBackup"), "백업 실패: ${backupResponse.message}")
+            }
+
+            // 기록이 없어 보낼 것이 없는 경우
+            is BackupOutcome.Skipped -> {
+                Log.d(TAG("FcmAlarmViewModel", "triggerBackup"), "백업 건너뜀: ${outcome.reason}")
+                true
+            }
+
+            // 서버 기록과 달라 보류된 경우 (클라우드 백업 화면에서 복구/덮어쓰기 선택 필요)
+            is BackupOutcome.Held -> {
+                Log.w(TAG("FcmAlarmViewModel", "triggerBackup"), "백업 보류: 서버 기록 ${outcome.serverRecordCount}개")
                 false
             }
 
-        } catch (e: Exception) {
-            Log.e(TAG("FcmAlarmViewModel", "triggerBackup"), "백업 에러", e)
-            false
+            is BackupOutcome.Failed -> {
+                Log.e(TAG("FcmAlarmViewModel", "triggerBackup"), "백업 실패: ${outcome.message}", outcome.exception)
+                false
+            }
         }
     }
 

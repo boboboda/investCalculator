@@ -9,6 +9,9 @@ import com.bobodroid.myapplication.models.datamodels.roomDb.LocalUserData
 import com.bobodroid.myapplication.models.datamodels.roomDb.SocialType
 import com.bobodroid.myapplication.models.datamodels.service.BackupApi.BackupApi
 import com.bobodroid.myapplication.models.datamodels.service.BackupApi.BackupMapper
+import com.bobodroid.myapplication.models.datamodels.service.BackupApi.BackupOutcome
+import com.bobodroid.myapplication.models.datamodels.service.BackupApi.BackupSyncManager
+import com.bobodroid.myapplication.models.datamodels.service.BackupApi.BackupSyncPrefs
 import com.bobodroid.myapplication.models.datamodels.service.BackupApi.BackupRequest
 import com.bobodroid.myapplication.models.datamodels.service.UserApi.UserApi
 import com.bobodroid.myapplication.models.datamodels.service.UserApi.UserRequest
@@ -446,7 +449,8 @@ class SocialLogoutUseCase @Inject constructor(
  * 소셜 연동 해제 UseCase (새로 추가)
  */
 class UnlinkSocialUseCase @Inject constructor(
-    private val userRepository: UserRepository
+    private val userRepository: UserRepository,
+    private val backupSyncPrefs: BackupSyncPrefs
 ) {
     suspend operator fun invoke(localUserData: LocalUserData): Result<Unit> {
         return try {
@@ -473,6 +477,9 @@ class UnlinkSocialUseCase @Inject constructor(
 
             userRepository.localUserUpdate(updatedUser)
 
+            // 다른 계정에 연동할 때 이전 계정의 동기화 기준값이 남지 않도록 초기화
+            backupSyncPrefs.clear()
+
             Log.d(TAG("UnlinkSocialUseCase", "invoke"), "소셜 연동 해제 완료")
 
             Result.Success(
@@ -491,70 +498,47 @@ class UnlinkSocialUseCase @Inject constructor(
 }
 
 /**
- * 서버 백업 UseCase
+ * 서버 백업 UseCase (수동 백업 / 덮어쓰기)
+ * 실제 전송은 BackupSyncManager가 담당한다.
  */
 class SyncToServerUseCase @Inject constructor(
     private val userRepository: UserRepository,
-    private val investRepository: InvestRepository
+    private val backupSyncManager: BackupSyncManager
 ) {
-    suspend operator fun invoke(localUserData: LocalUserData): Result<LocalUserData> {
-        return try {
-            if (localUserData.socialId == null) {
-                return Result.Error(message = "소셜 로그인이 필요합니다")
+    /**
+     * @param force true이면 서버 기록이 이 기기와 달라도 이 기기 기록으로 덮어쓴다
+     */
+    suspend operator fun invoke(
+        localUserData: LocalUserData,
+        force: Boolean = false
+    ): Result<LocalUserData> {
+        if (localUserData.socialId.isNullOrEmpty()) {
+            return Result.Error(message = "소셜 로그인이 필요합니다")
+        }
+
+        return when (val outcome = backupSyncManager.backup(force = force)) {
+            is BackupOutcome.Success -> {
+                val syncedUser = userRepository.userData.first()?.localUserData ?: localUserData
+                Result.Success(
+                    data = syncedUser,
+                    message = "데이터가 백업되었습니다 (${outcome.recordCount}개)"
+                )
             }
 
-            Log.d(TAG("SyncToServerUseCase", "invoke"), "서버 백업 시작")
+            is BackupOutcome.Skipped -> Result.Error(message = outcome.reason)
 
-            // ✅ 1. 모든 투자 기록 가져오기
-            val allRecords = investRepository.getAllCurrencyRecords().first()
-            Log.d(TAG("SyncToServerUseCase", "invoke"), "백업할 기록: ${allRecords.size}개")
-
-            // ✅ 2. CurrencyRecord → CurrencyRecordDto 변환
-            val recordDtos = BackupMapper.toDtoList(allRecords)
-
-            // ✅ 3. 백업 요청 생성
-            val backupRequest = BackupRequest(
-                deviceId = localUserData.id.toString(),
-                socialId = localUserData.socialId,
-                socialType = localUserData.socialType,
-                currencyRecords = recordDtos
+            is BackupOutcome.Held -> Result.Error(
+                message = "서버에 이 기기에 없는 기록이 있어 백업을 보류했어요. 서버 기록을 복구하거나 이 기기 기록으로 덮어쓰기를 선택해 주세요"
             )
 
-            // ✅ 4. 서버로 백업 전송
-            val response = BackupApi.backupService.createBackup(backupRequest)
-
-            if (!response.success) {
-                return Result.Error(message = response.message)
+            is BackupOutcome.Failed -> {
+                val exception = outcome.exception
+                if (exception != null) {
+                    Result.Error(message = outcome.message, exception = exception)
+                } else {
+                    Result.Error(message = outcome.message)
+                }
             }
-
-            // ✅ 5. 백업 성공 시 lastSyncAt 업데이트
-            val currentTime = java.text.SimpleDateFormat(
-                "yyyy-MM-dd'T'HH:mm:ss",
-                java.util.Locale.getDefault()
-            ).format(java.util.Date())
-
-            val syncedUser = localUserData.copy(
-                isSynced = true,
-                lastSyncAt = currentTime
-            )
-
-            // ✅ 6. DB에 저장
-            userRepository.localUserUpdate(syncedUser)
-
-            Log.d(TAG("SyncToServerUseCase", "invoke"), "서버 백업 완료: ${response.message}, 기록 ${allRecords.size}개")
-
-            // ✅ 7. 업데이트된 사용자 데이터 반환
-            Result.Success(
-                data = syncedUser,
-                message = "데이터가 백업되었습니다 (${allRecords.size}개)"
-            )
-
-        } catch (e: Exception) {
-            Log.e(TAG("SyncToServerUseCase", "invoke"), "서버 백업 실패", e)
-            Result.Error(
-                message = "백업에 실패했습니다",
-                exception = e
-            )
         }
     }
 }
@@ -567,7 +551,8 @@ class SyncToServerUseCase @Inject constructor(
  */
 class RestoreFromServerUseCase @Inject constructor(
     private val userRepository: UserRepository,
-    private val investRepository: InvestRepository
+    private val investRepository: InvestRepository,
+    private val backupSyncPrefs: BackupSyncPrefs
 ) {
     suspend operator fun invoke(
         deviceId: String? = null,
@@ -608,6 +593,10 @@ class RestoreFromServerUseCase @Inject constructor(
 
             // ✅ 5. 로컬 DB에 저장
             investRepository.addCurrencyRecords(records)
+
+            // ✅ 5-1. 이 기기가 서버 최신 상태를 알게 되었으므로 동기화 기준값 저장
+            backupSyncPrefs.setSyncBaseAt(restoreData.lastBackupAt)
+            backupSyncPrefs.setHeld(false)
 
             // ✅ 6. 사용자 정보 업데이트 (lastSyncAt)
             val currentUser = userRepository.userData.first()?.localUserData

@@ -17,6 +17,7 @@ import androidx.activity.viewModels
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.core.content.ContextCompat
 import androidx.core.splashscreen.SplashScreen
@@ -29,6 +30,7 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.bobodroid.myapplication.components.Dialogs.GuideDialog
 import com.bobodroid.myapplication.components.Dialogs.PremiumAdDialogHost
+import com.bobodroid.myapplication.components.BackupNoticeBanner
 import com.bobodroid.myapplication.components.MainBottomBar
 import com.bobodroid.myapplication.models.datamodels.social.SocialLoginManager
 import com.bobodroid.myapplication.models.datamodels.useCases.FcmUseCases
@@ -46,6 +48,7 @@ import com.bobodroid.myapplication.widget.WidgetUpdateHelper
 import com.bobodroid.myapplication.widget.WidgetUpdateService
 import com.bobodroid.myapplication.util.result.Result
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -374,6 +377,18 @@ fun InvestAppScreen(
     var guideDialog by remember { mutableStateOf(false) }
     var returnGuideDialog by remember { mutableStateOf(false) }
 
+    // 기록 저장 직후 백업 안내 배너 (소셜 미연동 사용자, 6초 후 자동으로 사라짐)
+    var showBackupBanner by remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) {
+        mainViewModel.backupPromptEvents.collect { showBackupBanner = true }
+    }
+    LaunchedEffect(showBackupBanner) {
+        if (showBackupBanner) {
+            delay(6000)
+            showBackupBanner = false
+        }
+    }
+
     Scaffold(
         bottomBar = {
             MainBottomBar(
@@ -397,6 +412,17 @@ fun InvestAppScreen(
                 activity = activity,
                 sharedViewModel = sharedViewModel
             )
+
+            if (showBackupBanner) {
+                BackupNoticeBanner(
+                    modifier = Modifier.align(Alignment.BottomCenter),
+                    onConnectClick = {
+                        showBackupBanner = false
+                        mainRouteAction.navTo(MainRoute.MyPage)
+                    },
+                    onDismiss = { showBackupBanner = false }
+                )
+            }
 
             // ✅ 프리미엄 유도 / 리워드 안내 다이얼로그는 여기서만 표시
             PremiumAdDialogHost(sharedViewModel = sharedViewModel)

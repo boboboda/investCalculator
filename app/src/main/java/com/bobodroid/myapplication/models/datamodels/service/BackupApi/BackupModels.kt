@@ -33,7 +33,11 @@ data class BackupRequest(
     val deviceId: String,
     val socialId: String? = null,
     val socialType: String? = null,
-    val currencyRecords: List<CurrencyRecordDto>
+    val currencyRecords: List<CurrencyRecordDto>,
+    // 이 기기가 마지막으로 동기화했을 때 서버가 알려준 lastBackupAt (서버가 덮어쓰기 안전 여부를 판단)
+    val syncBaseAt: String? = null,
+    // 사용자가 "이 기기 기록으로 덮어쓰기"를 선택한 경우에만 true
+    val force: Boolean = false
 )
 
 /**
@@ -54,7 +58,9 @@ data class BackupResponse(
     val success: Boolean,
     val message: String,
     val data: BackupData? = null,
-    val error: String? = null
+    val error: String? = null,
+    // 보류 사유 코드 (서버 기록이 이 기기와 달라 저장하지 않은 경우 "SYNC_REQUIRED")
+    val code: String? = null
 )
 
 /**

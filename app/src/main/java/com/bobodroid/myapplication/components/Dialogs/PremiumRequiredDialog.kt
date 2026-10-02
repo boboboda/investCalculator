@@ -166,12 +166,6 @@ fun PremiumRequiredDialog(
                             title = "위젯 실시간 업데이트",
                             description = "자동 환율 갱신"
                         )
-
-                        PremiumBenefitRow(
-                            icon = Icons.Rounded.CloudDone,
-                            title = "클라우드 자동 백업",
-                            description = "데이터 안전 보장"
-                        )
                     }
 
                     Spacer(modifier = Modifier.height(24.dp))

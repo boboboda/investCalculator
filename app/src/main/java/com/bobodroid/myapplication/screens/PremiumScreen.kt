@@ -391,7 +391,6 @@ fun PremiumBenefitsCard() {
                 Triple(Icons.Rounded.TrendingUp, "수익률 알림", "기록별 목표 수익률 달성 알림"),
                 Triple(Icons.Rounded.CalendarToday, "일일 리포트", "매일 수익 현황 요약 알림"),
                 Triple(Icons.Rounded.Update, "매수 경과 알림", "장기 보유 기록 리마인더"),
-                Triple(Icons.Rounded.Cloud, "자동 백업", "클라우드에 안전하게 데이터 보관"),
                 Triple(Icons.Rounded.Sync, "다중 기기 동기화", "모든 기기에서 실시간 동기화"),
                 Triple(Icons.Rounded.Analytics, "고급 분석", "상세한 수익률 및 통계"),
                 Triple(Icons.Rounded.Widgets, "위젯 실시간 업데이트", "백그라운드에서 자동 환율 갱신")

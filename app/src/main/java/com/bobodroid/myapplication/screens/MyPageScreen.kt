@@ -41,6 +41,7 @@ import com.bobodroid.myapplication.components.Dialogs.DataRestoreDialog
 import com.bobodroid.myapplication.components.Dialogs.OnboardingTooltipDialog
 import com.bobodroid.myapplication.models.datamodels.roomDb.LocalUserData
 import com.bobodroid.myapplication.models.datamodels.roomDb.PremiumType
+import com.bobodroid.myapplication.models.datamodels.service.BackupApi.BackupNoticeStatus
 import com.bobodroid.myapplication.models.viewmodels.*
 import com.bobodroid.myapplication.routes.MainRoute
 import com.bobodroid.myapplication.routes.MyPageRoute
@@ -62,6 +63,7 @@ fun MyPageScreen(
     val uiState by myPageViewModel.myPageUiState.collectAsState()
     val mainScreenSnackBarHostState = remember { SnackbarHostState() }
     val navController = rememberNavController()
+    val backupNoticeStatus by myPageViewModel.backupNoticeStatus.collectAsState()
 
     val premiumType by sharedViewModel.premiumType.collectAsState()
     val premiumExpiryDate by sharedViewModel.premiumExpiryDate.collectAsState()
@@ -104,7 +106,8 @@ fun MyPageScreen(
                     showRewardDialog = {
                         sharedViewModel.showRewardAdDialog()
                     },
-                    onNavigateToBacktest = onNavigateToBacktest
+                    onNavigateToBacktest = onNavigateToBacktest,
+                    backupNoticeStatus = backupNoticeStatus
                 )
             }
 
@@ -323,6 +326,7 @@ fun ImprovedMyPageView(
     premiumExpiryDate: String?,
     showRewardDialog: () -> Unit,
     onNavigateToBacktest: () -> Unit,   // ✅ 신규 추가
+    backupNoticeStatus: BackupNoticeStatus = BackupNoticeStatus.NONE
 ) {
     val context = LocalContext.current
 
@@ -393,6 +397,7 @@ fun ImprovedMyPageView(
 
         item {
             SettingSection(
+                cloudBackupStatus = backupNoticeStatus,
                 onAccountManageClick = { myPageRouteAction.navTo(MyPageRoute.AccountManage) },
                 onCloudServiceClick = { myPageRouteAction.navTo(MyPageRoute.CloudService) },
                 onCustomerServiceClick = {
@@ -837,11 +842,6 @@ fun PremiumBenefitsSummary(
             text = "위젯 실시간 업데이트",
             textColor = textColor
         )
-        PremiumBenefitItem(
-            icon = Icons.Rounded.CloudDone,
-            text = "클라우드 자동 백업",
-            textColor = textColor
-        )
     }
 }
 
@@ -915,14 +915,6 @@ fun PremiumBenefitsDetailCard() {
                 icon = Icons.Rounded.FlashOn,
                 title = "위젯 실시간 업데이트",
                 description = "WebSocket 실시간 연결로 즉시 환율 반영"
-            )
-
-            HorizontalDivider(color = Color(0xFFE5E7EB))
-
-            PremiumBenefitDetailItem(
-                icon = Icons.Rounded.CloudDone,
-                title = "클라우드 자동 백업",
-                description = "수동 백업 → 실시간 자동 백업으로 데이터 안전 보장"
             )
         }
     }
@@ -1992,6 +1984,7 @@ fun BadgeItemNew(badge: BadgeInfo) {
 
 @Composable
 fun SettingSection(
+    cloudBackupStatus: BackupNoticeStatus = BackupNoticeStatus.NONE,
     onAccountManageClick: () -> Unit,
     onCloudServiceClick: () -> Unit,
     onCustomerServiceClick: () -> Unit,
@@ -2033,8 +2026,18 @@ fun SettingSection(
             SettingItem(
                 icon = Icons.Rounded.Cloud,
                 title = "클라우드 백업",
-                subtitle = "데이터 동기화",
-                onClick = onCloudServiceClick
+                subtitle = when (cloudBackupStatus) {
+                    BackupNoticeStatus.NEEDS_LOGIN -> "소셜 로그인을 연결해야 백업돼요"
+                    BackupNoticeStatus.HELD -> "서버 기록과 달라 자동 백업이 멈췄어요"
+                    BackupNoticeStatus.NONE -> "데이터 동기화"
+                   },
+                onClick = onCloudServiceClick,
+                badgeText = when (cloudBackupStatus) {
+                    BackupNoticeStatus.NEEDS_LOGIN -> "백업 안 됨"
+                    BackupNoticeStatus.HELD -> "확인 필요"
+                    BackupNoticeStatus.NONE -> null
+                     },
+                badgeWarning = cloudBackupStatus != BackupNoticeStatus.NONE
             )
             HorizontalDivider(color = Color(0xFFE5E7EB))
             SettingItem(
@@ -2060,7 +2063,8 @@ fun SettingItem(
     title: String,
     subtitle: String,
     onClick: () -> Unit,
-    badgeText: String? = null // ✅ 추가
+    badgeText: String? = null, // ✅ 추가
+    badgeWarning: Boolean = false // 경고 배지(빨간색) 여부
 ) {
     Row(
         modifier = Modifier
@@ -2094,7 +2098,7 @@ fun SettingItem(
                     badgeText?.let {
                         Surface(
                             shape = RoundedCornerShape(6.dp),
-                            color = Color(0xFF6152D9)
+                            color = if (badgeWarning) Color(0xFFEF4444) else Color(0xFF6152D9)
                         ) {
                             Text(
                                 text = it,

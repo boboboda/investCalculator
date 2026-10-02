@@ -7,6 +7,7 @@ import com.bobodroid.myapplication.models.datamodels.repository.InvestRepository
 import com.bobodroid.myapplication.models.datamodels.repository.SettingsRepository
 import com.bobodroid.myapplication.models.datamodels.repository.UserRepository
 import com.bobodroid.myapplication.models.datamodels.roomDb.*
+import com.bobodroid.myapplication.models.datamodels.service.BackupApi.BackupNoticeManager
 import com.bobodroid.myapplication.models.viewmodels.CurrencyRecordState
 import com.bobodroid.myapplication.models.viewmodels.RecordListUiState
 import com.bobodroid.myapplication.worker.BackupScheduler
@@ -24,7 +25,8 @@ class RecordUseCase @Inject constructor(
     private val investRepository: InvestRepository,
     private val userRepository: UserRepository,
     private val settingsRepository: SettingsRepository, // ✅ 추가: 매도 스프레드 반영용
-    private val backupScheduler: BackupScheduler
+    private val backupScheduler: BackupScheduler,
+    private val backupNoticeManager: BackupNoticeManager
 ) {
 
     // ===== 새로운 통합 메서드 (12개 통화 지원) =====
@@ -101,8 +103,11 @@ class RecordUseCase @Inject constructor(
 
         investRepository.addCurrencyRecord(record)
 
-        // ✅ 프리미엄 사용자 자동 백업 예약
-        scheduleBackupIfPremium()
+        // ✅ 소셜 연동 사용자 자동 백업 예약
+        scheduleBackupIfLinked()
+
+        // ✅ 소셜 미연동 사용자에게 백업 안내 (조건에 맞을 때만 배너 표시)
+        backupNoticeManager.onRecordAdded()
     }
 
     /**
@@ -129,8 +134,8 @@ class RecordUseCase @Inject constructor(
 
         investRepository.updateCurrencyRecord(editedRecord)
 
-        // ✅ 프리미엄 사용자 자동 백업 예약
-        scheduleBackupIfPremium()
+        // ✅ 소셜 연동 사용자 자동 백업 예약
+        scheduleBackupIfLinked()
     }
 
     /**
@@ -157,8 +162,8 @@ class RecordUseCase @Inject constructor(
 
         investRepository.updateCurrencyRecord(soldRecord)
 
-        // ✅ 프리미엄 사용자 자동 백업 예약
-        scheduleBackupIfPremium()
+        // ✅ 소셜 연동 사용자 자동 백업 예약
+        scheduleBackupIfLinked()
     }
 
     /**
@@ -168,8 +173,8 @@ class RecordUseCase @Inject constructor(
         val updatedRecord = record.copy(memo = memo)
         investRepository.updateCurrencyRecord(updatedRecord)
 
-        // ✅ 프리미엄 사용자 자동 백업 예약
-        scheduleBackupIfPremium()
+        // ✅ 소셜 연동 사용자 자동 백업 예약
+        scheduleBackupIfLinked()
     }
 
     /**
@@ -178,8 +183,8 @@ class RecordUseCase @Inject constructor(
     suspend fun removeCurrencyRecord(record: CurrencyRecord) {
         investRepository.deleteCurrencyRecord(record)
 
-        // ✅ 프리미엄 사용자 자동 백업 예약
-        scheduleBackupIfPremium()
+        // ✅ 소셜 연동 사용자 자동 백업 예약
+        scheduleBackupIfLinked()
     }
 
     /**
@@ -189,8 +194,8 @@ class RecordUseCase @Inject constructor(
         val canceledRecord = record.copyForCancelSell()
         investRepository.updateCurrencyRecord(canceledRecord)
 
-        // ✅ 프리미엄 사용자 자동 백업 예약
-        scheduleBackupIfPremium()
+        // ✅ 소셜 연동 사용자 자동 백업 예약
+        scheduleBackupIfLinked()
     }
 
     /**
@@ -200,8 +205,8 @@ class RecordUseCase @Inject constructor(
         val updatedRecord = record.copy(categoryName = groupName)
         investRepository.updateCurrencyRecord(updatedRecord)
 
-        // ✅ 프리미엄 사용자 자동 백업 예약
-        scheduleBackupIfPremium()
+        // ✅ 소셜 연동 사용자 자동 백업 예약
+        scheduleBackupIfLinked()
     }
 
     /**
@@ -256,14 +261,16 @@ class RecordUseCase @Inject constructor(
             }
     }
 
-    // ✅ 프리미엄 체크 후 백업 예약
-    private suspend fun scheduleBackupIfPremium() {
+    // ✅ 소셜 로그인 연동 사용자라면 프리미엄 여부와 관계없이 자동 백업 예약
+    private suspend fun scheduleBackupIfLinked() {
         try {
             val userData = userRepository.userData.first()
             val localUser = userData?.localUserData
 
-            // 프리미엄이고 소셜 로그인되어 있으면 백업 예약
-            if (localUser?.isPremium == true && !localUser.socialId.isNullOrEmpty()) {
+            if (localUser != null &&
+                !localUser.socialId.isNullOrEmpty() &&
+                localUser.socialType != "NONE"
+            ) {
                 backupScheduler.scheduleBackup()
                 Log.d("RecordUseCase", "자동 백업 예약됨")
             }

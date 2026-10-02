@@ -51,6 +51,8 @@
         <activity
             android:name=".WebActivity"
             android:theme="@style/WebViewTheme"
+            android:configChanges="orientation|screenSize|keyboardHidden"
+            android:windowSoftInputMode="adjustResize"
             android:exported="false" />
 
         <meta-data

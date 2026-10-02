@@ -2,87 +2,87 @@ package com.bobodroid.myapplication.components
 
 import android.annotation.SuppressLint
 import android.app.Activity
-import android.os.Message
-import android.util.Log
+import android.content.ActivityNotFoundException
+import android.content.Intent
+import android.net.Uri
 import android.view.ViewGroup
-import android.webkit.JsResult
+import android.webkit.CookieManager
 import android.webkit.WebChromeClient
 import android.webkit.WebResourceRequest
 import android.webkit.WebView
-import android.webkit.WebView.WebViewTransport
-import android.webkit.WebView.setWebContentsDebuggingEnabled
 import android.webkit.WebViewClient
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.viewinterop.AndroidView
-import com.bobodroid.myapplication.MainActivity.Companion.TAG
-import com.bobodroid.myapplication.models.viewmodels.WebViewModel
-import kotlinx.coroutines.flow.collectLatest
+import com.bobodroid.myapplication.BuildConfig
 
-
+/**
+ * 앱 전용 웹 화면.
+ * - 앞으로/뒤로 버튼은 없고, 시스템 뒤로가기가 웹 히스토리를 한 단계씩 되돌린다.
+ *   더 갈 곳이 없으면 onCloseRequested 를 호출한다.
+ * - 같은 사이트 밖 주소는 외부 브라우저로 연다.
+ * - url 이 바뀔 때만 새로 로드한다. (예전에는 리컴포지션마다 첫 주소로 되돌아갔다.)
+ */
 @SuppressLint("SetJavaScriptEnabled")
 @Composable
-fun WebView(webViewModel: WebViewModel, url:String, activity: Activity) {
-//    val context = LocalContext.current
+fun AppWebView(
+    activity: Activity,
+    url: String,
+    onProgress: (Int) -> Unit,
+    onCloseRequested: () -> Unit
+) {
+    val allowedHost = remember { Uri.parse(BuildConfig.BASE_URL).host }
 
-    // WebView 인스턴스를 재사용하기 위해 remember 사용
-    val webView = remember {
+    val webView = remember(url) {
         WebView(activity).apply {
-
-            this.layoutParams = ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
+            layoutParams = ViewGroup.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.MATCH_PARENT
+            )
 
             settings.apply {
-                settings.javaScriptEnabled = true
-                settings.domStorageEnabled = true
-                settings.loadWithOverviewMode = true
-                settings.useWideViewPort = true
-                settings.setSupportZoom(true)
-                settings.setSupportMultipleWindows(true)
-                settings.javaScriptCanOpenWindowsAutomatically = true
+                javaScriptEnabled = true
+                domStorageEnabled = true
+                useWideViewPort = true          // 페이지의 viewport 설정을 따른다
+                loadWithOverviewMode = false    // 화면을 축소해서 맞추지 않는다
+                setSupportZoom(false)
+                builtInZoomControls = false
+                displayZoomControls = false
+                setSupportMultipleWindows(false)
+                javaScriptCanOpenWindowsAutomatically = false
             }
 
-            setWebContentsDebuggingEnabled(true)
+            if (BuildConfig.DEBUG) {
+                WebView.setWebContentsDebuggingEnabled(true)
+            }
+
+            CookieManager.getInstance().setAcceptCookie(true)
 
             webViewClient = object : WebViewClient() {
                 override fun shouldOverrideUrlLoading(
                     view: WebView?,
                     request: WebResourceRequest?
                 ): Boolean {
-                    Log.d(TAG("webView",""), "팝업 호출")
-                    return false
+                    val target = request?.url ?: return false
+
+                    if (target.host == allowedHost) return false
+
+                    try {
+                        activity.startActivity(Intent(Intent.ACTION_VIEW, target))
+                    } catch (e: ActivityNotFoundException) {
+                        // 열 수 있는 앱이 없으면 무시한다
+                    }
+                    return true
                 }
             }
+
             webChromeClient = object : WebChromeClient() {
-                override fun onJsAlert(
-                    view: WebView?,
-                    url: String?,
-                    message: String?,
-                    result: JsResult?
-                ): Boolean {
-                    result?.confirm()
-                    Log.d(TAG("webView",""), "팝업 호출")
-                    return super.onJsAlert(view, url, message, result)
-                }
-
-                override fun onCreateWindow(
-                    view: WebView?,
-                    isDialog: Boolean,
-                    isUserGesture: Boolean,
-                    resultMsg: Message?
-                ): Boolean {
-                    Log.d(TAG("webView",""), "팝업 호출")
-                    val newWebView = view?.context?.let { WebView(it) }
-                    if (newWebView != null) {
-                        newWebView.webViewClient = WebViewClient()
-                    }
-                    val transport = resultMsg?.obj as? WebViewTransport
-                    transport?.webView = newWebView
-                    resultMsg?.sendToTarget()
-
-                    return true
+                override fun onProgressChanged(view: WebView?, newProgress: Int) {
+                    onProgress(newProgress)
                 }
             }
 
@@ -90,32 +90,24 @@ fun WebView(webViewModel: WebViewModel, url:String, activity: Activity) {
         }
     }
 
-
-    // undo 이벤트를 관찰하고 처리
-    LaunchedEffect(webViewModel.undoSharedFlow) {
-        webViewModel.undoSharedFlow.collectLatest {
-            if (webView.canGoBack()) {
-                webView.goBack()
-            }
+    BackHandler {
+        if (webView.canGoBack()) {
+            webView.goBack()
+        } else {
+            onCloseRequested()
         }
     }
 
-    // redo 이벤트를 관찰하고 처리
-    LaunchedEffect(webViewModel.redoSharedFlow) {
-        webViewModel.redoSharedFlow.collectLatest {
-            if (webView.canGoForward()) {
-                webView.goForward()
-            }
+    DisposableEffect(webView) {
+        onDispose {
+            (webView.parent as? ViewGroup)?.removeView(webView)
+            webView.stopLoading()
+            webView.destroy()
         }
     }
 
     AndroidView(
         factory = { webView },
-        update = { it.loadUrl(url)
-
-        },
-        modifier = Modifier
-            .fillMaxSize()
+        modifier = Modifier.fillMaxSize()
     )
 }
-

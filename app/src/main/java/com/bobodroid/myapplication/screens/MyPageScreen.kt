@@ -43,6 +43,7 @@ import com.bobodroid.myapplication.models.datamodels.roomDb.LocalUserData
 import com.bobodroid.myapplication.models.datamodels.roomDb.PremiumType
 import com.bobodroid.myapplication.models.datamodels.service.BackupApi.BackupNoticeStatus
 import com.bobodroid.myapplication.models.viewmodels.*
+import com.bobodroid.myapplication.openWebBoard
 import com.bobodroid.myapplication.routes.MainRoute
 import com.bobodroid.myapplication.routes.MyPageRoute
 import com.bobodroid.myapplication.routes.RouteAction
@@ -400,10 +401,11 @@ fun ImprovedMyPageView(
                 cloudBackupStatus = backupNoticeStatus,
                 onAccountManageClick = { myPageRouteAction.navTo(MyPageRoute.AccountManage) },
                 onCloudServiceClick = { myPageRouteAction.navTo(MyPageRoute.CloudService) },
-                onCustomerServiceClick = {
-                    val webPostIntent = Intent(context, WebActivity::class.java)
-                    webPostIntent.putExtra("url", "https://cobusil.vercel.app/release/postBoard/dollarRecord")
-                    ContextCompat.startActivity(context, webPostIntent, null)
+                onNoticeClick = {
+                    openWebBoard(context, localUser.id.toString(), "notice", "공지사항")
+                },
+                onInquiryClick = {
+                    openWebBoard(context, localUser.id.toString(), "post", "문의사항")
                 },
                 onSpreadSettingsClick = { myPageRouteAction.navTo(MyPageRoute.SpreadSettings) }, // ✅ 추가
                 onWidgetSettingsClick = { myPageRouteAction.navTo(MyPageRoute.WidgetSettings) },
@@ -1987,7 +1989,8 @@ fun SettingSection(
     cloudBackupStatus: BackupNoticeStatus = BackupNoticeStatus.NONE,
     onAccountManageClick: () -> Unit,
     onCloudServiceClick: () -> Unit,
-    onCustomerServiceClick: () -> Unit,
+    onNoticeClick: () -> Unit,
+    onInquiryClick: () -> Unit,
     onWidgetSettingsClick: () -> Unit,
     onSpreadSettingsClick: () -> Unit, // ✅ 추가
     onHelpClick: () -> Unit
@@ -2048,10 +2051,17 @@ fun SettingSection(
             )
             HorizontalDivider(color = Color(0xFFE5E7EB))
             SettingItem(
+                icon = Icons.Rounded.Campaign,
+                title = "공지사항",
+                subtitle = "업데이트와 안내",
+                onClick = onNoticeClick
+            )
+            HorizontalDivider(color = Color(0xFFE5E7EB))
+            SettingItem(
                 icon = Icons.Rounded.Help,
-                title = "고객센터",
+                title = "문의사항",
                 subtitle = "문의하기",
-                onClick = onCustomerServiceClick
+                onClick = onInquiryClick
             )
         }
     }

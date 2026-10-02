@@ -1,49 +1,49 @@
 package com.bobodroid.myapplication
 
 import android.app.Activity
-import androidx.appcompat.app.AppCompatActivity
+import android.content.Context
+import android.content.Intent
 import android.os.Bundle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
-import androidx.compose.foundation.Image
+import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.ArrowForward
-import androidx.compose.material.icons.outlined.Close
-import androidx.compose.material3.BottomAppBar
-import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.Scaffold
+import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.core.view.WindowCompat
-import com.bobodroid.myapplication.components.AutoSizeText
+import com.bobodroid.myapplication.components.AppWebView
+import com.bobodroid.myapplication.models.viewmodels.WebLoadState
 import com.bobodroid.myapplication.models.viewmodels.WebViewModel
-import com.bobodroid.myapplication.components.WebView
 import com.bobodroid.myapplication.ui.theme.InverstCalculatorTheme
-import com.bobodroid.myapplication.ui.theme.TopBarColor
 
 class WebActivity : AppCompatActivity() {
 
@@ -52,108 +52,118 @@ class WebActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // ✅ Edge-to-Edge 활성화
         enableEdgeToEdge()
 
-        // ✅ 시스템바 영역 처리
-        WindowCompat.setDecorFitsSystemWindows(window, false)
+        val deviceId = intent.getStringExtra(EXTRA_DEVICE_ID).orEmpty()
+        val path = intent.getStringExtra(EXTRA_PATH).orEmpty()
+        val title = intent.getStringExtra(EXTRA_TITLE).orEmpty()
+
+        // 앱 전용 게시판 경로만 연다.
+        if (!path.startsWith("/app/board/")) {
+            finish()
+            return
+        }
+
+        webViewModel.start(deviceId, path)
 
         setContent {
-            val url = intent.getStringExtra("url") ?: ""
-
             InverstCalculatorTheme {
-                WebScreen(webViewModel, url, this)
+                WebScreen(webViewModel = webViewModel, title = title, activity = this)
             }
+        }
+    }
+
+    companion object {
+        private const val EXTRA_DEVICE_ID = "deviceId"
+        private const val EXTRA_PATH = "path"
+        private const val EXTRA_TITLE = "title"
+
+        fun start(context: Context, deviceId: String, path: String, title: String) {
+            val intent = Intent(context, WebActivity::class.java).apply {
+                putExtra(EXTRA_DEVICE_ID, deviceId)
+                putExtra(EXTRA_PATH, path)
+                putExtra(EXTRA_TITLE, title)
+                if (context !is Activity) addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            }
+            context.startActivity(intent)
         }
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
+/** 마이페이지에서 공지사항(postType = "notice") 또는 문의사항(postType = "post")을 연다. */
+fun openWebBoard(context: Context, deviceId: String, postType: String, title: String) {
+    WebActivity.start(context, deviceId, "/app/board/dollarRecord/$postType", title)
+}
+
 @Composable
 fun WebScreen(
     webViewModel: WebViewModel,
-    url: String,
+    title: String,
     activity: Activity
 ) {
-    Scaffold(
-        modifier = Modifier.fillMaxSize(),
-//        topBar = {
-//            // ✅ MainTopBar와 동일한 구조 사용 + 닫기 버튼 추가
-//            Row(
-//                modifier = Modifier
-//                    .fillMaxWidth()
-//                    .height(40.dp)
-//                    .statusBarsPadding() // ✅ 시스템바 패딩 추가
-//                    .background(Color.White)
-//                    .padding(horizontal = 10.dp),
-//                verticalAlignment = Alignment.CenterVertically,
-//                horizontalArrangement = Arrangement.Center
-//            ) {
-//                Image(
-//                    modifier = Modifier
-//                        .clip(CircleShape)
-//                        .padding(5.dp),
-//                    painter = painterResource(id = R.drawable.ic_icon),
-//                    contentDescription = ""
-//                )
-//
-//                Spacer(modifier = Modifier.width(10.dp))
-//
-//                AutoSizeText(
-//                    value = "달러 기록",
-//                    fontSize = 18.sp,
-//                    fontWeight = FontWeight.Bold,
-//                    maxLines = 1,
-//                    minFontSize = 10.sp,
-//                    color = Color(0xFF1F2937)
-//                )
-//
-//                Spacer(modifier = Modifier.weight(1f))
-//
-//                // ✅ 닫기 버튼 추가
-//                com.bobodroid.myapplication.components.IconButton(
-//                    imageVector = Icons.Outlined.Close,
-//                    onClicked = {
-//                        webViewModel.finishWebAct(activity = activity)
-//                    },
-//                    modifier = Modifier.padding(end = 5.dp)
-//                )
-//            }
-//        },
-        bottomBar = {
-            BottomAppBar(
-                modifier = Modifier.height(50.dp),
-                actions = {
-                    Spacer(Modifier.weight(1f))
-                    IconButton(onClick = { webViewModel.undo() }) {
-                        Icon(
-                            imageVector = Icons.Default.ArrowBack,
-                            contentDescription = "back",
-                            tint = Color.DarkGray
-                        )
-                    }
-                    IconButton(onClick = { webViewModel.redo() }) {
-                        Icon(
-                            imageVector = Icons.Default.ArrowForward,
-                            contentDescription = "forward",
-                            tint = Color.DarkGray
-                        )
-                    }
-                }
+    val state by webViewModel.state.collectAsState()
+    var progress by remember { mutableStateOf(0) }
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color.White)
+            .statusBarsPadding()
+            .navigationBarsPadding()
+            .imePadding()   // 글쓰기 중 키보드가 입력창을 가리지 않게 한다
+    ) {
+        // 상단 바: 제목 + 닫기. 앞으로/뒤로 버튼은 두지 않는다.
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(48.dp)
+                .padding(start = 16.dp, end = 4.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = title,
+                modifier = Modifier.weight(1f),
+                fontSize = 18.sp,
+                fontWeight = FontWeight.Bold,
+                color = Color(0xFF1F2937),
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
             )
+            IconButton(onClick = { webViewModel.finishWebAct(activity) }) {
+                Icon(
+                    imageVector = Icons.Default.Close,
+                    contentDescription = "닫기",
+                    tint = Color.DarkGray
+                )
+            }
         }
-    ) { paddingValues ->
-        // ✅ WebView에 paddingValues 적용
+
+        Box(modifier = Modifier.fillMaxWidth().height(2.dp)) {
+            val loading = state is WebLoadState.Loading || progress < 100
+            if (loading) {
+                LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+            } else {
+                HorizontalDivider(color = Color(0xFFE5E7EB))
+            }
+        }
+
         Box(
             modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
+                .weight(1f)
+                .fillMaxWidth()
         ) {
-            WebView(
-                webViewModel = webViewModel,
-                url = url,
-                activity = activity
-            )
+            when (val current = state) {
+                is WebLoadState.Loading -> CircularProgressIndicator(
+                    modifier = Modifier.align(Alignment.Center)
+                )
+
+                is WebLoadState.Ready -> AppWebView(
+                    activity = activity,
+                    url = current.url,
+                    onProgress = { progress = it },
+                    onCloseRequested = { activity.finish() }
+                )
+            }
         }
     }
 }

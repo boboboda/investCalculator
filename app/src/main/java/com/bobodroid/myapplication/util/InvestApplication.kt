@@ -8,6 +8,7 @@ import androidx.hilt.work.HiltWorkerFactory
 import androidx.work.Configuration
 import com.bobodroid.myapplication.BuildConfig
 import com.bobodroid.myapplication.billing.BillingClientLifecycle
+import com.bobodroid.myapplication.util.analytics.AnalyticsTracker
 import com.google.android.gms.ads.MobileAds
 import com.kakao.sdk.common.KakaoSdk
 import dagger.hilt.android.HiltAndroidApp
@@ -22,6 +23,9 @@ class InvestApplication: Application(), Configuration.Provider {
 
     @Inject
     lateinit var appStarter: AppStarter
+
+    @Inject
+    lateinit var analyticsTracker: AnalyticsTracker
 
     private val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
@@ -63,6 +67,8 @@ class InvestApplication: Application(), Configuration.Provider {
         prefs = PreferenceUtil(applicationContext)
 
         appStarter.startApp(this)
+
+        analyticsTracker.start(this)
 
         instance = this
         this.billingClientLifecycle = BillingClientLifecycle.getInstance(this)

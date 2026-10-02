@@ -5,6 +5,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.bobodroid.myapplication.MainActivity.Companion.TAG
+import com.bobodroid.myapplication.models.datamodels.repository.AnalysisRateRepository
 import com.bobodroid.myapplication.models.datamodels.repository.NewsRepository
 import com.bobodroid.myapplication.models.datamodels.repository.UserRepository
 import com.bobodroid.myapplication.models.datamodels.roomDb.Currencies
@@ -13,12 +14,10 @@ import com.bobodroid.myapplication.models.datamodels.roomDb.CurrencyType
 import com.bobodroid.myapplication.models.datamodels.roomDb.TargetRates
 import com.bobodroid.myapplication.models.datamodels.response.NewsItem
 import com.bobodroid.myapplication.models.datamodels.service.exchangeRateApi.CurrencyChange
-import com.bobodroid.myapplication.models.datamodels.service.exchangeRateApi.ExchangeRateResponse
 import com.bobodroid.myapplication.models.datamodels.service.exchangeRateApi.ExchangeRates
-import com.bobodroid.myapplication.models.datamodels.service.exchangeRateApi.RateApi
 import com.bobodroid.myapplication.models.datamodels.repository.SettingsRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.asStateFlow
@@ -27,9 +26,8 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import java.time.LocalDate
-import java.time.format.DateTimeFormatter
+import java.util.TreeMap
 import javax.inject.Inject
 import kotlin.math.abs
 import kotlin.math.pow
@@ -40,6 +38,7 @@ class AnalysisViewModel @Inject constructor(
     private val userRepository: UserRepository,
     private val settingsRepository: SettingsRepository,
     private val newsRepository: NewsRepository, // ✅ MainViewModel에서 이전
+    private val analysisRateRepository: AnalysisRateRepository, // ✅ 병렬 호출 + 앱 전체 공유 캐시
 ): ViewModel() {
 
 
@@ -78,48 +77,8 @@ class AnalysisViewModel @Inject constructor(
     val analysisUiState = _analysisUiState.asStateFlow()
 
     init {
-        viewModelScope.launch(Dispatchers.IO) {
-            _analysisUiState.update {
-                it.copy(loadingState = LoadingState.Loading)
-            }
-
-            try {
-                loadAllRangeData()
-                loadDailyCharge()
-
-                if (_dailyRates.value.isEmpty()) {
-                    throw Exception("환율 데이터를 불러올 수 없습니다.\n인터넷 연결을 확인해주세요.")
-                }
-
-                withContext(Dispatchers.Main) {
-                    _analysisUiState.update { currentUiState ->
-                        currentUiState.copy(
-                            selectedRates = _dailyRates.value,
-                            loadingState = LoadingState.Success
-                        )
-                    }
-                }
-
-                Log.d(TAG("AnalysisViewModel", "init"), "데이터 로드 완료")
-                Log.d(TAG("AnalysisViewModel", "init"), "Daily: ${_dailyRates.value.size}개")
-                Log.d(TAG("AnalysisViewModel", "init"), "Weekly: ${_weeklyRates.value.size}개")
-                Log.d(TAG("AnalysisViewModel", "init"), "Monthly: ${_monthlyRates.value.size}개")
-                Log.d(TAG("AnalysisViewModel", "init"), "Yearly: ${_yearlyRates.value.size}개")
-
-            } catch (error: Exception) {
-                Log.e(TAG("AnalysisViewModel", "init"), "데이터 로드 실패: ${error.message}", error)
-
-                withContext(Dispatchers.Main) {
-                    _analysisUiState.update {
-                        it.copy(
-                            loadingState = LoadingState.Error(
-                                error.message ?: "알 수 없는 오류가 발생했습니다."
-                            )
-                        )
-                    }
-                }
-            }
-        }
+        // ✅ 분석 데이터 로드 (캐시가 있으면 스켈레톤 없이 즉시 표시, 없으면 병렬 호출)
+        loadAnalysisData()
 
         // ✅ 뉴스 로드 (MainViewModel에서 이전)
         loadLatestNews()
@@ -133,16 +92,7 @@ class AnalysisViewModel @Inject constructor(
 
         viewModelScope.launch {
             _analysisUiState.collect { uiState ->
-                val newSelectedRates = when(uiState.selectedTabIndex) {
-                    0 -> _dailyRates.value
-                    1 -> _weeklyRates.value
-                    2 -> _monthlyRates.value
-                    3 -> _yearlyRates.value
-                    else -> emptyList()
-                }
-
-                Log.d(TAG("AnalysisViewModel", "collectTabIndex"),
-                    "탭 변경: ${uiState.selectedTabIndex}, 새 데이터: ${newSelectedRates.size}개")
+                val newSelectedRates = ratesForTab(uiState.selectedTabIndex)
 
                 if (newSelectedRates != uiState.selectedRates) {
                     _analysisUiState.update { current ->
@@ -151,6 +101,92 @@ class AnalysisViewModel @Inject constructor(
                 }
             }
         }
+    }
+
+    private fun ratesForTab(tabIndex: Int): List<RateRange> {
+        return when (tabIndex) {
+            0 -> _dailyRates.value
+            1 -> _weeklyRates.value
+            2 -> _monthlyRates.value
+            3 -> _yearlyRates.value
+            else -> emptyList()
+        }
+    }
+
+    /**
+     * 분석 데이터 로드
+     * - TTL 이내 캐시가 있으면 네트워크 호출 없이 바로 반영
+     * - 이미 표시 중인 데이터가 있으면 스켈레톤 없이 백그라운드에서 갱신
+     * - 처음 로드하는 경우에만 스켈레톤(Loading) → Success/Error 전환
+     */
+    private fun loadAnalysisData(force: Boolean = false) {
+        viewModelScope.launch {
+            if (!force) {
+                analysisRateRepository.peekFresh()?.let { snapshot ->
+                    applySnapshot(snapshot)
+                    return@launch
+                }
+            }
+
+            val hasData = _dailyRates.value.isNotEmpty()
+            if (!hasData) {
+                _analysisUiState.update { it.copy(loadingState = LoadingState.Loading) }
+            }
+
+            try {
+                val snapshot = analysisRateRepository.load(force)
+                applySnapshot(snapshot)
+            } catch (error: CancellationException) {
+                throw error
+            } catch (error: Exception) {
+                Log.e(TAG("AnalysisViewModel", "loadAnalysisData"), "데이터 로드 실패: ${error.message}", error)
+
+                // 이미 표시 중인 데이터가 있으면 에러 화면으로 바꾸지 않고 기존 화면 유지
+                if (!hasData) {
+                    _analysisUiState.update {
+                        it.copy(
+                            loadingState = LoadingState.Error(
+                                error.message ?: "알 수 없는 오류가 발생했습니다."
+                            )
+                        )
+                    }
+                }
+            }
+        }
+    }
+
+    private fun applySnapshot(snapshot: AnalysisRateRepository.Snapshot) {
+        _dailyRates.value = snapshot.daily
+        _weeklyRates.value = snapshot.weekly
+        _monthlyRates.value = snapshot.monthly
+        _yearlyRates.value = snapshot.yearly
+
+        _analysisUiState.update { current ->
+            val updated = current.copy(
+                selectedRates = ratesForTab(current.selectedTabIndex),
+                loadingState = LoadingState.Success
+            )
+
+            val latest = snapshot.latest ?: return@update updated
+
+            val (jpyIcon, jpyColor) = getChangeIndicator(latest.change.jpy)
+            val (usdIcon, usdColor) = getChangeIndicator(latest.change.usd)
+
+            updated.copy(
+                latestRate = latest.latestRate,
+                change = latest.change,
+                jpyChangeIcon = jpyIcon,
+                jpyChangeColor = jpyColor,
+                usdChangeIcon = usdIcon,
+                usdChangeColor = usdColor
+            )
+        }
+
+        Log.d(
+            TAG("AnalysisViewModel", "applySnapshot"),
+            "Daily: ${snapshot.daily.size}, Weekly: ${snapshot.weekly.size}, " +
+                    "Monthly: ${snapshot.monthly.size}, Yearly: ${snapshot.yearly.size}"
+        )
     }
 
     // ✅ 뉴스 로드 (MainViewModel에서 이전)
@@ -167,135 +203,19 @@ class AnalysisViewModel @Inject constructor(
         }
     }
 
-    private suspend fun loadAllRangeData() = withContext(Dispatchers.IO) {
-        try {
-            loadDailyRates()
-            loadWeeklyRates()
-            loadMonthlyRates()
-            loadYearlyRates()
-        } catch (error: Exception) {
-            Log.e(TAG("AnalysisViewModel", "loadAllRangeData"), "$error")
-        }
-    }
-
-    private suspend fun loadDailyRates() = withContext(Dispatchers.IO) {
-        try {
-            val (startDate, endDate) = rangeDateFromTab(0)
-            val rates = RateApi.rateService.getRatesByPeriod("day", startDate, endDate)
-            Log.d(TAG("AnalysisViewModel", "loadDailyRates"), "Received data: $rates")
-            _dailyRates.value = filterAndMapRates(rates)
-        } catch (error: Exception) {
-            Log.e(TAG("AnalysisViewModel", "loadDailyRates"), "$error")
-        }
-    }
-
-    private suspend fun loadWeeklyRates() = withContext(Dispatchers.IO) {
-        try {
-            val (startDate, endDate) = rangeDateFromTab(1)
-            val rates = RateApi.rateService.getRatesByPeriod("week", startDate, endDate)
-            Log.d(TAG("AnalysisViewModel", "loadWeeklyRates"), "Received data: $rates")
-            _weeklyRates.value = filterAndMapRates(rates)
-        } catch (error: Exception) {
-            Log.e(TAG("AnalysisViewModel", "loadWeeklyRates"), "$error")
-        }
-    }
-
-    private suspend fun loadMonthlyRates() = withContext(Dispatchers.IO) {
-        try {
-            val (startDate, endDate) = rangeDateFromTab(2)
-            val rates = RateApi.rateService.getRatesByPeriod("month", startDate, endDate)
-            Log.d(TAG("AnalysisViewModel", "loadMonthlyRates"), "Received data: $rates")
-            _monthlyRates.value = filterAndMapRates(rates)
-        } catch (error: Exception) {
-            Log.e(TAG("AnalysisViewModel", "loadMonthlyRates"), "$error")
-        }
-    }
-
-    private suspend fun loadYearlyRates() = withContext(Dispatchers.IO) {
-        try {
-            val (startDate, endDate) = rangeDateFromTab(3)
-            val rates = RateApi.rateService.getRatesByPeriod("year", startDate, endDate)
-            Log.d(TAG("AnalysisViewModel", "loadYearlyRates"), "Received data: $rates")
-            _yearlyRates.value = filterAndMapRates(rates)
-        } catch (error: Exception) {
-            Log.e(TAG("AnalysisViewModel", "loadYearlyRates"), "$error")
-        }
-    }
-
-    private fun filterAndMapRates(rates: List<ExchangeRateResponse>): List<RateRange> {
-        val filteredRates = rates.fold(mutableListOf<ExchangeRateResponse>()) { acc, current ->
-            if (acc.isEmpty() ||
-                acc.last().exchangeRates.jpy != current.exchangeRates.jpy ||
-                acc.last().exchangeRates.usd != current.exchangeRates.usd
-            ) {
-                acc.add(current)
-            } else {
-                acc[acc.lastIndex] = current
-            }
-            acc
-        }
-
-        return filteredRates.map {
-            val ratesMap = mapOf(
-                "USD" to it.exchangeRates.usd,
-                "JPY" to it.exchangeRates.jpy,
-                "EUR" to it.exchangeRates.eur,
-                "GBP" to it.exchangeRates.gbp,
-                "CNY" to it.exchangeRates.cny,
-                "AUD" to it.exchangeRates.aud,
-                "CAD" to it.exchangeRates.cad,
-                "CHF" to it.exchangeRates.chf,
-                "HKD" to it.exchangeRates.hkd,
-                "SGD" to it.exchangeRates.sgd,
-                "NZD" to it.exchangeRates.nzd,
-                "THB" to it.exchangeRates.thb
-            )
-
-            RateRange(
-                rates = ratesMap,
-                createAt = it.createAt
-            )
-        }
-    }
-
     fun onTabSelected(index: Int) {
         _analysisUiState.update { uiState ->
             uiState.copy(selectedTabIndex = index)
         }
     }
 
+    /**
+     * 화면 진입/재시도 시 호출
+     * - 캐시(60초)가 유효하면 네트워크 호출 없이 종료
+     * - 만료됐으면 병렬로 다시 로드 (표시 중인 데이터가 있으면 스켈레톤 없이 갱신)
+     */
     fun refreshData() {
-        viewModelScope.launch(Dispatchers.IO) {
-            loadAllRangeData()
-        }
-    }
-
-
-    private suspend fun loadDailyCharge() = withContext(Dispatchers.IO) {
-        try {
-            val changeAndLatestRate = RateApi.rateService.getDailyChange()
-            Log.d(TAG("AnalysisViewModel", "loadDailyCharge"), "Received daily change data: $changeAndLatestRate")
-
-            val (jpyIcon, jpyColor) = getChangeIndicator(changeAndLatestRate.change.jpy)
-            val (usdIcon, usdColor) = getChangeIndicator(changeAndLatestRate.change.usd)
-
-            withContext(Dispatchers.Main) {
-                _analysisUiState.update { uiState ->
-                    uiState.copy(
-                        latestRate = changeAndLatestRate.latestRate,
-                        change = changeAndLatestRate.change,
-                        jpyChangeIcon = jpyIcon,
-                        jpyChangeColor = jpyColor,
-                        usdChangeIcon = usdIcon,
-                        usdChangeColor = usdColor
-                    )
-                }
-            }
-
-            Log.d(TAG("AnalysisViewModel", "loadDailyCharge"), "AnalysisUiState updated with daily change data.")
-        } catch (error: Exception) {
-            Log.e(TAG("AnalysisViewModel", "loadDailyCharge"), "Error loading daily change data: $error")
-        }
+        loadAnalysisData()
     }
 
     private fun getChangeIndicator(changeValue: String): Pair<Char, Color> {
@@ -347,43 +267,85 @@ class AnalysisViewModel @Inject constructor(
         return sqrt(variance).toFloat()
     }
 
-    // ✅ Bug4 fix: USD/JPY 하드코딩 제거, 12개 통화 모두 지원
+    // ✅ 일 단위(달력 기준 하루 1개) 값
+    private data class DailyPoint(val date: LocalDate, val value: Float)
+
+    private fun parseDate(createAt: String): LocalDate? {
+        return try {
+            LocalDate.parse(createAt.take(10))
+        } catch (e: Exception) {
+            null
+        }
+    }
+
+    /**
+     * 구간 데이터를 "달력 기준 하루 1개" 값으로 변환
+     * - 같은 날짜가 여러 개면 마지막 값을 사용
+     * - 값이 같아서 합쳐진 날(주말 등)은 합쳐진 구간의 값으로 채움
+     *   (같은 값이 이어지면 구간의 마지막 기록만 남으므로, 기록 사이의 빈 날짜는 뒤쪽 기록과 같은 값)
+     * - 서버가 일 단위로 내려주는 3개월/1년 구간에서 사용
+     */
+    private fun buildDailySeries(rates: List<RateRange>, currencyType: CurrencyType): List<DailyPoint> {
+        val byDate = TreeMap<LocalDate, Float>()
+        rates.forEach { rate ->
+            val date = parseDate(rate.createAt) ?: return@forEach
+            val value = rate.getRate(currencyType.code).toFloatOrNull() ?: return@forEach
+            byDate[date] = value
+        }
+        if (byDate.isEmpty()) return emptyList()
+
+        val first = byDate.firstKey()
+        val last = byDate.lastKey()
+
+        val result = ArrayList<DailyPoint>()
+        var current = byDate.getValue(last)
+        var date = last
+        while (!date.isBefore(first)) {
+            byDate[date]?.let { current = it }
+            result.add(DailyPoint(date, current))
+            date = date.minusDays(1)
+        }
+        result.reverse()
+        return result
+    }
+
+    /** 특정 날짜의 값 (마지막 날짜 이후는 마지막 값, 첫 날짜 이전은 null) */
+    private fun valueOnDate(series: List<DailyPoint>, target: LocalDate): Float? {
+        if (series.isEmpty()) return null
+        if (target.isBefore(series.first().date)) return null
+        if (target.isAfter(series.last().date)) return series.last().value
+        return series.firstOrNull { it.date == target }?.value
+    }
+
+    // ✅ 기간별 비교 - 날짜 기준 (전일 / 7일 전 / 1개월 전의 마지막 값과 비교), 12개 통화 모두 지원
     fun calculatePeriodComparison(currencyType: CurrencyType): PeriodComparison {
         val currentRate = _analysisUiState.value.latestRate.getRate(currencyType.code).toFloatOrNull() ?: 0f
 
-        val allRates = _yearlyRates.value
-        if (allRates.isEmpty()) return PeriodComparison()
+        val series = buildDailySeries(_yearlyRates.value, currencyType)
+        if (series.isEmpty()) return PeriodComparison()
 
-        val values = allRates.mapNotNull { rate ->
-            rate.getRate(currencyType.code).toFloatOrNull()
-        }
-
-        if (values.isEmpty()) return PeriodComparison()
-
-        fun calculateChange(oldValue: Float): String {
-            if (oldValue == 0f) return "0.00%"
+        fun calculateChange(oldValue: Float?): String {
+            if (oldValue == null || oldValue == 0f) return "0.00%"
             val change = ((currentRate - oldValue) / oldValue) * 100
             return String.format("%.2f%%", change)
         }
 
-        val previousDay = if (values.size > 1) values[values.size - 2] else currentRate
-        val weekAgo = if (values.size >= 7) values[values.size - 7] else currentRate
-        val monthAgo = if (values.size >= 30) values[values.size - 30] else currentRate
+        val today = LocalDate.now()
 
         return PeriodComparison(
-            previousDay = calculateChange(previousDay),
-            weekAgo = calculateChange(weekAgo),
-            monthAgo = calculateChange(monthAgo)
+            previousDay = calculateChange(valueOnDate(series, today.minusDays(1))),
+            weekAgo = calculateChange(valueOnDate(series, today.minusDays(7))),
+            monthAgo = calculateChange(valueOnDate(series, today.minusMonths(1)))
         )
     }
 
-    // ✅ 신규: 장기 포지션 - 3개월/1년 구간에서 현재 환율의 위치(0~100%)
+    // ✅ 신규: 장기 포지션 - 3개월/1년 구간에서 현재 환율의 위치(0~100%), 일 단위 값 기준
     fun calculateLongTermPosition(currencyType: CurrencyType): LongTermPosition {
         val currentRate = _analysisUiState.value.latestRate.getRate(currencyType.code).toFloatOrNull()
             ?: return LongTermPosition()
 
         fun percentileIn(rates: List<RateRange>): Float? {
-            val values = rates.mapNotNull { it.getRate(currencyType.code).toFloatOrNull() }
+            val values = buildDailySeries(rates, currencyType).map { it.value }
             if (values.size < 2) return null
             val min = values.min()
             val max = values.max()
@@ -397,12 +359,12 @@ class AnalysisViewModel @Inject constructor(
         )
     }
 
-    // ✅ 신규: 최고가/최저가 대비 (항상 1년 데이터 고정 기준)
+    // ✅ 신규: 최고가/최저가 대비 (항상 1년 데이터 고정 기준, 일 단위 값)
     fun calculateHighLowDistance(currencyType: CurrencyType): HighLowDistance {
         val currentRate = _analysisUiState.value.latestRate.getRate(currencyType.code).toFloatOrNull()
             ?: return HighLowDistance()
 
-        val values = _yearlyRates.value.mapNotNull { it.getRate(currencyType.code).toFloatOrNull() }
+        val values = buildDailySeries(_yearlyRates.value, currencyType).map { it.value }
         if (values.isEmpty()) return HighLowDistance()
 
         val high = values.max()
@@ -426,34 +388,39 @@ class AnalysisViewModel @Inject constructor(
     }
 
     // ✅ 신규: 기간별(1일/7일/3개월/1년) 평균 대비 현재 위치
+    // 3개월/1년은 일 단위 값의 평균 (값이 같아 합쳐진 날도 평균에 포함)
     fun calculatePeriodAverages(currencyType: CurrencyType): List<PeriodAverage> {
         val currentRate = _analysisUiState.value.latestRate.getRate(currencyType.code).toFloatOrNull()
             ?: return emptyList()
 
-        fun averageOf(rates: List<RateRange>): Float? {
-            val values = rates.mapNotNull { it.getRate(currencyType.code).toFloatOrNull() }
+        fun averageOf(rates: List<RateRange>, dailyBased: Boolean): Float? {
+            val values = if (dailyBased) {
+                buildDailySeries(rates, currencyType).map { it.value }
+            } else {
+                rates.mapNotNull { it.getRate(currencyType.code).toFloatOrNull() }
+            }
             if (values.isEmpty()) return null
             return values.average().toFloat()
         }
 
         val periods = listOf(
-            "1일" to _dailyRates.value,
-            "7일" to _weeklyRates.value,
-            "3개월" to _monthlyRates.value,
-            "1년" to _yearlyRates.value
+            Triple("1일", _dailyRates.value, false),
+            Triple("7일", _weeklyRates.value, false),
+            Triple("3개월", _monthlyRates.value, true),
+            Triple("1년", _yearlyRates.value, true)
         )
 
-        return periods.mapNotNull { (label, rates) ->
-            val avg = averageOf(rates) ?: return@mapNotNull null
+        return periods.mapNotNull { (label, rates, dailyBased) ->
+            val avg = averageOf(rates, dailyBased) ?: return@mapNotNull null
             val diff = currentRate - avg
             val diffPercent = if (avg != 0f) (diff / avg) * 100f else 0f
             PeriodAverage(label = label, averageRate = avg, diff = diff, diffPercent = diffPercent)
         }
     }
 
-    // ✅ 신규: 1년 평균 대비 연속일수 (최근 데이터부터 거꾸로 카운트)
+    // ✅ 신규: 1년 평균 대비 연속일수 (달력 기준 하루씩, 최근 날짜부터 거꾸로 카운트)
     fun calculateYearlyAverageStreak(currencyType: CurrencyType): YearlyAverageStreak {
-        val values = _yearlyRates.value.mapNotNull { it.getRate(currencyType.code).toFloatOrNull() }
+        val values = buildDailySeries(_yearlyRates.value, currencyType).map { it.value }
         if (values.size < 2) return YearlyAverageStreak()
 
         val average = values.average().toFloat()
@@ -476,9 +443,9 @@ class AnalysisViewModel @Inject constructor(
         return YearlyAverageStreak(streakDays = streak, hasData = true)
     }
 
-    // ✅ 신규: 일별 변동 분포 - 최근 1년, 원 단위 고정 구간(3원/5원)
+    // ✅ 신규: 일별 변동 분포 - 최근 1년, 달력 기준 하루씩(주말 포함), 원 단위 고정 구간(3원/5원)
     fun calculateDailyChangeDistribution(currencyType: CurrencyType): DailyChangeDistribution {
-        val values = _yearlyRates.value.mapNotNull { it.getRate(currencyType.code).toFloatOrNull() }
+        val values = buildDailySeries(_yearlyRates.value, currencyType).map { it.value }
         if (values.size < 2) return DailyChangeDistribution()
 
         var bigDown = 0
@@ -555,32 +522,6 @@ class AnalysisViewModel @Inject constructor(
             lowDiffPercent = lowDiffPercent
         )
     }
-}
-
-private fun rangeDateFromTab(tabIndex: Int): Pair<String, String> {
-    val today = LocalDate.now()
-    val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
-    val todayDate = today.format(formatter)
-
-    val weekAgo = today.minusWeeks(1)
-    val rangeWeek = weekAgo.format(formatter)
-
-    val threeMonthsAgo = today.minusMonths(3)
-    val rangeThreeMonths = threeMonthsAgo.format(formatter)
-
-    val yearAgo = today.minusYears(1)
-    val rangeYear = yearAgo.format(formatter)
-
-    val endDate = todayDate
-    val startDate = when(tabIndex) {
-        0 -> todayDate
-        1 -> rangeWeek
-        2 -> rangeThreeMonths
-        3 -> rangeYear
-        else -> todayDate
-    }
-
-    return Pair(startDate, endDate)
 }
 
 data class RateRange(

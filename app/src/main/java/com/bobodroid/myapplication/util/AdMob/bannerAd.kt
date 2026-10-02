@@ -15,11 +15,18 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import com.bobodroid.myapplication.BuildConfig
 import com.bobodroid.myapplication.MainActivity.Companion.TAG
+import com.bobodroid.myapplication.util.analytics.AdFormat
+import com.bobodroid.myapplication.util.analytics.trackAdClick
+import com.bobodroid.myapplication.util.analytics.trackAdImpression
+import com.bobodroid.myapplication.util.analytics.trackAdLoad
+import com.bobodroid.myapplication.util.analytics.trackAdLoadFailed
+import com.bobodroid.myapplication.util.analytics.trackAdPaid
 import com.google.android.gms.ads.AdListener
 import com.google.android.gms.ads.AdRequest
 import com.google.android.gms.ads.AdSize
 import com.google.android.gms.ads.AdView
 import com.google.android.gms.ads.LoadAdError
+import com.google.android.gms.ads.OnPaidEventListener
 
 @SuppressLint("ResourceType")
 @Composable
@@ -39,10 +46,13 @@ fun BannerAd() {
                 AdView(context).apply {
                     setAdSize(AdSize.SMART_BANNER)
                     adUnitId = BuildConfig.BANNER_AD_KEY
-                    loadAd(adRequest)
+                    onPaidEventListener = OnPaidEventListener { value ->
+                        trackAdPaid(AdFormat.BANNER, value)
+                    }
                     adListener = object : AdListener() {
                         override fun onAdClicked() {
                             // Code to be executed when the user clicks on an ad.
+                            trackAdClick(AdFormat.BANNER)
                         }
 
                         override fun onAdClosed() {
@@ -54,16 +64,19 @@ fun BannerAd() {
                             // Code to be executed when an ad request fails.
                             Log.d(TAG("bannerAd",""), "배너 광고 로드 실패 ${adError}")
                             isAdLoaded = false
+                            trackAdLoadFailed(AdFormat.BANNER, adError)
                         }
 
                         override fun onAdImpression() {
                             // Code to be executed when an impression is recorded
                             // for an ad.
+                            trackAdImpression(AdFormat.BANNER)
                         }
 
                         override fun onAdLoaded() {
                             // Code to be executed when an ad finishes loading.
                             isAdLoaded = true
+                            trackAdLoad(AdFormat.BANNER)
                         }
 
                         override fun onAdOpened() {
@@ -71,6 +84,7 @@ fun BannerAd() {
                             // covers the screen.
                         }
                     }
+                    loadAd(adRequest)
                 }
             },
             update = { adView ->
@@ -89,4 +103,3 @@ fun BannerAd() {
         }
     }
 }
-

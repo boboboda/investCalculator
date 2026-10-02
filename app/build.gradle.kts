@@ -66,6 +66,9 @@ android {
         // 테스트 도구용 키 — 기본은 빈 값(릴리즈 포함), 디버그 빌드에서만 local.properties 값으로 덮어씀
         buildConfigField("String", "DEBUG_PREMIUM_KEY", "\"\"")
 
+        buildConfigField("String", "ANALYTICS_KEY", "\"${getPropertyValue(properties, "analytics_key", "")}\"")
+
+
         manifestPlaceholders["KAKAO_APP_KEY"] = getPropertyValue(properties, "kakao_app_key", "")
     }
 

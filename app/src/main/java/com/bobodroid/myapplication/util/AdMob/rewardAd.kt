@@ -4,10 +4,18 @@ import android.content.Context
 import android.util.Log
 import com.bobodroid.myapplication.BuildConfig
 import com.bobodroid.myapplication.MainActivity.Companion.TAG
+import com.bobodroid.myapplication.util.analytics.AdFormat
+import com.bobodroid.myapplication.util.analytics.trackAdClick
+import com.bobodroid.myapplication.util.analytics.trackAdImpression
+import com.bobodroid.myapplication.util.analytics.trackAdLoad
+import com.bobodroid.myapplication.util.analytics.trackAdLoadFailed
+import com.bobodroid.myapplication.util.analytics.trackAdPaid
+import com.bobodroid.myapplication.util.analytics.trackAdRewardEarned
 import com.google.android.gms.ads.AdError
 import com.google.android.gms.ads.AdRequest
 import com.google.android.gms.ads.FullScreenContentCallback
 import com.google.android.gms.ads.LoadAdError
+import com.google.android.gms.ads.OnPaidEventListener
 import com.google.android.gms.ads.OnUserEarnedRewardListener
 import com.google.android.gms.ads.rewarded.RewardedAd
 import com.google.android.gms.ads.rewarded.RewardedAdLoadCallback
@@ -33,6 +41,7 @@ fun loadRewardedAdvertisement(context: Context, deviceId: String, onReadyAd: (Bo
             override fun onAdFailedToLoad(adError: LoadAdError) {
                 Log.e(TAG("loadRewardedAdvertisement", ""), "$adError")
                 rewardedAd = null
+                trackAdLoadFailed(AdFormat.REWARDED, adError)
             }
 
             override fun onAdLoaded(ad: RewardedAd) {
@@ -44,7 +53,12 @@ fun loadRewardedAdvertisement(context: Context, deviceId: String, onReadyAd: (Bo
                     .build()
                 ad.setServerSideVerificationOptions(options)
 
+                ad.onPaidEventListener = OnPaidEventListener { value ->
+                    trackAdPaid(AdFormat.REWARDED, value)
+                }
+
                 rewardedAd = ad
+                trackAdLoad(AdFormat.REWARDED)
                 onReadyAd(true)
             }
         })
@@ -69,6 +83,11 @@ fun showRewardedAdvertisement(
 
             override fun onAdClicked() {
                 Log.d(TAG("loadRewardedAdvertisement", ""), "Ad was clicked.")
+                trackAdClick(AdFormat.REWARDED)
+            }
+
+            override fun onAdImpression() {
+                trackAdImpression(AdFormat.REWARDED)
             }
 
             override fun onAdFailedToShowFullScreenContent(p0: AdError) {
@@ -87,6 +106,7 @@ fun showRewardedAdvertisement(
             ad.show(activity, OnUserEarnedRewardListener { rewardItem ->
                 // ✅ 실제로 보상 조건을 채웠을 때만 호출되는 콜백 — 여기서 상위로 신호를 전달
                 Log.d(TAG("loadRewardedAdvertisement", ""), "User earned the reward.")
+                trackAdRewardEarned(AdFormat.REWARDED)
                 onUserEarnedReward()
             })
         } ?: run {
@@ -110,11 +130,18 @@ fun loadTargetRewardedAdvertisement(context: Context, onReadyAd: ((Boolean) -> U
             override fun onAdFailedToLoad(adError: LoadAdError) {
                 Log.e(TAG("loadRewardedAdvertisement", ""), "adError")
                 targetRewardedAd = null
+                trackAdLoadFailed(AdFormat.REWARDED_TARGET, adError)
             }
 
             override fun onAdLoaded(ad: RewardedAd) {
                 Log.d(TAG("loadRewardedAdvertisement", ""), "Target Ad was loaded.")
+
+                ad.onPaidEventListener = OnPaidEventListener { value ->
+                    trackAdPaid(AdFormat.REWARDED_TARGET, value)
+                }
+
                 targetRewardedAd = ad
+                trackAdLoad(AdFormat.REWARDED_TARGET)
                 onReadyAd?.invoke(true)
             }
         })
@@ -129,6 +156,11 @@ fun showTargetRewardedAdvertisement(context: Context, onAdDismissed: () -> Unit)
 
             override fun onAdClicked() {
                 Log.d(TAG("loadRewardedAdvertisement", ""), "Ad was clicked.")
+                trackAdClick(AdFormat.REWARDED_TARGET)
+            }
+
+            override fun onAdImpression() {
+                trackAdImpression(AdFormat.REWARDED_TARGET)
             }
 
             override fun onAdFailedToShowFullScreenContent(p0: AdError) {
@@ -147,6 +179,7 @@ fun showTargetRewardedAdvertisement(context: Context, onAdDismissed: () -> Unit)
                 val rewardAmount = rewardItem.amount
                 val rewardType = rewardItem.type
                 Log.d(TAG("loadRewardedAdvertisement", ""), "User earned the reward.")
+                trackAdRewardEarned(AdFormat.REWARDED_TARGET)
             })
         } ?: run {
             Log.d(TAG("loadRewardedAdvertisement", ""), "The rewarded ad wasn't ready yet.")

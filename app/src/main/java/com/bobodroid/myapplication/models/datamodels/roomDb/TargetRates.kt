@@ -26,6 +26,11 @@ data class TargetRates(
         }
     }
 
+    // 특정 기록(recordId)의 알람만 가져오기
+    fun getRecordRates(currency: CurrencyType, direction: RateDirection, recordId: String): List<Rate> {
+        return getRates(currency, direction).filter { it.recordId == recordId }
+    }
+
     // 특정 통화/방향의 목표환율 설정하기
     fun setRates(currency: CurrencyType, direction: RateDirection, newRates: List<Rate>): TargetRates {
         val updatedRatesMap = rates.toMutableMap()

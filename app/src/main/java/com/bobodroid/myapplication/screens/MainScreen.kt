@@ -50,6 +50,11 @@ import com.bobodroid.myapplication.components.mainComponents.GroupChangeBottomSh
 import com.bobodroid.myapplication.components.mainComponents.MainDashboardBottomSheetContent
 import com.bobodroid.myapplication.models.viewmodels.SharedViewModel
 import com.bobodroid.myapplication.util.PreferenceUtil
+import androidx.hilt.navigation.compose.hiltViewModel
+import com.bobodroid.myapplication.components.mainComponents.RecordAlarmBottomSheet
+import com.bobodroid.myapplication.models.datamodels.roomDb.CurrencyRecord
+import com.bobodroid.myapplication.models.datamodels.roomDb.RateType
+import com.bobodroid.myapplication.models.viewmodels.FcmAlarmViewModel
 
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterialApi::class)
@@ -61,7 +66,8 @@ fun MainScreen(
     onNavigateToPremium: () -> Unit,
     onNavigateToNews: () -> Unit,
     onNavigateToMyPage: () -> Unit,
-    onNavigateToBacktest: () -> Unit   // ✅ 신규 추가
+    onNavigateToBacktest: () -> Unit,   // ✅ 신규 추가
+    alarmViewModel: FcmAlarmViewModel = hiltViewModel()
 ) {
     val mainUiState by mainViewModel.mainUiState.collectAsState()
     val adUiState by sharedViewModel.adUiState.collectAsState()
@@ -89,6 +95,25 @@ fun MainScreen(
     val listScrollState = rememberLazyListState()
 
     val dashboardSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+
+    // 기록 카드 → 알람 등록
+    val targetRates by alarmViewModel.targetRateFlow.collectAsState()
+    val alarmUiState by alarmViewModel.alarmUiState.collectAsState()   // 현재 환율 변경 시 시트 갱신용
+    val alarmSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    var alarmRecord by remember { mutableStateOf<CurrencyRecord?>(null) }
+
+    LaunchedEffect(Unit) {
+        alarmViewModel.alarmToast.collect { message ->
+            coroutineScope.launch {
+                mainSnackBarHostState.currentSnackbarData?.dismiss()
+                mainSnackBarHostState.showSnackbar(
+                    message = message,
+                    actionLabel = "닫기",
+                    duration = SnackbarDuration.Short
+                )
+            }
+        }
+    }
 
 
     val context = LocalContext.current
@@ -178,6 +203,7 @@ fun MainScreen(
                     sortAscending = sortAscending,
                     onSortToggle = { sortAscending = !sortAscending },
                     holdingStats = mainUiState.holdingStats.getStatsByCode(mainUiState.selectedCurrencyType.code),
+                    targetRates = targetRates,
                     scrollState = listScrollState,
                     onEvent = { event ->
                         when (event) {
@@ -192,6 +218,18 @@ fun MainScreen(
                                 mainViewModel.handleMainEvent(MainEvent.ShowAddBottomSheet)
                             }
                             is RecordListEvent.ShowGroupChangeBottomSheet -> {
+                                mainViewModel.handleRecordEvent(event)
+                            }
+                            is RecordListEvent.ShowAlarmBottomSheet -> {
+                                alarmRecord = event.data as? CurrencyRecord
+                            }
+                            is RecordListEvent.RemoveRecord -> {
+                                // 기록을 삭제하면 그 기록에 연결된 알람도 함께 삭제
+                                (event.data as? CurrencyRecord)?.let { removed ->
+                                    CurrencyType.entries.firstOrNull { it.name == removed.currencyCode }?.let { currency ->
+                                        alarmViewModel.removeAlarmsOfRecord(currency, removed.id.toString())
+                                    }
+                                }
                                 mainViewModel.handleRecordEvent(event)
                             }
                             else -> mainViewModel.handleRecordEvent(event)
@@ -253,6 +291,38 @@ fun MainScreen(
                         coroutineScope.launch {
                             groupChangeSheetState.hide()
                             mainViewModel.handleMainEvent(MainEvent.HideGroupChangeBottomSheet)
+                        }
+                    }
+                )
+            }
+
+            alarmRecord?.let { record ->
+                val alarmCurrency = CurrencyType.entries
+                    .firstOrNull { it.name == record.currencyCode }
+                    ?: mainUiState.selectedCurrencyType
+
+                RecordAlarmBottomSheet(
+                    sheetState = alarmSheetState,
+                    record = record,
+                    currencyType = alarmCurrency,
+                    currentRate = alarmViewModel.midRateOf(alarmCurrency),
+                    sellSpreadWon = alarmViewModel.sellSpreadWonOf(alarmCurrency),
+                    existingRates = targetRates,
+                    onRegister = { direction, rate ->
+                        alarmViewModel.addTargetRateFromRecord(
+                            RateType(alarmCurrency, direction),
+                            rate,
+                            record.id.toString()
+                        )
+                        coroutineScope.launch {
+                            alarmSheetState.hide()
+                            alarmRecord = null
+                        }
+                    },
+                    onDismiss = {
+                        coroutineScope.launch {
+                            alarmSheetState.hide()
+                            alarmRecord = null
                         }
                     }
                 )
@@ -367,6 +437,12 @@ fun MainScreen(
             if (mainUiState.showSellResultDialog) {
                 SellResultDialog(
                     selectedRecord = {
+                        // 매도하면 그 기록에 연결된 알람도 함께 삭제
+                        (recordListUiState.selectedRecord as? CurrencyRecord)?.let { sold ->
+                            CurrencyType.entries.firstOrNull { it.name == sold.currencyCode }?.let { currency ->
+                                alarmViewModel.removeAlarmsOfRecord(currency, sold.id.toString())
+                            }
+                        }
                         mainViewModel.handleMainEvent(MainEvent.SellRecord)
                     },
                     onDismissRequest = {
@@ -528,4 +604,5 @@ sealed class RecordListEvent {
     data class TotalSumProfit(val startDate: String, val endDate: String): RecordListEvent()
     data object ShowAddBottomSheet : RecordListEvent()
     data class ShowGroupChangeBottomSheet(val data: ForeignCurrencyRecord) : RecordListEvent()
+    data class ShowAlarmBottomSheet(val data: ForeignCurrencyRecord) : RecordListEvent()
 }

@@ -4,6 +4,7 @@ package com.bobodroid.myapplication.models.datamodels.useCases
 
 import android.util.Log
 import com.bobodroid.myapplication.MainActivity.Companion.TAG
+import com.bobodroid.myapplication.models.datamodels.roomDb.CurrencyType
 import com.bobodroid.myapplication.models.datamodels.roomDb.RateDirection
 import com.bobodroid.myapplication.models.datamodels.roomDb.RateType
 import com.bobodroid.myapplication.models.datamodels.roomDb.TargetRates
@@ -94,6 +95,60 @@ class TargetRateAddUseCase @Inject constructor() {
             rate.copy(number = index + 1)
         }
     }
+}
+
+/**
+ * 기록이 매도/삭제될 때 그 기록(recordId)에 연결된 알람을 모두 지운다. (고점/저점 모두)
+ * 변경이 있을 때만 서버에 요청하며, 해당 통화의 고점·저점 목록을 한 번에 보낸다.
+ */
+class TargetRateRemoveByRecordUseCase @Inject constructor() {
+    suspend operator fun invoke(
+        deviceId: String,
+        targetRates: TargetRates,
+        currency: CurrencyType,
+        recordId: String
+    ): Result<TargetRates> {
+        return try {
+            val high = targetRates.getRates(currency, RateDirection.HIGH)
+            val low = targetRates.getRates(currency, RateDirection.LOW)
+
+            val newHigh = high.filter { it.recordId != recordId }
+            val newLow = low.filter { it.recordId != recordId }
+
+            // 지울 알람이 없으면 서버 요청 없이 종료
+            if (newHigh.size == high.size && newLow.size == low.size) {
+                return Result.Success(data = targetRates, message = "")
+            }
+
+            val sortedHigh = renumber(newHigh.sortedBy { it.rate })
+            val sortedLow = renumber(newLow.sortedByDescending { it.rate })
+
+            val updatedRates = targetRates
+                .setRates(currency, RateDirection.HIGH, sortedHigh)
+                .setRates(currency, RateDirection.LOW, sortedLow)
+
+            val request = UserRatesUpdateRequest.forCurrency(
+                currency = currency,
+                high = sortedHigh,
+                low = sortedLow
+            )
+            UserApi.userService.updateUserRates(deviceId = deviceId, request)
+
+            Result.Success(
+                data = updatedRates,
+                message = "기록에 연결된 알람을 삭제했습니다"
+            )
+        } catch (e: Exception) {
+            Log.e(TAG("TargetRateRemoveByRecord", "Error"), "Error", e)
+            Result.Error(
+                message = "기록 알람 삭제 중 오류가 발생했습니다",
+                exception = e
+            )
+        }
+    }
+
+    private fun renumber(list: List<Rate>): List<Rate> =
+        list.mapIndexed { index, rate -> rate.copy(number = index + 1) }
 }
 
 class TargetRateDeleteUseCase @Inject constructor() {

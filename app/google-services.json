@@ -1,46 +1,40 @@
 {
   "project_info": {
-    "project_number": "217175237421",
-    "project_id": "invest-exchagerate-app",
-    "storage_bucket": "invest-exchagerate-app.firebasestorage.app"
+    "project_number": "458388461923",
+    "project_id": "firebase-exchange-service",
+    "storage_bucket": "firebase-exchange-service.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:217175237421:android:462c78fe898aa980e269a4",
+        "mobilesdk_app_id": "1:458388461923:android:92dba258e7484f2239db56",
         "android_client_info": {
           "package_name": "com.bobodroid.myapplication"
         }
       },
-      "oauth_client": [
-        {
-          "client_id": "217175237421-6g0b74f9n8ktb8l82a5sll70947o847f.apps.googleusercontent.com",
-          "client_type": 1,
-          "android_info": {
-            "package_name": "com.bobodroid.myapplication",
-            "certificate_hash": "61490b75beb2ed756ba1b36f0d22a61a602dc541"
-          }
-        },
-        {
-          "client_id": "217175237421-iav6bp9n2olgafdmij8fq4jh39034gup.apps.googleusercontent.com",
-          "client_type": 1,
-          "android_info": {
-            "package_name": "com.bobodroid.myapplication",
-            "certificate_hash": "915474db7b49e30eefa9b5f68964bdf5c2f38342"
-          }
-        },
-        {
-          "client_id": "217175237421-mtee0q5dd00mjq6p1av72mg36tic8a99.apps.googleusercontent.com",
-          "client_type": 1,
-          "android_info": {
-            "package_name": "com.bobodroid.myapplication",
-            "certificate_hash": "8a1612b6667f01d3155115166d4672bea6f9b47b"
-          }
-        }
-      ],
+      "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyDf88ISsZr7PtKGVfo5HoAF7CGcBIOpq3A"
+          "current_key": "AIzaSyCPiNibvpcYBdAZM6PemAgGgWEqx-sRAvk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:458388461923:android:f410968a0afa850339db56",
+        "android_client_info": {
+          "package_name": "com.buyoungsil.exchangerate_analysis_app.android"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCPiNibvpcYBdAZM6PemAgGgWEqx-sRAvk"
         }
       ],
       "services": {

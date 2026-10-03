@@ -17,12 +17,16 @@ import com.bobodroid.myapplication.models.datamodels.service.UserApi.UserRespons
 import com.bobodroid.myapplication.models.datamodels.social.SocialLoginManager
 import com.bobodroid.myapplication.util.InvestApplication
 import com.bobodroid.myapplication.util.result.Result
+import com.google.firebase.messaging.FirebaseMessaging
+import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.firstOrNull
 import retrofit2.HttpException
 import javax.inject.Inject
+import kotlin.coroutines.resume
 
 /**
  * 사용자 관련 UseCase 모음 (소셜 로그인 버전)
@@ -156,9 +160,12 @@ class LocalExistCheckUseCase @Inject constructor(
             val serverUser = syncWithServer(user)
             Log.d(TAG("LocalExistCheckUseCase", "invoke"), "서버 동기화 완료: ${serverUser?.success}")
 
+            // ✅ FCM 토큰이 바뀌었으면(Firebase 프로젝트 변경 등) 서버와 로컬 DB를 갱신
+            val syncedUser = syncFcmTokenIfChanged(user, serverUser)
+
             // ✅ 12개 통화 지원하는 새로운 구조로 변환
             val userDataType = UserData(
-                localUserData = user,
+                localUserData = syncedUser,
                 exchangeRates = serverUser?.data?.targetRates?.let { targetRatesMap ->
                     val ratesMap = mutableMapOf<CurrencyType, CurrencyTargetRates>()
 
@@ -182,6 +189,59 @@ class LocalExistCheckUseCase @Inject constructor(
             Log.d(TAG("LocalExistCheckUseCase", "invoke"), "UserRepository 업데이트 완료")
         } catch (e: Exception) {
             Log.e(TAG("LocalExistCheckUseCase", "invoke"), "사용자 확인 중 오류", e)
+        }
+    }
+
+    /**
+     * 현재 FCM 토큰을 Firebase에서 직접 가져온다. (최대 10초 대기)
+     */
+    private suspend fun fetchCurrentFcmToken(): String? = withTimeoutOrNull(10_000L) {
+        suspendCancellableCoroutine<String?> { cont ->
+            FirebaseMessaging.getInstance().token
+                .addOnSuccessListener { token -> if (cont.isActive) cont.resume(token) }
+                .addOnFailureListener { if (cont.isActive) cont.resume(null) }
+        }
+    }
+
+    /**
+     * 현재 FCM 토큰이 서버/로컬에 저장된 값과 다르면 서버에 다시 올리고 로컬 DB도 갱신한다.
+     * 실패하면 다음 실행 때 다시 시도한다.
+     */
+    private suspend fun syncFcmTokenIfChanged(user: LocalUserData, serverUser: UserResponse?): LocalUserData {
+        return try {
+            val currentToken = fetchCurrentFcmToken()
+            if (currentToken.isNullOrBlank()) {
+                Log.w(TAG("LocalExistCheckUseCase", "syncFcmToken"), "현재 FCM 토큰을 가져오지 못함")
+                return user
+            }
+
+            InvestApplication.prefs.setData("fcm_token", currentToken)
+
+            val serverToken = serverUser?.data?.fcmToken
+            val localToken = user.fcmToken
+            if (currentToken == serverToken && currentToken == localToken) {
+                Log.d(TAG("LocalExistCheckUseCase", "syncFcmToken"), "FCM 토큰 변경 없음")
+                return user
+            }
+
+            Log.d(TAG("LocalExistCheckUseCase", "syncFcmToken"),
+                "FCM 토큰 변경 감지 (서버 일치: ${currentToken == serverToken}, 로컬 일치: ${currentToken == localToken})")
+
+            val response = UserApi.userService.userAddRequest(
+                UserRequest(deviceId = user.id.toString(), fcmToken = currentToken)
+            )
+            if (!response.success) {
+                Log.e(TAG("LocalExistCheckUseCase", "syncFcmToken"), "서버 토큰 갱신 실패: ${response.message}")
+                return user
+            }
+
+            val updatedUser = user.copy(fcmToken = currentToken)
+            userRepository.localUserUpdate(updatedUser)
+            Log.d(TAG("LocalExistCheckUseCase", "syncFcmToken"), "✅ FCM 토큰 갱신 완료")
+            updatedUser
+        } catch (e: Exception) {
+            Log.e(TAG("LocalExistCheckUseCase", "syncFcmToken"), "FCM 토큰 갱신 중 오류: ${e.message}", e)
+            user
         }
     }
 

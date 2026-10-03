@@ -13,7 +13,9 @@ import org.json.JSONObject
 @JsonClass(generateAdapter = true)
 data class Rate(
     val number: Int,
-    val rate: Int
+    val rate: Int,
+    // 기록 알람이면 알람을 만든 기록(CurrencyRecord)의 id, 통화 알람(알람 화면 등록)이면 null
+    val recordId: String? = null
 )
 
 // ✅ 전체 응답 클래스
@@ -104,7 +106,8 @@ data class UserResponseData(
                                 highRates.add(
                                     Rate(
                                         number = rateObj.getInt("number"),
-                                        rate = rateObj.getInt("rate")
+                                        rate = rateObj.getInt("rate"),
+                                        recordId = rateObj.optRecordId()
                                     )
                                 )
                             }
@@ -117,7 +120,8 @@ data class UserResponseData(
                                 lowRates.add(
                                     Rate(
                                         number = rateObj.getInt("number"),
-                                        rate = rateObj.getInt("rate")
+                                        rate = rateObj.getInt("rate"),
+                                        recordId = rateObj.optRecordId()
                                     )
                                 )
                             }
@@ -182,3 +186,7 @@ data class UserRatesUpdateRequest(
         }
     }
 }
+
+// ✅ 기록 알람 id 파싱 (필드가 없거나 null이면 통화 알람)
+private fun JSONObject.optRecordId(): String? =
+    if (has("recordId") && !isNull("recordId")) getString("recordId").takeIf { it.isNotBlank() } else null

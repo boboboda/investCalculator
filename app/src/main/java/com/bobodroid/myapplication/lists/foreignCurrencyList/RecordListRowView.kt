@@ -47,6 +47,7 @@ import com.bobodroid.myapplication.extensions.formatWithCurrencyType
 import com.bobodroid.myapplication.extensions.toBigDecimalUs
 import com.bobodroid.myapplication.extensions.toBigDecimalWon
 import com.bobodroid.myapplication.extensions.toBigDecimalYen
+import com.bobodroid.myapplication.components.mainComponents.RecordAlarmSummary
 import com.bobodroid.myapplication.models.datamodels.roomDb.CurrencyRecord
 import com.bobodroid.myapplication.models.datamodels.roomDb.CurrencyType
 import com.bobodroid.myapplication.models.datamodels.roomDb.ForeignCurrencyRecord
@@ -65,6 +66,7 @@ fun RecordListRowView(
     data: CurrencyRecord,
     sellState: Boolean = data.recordColor!!,
     groupList: List<String>,
+    alarmSummary: RecordAlarmSummary = RecordAlarmSummary(),
     onEvent: (RecordListEvent) -> Unit,
     scrollEvent: () -> Unit
 ) {
@@ -267,6 +269,11 @@ fun RecordListRowView(
                                     }
                                 }
                             }
+
+                            // 오른쪽: 알람 개수 배지 (미매도 + 알람 있을 때만)
+                            if (!sellState && alarmSummary.hasAlarm) {
+                                AlarmCountBadge(count = alarmSummary.count)
+                            }
                         }
 
                         Spacer(modifier = Modifier.height(16.dp))
@@ -363,6 +370,15 @@ fun RecordListRowView(
                             ) {
                                 HorizontalDivider(color = Color(0xFFE5E7EB))
                                 Spacer(modifier = Modifier.height(16.dp))
+
+                                // 🔔 알람 버튼 (매도 전 기록만)
+                                if (!sellState) {
+                                    RecordAlarmButton(
+                                        summary = alarmSummary,
+                                        onClick = { onEvent(RecordListEvent.ShowAlarmBottomSheet(data)) }
+                                    )
+                                    Spacer(modifier = Modifier.height(8.dp))
+                                }
 
                                 // 🎯 액션 버튼들 (메모보다 먼저)
                                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -644,4 +660,108 @@ fun RecordListRowView(
             }
         }
     )
+}
+
+
+@Composable
+private fun AlarmCountBadge(count: Int) {
+    Surface(
+        shape = RoundedCornerShape(999.dp),
+        color = Color(0xFFFFF1D6)
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(4.dp)
+        ) {
+            Icon(
+                imageVector = Icons.Rounded.NotificationsActive,
+                contentDescription = "알람 설정됨",
+                tint = Color(0xFFB45309),
+                modifier = Modifier.size(14.dp)
+            )
+            Text(
+                text = count.toString(),
+                fontSize = 13.sp,
+                fontWeight = FontWeight.Bold,
+                color = Color(0xFF92400E)
+            )
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun RecordAlarmButton(
+    summary: RecordAlarmSummary,
+    onClick: () -> Unit
+) {
+    if (!summary.hasAlarm) {
+        // 알람 없음: 전체 너비 아웃라인 버튼
+        OutlinedButton(
+            onClick = onClick,
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(48.dp),
+            colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFFB45309)),
+            border = BorderStroke(1.5.dp, Color(0xFFD97706)),
+            shape = RoundedCornerShape(12.dp)
+        ) {
+            Icon(
+                imageVector = Icons.Rounded.Notifications,
+                contentDescription = null,
+                modifier = Modifier.size(20.dp)
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+            Text("알람 설정", fontSize = 16.sp, fontWeight = FontWeight.Bold)
+        }
+    } else {
+        // 알람 있음: 연한 앰버 배경 + 요약
+        val line = buildList {
+            summary.nextHigh?.let { add("고점 ${"%,d".format(it)}원") }
+            summary.nextLow?.let { add("저점 ${"%,d".format(it)}원") }
+        }.joinToString(" · ")
+
+        Surface(
+            onClick = onClick,
+            modifier = Modifier
+                .fillMaxWidth()
+                .heightIn(min = 56.dp),
+            shape = RoundedCornerShape(12.dp),
+            color = Color(0xFFFFF1D6)
+        ) {
+            Row(
+                modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Rounded.NotificationsActive,
+                    contentDescription = null,
+                    tint = Color(0xFFB45309),
+                    modifier = Modifier.size(22.dp)
+                )
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = "알람 ${summary.count}개 설정됨",
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = Color(0xFF92400E)
+                    )
+                    Text(
+                        text = line,
+                        fontSize = 15.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFF92400E)
+                    )
+                }
+                Icon(
+                    imageVector = Icons.Rounded.ChevronRight,
+                    contentDescription = null,
+                    tint = Color(0xFF92400E),
+                    modifier = Modifier.size(20.dp)
+                )
+            }
+        }
+    }
 }

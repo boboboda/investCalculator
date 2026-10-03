@@ -12,6 +12,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -22,8 +23,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.bobodroid.myapplication.components.EmptyRecordView
 import com.bobodroid.myapplication.components.RecordHeader
+import com.bobodroid.myapplication.components.mainComponents.RecordAlarmSummary
 import com.bobodroid.myapplication.models.datamodels.roomDb.CurrencyRecord
 import com.bobodroid.myapplication.models.datamodels.roomDb.CurrencyType
+import com.bobodroid.myapplication.models.datamodels.roomDb.TargetRates
 import com.bobodroid.myapplication.models.viewmodels.CurrencyHoldingInfo
 import com.bobodroid.myapplication.models.viewmodels.CurrencyRecordState
 import com.bobodroid.myapplication.models.datamodels.roomDb.ForeignCurrencyRecord
@@ -42,6 +45,7 @@ fun RecordListView(
     sortAscending: Boolean,                    // ✅ 추가: true=오래된순, false=최신순
     onSortToggle: () -> Unit,                  // ✅ 추가: 정렬 토글
     holdingStats: CurrencyHoldingInfo,         // ✅ 추가: 상단바 요약 정보용
+    targetRates: TargetRates = TargetRates.empty(),   // 기록 카드 알람 표시용
     scrollState: LazyListState = rememberLazyListState(),
     onEvent: (RecordListEvent) -> Unit
 ) {
@@ -119,6 +123,11 @@ fun RecordListView(
                             data = record,
                             sellState = record.recordColor!!,
                             groupList = groupList,
+                            alarmSummary = RecordAlarmSummary.of(
+                                targetRates,
+                                currencyType,
+                                record.id.toString()
+                            ),
                             onEvent = { event ->
                                 onEvent(event)
                             },

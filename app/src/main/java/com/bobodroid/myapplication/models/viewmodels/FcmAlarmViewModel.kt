@@ -26,6 +26,7 @@ import com.bobodroid.myapplication.models.datamodels.service.notificationApi.Rec
 import com.bobodroid.myapplication.models.datamodels.service.notificationApi.RecordWithAlert
 import com.bobodroid.myapplication.models.datamodels.service.notificationApi.UpdateNotificationSettingsRequest
 import com.bobodroid.myapplication.models.datamodels.useCases.FcmUseCases
+import com.bobodroid.myapplication.models.datamodels.useCases.TargetRateRemoveByRecordUseCase
 import com.bobodroid.myapplication.util.result.onError
 import com.bobodroid.myapplication.util.result.onSuccess
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -37,6 +38,7 @@ import javax.inject.Inject
 class FcmAlarmViewModel @Inject constructor(
     private val userRepository: UserRepository,
     private val fcmUseCases: FcmUseCases,
+    private val targetRateRemoveByRecordUseCase: TargetRateRemoveByRecordUseCase,
     private val latestRateRepository: LatestRateRepository,
     private val settingsRepository: SettingsRepository,
     private val investRepository: InvestRepository,
@@ -144,6 +146,11 @@ class FcmAlarmViewModel @Inject constructor(
     private val _saveSuccess = MutableStateFlow(false)
     val saveSuccess: StateFlow<Boolean> = _saveSuccess.asStateFlow()
 
+    // ==================== 기록 카드 → 알람 등록 ====================
+
+    private val _alarmToast = MutableSharedFlow<String>(extraBufferCapacity = 1)
+    val alarmToast: SharedFlow<String> = _alarmToast.asSharedFlow()
+
     // ==================== 초기화 ====================
 
     init {
@@ -183,7 +190,7 @@ class FcmAlarmViewModel @Inject constructor(
                         fcmUseCases.targetRateUpdateUseCase(
                             onUpdate = {
                                 viewModelScope.launch {
-                                    _targetRate.emit(it)
+                                    publishTargetRates(it)
                                 }
                             }
                         )
@@ -198,6 +205,19 @@ class FcmAlarmViewModel @Inject constructor(
                 recentRate = latestRate
             )
             _alarmUiState.emit(uiState)
+        }
+    }
+
+    /**
+     * 목표환율 변경을 모든 화면에 반영한다.
+     * - 메인 화면과 알람 화면은 각자 다른 ViewModel 인스턴스를 쓰므로,
+     *   공용 저장소(UserRepository)에도 같이 써야 서로 갱신된다.
+     * - 각 ViewModel의 init 이 userData 를 구독하고 있어 initTarRates 로 자동 반영된다.
+     */
+    private suspend fun publishTargetRates(targetRates: TargetRates) {
+        _targetRate.emit(targetRates)
+        userRepository.userData.value?.let { current ->
+            userRepository.updateUserData(current.copy(exchangeRates = targetRates))
         }
     }
 
@@ -226,7 +246,7 @@ class FcmAlarmViewModel @Inject constructor(
             ).onSuccess { targetRate, _ ->
                 Log.d(TAG("FcmAlarmViewModel", "addTargetRate"),
                     "Success: ${type.currency.koreanName} ${type.direction} - ${addRate.rate}")
-                _targetRate.emit(targetRate)
+                publishTargetRates(targetRate)
             }.onError { error ->
                 Log.e(TAG("FcmAlarmViewModel", "addTargetRate"), "Error", error.exception)
                 _error.value = error.message
@@ -247,10 +267,83 @@ class FcmAlarmViewModel @Inject constructor(
             ).onSuccess { updateTargetRate, _ ->
                 Log.d(TAG("FcmAlarmViewModel", "deleteTargetRate"),
                     "Success: ${type.currency.koreanName} ${type.direction} - ${deleteRate.rate}")
-                _targetRate.emit(updateTargetRate)
+                publishTargetRates(updateTargetRate)
             }.onError { error ->
                 Log.e(TAG("FcmAlarmViewModel", "deleteTargetRate"), "Error", error.exception)
                 _error.value = error.message
+            }
+        }
+    }
+
+    /** 통화별 현재 기준환율 (스프레드 적용 전) */
+    fun midRateOf(currency: CurrencyType): Double? =
+        _alarmUiState.value.recentRate
+            .getRateByCode(currency.code)
+            ?.replace(",", "")
+            ?.toDoubleOrNull()
+
+    /** 예상수익 계산용 매도 스프레드(원) */
+    fun sellSpreadWonOf(currency: CurrencyType): Double =
+        settingsRepository.getSellSpreadWon(currency)
+
+    /**
+     * 기록 카드에서 기록 알람 등록
+     * - 알람에 recordId를 같이 저장해서 그 기록의 카드에만 표시된다.
+     * - 같은 기록에 같은 통화·방향·값이 이미 있으면 등록하지 않는다. (다른 기록이면 같은 값도 허용)
+     * - 알람 화면의 목록에도 그대로 나타난다. (같은 targetRates 목록)
+     */
+    fun addTargetRateFromRecord(type: RateType, rateWon: Int, recordId: String) {
+        if (deviceId.value.isEmpty()) {
+            _alarmToast.tryEmit("사용자 정보를 불러오는 중이에요. 잠시 후 다시 시도해 주세요")
+            return
+        }
+
+        val exists = targetRateFlow.value
+            .getRecordRates(type.currency, type.direction, recordId)
+            .any { it.rate == rateWon }
+        if (exists) {
+            _alarmToast.tryEmit("이 기록에 이미 같은 ${type.toDisplayString()} 알람이 있어요")
+            return
+        }
+
+        viewModelScope.launch {
+            fcmUseCases.targetRateAddUseCase(
+                deviceId = deviceId.value,
+                targetRates = targetRateFlow.value,
+                type = type,
+                newRate = Rate(number = 0, rate = rateWon, recordId = recordId)
+            ).onSuccess { targetRate, _ ->
+                publishTargetRates(targetRate)
+                _alarmToast.tryEmit("${type.toDisplayString()} 알람을 등록했어요 (${"%,d".format(rateWon)}원)")
+            }.onError { error ->
+                Log.e(TAG("FcmAlarmViewModel", "addTargetRateFromRecord"), "Error", error.exception)
+                _alarmToast.tryEmit(error.message ?: "알람 등록에 실패했어요")
+            }
+        }
+    }
+
+    /**
+     * 기록을 매도하거나 삭제할 때, 그 기록에 연결된 알람(고점·저점)을 모두 지운다.
+     */
+    fun removeAlarmsOfRecord(currency: CurrencyType, recordId: String) {
+        if (deviceId.value.isEmpty()) return
+
+        val hasAlarm = listOf(RateDirection.HIGH, RateDirection.LOW).any { direction ->
+            targetRateFlow.value.getRecordRates(currency, direction, recordId).isNotEmpty()
+        }
+        if (!hasAlarm) return
+
+        viewModelScope.launch {
+            targetRateRemoveByRecordUseCase(
+                deviceId = deviceId.value,
+                targetRates = targetRateFlow.value,
+                currency = currency,
+                recordId = recordId
+            ).onSuccess { updated, _ ->
+                publishTargetRates(updated)
+                _alarmToast.tryEmit("이 기록의 알람을 함께 삭제했어요")
+            }.onError { error ->
+                Log.e(TAG("FcmAlarmViewModel", "removeAlarmsOfRecord"), "Error", error.exception)
             }
         }
     }

@@ -547,9 +547,10 @@ fun TargetRateTab(
                                     color = Color(0xFF1a1a1a)
                                 )
                                 Text(
-                                    text = "${selectedCurrency.emoji} ${selectedCurrency.koreanName} ${if (selectedDirection == RateDirection.HIGH) "고점" else "저점"}",
+                                    text = "${selectedCurrency.emoji} ${selectedCurrency.koreanName} ${if (selectedDirection == RateDirection.HIGH) "고점" else "저점"}" +
+                                            if (rate.recordId != null) " · 기록 알람" else "",
                                     fontSize = 13.sp,
-                                    color = Color(0xFF6B7280)
+                                    color = if (rate.recordId != null) Color(0xFFB45309) else Color(0xFF6B7280)
                                 )
                             }
                         }

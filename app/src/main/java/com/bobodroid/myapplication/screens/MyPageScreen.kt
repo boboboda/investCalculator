@@ -52,16 +52,23 @@ import java.time.Duration
 import java.time.Instant
 import java.time.LocalDate
 import java.time.temporal.ChronoUnit
+import com.bobodroid.myapplication.components.travelComponents.TravelModeMenuToggle
+import com.bobodroid.myapplication.models.viewmodels.TravelEvent
+import com.bobodroid.myapplication.models.viewmodels.TravelViewModel
 
 @Composable
 fun MyPageScreen(
     sharedViewModel: SharedViewModel,
     myPageViewModel: MyPageViewModel = hiltViewModel(),
+    travelViewModel: TravelViewModel = hiltViewModel(),   // ✅ 여행모드 추가
     onNavigateToBacktest: () -> Unit    // ✅ 신규 추가
 ) {
+
+
     val coroutineScope = rememberCoroutineScope()
     val context = LocalContext.current
     val uiState by myPageViewModel.myPageUiState.collectAsState()
+    val isTravelModeEnabled by travelViewModel.isTravelModeEnabled.collectAsState()
     val mainScreenSnackBarHostState = remember { SnackbarHostState() }
     val navController = rememberNavController()
     val backupNoticeStatus by myPageViewModel.backupNoticeStatus.collectAsState()
@@ -108,7 +115,11 @@ fun MyPageScreen(
                         sharedViewModel.showRewardAdDialog()
                     },
                     onNavigateToBacktest = onNavigateToBacktest,
-                    backupNoticeStatus = backupNoticeStatus
+                    backupNoticeStatus = backupNoticeStatus,
+                    isTravelModeEnabled = isTravelModeEnabled,                              // ✅ 추가
+                    onToggleTravelMode = { enabled ->                                       // ✅ 추가
+                        travelViewModel.handleTravelEvent(TravelEvent.ToggleTravelMode(enabled))
+                    }
                 )
             }
 
@@ -312,6 +323,7 @@ fun MyPageScreen(
     }
 }
 
+
 @Composable
 fun ImprovedMyPageView(
     myPageRouteAction: RouteAction<MyPageRoute>,
@@ -326,8 +338,10 @@ fun ImprovedMyPageView(
     premiumType: PremiumType,
     premiumExpiryDate: String?,
     showRewardDialog: () -> Unit,
-    onNavigateToBacktest: () -> Unit,   // ✅ 신규 추가
-    backupNoticeStatus: BackupNoticeStatus = BackupNoticeStatus.NONE
+    onNavigateToBacktest: () -> Unit,
+    backupNoticeStatus: BackupNoticeStatus = BackupNoticeStatus.NONE,
+    isTravelModeEnabled: Boolean = false,              // ✅ 추가
+    onToggleTravelMode: (Boolean) -> Unit = {}         // ✅ 추가
 ) {
     val context = LocalContext.current
 
@@ -345,32 +359,47 @@ fun ImprovedMyPageView(
             )
         }
 
-        item {
-            BacktestBannerCardCompact(
-                onClick = onNavigateToBacktest,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 20.dp, vertical = 7.dp)
-            )
+        // ✅ 여행모드에서는 숨김 (백테스트 시뮬레이터는 투자 전용 기능)
+        if (!isTravelModeEnabled) {
+            item {
+                BacktestBannerCardCompact(
+                    onClick = onNavigateToBacktest,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 20.dp, vertical = 7.dp)
+                )
+            }
         }
 
-        item {
-            InvestmentDashboard(stats = investmentStats)
+        // ✅ 여행모드에서는 숨김 (투자 현황 대시보드)
+        if (!isTravelModeEnabled) {
+            item {
+                InvestmentDashboard(stats = investmentStats)
+            }
         }
 
-        item {
-            MonthlyGoalSection(
-                goal = monthlyGoal,
-                onSetGoal = onSetGoal
-            )
+        // ✅ 여행모드에서는 숨김 (이번 달 투자 목표)
+        if (!isTravelModeEnabled) {
+            item {
+                MonthlyGoalSection(
+                    goal = monthlyGoal,
+                    onSetGoal = onSetGoal
+                )
+            }
         }
 
-        item {
-            RecentActivitySection(activities = recentActivities)
+        // ✅ 여행모드에서는 숨김 (투자 거래 최근 활동)
+        if (!isTravelModeEnabled) {
+            item {
+                RecentActivitySection(activities = recentActivities)
+            }
         }
 
-        item {
-            BadgeSection(badges = badges)
+        // ✅ 여행모드에서는 숨김 (투자 전용 섹션이라 "심플하게" 요청에 맞춰 제거)
+        if (!isTravelModeEnabled) {
+            item {
+                BadgeSection(badges = badges)
+            }
         }
 
         // ✅ 프리미엄 구매/상태 카드 (배지 아래로 이동)
@@ -396,6 +425,18 @@ fun ImprovedMyPageView(
             Spacer(modifier = Modifier.height(32.dp))
         }
 
+        // ✅ 여행모드 토글 (신규 추가)
+        item {
+            TravelModeMenuToggle(
+                enabled = isTravelModeEnabled,
+                onToggle = onToggleTravelMode
+            )
+        }
+
+        item {
+            Spacer(modifier = Modifier.height(16.dp))
+        }
+
         item {
             SettingSection(
                 cloudBackupStatus = backupNoticeStatus,
@@ -409,7 +450,8 @@ fun ImprovedMyPageView(
                 },
                 onSpreadSettingsClick = { myPageRouteAction.navTo(MyPageRoute.SpreadSettings) }, // ✅ 추가
                 onWidgetSettingsClick = { myPageRouteAction.navTo(MyPageRoute.WidgetSettings) },
-                onHelpClick = showOnboarding
+                onHelpClick = showOnboarding,
+                isTravelModeEnabled = isTravelModeEnabled // ✅ 추가: 여행모드에서 위젯/스프레드 설정 메뉴 숨김
             )
         }
 
@@ -417,7 +459,8 @@ fun ImprovedMyPageView(
             Spacer(modifier = Modifier.height(32.dp))
         }
 
-        if (!isPremium) {
+        // ✅ 여행모드에서는 숨김 (프리미엄 홍보 상세 카드도 투자 전용 느낌이라 제거)
+        if (!isPremium && !isTravelModeEnabled) {
             item {
                 PremiumBenefitsDetailCard()
             }
@@ -442,6 +485,10 @@ fun ImprovedMyPageView(
         )
     }
 }
+
+
+
+
 
 @Composable
 fun SocialLoginRequiredDialog(
@@ -1993,7 +2040,8 @@ fun SettingSection(
     onInquiryClick: () -> Unit,
     onWidgetSettingsClick: () -> Unit,
     onSpreadSettingsClick: () -> Unit, // ✅ 추가
-    onHelpClick: () -> Unit
+    onHelpClick: () -> Unit,
+    isTravelModeEnabled: Boolean = false // ✅ 추가: 여행모드에서는 위젯/스프레드 설정 메뉴 숨김
 ) {
     Card(
         modifier = Modifier
@@ -2004,21 +2052,24 @@ fun SettingSection(
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Column(modifier = Modifier.fillMaxWidth()) {
-            SettingItem(
-                icon = Icons.Rounded.Widgets,
-                title = "위젯 설정",
-                subtitle = "실시간 업데이트 설정",
-                onClick = onWidgetSettingsClick
-            )
-            HorizontalDivider(color = Color(0xFFE5E7EB))
-            SettingItem(
-                icon = Icons.Rounded.CompareArrows,
-                title = "환율 스프레드 설정",
-                subtitle = "통화별 살 때·팔 때 스프레드 반영",
-                onClick = onSpreadSettingsClick,
-                badgeText = "NEW"
-            )
-            HorizontalDivider(color = Color(0xFFE5E7EB))
+            // ✅ 여행모드에서는 숨김 (위젯 설정 / 환율 스프레드 설정은 투자 전용 메뉴로 판단)
+            if (!isTravelModeEnabled) {
+                SettingItem(
+                    icon = Icons.Rounded.Widgets,
+                    title = "위젯 설정",
+                    subtitle = "실시간 업데이트 설정",
+                    onClick = onWidgetSettingsClick
+                )
+                HorizontalDivider(color = Color(0xFFE5E7EB))
+                SettingItem(
+                    icon = Icons.Rounded.CompareArrows,
+                    title = "환율 스프레드 설정",
+                    subtitle = "통화별 살 때·팔 때 스프레드 반영",
+                    onClick = onSpreadSettingsClick,
+                    badgeText = "NEW"
+                )
+                HorizontalDivider(color = Color(0xFFE5E7EB))
+            }
             SettingItem(
                 icon = Icons.Rounded.Person,
                 title = "계정 관리",
@@ -2033,13 +2084,13 @@ fun SettingSection(
                     BackupNoticeStatus.NEEDS_LOGIN -> "소셜 로그인을 연결해야 백업돼요"
                     BackupNoticeStatus.HELD -> "서버 기록과 달라 자동 백업이 멈췄어요"
                     BackupNoticeStatus.NONE -> "데이터 동기화"
-                   },
+                },
                 onClick = onCloudServiceClick,
                 badgeText = when (cloudBackupStatus) {
                     BackupNoticeStatus.NEEDS_LOGIN -> "백업 안 됨"
                     BackupNoticeStatus.HELD -> "확인 필요"
                     BackupNoticeStatus.NONE -> null
-                     },
+                },
                 badgeWarning = cloudBackupStatus != BackupNoticeStatus.NONE
             )
             HorizontalDivider(color = Color(0xFFE5E7EB))
@@ -2066,6 +2117,7 @@ fun SettingSection(
         }
     }
 }
+
 
 @Composable
 fun SettingItem(

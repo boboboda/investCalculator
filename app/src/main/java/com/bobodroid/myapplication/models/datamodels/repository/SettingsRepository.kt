@@ -17,6 +17,7 @@ import kotlin.math.roundToLong
  * 앱 전역 설정 관리
  * - 선택된 통화
  * - 통화별 매수/매도 스프레드 (원 단위)
+ * - 여행모드 메뉴 활성화 여부 (2026-10 추가)
  * - 기타 사용자 설정
  */
 @Singleton
@@ -37,6 +38,10 @@ class SettingsRepository @Inject constructor(
         // ✅ 서버 스키마 기본값과 동일 (0원 = 스프레드 미반영)
         private const val DEFAULT_BUY_SPREAD_WON = 0.0
         private const val DEFAULT_SELL_SPREAD_WON = 0.0
+
+        // ✅ 여행모드 - 마이페이지 메뉴 노출 토글 (기본은 꺼짐: 기존 사용자 화면에 변화 없음)
+        private const val KEY_TRAVEL_MODE_ENABLED = "travel_mode_enabled"
+        private const val DEFAULT_TRAVEL_MODE_ENABLED = false
     }
 
     private val prefs: SharedPreferences =
@@ -45,6 +50,12 @@ class SettingsRepository @Inject constructor(
     // 선택된 통화 StateFlow
     private val _selectedCurrency = MutableStateFlow(getCurrentCurrency())
     val selectedCurrency: StateFlow<CurrencyType> = _selectedCurrency.asStateFlow()
+
+    // 여행모드 메뉴 활성화 StateFlow
+    private val _travelModeEnabled = MutableStateFlow(
+        prefs.getBoolean(KEY_TRAVEL_MODE_ENABLED, DEFAULT_TRAVEL_MODE_ENABLED)
+    )
+    val travelModeEnabled: StateFlow<Boolean> = _travelModeEnabled.asStateFlow()
 
     /**
      * 현재 선택된 통화 가져오기
@@ -150,6 +161,18 @@ class SettingsRepository @Inject constructor(
     fun hasCustomSpread(currency: CurrencyType): Boolean {
         return prefs.contains(KEY_SPREAD_BUY_PREFIX + currency.name) ||
                 prefs.contains(KEY_SPREAD_SELL_PREFIX + currency.name)
+    }
+
+    // ==================== 여행모드 ====================
+
+    /**
+     * 마이페이지 - 여행모드 메뉴 활성화/비활성화
+     */
+    fun setTravelModeEnabled(enabled: Boolean) {
+        prefs.edit()
+            .putBoolean(KEY_TRAVEL_MODE_ENABLED, enabled)
+            .apply()
+        _travelModeEnabled.value = enabled
     }
 
     private fun Double.roundTo2(): Double = (this * 100).roundToLong() / 100.0

@@ -48,16 +48,21 @@ import com.bobodroid.myapplication.models.viewmodels.SpreadRates
 import com.bobodroid.myapplication.models.viewmodels.TargetRateInfo
 import com.bobodroid.myapplication.models.viewmodels.YearlyAverageStreak
 import com.bobodroid.myapplication.ui.theme.primaryColor
+import com.bobodroid.myapplication.components.travelComponents.TravelAnalysisTab
+import com.bobodroid.myapplication.models.viewmodels.TravelViewModel
+
 
 @Composable
 fun AnalysisScreen(
     analysisViewModel: AnalysisViewModel = hiltViewModel(),
+    travelViewModel: TravelViewModel = hiltViewModel(),   // ✅ 추가
     sharedViewModel: SharedViewModel,
     onNavigateToPremium: () -> Unit = {},
     onNavigateToNews: () -> Unit = {}
 ) {
 
     val isPremium by sharedViewModel.isPremium.collectAsState()
+    val isTravelModeEnabled by travelViewModel.isTravelModeEnabled.collectAsState()   // ✅ 추가
 
     val context = LocalContext.current
 
@@ -81,12 +86,17 @@ fun AnalysisScreen(
     }
 
     Box(modifier = Modifier.fillMaxSize()) {
-        PremiumChartScreen(
-            analysisViewModel = analysisViewModel,
-            onPremiumRequired = { showPremiumDialog = true },
-            onNavigateToPremium = onNavigateToPremium,
-            onNavigateToNews = onNavigateToNews
-        )
+        if (isTravelModeEnabled) {
+            // ✅ 여행모드: 기존 투자 분석 화면 대신 여행 요약을 보여줌
+            TravelAnalysisTab(travelViewModel = travelViewModel)
+        } else {
+            PremiumChartScreen(
+                analysisViewModel = analysisViewModel,
+                onPremiumRequired = { showPremiumDialog = true },
+                onNavigateToPremium = onNavigateToPremium,
+                onNavigateToNews = onNavigateToNews
+            )
+        }
 
         SnackbarHost(
             hostState = snackbarHostState,
@@ -107,6 +117,7 @@ fun AnalysisScreen(
 
     }
 }
+
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

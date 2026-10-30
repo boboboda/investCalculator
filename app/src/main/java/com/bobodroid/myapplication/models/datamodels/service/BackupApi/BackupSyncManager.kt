@@ -2,6 +2,7 @@ package com.bobodroid.myapplication.models.datamodels.service.BackupApi
 
 import android.util.Log
 import com.bobodroid.myapplication.models.datamodels.repository.InvestRepository
+import com.bobodroid.myapplication.models.datamodels.repository.TripRepository
 import com.bobodroid.myapplication.models.datamodels.repository.UserRepository
 import com.bobodroid.myapplication.models.datamodels.roomDb.LocalUserData
 import kotlinx.coroutines.CancellationException
@@ -36,11 +37,16 @@ sealed interface BackupOutcome {
  *
  * 자동 백업(BackupWorker), 수동 백업(SyncToServerUseCase),
  * 수익률 알림 저장 전 백업(FcmAlarmViewModel)이 모두 이 클래스를 사용한다.
+ *
+ * 2026-10 여행모드 추가: currencyRecords와 함께 trips(여행 + 지출)도 같은 백업 문서에 실어 보낸다.
+ * 덮어쓰기 보호(syncBaseAt/force)는 문서 전체에 대해 하나의 lastBackupAt을 기준으로 동작하므로
+ * 별도 처리 없이 기존 흐름을 그대로 탄다.
  */
 @Singleton
 class BackupSyncManager @Inject constructor(
     private val userRepository: UserRepository,
     private val investRepository: InvestRepository,
+    private val tripRepository: TripRepository,
     private val syncPrefs: BackupSyncPrefs
 ) {
     // 자동/수동 백업이 동시에 실행되어 서로 기준값을 덮어쓰지 않도록 한 번에 하나만 실행
@@ -75,12 +81,18 @@ class BackupSyncManager @Inject constructor(
         }
 
         val records = investRepository.getAllCurrencyRecords().first()
+        val trips = tripRepository.getAllTrips().first()
         val syncBaseAt = syncPrefs.getSyncBaseAt()
 
         // 한 번도 동기화한 적 없는 기기의 빈 목록은 서버에 보낼 이유가 없음
         // (기록을 전부 삭제한 경우는 기준값이 있으므로 정상적으로 전송됨)
-        if (records.isEmpty() && syncBaseAt == null && !force) {
+        if (records.isEmpty() && trips.isEmpty() && syncBaseAt == null && !force) {
             return BackupOutcome.Skipped("백업할 기록이 없습니다")
+        }
+
+        val tripDtos = trips.map { trip ->
+            val expenses = tripRepository.getExpensesByTrip(trip.id).first()
+            BackupMapper.toDto(trip, expenses)
         }
 
         val request = BackupRequest(
@@ -88,11 +100,12 @@ class BackupSyncManager @Inject constructor(
             socialId = localUser.socialId,
             socialType = localUser.socialType,
             currencyRecords = BackupMapper.toDtoList(records),
+            trips = tripDtos,
             syncBaseAt = syncBaseAt,
             force = force
         )
 
-        Log.d(TAG, "백업 전송: ${records.size}개 (force=$force, 기준값=${syncBaseAt != null})")
+        Log.d(TAG, "백업 전송: 기록 ${records.size}개, 여행 ${trips.size}개 (force=$force, 기준값=${syncBaseAt != null})")
         val response = BackupApi.backupService.createBackup(request)
 
         if (response.success) {
@@ -108,7 +121,7 @@ class BackupSyncManager @Inject constructor(
             )
 
             val count = response.data?.recordCount ?: records.size
-            Log.d(TAG, "백업 완료: ${count}개")
+            Log.d(TAG, "백업 완료: 기록 ${count}개, 여행 ${response.data?.tripCount ?: trips.size}개")
             return BackupOutcome.Success(count, syncedAt)
         }
 

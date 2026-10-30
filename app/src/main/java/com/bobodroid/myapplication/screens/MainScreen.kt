@@ -56,7 +56,6 @@ import com.bobodroid.myapplication.models.datamodels.roomDb.CurrencyRecord
 import com.bobodroid.myapplication.models.datamodels.roomDb.RateType
 import com.bobodroid.myapplication.models.viewmodels.FcmAlarmViewModel
 
-
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterialApi::class)
 @Composable
 fun MainScreen(
@@ -68,6 +67,7 @@ fun MainScreen(
     onNavigateToMyPage: () -> Unit,
     onNavigateToBacktest: () -> Unit,   // ✅ 신규 추가
     alarmViewModel: FcmAlarmViewModel = hiltViewModel()
+
 ) {
     val mainUiState by mainViewModel.mainUiState.collectAsState()
     val adUiState by sharedViewModel.adUiState.collectAsState()

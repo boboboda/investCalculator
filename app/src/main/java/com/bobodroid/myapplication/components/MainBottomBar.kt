@@ -1,3 +1,11 @@
+// =====================================================================
+// MainBottomBar.kt — 전체 교체
+// 변경 내용:
+//  - isTravelModeEnabled 파라미터 추가
+//  - "기록" 탭: 여행모드면 라벨을 "여행"으로 표시 (라우트/아이콘은 그대로, 라벨 텍스트만 교체)
+//  - "알람" 탭: 여행모드면 터치 막힘(enabled = false) + 회색 음영 처리
+// =====================================================================
+
 package com.bobodroid.myapplication.components
 
 import android.annotation.SuppressLint
@@ -57,7 +65,8 @@ import kotlinx.coroutines.launch
 fun MainBottomBar(
     mainRouteAction: RouteAction<MainRoute>,
     mainRouteBackStack: NavBackStackEntry?,
-    mainViewModel: MainViewModel
+    mainViewModel: MainViewModel,
+    isTravelModeEnabled: Boolean = false   // ✅ 여행모드 추가
 ) {
 
     val mainBottomSelectedValue = remember { mutableStateOf(1) }
@@ -71,7 +80,10 @@ fun MainBottomBar(
         MainRoute.Main.let {
             BottomNavigationItem(
                 modifier = Modifier.background(Color.White),
-                label = { Text(text = it.title!!) },
+                label = {
+                    // ✅ 여행모드면 "여행"으로 라벨만 교체 (라우트/아이콘은 그대로)
+                    Text(text = if (isTravelModeEnabled) "여행" else it.title!!)
+                },
                 icon = {
                     it.iconResId?.let { iconId ->
                         Icon(painter = painterResource(iconId), contentDescription = it.title)
@@ -88,19 +100,24 @@ fun MainBottomBar(
         }
 
         MainRoute.Alert.let {
-            BottomNavigationItem(modifier = Modifier.background(Color.White),
+            // ✅ 여행모드면 터치 막힘 + 회색 음영 처리 (환율 알림은 투자 전용 기능)
+            BottomNavigationItem(
+                modifier = Modifier.background(Color.White),
+                enabled = !isTravelModeEnabled,
                 label = { Text(text = it.title!!) },
                 icon = {
                     it.iconResId?.let { iconId ->
                         Icon(painter = painterResource(iconId), contentDescription = it.title)
                     }
                 },
-                selectedContentColor = Color.Black,
-                unselectedContentColor = Color.LightGray,
+                selectedContentColor = if (isTravelModeEnabled) Color(0xFFBDBDBD) else Color.Black,
+                unselectedContentColor = Color(0xFFBDBDBD),
                 selected = (mainRouteBackStack?.destination?.route) == it.routeName,
                 onClick = {
-                    mainRouteAction.navTo(it)
-                    mainBottomSelectedValue.value = it.selectValue!!
+                    if (!isTravelModeEnabled) {
+                        mainRouteAction.navTo(it)
+                        mainBottomSelectedValue.value = it.selectValue!!
+                    }
                 }
 
             )

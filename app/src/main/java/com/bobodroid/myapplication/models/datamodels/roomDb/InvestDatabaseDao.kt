@@ -118,12 +118,12 @@ interface CurrencyRecordDao {
     suspend fun updateCategory(id: UUID, categoryName: String)
 
     @Query("""
-        UPDATE currency_records 
-        SET sell_date = :sellDate, 
-            sell_rate = :sellRate, 
-            sell_profit = :sellProfit, 
+        UPDATE currency_records
+        SET sell_date = :sellDate,
+            sell_rate = :sellRate,
+            sell_profit = :sellProfit,
             expect_profit = :sellProfit,
-            record_color = 1 
+            record_color = 1
         WHERE id = :id
     """)
     suspend fun updateSellInfo(
@@ -159,3 +159,83 @@ interface CurrencyRecordDao {
     @Query("SELECT SUM(CAST(sell_profit AS REAL)) FROM currency_records WHERE currency_code = :currencyCode AND record_color = 1")
     suspend fun getTotalProfit(currencyCode: String): Float?
 }
+
+/**
+ * 여행모드 - 여행(Trip) & 지출(TripExpense) DAO
+ */
+@Dao
+interface TripDao {
+
+    // ===== Trip =====
+    @Query("SELECT * FROM trips ORDER BY start_date DESC")
+    fun getAllTrips(): Flow<List<Trip>>
+
+    @Query("SELECT * FROM trips WHERE is_completed = 0 ORDER BY start_date DESC")
+    fun getOngoingTrips(): Flow<List<Trip>>
+
+    @Query("SELECT * FROM trips WHERE is_completed = 1 ORDER BY start_date DESC")
+    fun getCompletedTrips(): Flow<List<Trip>>
+
+    @Query("SELECT * FROM trips WHERE id = :id")
+    suspend fun getTripById(id: UUID): Trip?
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertTrip(trip: Trip)
+
+    @Update
+    suspend fun updateTrip(trip: Trip)
+
+    @Query("UPDATE trips SET is_completed = :isCompleted WHERE id = :id")
+    suspend fun updateTripCompleted(id: UUID, isCompleted: Boolean)
+
+    @Delete
+    suspend fun deleteTrip(trip: Trip)
+
+    @Query("DELETE FROM trips WHERE id = :id")
+    suspend fun deleteTripById(id: UUID)
+
+    // ===== TripExpense =====
+    @Query("SELECT * FROM trip_expenses WHERE trip_id = :tripId ORDER BY date DESC")
+    fun getExpensesByTrip(tripId: UUID): Flow<List<TripExpense>>
+
+    @Query("SELECT * FROM trip_expenses WHERE id = :id")
+    suspend fun getExpenseById(id: UUID): TripExpense?
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertExpense(expense: TripExpense)
+
+    @Update
+    suspend fun updateExpense(expense: TripExpense)
+
+    @Delete
+    suspend fun deleteExpense(expense: TripExpense)
+
+    @Query("DELETE FROM trip_expenses WHERE id = :id")
+    suspend fun deleteExpenseById(id: UUID)
+
+    @Query("DELETE FROM trip_expenses WHERE trip_id = :tripId")
+    suspend fun deleteExpensesByTrip(tripId: UUID)
+
+    // ===== 분석(통계) =====
+    @Query("SELECT SUM(CAST(krw_amount AS REAL)) FROM trip_expenses WHERE trip_id = :tripId")
+    suspend fun getTotalSpentWon(tripId: UUID): Float?
+
+    @Query("SELECT COUNT(*) FROM trip_expenses WHERE trip_id = :tripId")
+    suspend fun getExpenseCount(tripId: UUID): Int
+
+    @Query("""
+        SELECT category_name as categoryName, SUM(CAST(krw_amount AS REAL)) as totalWon
+        FROM trip_expenses
+        WHERE trip_id = :tripId
+        GROUP BY category_name
+    """)
+    suspend fun getCategoryBreakdown(tripId: UUID): List<CategoryBreakdown>
+}
+
+/**
+ * 분석탭 카테고리별 지출 비중 집계용 결과 매핑
+ */
+data class CategoryBreakdown(
+    val categoryName: String,
+    val totalWon: Float
+)

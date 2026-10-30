@@ -22,6 +22,7 @@ import androidx.compose.ui.Modifier
 import androidx.core.content.ContextCompat
 import androidx.core.splashscreen.SplashScreen
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
@@ -35,6 +36,7 @@ import com.bobodroid.myapplication.components.MainBottomBar
 import com.bobodroid.myapplication.models.datamodels.social.SocialLoginManager
 import com.bobodroid.myapplication.models.datamodels.useCases.FcmUseCases
 import com.bobodroid.myapplication.models.viewmodels.MainViewModel
+import com.bobodroid.myapplication.models.viewmodels.TravelViewModel
 import com.bobodroid.myapplication.models.viewmodels.SharedViewModel
 import com.bobodroid.myapplication.routes.*
 import com.bobodroid.myapplication.screens.*
@@ -365,7 +367,8 @@ fun AppScreen(
 fun InvestAppScreen(
     mainViewModel: MainViewModel,
     sharedViewModel: SharedViewModel,
-    activity: Activity
+    activity: Activity,
+    travelViewModel: TravelViewModel = hiltViewModel()   // ✅ 여행모드 추가
 ) {
     val investNavController = rememberNavController()
     val mainRouteAction = remember {
@@ -373,6 +376,9 @@ fun InvestAppScreen(
     }
 
     val mainBackStack = investNavController.currentBackStackEntryAsState()
+
+    val isTravelModeEnabled by travelViewModel.isTravelModeEnabled.collectAsState()   // ✅ 추가
+
 
     var guideDialog by remember { mutableStateOf(false) }
     var returnGuideDialog by remember { mutableStateOf(false) }
@@ -394,7 +400,10 @@ fun InvestAppScreen(
             MainBottomBar(
                 mainRouteAction = mainRouteAction,
                 mainRouteBackStack = mainBackStack.value,
-                mainViewModel = mainViewModel)
+                mainViewModel = mainViewModel,
+                isTravelModeEnabled = isTravelModeEnabled   // ✅ 추가
+
+            )
         },
         // ✅ MainTopBar 제거: 하단 탭에서 이미 현재 화면이 드러나므로 상단 타이틀바가 불필요하다고 판단
 
@@ -410,7 +419,9 @@ fun InvestAppScreen(
                 mainRouteAction = mainRouteAction, // ✅ 추가
                 mainViewModel = mainViewModel,
                 activity = activity,
-                sharedViewModel = sharedViewModel
+                sharedViewModel = sharedViewModel,
+                travelViewModel = travelViewModel   // ✅ 추가
+
             )
 
             if (showBackupBanner) {
@@ -443,6 +454,13 @@ fun InvestAppScreen(
 }
 
 
+// =====================================================================
+// MainActivity.kt — fun InvestNavHost(...) 전체 교체 (446~533줄)
+// 변경 내용:
+//  - travelViewModel 파라미터 추가
+//  - "Main" 라우트: 여행모드면 TravelScreen, 아니면 기존 MainScreen (탭 자체는 그대로 유지, 내용만 교체)
+// =====================================================================
+
 @Composable
 fun InvestNavHost(
     investNavController: NavHostController,
@@ -450,29 +468,37 @@ fun InvestNavHost(
     startRouter: MainRoute = MainRoute.Main,
     sharedViewModel: SharedViewModel,
     mainViewModel: MainViewModel,
-    activity: Activity
+    activity: Activity,
+    travelViewModel: TravelViewModel   // ✅ 여행모드 추가
 ) {
+    val isTravelModeEnabled by travelViewModel.isTravelModeEnabled.collectAsState()   // ✅ 추가
+
     NavHost(navController = investNavController, startDestination = startRouter.routeName!!) {
         composable(MainRoute.Main.routeName!!) {
-            MainScreen(
-                mainViewModel = mainViewModel,
-                activity = activity,
-                onNavigateToPremium = {
-                    sharedViewModel.requestPremiumUnlock()
-                },
-                onNavigateToNews = {
-                    investNavController.navigate(MainRoute.News.routeName!!)
-                },
-                onNavigateToMyPage = {
-                    // ✅ 수정: 스프레드 설정으로 직행하도록 요청 후 마이페이지 탭으로 이동
-                    sharedViewModel.requestMyPageRoute(MyPageRoute.SpreadSettings.routeName!!)
-                    mainRouteAction.navTo(MainRoute.MyPage)
-                },
-                onNavigateToBacktest = {
-                    investNavController.navigate(MainRoute.Backtest.routeName!!)
-                },
-                sharedViewModel = sharedViewModel
-            )
+            if (isTravelModeEnabled) {
+                // ✅ 여행모드: "기록" 탭 자리에서 여행 카드 리스트 화면을 보여줌
+                TravelScreen(travelViewModel = travelViewModel)
+            } else {
+                MainScreen(
+                    mainViewModel = mainViewModel,
+                    activity = activity,
+                    onNavigateToPremium = {
+                        sharedViewModel.requestPremiumUnlock()
+                    },
+                    onNavigateToNews = {
+                        investNavController.navigate(MainRoute.News.routeName!!)
+                    },
+                    onNavigateToMyPage = {
+                        // ✅ 수정: 스프레드 설정으로 직행하도록 요청 후 마이페이지 탭으로 이동
+                        sharedViewModel.requestMyPageRoute(MyPageRoute.SpreadSettings.routeName!!)
+                        mainRouteAction.navTo(MainRoute.MyPage)
+                    },
+                    onNavigateToBacktest = {
+                        investNavController.navigate(MainRoute.Backtest.routeName!!)
+                    },
+                    sharedViewModel = sharedViewModel
+                )
+            }
         }
 
         composable(MainRoute.Alert.routeName!!) {
@@ -531,3 +557,4 @@ fun InvestNavHost(
         }
     }
 }
+

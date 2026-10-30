@@ -1,4 +1,3 @@
-// app/src/main/java/com/bobodroid/myapplication/models/datamodels/service/BackupApi/BackupModels.kt
 package com.bobodroid.myapplication.models.datamodels.service.BackupApi
 
 import com.squareup.moshi.JsonClass
@@ -26,6 +25,37 @@ data class CurrencyRecordDto(
 )
 
 /**
+ * 백업할 여행모드 - 여행 중 지출 DTO
+ */
+@JsonClass(generateAdapter = true)
+data class TripExpenseDto(
+    val id: String,
+    val tripId: String,
+    val amount: String,
+    val krwAmount: String,
+    val categoryName: String,
+    val memo: String,
+    val date: String
+)
+
+/**
+ * 백업할 여행모드 - 여행(트립) DTO
+ */
+@JsonClass(generateAdapter = true)
+data class TripDto(
+    val id: String,
+    val tripName: String,
+    val currencyCode: String,
+    val startDate: String,
+    val endDate: String,
+    val budgetWon: String? = null,
+    val averageExchangeRate: String,
+    val isCompleted: Boolean,
+    val createdAt: String,
+    val expenses: List<TripExpenseDto>
+)
+
+/**
  * 백업 요청 DTO
  */
 @JsonClass(generateAdapter = true)
@@ -34,6 +64,8 @@ data class BackupRequest(
     val socialId: String? = null,
     val socialType: String? = null,
     val currencyRecords: List<CurrencyRecordDto>,
+    // 여행모드 데이터 (2026-10 추가)
+    val trips: List<TripDto> = emptyList(),
     // 이 기기가 마지막으로 동기화했을 때 서버가 알려준 lastBackupAt (서버가 덮어쓰기 안전 여부를 판단)
     val syncBaseAt: String? = null,
     // 사용자가 "이 기기 기록으로 덮어쓰기"를 선택한 경우에만 true
@@ -47,6 +79,7 @@ data class BackupRequest(
 data class BackupData(
     val deviceId: String,
     val recordCount: Int,
+    val tripCount: Int = 0,
     val lastBackupAt: String
 )
 
@@ -72,8 +105,10 @@ data class RestoreData(
     val socialId: String? = null,
     val socialType: String? = null,
     val currencyRecords: List<CurrencyRecordDto>,
+    val trips: List<TripDto> = emptyList(),
     val lastBackupAt: String,
-    val recordCount: Int
+    val recordCount: Int,
+    val tripCount: Int = 0
 )
 
 /**
@@ -94,6 +129,7 @@ data class RestoreResponse(
 data class BackupStatsData(
     val exists: Boolean,
     val recordCount: Int,
+    val tripCount: Int = 0,
     val lastBackupAt: String? = null,
     val createdAt: String? = null
 )

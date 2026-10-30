@@ -2,9 +2,12 @@
 package com.bobodroid.myapplication.models.datamodels.service.BackupApi
 
 import com.bobodroid.myapplication.models.datamodels.roomDb.CurrencyRecord
+import com.bobodroid.myapplication.models.datamodels.roomDb.Trip
+import com.bobodroid.myapplication.models.datamodels.roomDb.TripExpense
+import java.util.UUID
 
 /**
- * CurrencyRecord <-> CurrencyRecordDto 변환
+ * CurrencyRecord / Trip / TripExpense <-> Dto 변환
  */
 object BackupMapper {
 
@@ -36,7 +39,7 @@ object BackupMapper {
      */
     fun fromDto(dto: CurrencyRecordDto): CurrencyRecord {
         return CurrencyRecord(
-            id = java.util.UUID.fromString(dto.id),
+            id = UUID.fromString(dto.id),
             currencyCode = dto.currencyCode,
             date = dto.date,
             money = dto.money,
@@ -66,5 +69,73 @@ object BackupMapper {
      */
     fun fromDtoList(dtos: List<CurrencyRecordDto>): List<CurrencyRecord> {
         return dtos.map { fromDto(it) }
+    }
+
+    // ===== 여행모드 =====
+
+    /**
+     * TripExpense → TripExpenseDto (백업용)
+     */
+    fun toDto(expense: TripExpense): TripExpenseDto {
+        return TripExpenseDto(
+            id = expense.id.toString(),
+            tripId = expense.tripId.toString(),
+            amount = expense.amount,
+            krwAmount = expense.krwAmount,
+            categoryName = expense.categoryName,
+            memo = expense.memo ?: "",
+            date = expense.date
+        )
+    }
+
+    /**
+     * TripExpenseDto → TripExpense (복구용)
+     */
+    fun fromDto(dto: TripExpenseDto): TripExpense {
+        return TripExpense(
+            id = UUID.fromString(dto.id),
+            tripId = UUID.fromString(dto.tripId),
+            amount = dto.amount,
+            krwAmount = dto.krwAmount,
+            categoryName = dto.categoryName,
+            memo = dto.memo,
+            date = dto.date
+        )
+    }
+
+    /**
+     * Trip + 해당 지출 목록 → TripDto (백업용)
+     * (Trip과 TripExpense는 별도 테이블이라 지출 목록을 함께 전달받아야 함)
+     */
+    fun toDto(trip: Trip, expenses: List<TripExpense>): TripDto {
+        return TripDto(
+            id = trip.id.toString(),
+            tripName = trip.tripName,
+            currencyCode = trip.currencyCode,
+            startDate = trip.startDate,
+            endDate = trip.endDate,
+            budgetWon = trip.budgetWon,
+            averageExchangeRate = trip.averageExchangeRate,
+            isCompleted = trip.isCompleted,
+            createdAt = trip.createdAt,
+            expenses = expenses.map { toDto(it) }
+        )
+    }
+
+    /**
+     * TripDto → Trip (복구용, 지출 목록은 fromDto(TripExpenseDto)로 별도 저장)
+     */
+    fun fromDto(dto: TripDto): Trip {
+        return Trip(
+            id = UUID.fromString(dto.id),
+            tripName = dto.tripName,
+            currencyCode = dto.currencyCode,
+            startDate = dto.startDate,
+            endDate = dto.endDate,
+            budgetWon = dto.budgetWon,
+            averageExchangeRate = dto.averageExchangeRate,
+            isCompleted = dto.isCompleted,
+            createdAt = dto.createdAt
+        )
     }
 }

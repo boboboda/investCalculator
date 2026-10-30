@@ -65,4 +65,13 @@ object DatabaseModule {
     fun provideBacktestHistoryDao(database: InvestDatabase): BacktestHistoryDao {
         return database.backtestHistoryDao()
     }
+
+    // ✅ 여행모드 추가
+    @Provides
+    @Singleton
+    fun provideTripDao(database: InvestDatabase): TripDao {
+        return database.tripDao()
+    }
+
+
 }

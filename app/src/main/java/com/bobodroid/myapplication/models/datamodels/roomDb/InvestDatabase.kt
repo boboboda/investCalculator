@@ -10,9 +10,11 @@ import androidx.room.RoomDatabase
         LocalUserData::class,
         ExchangeRate::class,
         CurrencyRecord::class,
-        BacktestHistoryEntity::class
+        BacktestHistoryEntity::class,
+        Trip::class,
+        TripExpense::class
     ],
-    version = 35,
+    version = 36,
     exportSchema = true,
     autoMigrations = [
         AutoMigration(from = 31, to = 32),
@@ -26,4 +28,5 @@ abstract class InvestDatabase : RoomDatabase() {
     abstract fun exchangeRateDao(): ExchangeRateDataBaseDao
     abstract fun currencyRecordDao(): CurrencyRecordDao
     abstract fun backtestHistoryDao(): BacktestHistoryDao
+    abstract fun tripDao(): TripDao
 }
